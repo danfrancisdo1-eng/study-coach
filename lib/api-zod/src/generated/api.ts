@@ -661,6 +661,179 @@ export const GetStudySessionResponse = zod.object({
 
 
 /**
+ * @summary List the signed-in account's lectures (without transcripts), newest first
+ */
+export const listLecturesQueryCourseIdMax = 200;
+
+
+
+export const ListLecturesQueryParams = zod.object({
+  "courseId": zod.coerce.string().max(listLecturesQueryCourseIdMax).optional()
+})
+
+export const ListLecturesResponse = zod.object({
+  "lectures": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "courseId": zod.string(),
+  "title": zod.string(),
+  "recordedAt": zod.coerce.date(),
+  "durationSeconds": zod.number().int(),
+  "status": zod.enum(['recorded', 'transcribed', 'reviewed']).describe('recorded = audio only on the device; transcribed = AI transcript not yet reviewed; reviewed = student-approved transcript, used as course material'),
+  "segmentCount": zod.number().int(),
+  "version": zod.number().int(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Register a lecture recorded or imported on the device. Audio is not uploaded here.
+ */
+export const createLectureBodyCourseIdMax = 200;
+
+export const createLectureBodyTitleMax = 200;
+
+export const createLectureBodyDurationSecondsMax = 14400;
+
+
+
+export const CreateLectureBody = zod.object({
+  "courseId": zod.string().min(1).max(createLectureBodyCourseIdMax),
+  "title": zod.string().min(1).max(createLectureBodyTitleMax),
+  "recordedAt": zod.coerce.date(),
+  "durationSeconds": zod.number().int().min(1).max(createLectureBodyDurationSecondsMax)
+})
+
+export const createLectureResponseTwoSegmentsItemStartMin = 0;
+
+export const createLectureResponseTwoSegmentsItemEndMin = 0;
+
+export const createLectureResponseTwoSegmentsItemTextMax = 20000;
+
+
+
+export const CreateLectureResponse = zod.object({
+  "id": zod.string().uuid(),
+  "courseId": zod.string(),
+  "title": zod.string(),
+  "recordedAt": zod.coerce.date(),
+  "durationSeconds": zod.number().int(),
+  "status": zod.enum(['recorded', 'transcribed', 'reviewed']).describe('recorded = audio only on the device; transcribed = AI transcript not yet reviewed; reviewed = student-approved transcript, used as course material'),
+  "segmentCount": zod.number().int(),
+  "version": zod.number().int(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "segments": zod.array(zod.object({
+  "start": zod.number().min(createLectureResponseTwoSegmentsItemStartMin),
+  "end": zod.number().min(createLectureResponseTwoSegmentsItemEndMin),
+  "text": zod.string().max(createLectureResponseTwoSegmentsItemTextMax)
+}))
+}))
+
+
+/**
+ * @summary Get one lecture with its transcript
+ */
+export const GetLectureParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const getLectureResponseTwoSegmentsItemStartMin = 0;
+
+export const getLectureResponseTwoSegmentsItemEndMin = 0;
+
+export const getLectureResponseTwoSegmentsItemTextMax = 20000;
+
+
+
+export const GetLectureResponse = zod.object({
+  "id": zod.string().uuid(),
+  "courseId": zod.string(),
+  "title": zod.string(),
+  "recordedAt": zod.coerce.date(),
+  "durationSeconds": zod.number().int(),
+  "status": zod.enum(['recorded', 'transcribed', 'reviewed']).describe('recorded = audio only on the device; transcribed = AI transcript not yet reviewed; reviewed = student-approved transcript, used as course material'),
+  "segmentCount": zod.number().int(),
+  "version": zod.number().int(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "segments": zod.array(zod.object({
+  "start": zod.number().min(getLectureResponseTwoSegmentsItemStartMin),
+  "end": zod.number().min(getLectureResponseTwoSegmentsItemEndMin),
+  "text": zod.string().max(getLectureResponseTwoSegmentsItemTextMax)
+}))
+}))
+
+
+/**
+ * @summary Update title, transcript or status. Fails with 409 if the lecture changed since the given version.
+ */
+export const UpdateLectureParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+export const updateLectureBodyTitleMax = 200;
+
+export const updateLectureBodySegmentsItemStartMin = 0;
+
+export const updateLectureBodySegmentsItemEndMin = 0;
+
+export const updateLectureBodySegmentsItemTextMax = 20000;
+
+export const updateLectureBodySegmentsMax = 2000;
+
+
+
+export const UpdateLectureBody = zod.object({
+  "version": zod.number().int().min(1),
+  "title": zod.string().min(1).max(updateLectureBodyTitleMax).optional(),
+  "status": zod.enum(['recorded', 'transcribed', 'reviewed']).optional().describe('recorded = audio only on the device; transcribed = AI transcript not yet reviewed; reviewed = student-approved transcript, used as course material'),
+  "segments": zod.array(zod.object({
+  "start": zod.number().min(updateLectureBodySegmentsItemStartMin),
+  "end": zod.number().min(updateLectureBodySegmentsItemEndMin),
+  "text": zod.string().max(updateLectureBodySegmentsItemTextMax)
+})).max(updateLectureBodySegmentsMax).optional()
+})
+
+export const updateLectureResponseTwoSegmentsItemStartMin = 0;
+
+export const updateLectureResponseTwoSegmentsItemEndMin = 0;
+
+export const updateLectureResponseTwoSegmentsItemTextMax = 20000;
+
+
+
+export const UpdateLectureResponse = zod.object({
+  "id": zod.string().uuid(),
+  "courseId": zod.string(),
+  "title": zod.string(),
+  "recordedAt": zod.coerce.date(),
+  "durationSeconds": zod.number().int(),
+  "status": zod.enum(['recorded', 'transcribed', 'reviewed']).describe('recorded = audio only on the device; transcribed = AI transcript not yet reviewed; reviewed = student-approved transcript, used as course material'),
+  "segmentCount": zod.number().int(),
+  "version": zod.number().int(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "segments": zod.array(zod.object({
+  "start": zod.number().min(updateLectureResponseTwoSegmentsItemStartMin),
+  "end": zod.number().min(updateLectureResponseTwoSegmentsItemEndMin),
+  "text": zod.string().max(updateLectureResponseTwoSegmentsItemTextMax)
+}))
+}))
+
+
+/**
+ * @summary Permanently delete a lecture and its transcript
+ */
+export const DeleteLectureParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const DeleteLectureResponse = zod.void()
+
+
+/**
  * @summary Record an optional session check-in or skip
  */
 export const CheckInStudySessionParams = zod.object({

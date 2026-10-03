@@ -23,6 +23,11 @@ import type {
   AnalyzeInput,
   AnalyzeResult,
   HealthStatus,
+  Lecture,
+  LectureInput,
+  LectureUpdate,
+  ListLectures200,
+  ListLecturesParams,
   ListStudySessions200,
   PlanInput,
   PlanResult,
@@ -1172,6 +1177,418 @@ export function useGetStudySession<TData = Awaited<ReturnType<typeof getStudySes
 
 
 
+
+export const getListLecturesUrl = (params?: ListLecturesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/study/lectures?${stringifiedParams}` : `/api/study/lectures`
+}
+
+/**
+ * @summary List the signed-in account's lectures (without transcripts), newest first
+ */
+export const listLectures = async (params?: ListLecturesParams, options?: Parameters<typeof customFetch>[1]): Promise<ListLectures200> => {
+
+  return customFetch<ListLectures200>(getListLecturesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLecturesQueryKey = (params?: ListLecturesParams,) => {
+    return [
+    `/api/study/lectures`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListLecturesQueryOptions = <TData = Awaited<ReturnType<typeof listLectures>>, TError = ErrorType<unknown>>(params?: ListLecturesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLectures>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLecturesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLectures>>> = ({ signal }) => listLectures(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLectures>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListLecturesQueryResult = NonNullable<Awaited<ReturnType<typeof listLectures>>>
+export type ListLecturesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the signed-in account's lectures (without transcripts), newest first
+ */
+
+export function useListLectures<TData = Awaited<ReturnType<typeof listLectures>>, TError = ErrorType<unknown>>(
+ params?: ListLecturesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLectures>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListLecturesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateLectureUrl = () => {
+
+
+
+
+  return `/api/study/lectures`
+}
+
+/**
+ * @summary Register a lecture recorded or imported on the device. Audio is not uploaded here.
+ */
+export const createLecture = async (lectureInput: LectureInput, options?: Parameters<typeof customFetch>[1]): Promise<Lecture> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Lecture>(getCreateLectureUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(lectureInput)
+  }
+);}
+
+
+
+
+
+export const getCreateLectureMutationKey = () => ['createLecture'] as const;
+
+export const getCreateLectureMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLecture>>, TError,CreateLectureMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createLecture>>, TError,CreateLectureMutationVariables, TContext> => {
+
+const mutationKey = getCreateLectureMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createLecture>>, CreateLectureMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createLecture(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateLectureMutationResult = NonNullable<Awaited<ReturnType<typeof createLecture>>>
+    export type CreateLectureMutationBody = BodyType<LectureInput>
+    export type CreateLectureMutationError = ErrorType<void>
+    export type CreateLectureMutationVariables = {data: BodyType<LectureInput>}
+
+    /**
+ * @summary Register a lecture recorded or imported on the device. Audio is not uploaded here.
+ */
+export const useCreateLecture = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLecture>>, TError,CreateLectureMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createLecture>>,
+        TError,
+        CreateLectureMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateLectureMutationOptions(options));
+    }
+
+export const getGetLectureUrl = (id: string,) => {
+
+
+
+
+  return `/api/study/lectures/${id}`
+}
+
+/**
+ * @summary Get one lecture with its transcript
+ */
+export const getLecture = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<Lecture> => {
+
+  return customFetch<Lecture>(getGetLectureUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLectureQueryKey = (id: string,) => {
+    return [
+    `/api/study/lectures/${id}`
+    ] as const;
+    }
+
+
+export const getGetLectureQueryOptions = <TData = Awaited<ReturnType<typeof getLecture>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLecture>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLectureQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLecture>>> = ({ signal }) => getLecture(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLecture>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLectureQueryResult = NonNullable<Awaited<ReturnType<typeof getLecture>>>
+export type GetLectureQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get one lecture with its transcript
+ */
+
+export function useGetLecture<TData = Awaited<ReturnType<typeof getLecture>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLecture>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLectureQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateLectureUrl = (id: string,) => {
+
+
+
+
+  return `/api/study/lectures/${id}`
+}
+
+/**
+ * @summary Update title, transcript or status. Fails with 409 if the lecture changed since the given version.
+ */
+export const updateLecture = async (id: string,
+    lectureUpdate: LectureUpdate, options?: Parameters<typeof customFetch>[1]): Promise<Lecture> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Lecture>(getUpdateLectureUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(lectureUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateLectureMutationKey = () => ['updateLecture'] as const;
+
+export const getUpdateLectureMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateLecture>>, TError,UpdateLectureMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateLecture>>, TError,UpdateLectureMutationVariables, TContext> => {
+
+const mutationKey = getUpdateLectureMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateLecture>>, UpdateLectureMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateLecture(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateLectureMutationResult = NonNullable<Awaited<ReturnType<typeof updateLecture>>>
+    export type UpdateLectureMutationBody = BodyType<LectureUpdate>
+    export type UpdateLectureMutationError = ErrorType<void>
+    export type UpdateLectureMutationVariables = {id: string;data: BodyType<LectureUpdate>}
+
+    /**
+ * @summary Update title, transcript or status. Fails with 409 if the lecture changed since the given version.
+ */
+export const useUpdateLecture = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateLecture>>, TError,UpdateLectureMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateLecture>>,
+        TError,
+        UpdateLectureMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateLectureMutationOptions(options));
+    }
+
+export const getDeleteLectureUrl = (id: string,) => {
+
+
+
+
+  return `/api/study/lectures/${id}`
+}
+
+/**
+ * @summary Permanently delete a lecture and its transcript
+ */
+export const deleteLecture = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteLectureUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteLectureMutationKey = () => ['deleteLecture'] as const;
+
+export const getDeleteLectureMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteLecture>>, TError,DeleteLectureMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteLecture>>, TError,DeleteLectureMutationVariables, TContext> => {
+
+const mutationKey = getDeleteLectureMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteLecture>>, DeleteLectureMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteLecture(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteLectureMutationResult = NonNullable<Awaited<ReturnType<typeof deleteLecture>>>
+
+    export type DeleteLectureMutationError = ErrorType<void>
+    export type DeleteLectureMutationVariables = {id: string}
+
+    /**
+ * @summary Permanently delete a lecture and its transcript
+ */
+export const useDeleteLecture = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteLecture>>, TError,DeleteLectureMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteLecture>>,
+        TError,
+        DeleteLectureMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteLectureMutationOptions(options));
+    }
 
 export const getCheckInStudySessionUrl = (id: string,) => {
 

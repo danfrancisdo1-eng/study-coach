@@ -22,6 +22,7 @@ import * as imageOcrPrompt from "../prompts/image-ocr.v1";
 import * as tutorPrompt from "../prompts/tutor.v1";
 import * as sessionQuizPrompt from "../prompts/session-quiz.v1";
 import { readPublicPage } from "../lib/public-page";
+import { reviewedLectureMaterials } from "../lib/lecture-materials";
 
 const router: IRouter = Router();
 const MAX_STATE_BYTES = 900_000;
@@ -1081,11 +1082,11 @@ async function persistSessionReviews(ownerId: string, session: Session): Promise
   return false;
 }
 
-function sourceChunks(state: JsonObject | null, courseId: string, topic: string): {
+function sourceChunks(state: JsonObject | null, courseId: string, topic: string, extraMaterials: unknown[] = []): {
   chunks: Array<{ label: string; text: string; score: number }>;
   status: SourceStatus;
 } {
-  const materials = Array.isArray(state?.materials) ? state.materials : [];
+  const materials = [...(Array.isArray(state?.materials) ? state.materials : []), ...extraMaterials];
   const queryWords = `${topic} ${courseId}`.toLowerCase().split(/\W+/).filter((word) => word.length > 2);
   const all: Array<{ label: string; text: string; score: number }> = [];
   for (const item of materials) {
@@ -1151,7 +1152,7 @@ router.post("/study/sessions/:id/messages", async (req, res): Promise<void> => {
   }
   const state = await requireConsent(res, owner(req));
   if (!state) return;
-  const { chunks, status } = sourceChunks(state, session.courseId, session.topic);
+  const { chunks, status } = sourceChunks(state, session.courseId, session.topic, await reviewedLectureMaterials(owner(req), session.courseId));
   const userContent = (req.body as JsonObject).content as string;
   const history = session.messages.slice(-18).map((message) => ({
     role: message.role as "user" | "assistant",
@@ -1225,7 +1226,7 @@ router.post("/study/sessions/:id/quiz", async (req, res): Promise<void> => {
       ]
     : [];
   const usedPrompts = new Set(originalPrompts.map((prompt) => prompt.trim().toLowerCase().replace(/\s+/g, " ")));
-  const { chunks, status } = sourceChunks(state, session.courseId, session.topic);
+  const { chunks, status } = sourceChunks(state, session.courseId, session.topic, await reviewedLectureMaterials(owner(req), session.courseId));
   const sourceText = chunks.map((chunk) => `[SOURCE: ${chunk.label}]\n${chunk.text}`).join("\n\n");
   try {
     const response = await complete("session_quiz", {
