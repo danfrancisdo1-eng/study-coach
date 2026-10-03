@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-03 — D-007: Apple Developer Program as an Individual; LLC later if an app succeeds
+- **Decision:** Enroll as an Individual (personal name shown as seller). Form an LLC only if Study Coach or Personal Max is successful, then transfer the app to the organization account (Apple's app transfer keeps reviews and users).
+- **Why:** An LLC isn't required to publish one app; Individual enrollment is fastest.
+- **Decided by:** Dan.
+
 ## 2026-10-03 — D-006: Private GitHub repository as the git remote
 - **Decision:** Push the project to a private GitHub repository.
 - **Status:** Repo not created yet. This Mac has no GitHub CLI or SSH key, so Dan creates the empty private repo on github.com and the first push uses his GitHub sign-in.
