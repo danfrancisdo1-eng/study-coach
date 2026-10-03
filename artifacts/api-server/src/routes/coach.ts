@@ -14,8 +14,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { getAuth } from "@clerk/express";
 import { reserveTranscription } from "./lectureQuota";
+import { requireStudyAuth } from "./study";
 
 const router: IRouter = Router();
+
+// Every coach route calls the AI provider; signed-out callers must never reach it.
+router.use("/coach", requireStudyAuth);
 const normalize = (text:string) => text.replace(/\s+/g, " ").trim().toLowerCase();
 function run(command:string,args:string[]):Promise<string>{
   return new Promise((resolve,reject)=>{
