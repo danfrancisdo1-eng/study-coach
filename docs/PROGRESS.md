@@ -68,7 +68,7 @@ Not merged into `main` yet; the Mac's working copy is back on `main`, so the pho
 - Phase 1 plan (AI module + evals) for Dan's OK.
 
 ### Blockers
-- No Apple Developer account yet (blocks TestFlight, IAP setup, Sign in with Apple production config).
+- Apple Developer Program: paid 2026-10-03 (Individual, D-007); waiting for Apple to activate the membership.
 - (resolved) Git remote set up.
 
 ## Session 1 — 2026-10-03 (Claude Code)
