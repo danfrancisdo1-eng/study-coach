@@ -13,7 +13,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Redirect } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -1312,6 +1312,9 @@ function StudyCoach() {
                     <Pressable accessibilityRole="radio" accessibilityState={{ checked: selectedCourseId === item.id }} testID={`button-select-course-${item.id}`} style={styles.coursePick} onPress={() => setSelectedCourseId(item.id)}>
                       <View style={styles.courseBullet}><Feather name={selectedCourseId === item.id ? 'check-circle' : 'circle'} size={20} color={selectedCourseId === item.id ? colors.primary : colors.mutedForeground} /></View>
                       <View style={styles.sessionCopy}><Text style={styles.courseName}>{item.name}</Text>{item.code ? <Text style={styles.caption}>{item.code}</Text> : null}</View>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`Lectures for ${item.name}`} testID={`button-lectures-${item.id}`} onPress={() => router.push({ pathname: '/lectures/[courseId]', params: { courseId: item.id, courseName: item.name } })} style={styles.iconButton}>
+                      <Feather name="mic" size={18} color={colors.foreground} />
                     </Pressable>
                     <Pressable accessibilityRole="button" accessibilityLabel={`Edit ${item.name}`} testID={`button-edit-course-${item.id}`} onPress={() => { setEditingCourseId(item.id); setEditCourseName(item.name); }} style={styles.iconButton}>
                       <Feather name="edit-2" size={16} color={colors.mutedForeground} />

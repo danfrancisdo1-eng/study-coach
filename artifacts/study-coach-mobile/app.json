@@ -16,11 +16,22 @@
     },
     "plugins": [
       "expo-router",
-      ["expo-image-picker", {
-        "photosPermission": "Allow Study Coach to select a photo or screenshot so you can review its extracted text before saving it to your course.",
-        "cameraPermission": false,
-        "microphonePermission": false
-      }]
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Study Coach to select a photo or screenshot so you can review its extracted text before saving it to your course.",
+          "cameraPermission": false,
+          "microphonePermission": "Allow Study Coach to use the microphone so you can record lectures for your own studying. Recordings stay on this iPhone unless you choose to transcribe them."
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Study Coach to use the microphone so you can record lectures for your own studying. Recordings stay on this iPhone unless you choose to transcribe them.",
+          "enableBackgroundRecording": true,
+          "enableBackgroundPlayback": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
