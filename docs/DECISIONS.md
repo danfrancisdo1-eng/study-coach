@@ -4,7 +4,7 @@ Newest first. Each entry: date, decision, why, who decided.
 
 ## 2026-10-03 — D-010: App ID com.danfrancis.studycoach
 - **Decision:** iOS bundle identifier and Android package `com.danfrancis.studycoach` (replaces the placeholder). Permanent once the app is on the App Store.
-- **Context:** Apple Developer Program paid (Individual, D-007). Dan's iPhone already has Developer Mode on (used for Personal Max test builds). Study Coach gets its own app ID and signing; Personal Max's setup is not touched.
+- **Context:** Apple Developer Program paid (Individual, D-007). Dan's iPhone already has Developer Mode on (used for Personal Max test builds). Study Coach gets its own app ID and signing; Personal Max's setup is not touched. The paid membership uses the same Apple account as Personal Max's test builds (the account shown in iPhone Settings → VPN & Device Management), which the iPhone already trusts. Don't touch the "PersonalMax Local HTTPS Test" profile.
 - **Decided by:** Dan.
 
 ## 2026-10-03 — D-009: Approvals for Phase 1 and Phase 2b
