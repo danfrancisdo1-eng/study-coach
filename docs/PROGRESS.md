@@ -13,8 +13,10 @@
 - Real Claude calls: no Anthropic key yet. Nothing in production uses Claude until evals pass and the switch is flipped.
 - Study routes (tutor, session quiz, photo) on Claude end-to-end: need a database; covered by request-shape tests only.
 
+- `9e9fcb8` Eval suite built (26 synthetic cases, both providers, cost/latency report). Verified with a dry run and a mock run against a stub Claude server; not yet run against real models.
+
 ### Next
-- Evals (Phase 1 step 2): build fixtures + runner; running them needs Dan's Anthropic and OpenAI API keys.
+- Run the evals: needs Dan's Anthropic and OpenAI API keys in artifacts/api-server/.env. Note: `gpt-5.6-terra` is the model name used through Replit; it may not exist on the direct OpenAI API, in which case the baseline uses an `AI_MODEL_<TASK>` override.
 - Move off Replit (Dan: "sick of Replit"); first question: does Dan have a clerk.com login for Study Coach?
 
 ## Session 1, part 2 — 2026-10-03 (Phase 0)
