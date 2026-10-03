@@ -1,0 +1,36 @@
+# Render Blueprint: API server + Postgres (docs/plans/move-off-replit.md, D-005).
+# Secrets marked sync: false are entered by Dan in the Render dashboard, never committed.
+# Plan names and region are starting points; Render validates them when the Blueprint is applied.
+services:
+  - type: web
+    name: study-coach-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: virginia
+    plan: starter
+    healthCheckPath: /api/healthz
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: study-coach-db
+          property: connectionString
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      # Direct OpenAI API (replaces Replit AI Integrations). Variable names kept for now.
+      - key: AI_INTEGRATIONS_OPENAI_BASE_URL
+        value: https://api.openai.com/v1
+      - key: AI_INTEGRATIONS_OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+databases:
+  - name: study-coach-db
+    region: virginia
+    plan: basic-256mb
+    postgresMajorVersion: "16"

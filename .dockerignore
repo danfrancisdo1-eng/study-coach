@@ -1,0 +1,16 @@
+.git
+**/node_modules
+**/dist
+**/.expo
+**/*.tsbuildinfo
+**/.tsbuildinfo
+**/.env
+**/.env.*
+!**/.env.example
+.local
+.agents
+attached_assets
+screenshots
+reports
+docs
+artifacts/api-server/evals/results
