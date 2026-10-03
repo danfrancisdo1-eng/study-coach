@@ -4,6 +4,15 @@ packages:
   - lib/integrations/*
   - scripts
 
+# pnpm 11: every dependency with an install script must be explicitly allowed or blocked.
+# esbuild is needed to build; the others only print notices.
+allowBuilds:
+  "@clerk/shared": false
+  browser-tabs-lock: false
+  core-js: false
+  esbuild: true
+  tesseract.js: false
+
 autoInstallPeers: false
 
 catalog:
