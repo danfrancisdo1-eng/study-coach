@@ -11,6 +11,12 @@ Every account record (including the AGENTIC AI course and saved sessions) is sto
 - **Move 1** (this plan) keeps the **same Clerk app** (the current development instance). Same user IDs, no data remapping.
 - **Move 2** (later, before the App Store) switches to a Clerk **production** instance. Production has its own users with new IDs, so that step includes a reviewed migration that remaps IDs. It also needs the Apple Developer account (Sign in with Apple production setup).
 
+## Known so far (2026-10-03)
+- Dan never made a Clerk account: Replit created the Clerk app (`safe-firefly-7699.clerk.accounts.dev`, development instance).
+- One Study Coach account to carry over: Dan's Google sign-in (course AGENTIC AI + uploaded material).
+- Step 1 done: `d2a9302` Dockerfile + render.yaml, `d010c2f` pnpm 11 fix. Rehearsed in a clean copy (no Docker here).
+- Still open: whether Replit's Secrets show `CLERK_SECRET_KEY`. If not, Dan creates his own Clerk app and we remap one user ID (written plan + backup first).
+
 ## Step 0: Two answers from Dan (phone is fine)
 1. **Clerk:** at clerk.com, is there a Study Coach application you can open?
    - **Yes:** copy nothing yet. In step 3 you'll read the secret key from the Clerk dashboard and paste it into Render yourself.

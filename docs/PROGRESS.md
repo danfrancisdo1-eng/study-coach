@@ -17,7 +17,7 @@
 
 ### Next
 - Run the evals: needs Dan's Anthropic and OpenAI API keys in artifacts/api-server/.env. Note: `gpt-5.6-terra` is the model name used through Replit; it may not exist on the direct OpenAI API, in which case the baseline uses an `AI_MODEL_<TASK>` override.
-- Move off Replit (Dan: "sick of Replit"); first question: does Dan have a clerk.com login for Study Coach?
+- Move off Replit: plan in docs/plans/move-off-replit.md (approved, "go"). Server packaging done (`d010c2f`, `d2a9302`). Next: Dan checks Replit Secrets for CLERK_SECRET_KEY and creates a Render account.
 
 ## Session 1, part 2 — 2026-10-03 (Phase 0)
 
