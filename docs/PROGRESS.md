@@ -15,6 +15,10 @@
 
 - `9e9fcb8` Eval suite built (26 synthetic cases, both providers, cost/latency report). Verified with a dry run and a mock run against a stub Claude server; not yet run against real models.
 
+### Reconciliation note (Replit agent report, 2026-10-03)
+- Replit commit 186aa14 (Photos, website import, OneDrive-via-Files, persistent + menu) is already in this repo (verified: MaterialIntake.tsx, public-page.ts, material-file-provider.ts, both endpoints in openapi.yaml). GitHub main is the newest code; Replit lacks today's fixes. Don't develop further on Replit.
+- Replit's tester saw a tutor spelling error and a misspelled quiz distractor. Add a spelling check to the evals.
+
 ### Next
 - Run the evals: needs Dan's Anthropic and OpenAI API keys in artifacts/api-server/.env. Note: `gpt-5.6-terra` is the model name used through Replit; it may not exist on the direct OpenAI API, in which case the baseline uses an `AI_MODEL_<TASK>` override.
 - Move off Replit: plan in docs/plans/move-off-replit.md (approved, "go"). Server packaging done (`d010c2f`, `d2a9302`). Next: Dan checks Replit Secrets for CLERK_SECRET_KEY and creates a Render account.

@@ -15,7 +15,9 @@ Every account record (including the AGENTIC AI course and saved sessions) is sto
 - Dan never made a Clerk account: Replit created the Clerk app (`safe-firefly-7699.clerk.accounts.dev`, development instance).
 - One Study Coach account to carry over: Dan's Google sign-in (course AGENTIC AI + uploaded material).
 - Step 1 done: `d2a9302` Dockerfile + render.yaml, `d010c2f` pnpm 11 fix. Rehearsed in a clean copy (no Docker here).
-- Still open: whether Replit's Secrets show `CLERK_SECRET_KEY`. If not, Dan creates his own Clerk app and we remap one user ID (written plan + backup first).
+- Replit Secrets **do** contain `CLERK_SECRET_KEY` (confirmed via Replit's agent, value not shown). Move 1 keeps the same Clerk app: Dan copies the value from Replit Secrets into Render himself. No user-ID remapping needed now.
+- Caution: Replit created this Clerk app, so don't delete the Replit project until Move 2 (Dan's own production Clerk app) is done.
+- Render account exists (Google sign-in) and is linked to GitHub.
 
 ## Step 0: Two answers from Dan (phone is fine)
 1. **Clerk:** at clerk.com, is there a Study Coach application you can open?
