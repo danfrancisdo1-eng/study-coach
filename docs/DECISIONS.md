@@ -9,7 +9,7 @@ Newest first. Each entry: date, decision, why, who decided.
 
 ## 2026-10-03 — D-006: Private GitHub repository as the git remote
 - **Decision:** Push the project to a private GitHub repository.
-- **Status:** Repo not created yet. This Mac has no GitHub CLI or SSH key, so Dan creates the empty private repo on github.com and the first push uses his GitHub sign-in.
+- **Status:** Done 2026-10-03. Private repo https://github.com/danfrancisdo1-eng/study-coach ; pushes use a fine-grained token (Contents read/write, this repo only) stored in the macOS keychain.
 - **Decided by:** Dan.
 
 ## 2026-10-03 — D-005: Production hosting = Render

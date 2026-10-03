@@ -13,13 +13,13 @@
 - Signed-in web "classic workspace" syllabus analysis, quiz and exam plan still work after the auth fix. Expected to work: the web's transcription call already passes the same check with the same session. The fix is not on Replit until it's pulled there.
 
 ### Next
-- Dan: create the empty private GitHub repo and do the first push (steps given in chat).
+- Done: private GitHub repo created and first push completed (main = 4d5c659).
 - Dan: enroll in the Apple Developer Program.
 - Phase 1 plan (AI module + evals) for Dan's OK.
 
 ### Blockers
 - No Apple Developer account yet (blocks TestFlight, IAP setup, Sign in with Apple production config).
-- Git remote not created yet.
+- (resolved) Git remote set up.
 
 ## Session 1 — 2026-10-03 (Claude Code)
 
