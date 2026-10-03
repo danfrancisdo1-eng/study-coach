@@ -1,0 +1,28 @@
+kind = "slides"
+previewPath = "/study-coach-market-review/"
+title = "Study Coach App Store Review"
+description = "A concise competitive review of five iPhone study apps with prices, rating counts, customer pain points, and Study Coach launch priorities."
+version = "1.0.0"
+id = "artifacts/study-coach-market-review"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/study-coach-market-review/" ]
+localPort = 24912
+
+[services.development]
+run = "pnpm --filter @workspace/study-coach-market-review run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/study-coach-market-review", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/study-coach-market-review/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24912"
+BASE_PATH = "/study-coach-market-review/"

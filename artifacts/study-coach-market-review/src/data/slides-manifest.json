@@ -1,0 +1,66 @@
+[
+  {
+    "id": "8a1e2f31-3e5b-4e51-a70f-000000000001",
+    "position": 1,
+    "filepath": "src/pages/slides/Overview.tsx",
+    "title": "Study Coach | App Store competitive review",
+    "description": "US iPhone App Store snapshot · September 28, 2026",
+    "speakerNotes": ""
+  },
+  {
+    "id": "8a1e2f31-3e5b-4e51-a70f-000000000002",
+    "position": 2,
+    "filepath": "src/pages/slides/Market.tsx",
+    "title": "The category already does the basics",
+    "description": "StudyFetch, Knowt, Coconote, Gizmo and Quizlet all offer AI-assisted study tools",
+    "speakerNotes": ""
+  },
+  {
+    "id": "8a1e2f31-3e5b-4e51-a70f-000000000003",
+    "position": 3,
+    "filepath": "src/pages/slides/Ratings.tsx",
+    "title": "Ratings are visible; sales are not",
+    "description": "Quizlet: about 1.1M App Store ratings",
+    "speakerNotes": ""
+  },
+  {
+    "id": "8a1e2f31-3e5b-4e51-a70f-000000000004",
+    "position": 4,
+    "filepath": "src/pages/slides/Prices.tsx",
+    "title": "Price comparison | US storefront",
+    "description": "StudyFetch: free + Premium $19.99/month or $96/year; quarterly offer $29",
+    "speakerNotes": ""
+  },
+  {
+    "id": "8a1e2f31-3e5b-4e51-a70f-000000000005",
+    "position": 5,
+    "filepath": "src/pages/slides/Reviews.tsx",
+    "title": "Five review problems worth solving",
+    "description": "StudyFetch: tutor glitches and inconsistent context; surprise trial / paywall complaints",
+    "speakerNotes": ""
+  },
+  {
+    "id": "8a1e2f31-3e5b-4e51-a70f-000000000006",
+    "position": 6,
+    "filepath": "src/pages/slides/CurrentProduct.tsx",
+    "title": "What Study Coach does today — and does not",
+    "description": "Today: local file extraction, AI topic/date extraction, 10/20-question quizzes, weak-area review, exam plans",
+    "speakerNotes": ""
+  },
+  {
+    "id": "8a1e2f31-3e5b-4e51-a70f-000000000007",
+    "position": 7,
+    "filepath": "src/pages/slides/Priorities.tsx",
+    "title": "Recommended product priorities",
+    "description": "P0: source-linked questions and editable extracted topics/dates before saving",
+    "speakerNotes": ""
+  },
+  {
+    "id": "8a1e2f31-3e5b-4e51-a70f-000000000008",
+    "position": 8,
+    "filepath": "src/pages/slides/Sources.tsx",
+    "title": "Sources and measurement notes",
+    "description": "Apple App Store listings and featured written reviews: StudyFetch, Knowt, Coconote, Gizmo, Quizlet",
+    "speakerNotes": ""
+  }
+]

@@ -1,0 +1,3 @@
+- [PWA preview caching](pwa-preview-caching.md) — old service workers can keep serving stale dev modules after a workflow restart; separate development previews from production offline caching.
+- [Disposable browser smoke tests](disposable-browser-smoke-tests.md) — use a fresh Chromium profile for manual UI checks; never attach to the user's browser storage.
+- [Expo dependency coordination](expo-dependency-coordination.md) — newly published Expo patches can outrun the package age gate; keep React types unified across artifacts.

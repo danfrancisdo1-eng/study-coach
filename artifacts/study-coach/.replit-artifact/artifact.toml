@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Study Coach"
+description = "A mobile-first personal study coach for five freshman courses, with syllabus-driven priorities, adaptive practice, exam planning, and student-approved parent reports."
+version = "1.0.0"
+id = "artifacts/study-coach"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22819
+
+[services.development]
+run = "pnpm --filter @workspace/study-coach run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/study-coach", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/study-coach/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22819"
+BASE_PATH = "/"

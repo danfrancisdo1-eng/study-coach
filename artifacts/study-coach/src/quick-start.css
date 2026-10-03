@@ -1,0 +1,53 @@
+.onboard-quick-start .recommended-choice {
+  background: #f6e7dc;
+  border-color: #d76846;
+  box-shadow: inset 4px 0 #d76846;
+}
+
+.onboard-quick-start .recommended-choice .start-choice-icon {
+  background: #e9c8b6;
+  color: #98442e;
+}
+
+.onboard-quick-start .recommended-label {
+  display: block;
+  margin-bottom: 5px;
+  color: #98442e;
+  font: 700 0.64rem/1 var(--app-font-mono);
+  letter-spacing: 0.09em;
+}
+
+@media (max-width: 600px) {
+  .onboard-quick-start {
+    padding-top: 18px;
+  }
+
+  .onboard-quick-start .onboard-hero {
+    padding: 18px 0;
+  }
+
+  .onboard-quick-start .onboard-hero h1 {
+    font-size: 2.7rem;
+    margin: 12px 0;
+  }
+
+  .onboard-quick-start .start-choice {
+    min-height: 88px;
+    padding: 13px 16px;
+    gap: 14px;
+  }
+
+  .onboard-quick-start .start-choice-copy strong {
+    font-size: 1.15rem;
+  }
+
+  .onboard-quick-start .start-choice-copy small {
+    margin-top: 4px;
+    font-size: 0.76rem;
+    line-height: 1.3;
+  }
+
+  .onboard-quick-start .recommended-choice {
+    padding-block: 15px;
+  }
+}

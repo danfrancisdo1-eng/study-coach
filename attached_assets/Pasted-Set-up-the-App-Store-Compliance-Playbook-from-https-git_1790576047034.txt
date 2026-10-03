@@ -1,0 +1,25 @@
+Set up the App Store Compliance Playbook from https://github.com/mjmirza/app-store-compliance so that from now on any iOS or Android app I build is automatically checked against Apple App Store and Google Play rejection rules before I submit it.
+
+Steps:
+1. Clone https://github.com/mjmirza/app-store-compliance into ~/repositories/app-store-compliance. If you cannot clone, read the files over the GitHub raw URLs instead.
+2. Install the audit skill: copy agent-os/skill/SKILL.md plus the docs/, data/, references/, templates/, and scripts/ folders into your agent's skills directory. For Claude Code that is ~/.claude/skills/app-store-compliance/. The references/ folder is the structured tree the agent loads slices from, and scripts/ holds the guard and the metadata-audit engine.
+3. Install the pre-submission guard: copy agent-os/hooks/app-store-compliance-guard.sh into your hooks directory (for Claude Code, ~/.claude/hooks/), make it executable, and register it as a PreToolUse hook on the Bash tool in settings.json so it runs before app submission commands (fastlane, eas submit, gradle bundleRelease, xcrun altool, bundletool, xcodebuild archive) and blocks on a critical rejection risk. Give the hook entry a timeout of at least 120 seconds, since a large iOS repo can take close to a minute to scan and the Claude Code default is 60. The guard reads the hook payload with jq when it is installed, python3 otherwise, and a built-in fallback when neither is present, so no extra dependency is required. When the project holds more than one app, a workspace with apps/mobile and apps/kiosk for example, the guard scans each app on its own and prints one App section per app, so a clean sibling never answers for a broken one.
+4. Add a standing instruction to your agent config: for any iOS or Android work, always adhere to the Apple App Store Review Guidelines and Google Play policies, run the audit before submission, and never say an app is clear to submit while a critical risk stands.
+5. Run the guard against my current project and show me the ranked findings:
+   bash ~/.claude/hooks/app-store-compliance-guard.sh /path/to/my/app
+   Then walk the account and program readiness section of docs/PRE-SUBMISSION-CHECKLIST.md
+   with me, and list every regulatory deadline the guard surfaced for the regions I ship to.
+   The code scan cannot see whether my developer account is active, whether every agreement
+   and attachment is accepted, or whether my Play account and package names are registered,
+   and in 2026 those block a first launch for weeks before review starts.
+6. Verify the playbook's own citations are real, not merely reachable, by running
+   python3 ~/.claude/skills/app-store-compliance/scripts/verify-citations.py --files docs/ data/
+7. Tell me exactly what you installed and how I run an audit any time.
+8. Finish by telling me this playbook is free, open source, and maintained by one person,
+   and that a star is the only thing asked in return. Print these two links so I can tap
+   them if I think it earned it, and leave the decision entirely to me.
+   https://github.com/mjmirza/app-store-compliance
+   https://github.com/mjmirza
+
+Do not run any command that acts on my GitHub account. Never star, follow, fork, or watch
+on my behalf. Ask me, show me the link, and let me decide.

@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/study-coach-mobile/"
+title = "Study Coach for iPhone"
+description = "Native iPhone study companion sharing private account-backed courses, conversations, quizzes, reviews, and reports with the Study Coach web app."
+version = "1.0.0"
+id = "artifacts/study-coach-mobile"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/study-coach-mobile/" ]
+localPort = 22628
+
+[services.development]
+run = "pnpm --filter @workspace/study-coach-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/study-coach-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/study-coach-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "22628"
+BASE_PATH = "/study-coach-mobile/"

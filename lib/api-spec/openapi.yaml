@@ -1,0 +1,749 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: coach
+    description: Study coaching operations
+  - name: study
+    description: Authenticated, owner-scoped study sessions
+paths:
+  /coach/analyze:
+    post:
+      operationId: analyzeMaterial
+      tags: [coach]
+      summary: Extract course topics and dated requirements from material
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeInput"
+      responses:
+        "200":
+          description: Extracted items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyzeResult"
+  /coach/quiz:
+    post:
+      operationId: generateQuiz
+      tags: [coach]
+      summary: Generate a grounded practice quiz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizInput"
+      responses:
+        "200":
+          description: Practice questions with hidden answer keys for client-side grading
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizResult"
+  /coach/transcribe:
+    post:
+      operationId: transcribeLecture
+      tags: [coach]
+      summary: Transcribe audio explicitly sent by the student; no server-side audio storage
+      parameters:
+        - in: header
+          name: X-Audio-Type
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: { type: string, format: binary }
+      responses:
+        "200":
+          description: Timestamped audio passages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptResult"
+  /coach/plan:
+    post:
+      operationId: generateExamPlan
+      tags: [coach]
+      summary: Generate a multi-day exam preparation plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanInput"
+      responses:
+        "200":
+          description: Exam preparation sequence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanResult"
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /study/state:
+    get:
+      operationId: getStudyState
+      tags: [study]
+      summary: Get the authenticated account's saved study state and version
+      responses:
+        "200":
+          description: Study state, or null when not initialized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudyStateEnvelope" }
+    put:
+      operationId: putStudyState
+      tags: [study]
+      summary: Replace study state using version compare-and-swap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudyStateUpdate" }
+      responses:
+        "200":
+          description: Updated state and version
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudyStateEnvelope" }
+        "409": { description: Version mismatch }
+  /study/import:
+    post:
+      operationId: importStudyState
+      tags: [study]
+      summary: Import state only when the account has no saved state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudyStateImport" }
+      responses:
+        "201":
+          description: Imported state and version
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudyStateEnvelope" }
+        "409": { description: State already exists }
+  /study/materials/website:
+    post:
+      operationId: extractStudyWebsite
+      tags: [study]
+      summary: Read one public website page without crawling
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudyWebsiteInput" }
+      responses:
+        "200":
+          description: Text preview only; not saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudyMaterialExtraction" }
+        "422":
+          description: Page unavailable or unsafe to read
+  /study/sessions:
+    get:
+      operationId: listStudySessions
+      tags: [study]
+      summary: List the authenticated account's session summaries
+      responses:
+        "200":
+          description: Session summaries
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sessions]
+                properties:
+                  sessions:
+                    type: array
+                    items: { $ref: "#/components/schemas/StudySessionSummary" }
+    post:
+      operationId: createStudySession
+      tags: [study]
+      summary: Create a persistent focused study session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudySessionInput" }
+      responses:
+        "201":
+          description: Created session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudySession" }
+  /study/materials/extract:
+    post:
+      operationId: extractStudyMaterial
+      tags: [study]
+      summary: Transiently extract text from an authenticated upload
+      description: Requires Clerk authentication. Uploads are processed in memory only and are never persisted or logged. Maximum upload is 12 MiB and extraction has a 10-second processing budget. Extracted text is limited to 100,000 characters without truncation. ZIP documents are limited to 2,000 entries and 40 MB cumulative actual uncompressed size, with relevant XML entries limited to 10 MB. DOCX is limited to 100 sections, 50,000 paragraphs, and 100,000 text runs; PPTX is limited to 500 slides, 50,000 paragraphs, and 100,000 text runs; PDF is limited to 500 pages and 50,000 text items. Images and scanned PDF text are not OCR processed.
+      parameters:
+        - in: header
+          name: X-Filename
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 1024 }
+          description: Original filename; the server sanitizes it and uses its extension when needed to identify the format.
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: { type: string, format: binary }
+          text/plain:
+            schema: { type: string, format: binary }
+          text/markdown:
+            schema: { type: string, format: binary }
+          application/pdf:
+            schema: { type: string, format: binary }
+          application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+            schema: { type: string, format: binary }
+          application/vnd.openxmlformats-officedocument.presentationml.presentation:
+            schema: { type: string, format: binary }
+      responses:
+        "200":
+          description: Extracted text and explicit extraction coverage
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudyMaterialExtraction" }
+        "400": { description: Missing filename or empty upload }
+        "401": { description: Authentication required }
+        "413": { description: Upload exceeds 12 MiB }
+        "415": { description: Unsupported or mismatched media type }
+        "422": { description: "Supported file could not be read, contained no readable text, or exceeded extraction limits" }
+  /study/sessions/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getStudySession
+      tags: [study]
+      summary: Get a session without private answer keys
+      responses:
+        "200":
+          description: Session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudySession" }
+        "404": { description: Session not found }
+  /study/sessions/{id}/check-in:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: checkInStudySession
+      tags: [study]
+      summary: Record an optional session check-in or skip
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudyCheckIn" }
+      responses:
+        "200":
+          description: Updated session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudySession" }
+  /study/sessions/{id}/messages:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: sendStudyMessage
+      tags: [study]
+      summary: Add a multi-turn AI coaching message
+      description: Requires persisted state.aiConsent=true. Source material is chunk-selected and responses include coverage/truncation status.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudyMessageInput" }
+      responses:
+        "200":
+          description: Updated conversation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudySession" }
+        "403": { description: Explicit persisted AI consent required }
+  /study/sessions/{id}/quiz:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: generateStudyQuiz
+      tags: [study]
+      summary: Generate a diagnostic or fresh targeted retest
+      description: Requires persisted state.aiConsent=true; answer keys remain server-private.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudyQuizInput" }
+      responses:
+        "200":
+          description: Updated session with public question data only
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudySession" }
+        "403": { description: Explicit persisted AI consent required }
+        "502":
+          description: Quiz generation failed; invalid item count is included when the model returned no usable questions
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudyQuizGenerationError" }
+  /study/sessions/{id}/answers:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      operationId: saveStudyAnswer
+      tags: [study]
+      summary: Save or replace an answer using stable question and option identifiers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudyAnswerInput" }
+      responses:
+        "200":
+          description: Updated session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudySession" }
+        "400": { description: Unknown question or option }
+  /study/sessions/{id}/questions/{questionId}/flag:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: questionId, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      operationId: flagStudyQuestion
+      tags: [study]
+      summary: Report a question as invalid or ambiguous before grading
+      description: Idempotently records the learner's flag and optional reason for the authenticated account's current quiz. Flags must be submitted before grading; post-grade changes return 409 because prior scores and review history are not safely recomputed. Flagged questions are excluded from the score and review scheduling. AI checks do not guarantee factual validity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudyQuestionFlagInput" }
+      responses:
+        "200":
+          description: Updated session; private answer keys remain hidden until grading
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudySession" }
+        "400": { description: Invalid flag or question identifier }
+        "401": { description: Authentication required }
+        "404": { description: Session or question not found }
+        "409": { description: "No quiz, quiz already graded, or concurrent session update" }
+  /study/sessions/{id}/grade:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: gradeStudyQuiz
+      tags: [study]
+      summary: Idempotently grade answered valid questions and schedule review
+      responses:
+        "200":
+          description: Updated session with score and report text
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudySession" }
+components:
+  schemas:
+    StudyState:
+      type: object
+      description: "Account-owned JSON study state. AI actions require aiConsent true persisted here. Dates should be explicitly confirmed by the student (confirmed: true)."
+      required: [aiConsent]
+      properties:
+        aiConsent: { type: boolean }
+        courses: { type: array, items: { type: object, additionalProperties: true } }
+        materials: { type: array, items: { type: object, additionalProperties: true } }
+        topics: { type: object, additionalProperties: true }
+        deadlines: { type: array, items: { type: object, additionalProperties: true } }
+        concepts: { type: array, items: { type: object, additionalProperties: true } }
+        reviewSchedule: { type: array, items: { type: object, additionalProperties: true } }
+      additionalProperties: true
+    StudyStateEnvelope:
+      type: object
+      required: [state, version]
+      properties:
+        state: { oneOf: [{ $ref: "#/components/schemas/StudyState" }, { type: "null" }] }
+        version: { type: integer, minimum: 0 }
+    StudyStateUpdate:
+      type: object
+      required: [state, version]
+      properties:
+        state: { $ref: "#/components/schemas/StudyState" }
+        version: { type: integer, minimum: 0 }
+    StudyStateImport:
+      type: object
+      required: [state]
+      properties:
+        state: { $ref: "#/components/schemas/StudyState" }
+    StudySessionInput:
+      type: object
+      required: [courseId, topic, minutes]
+      properties:
+        courseId: { type: string, minLength: 1 }
+        topic: { type: string, minLength: 1, maxLength: 300 }
+        minutes: { type: integer, minimum: 1, maximum: 360 }
+    StudySessionSummary:
+      type: object
+      required: [id, courseId, topic, minutes, createdAt, status]
+      properties:
+        id: { type: string, format: uuid }
+        courseId: { type: string }
+        topic: { type: string }
+        minutes: { type: integer }
+        createdAt: { type: string, format: date-time }
+        status: { type: string, enum: [active, completed] }
+        diagnosticScore: { type: ["number", "null"] }
+        targetedScore: { type: ["number", "null"] }
+    StudyWebsiteInput:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string, maxLength: 2048 }
+    StudyMaterialExtraction:
+      type: object
+      required: [filename, format, text, status, coverage, characterCount, coverageNote]
+      properties:
+        filename: { type: string }
+        format: { type: string, enum: [txt, md, pdf, docx, pptx, image, website] }
+        sourceUrl: { type: string }
+        text: { type: string }
+        status: { type: string, enum: [complete] }
+        coverage: { type: string, enum: [entire_file, selectable_text_only, document_body_text, slide_text_only, visible_image_text, public_page_text] }
+        characterCount: { type: integer, minimum: 1, maximum: 100000 }
+        coverageNote: { type: string }
+    StudySession:
+      type: object
+      description: Public session payload. Never includes correct option IDs, answer indices, or grading keys.
+      required: [id, courseId, topic, minutes, createdAt, status, checkIn, messages, quiz, attempts, scores, reviewSchedule, reportText]
+      properties:
+        id: { type: string, format: uuid }
+        courseId: { type: string }
+        topic: { type: string }
+        minutes: { type: integer }
+        createdAt: { type: string, format: date-time }
+        status: { type: string, enum: [active, completed] }
+        checkIn:
+          oneOf: [{ $ref: "#/components/schemas/StudyCheckInResult" }, { type: "null" }]
+        messages:
+          type: array
+          items:
+            type: object
+            required: [role, content, createdAt]
+            properties:
+              role: { type: string, enum: [user, assistant] }
+              content: { type: string }
+              createdAt: { type: string, format: date-time }
+              sourceStatus: { $ref: "#/components/schemas/StudySourceStatus" }
+        quiz:
+          oneOf: [{ $ref: "#/components/schemas/StudyQuiz" }, { type: "null" }]
+        attempts:
+          type: array
+          description: Completed diagnostic and retest attempts, including post-grade question feedback.
+          items: { $ref: "#/components/schemas/StudyQuiz" }
+        scores:
+          type: object
+          required: [diagnostic, targeted]
+          properties:
+            diagnostic: { oneOf: [{ $ref: "#/components/schemas/StudyScore" }, { type: "null" }] }
+            targeted: { oneOf: [{ $ref: "#/components/schemas/StudyScore" }, { type: "null" }] }
+        reviewSchedule: { type: array, items: { type: object, additionalProperties: true } }
+        reportText: { type: ["string", "null"] }
+    StudyCheckIn:
+      type: object
+      required: [skipped]
+      properties:
+        skipped: { type: boolean }
+    StudyCheckInResult:
+      type: object
+      required: [skipped, recordedAt]
+      properties:
+        skipped: { type: boolean }
+        recordedAt: { type: string, format: date-time }
+    StudyMessageInput:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1, maxLength: 8000 }
+    StudySourceStatus:
+      type: object
+      required: [usedSourceMaterial, selectedChunks, availableChunks, truncated, coverage, sources]
+      properties:
+        usedSourceMaterial: { type: boolean }
+        selectedChunks: { type: integer }
+        availableChunks: { type: integer }
+        truncated: { type: boolean }
+        coverage: { type: string, enum: [complete, selected, none] }
+        sources:
+          type: array
+          items:
+            type: object
+            required: [label, kind]
+            properties:
+              label: { type: string }
+              kind: { type: string, enum: [source, supplemental, inferred] }
+    StudyQuizInput:
+      type: object
+      required: [mode]
+      properties:
+        mode: { type: string, enum: [diagnostic, targeted] }
+    StudyQuizGenerationError:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        expectedCount: { type: integer }
+        invalidItemCount: { type: integer }
+    StudyAnswerInput:
+      type: object
+      required: [questionId, optionId, assisted]
+      properties:
+        questionId: { type: string, format: uuid }
+        optionId: { type: string, format: uuid }
+        assisted: { type: boolean }
+    StudyQuiz:
+      type: object
+      required: [mode, expectedCount, invalidItemCount, qualityNotice, questions, sourceStatus]
+      properties:
+        mode: { type: string, enum: [diagnostic, targeted] }
+        expectedCount: { type: integer, minimum: 1 }
+        invalidItemCount: { type: integer, minimum: 0 }
+        qualityNotice:
+          type: string
+          description: Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.
+        sourceStatus: { $ref: "#/components/schemas/StudySourceStatus" }
+        questions:
+          type: array
+          items:
+            type: object
+            required: [id, prompt, concept, options, flag]
+            properties:
+              id: { type: string, format: uuid }
+              prompt: { type: string }
+              concept: { type: string }
+              options:
+                type: array
+                items:
+                  type: object
+                  required: [id, text]
+                  properties:
+                    id: { type: string, format: uuid }
+                    text: { type: string }
+              flag:
+                oneOf:
+                  - $ref: "#/components/schemas/StudyQuestionFlag"
+                  - { type: "null" }
+              answer:
+                oneOf:
+                  - { type: object, required: [optionId, assisted], properties: { optionId: { type: string, format: uuid }, assisted: { type: boolean } } }
+                  - { type: "null" }
+              feedback:
+                description: Available only after this attempt has been graded.
+                oneOf:
+                  - $ref: "#/components/schemas/StudyQuestionFeedback"
+                  - { type: "null" }
+        grade: { oneOf: [{ $ref: "#/components/schemas/StudyScore" }, { type: "null" }] }
+    StudyQuestionFlagInput:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [invalid, ambiguous] }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+    StudyQuestionFlag:
+      type: object
+      required: [kind, reason, reportedAt]
+      properties:
+        kind: { type: string, enum: [invalid, ambiguous] }
+        reason: { type: ["string", "null"], maxLength: 500 }
+        reportedAt: { type: string, format: date-time }
+    StudyQuestionFeedback:
+      type: object
+      required: [selectedOptionId, selectedOptionText, correctOptionId, correctOptionText, explanation, concept, assisted]
+      properties:
+        selectedOptionId: { type: ["string", "null"], format: uuid }
+        selectedOptionText: { type: ["string", "null"] }
+        correctOptionId: { type: string, format: uuid }
+        correctOptionText: { type: string }
+        explanation: { type: string }
+        concept: { type: string }
+        assisted: { type: boolean }
+    StudyScore:
+      type: object
+      description: Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.
+      required: [correct, answered, excluded, invalidItems, unanswered, total, percent, gradedAt]
+      properties:
+        correct: { type: integer }
+        answered: { type: integer }
+        excluded: { type: integer }
+        invalidItems: { type: integer }
+        unanswered: { type: integer }
+        total: { type: integer }
+        percent: { type: number }
+        gradedAt: { type: string, format: date-time }
+    AnalyzeInput:
+      type: object
+      required: [course, filename, text]
+      properties:
+        course: { type: string }
+        filename: { type: string }
+        text: { type: string }
+    AnalyzeResult:
+      type: object
+      required: [topics, deadlines]
+      properties:
+        topics:
+          type: array
+          items: { type: string }
+        deadlines:
+          type: array
+          items:
+            $ref: "#/components/schemas/Deadline"
+    Deadline:
+      type: object
+      required: [title, date, kind]
+      properties:
+        title: { type: string }
+        date: { type: string, description: YYYY-MM-DD }
+        kind: { type: string, enum: [exam, assignment] }
+    QuizInput:
+      type: object
+      required: [course, topic, count, materials]
+      properties:
+        course: { type: string }
+        topic: { type: string }
+        count: { type: integer, enum: [10, 20] }
+        materials: { type: string }
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuizSource"
+        weakConcepts:
+          type: array
+          items: { type: string }
+        mode: { type: string, enum: [standard, targeted, cumulative] }
+    QuizSource:
+      type: object
+      required: [id, label, text]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        text: { type: string }
+    SourceReference:
+      type: object
+      required: [id, excerpt]
+      properties:
+        id: { type: string }
+        excerpt: { type: string }
+    TranscriptResult:
+      type: object
+      required: [segments]
+      properties:
+        segments:
+          type: array
+          items:
+            type: object
+            required: [start, end, text]
+            properties:
+              start: { type: number }
+              end: { type: number }
+              text: { type: string }
+    QuizResult:
+      type: object
+      required: [questions]
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Question"
+    Question:
+      type: object
+      required: [prompt, options, answerIndex, concept, explanation, mnemonic, teaching, distractors]
+      properties:
+        prompt: { type: string }
+        options:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items: { type: string }
+        answerIndex: { type: integer, minimum: 0, maximum: 3 }
+        concept: { type: string }
+        explanation: { type: string }
+        mnemonic: { type: string }
+        teaching: { type: string }
+        distractors:
+          type: array
+          minItems: 4
+          maxItems: 4
+          description: Why each option is right or wrong, used to classify a missed answer
+          items:
+            type: object
+            required: [reason, errorType]
+            properties:
+              reason: { type: string }
+              errorType: { type: string, enum: [knowledge, conceptual, application, question-reading] }
+        sourceRefs:
+          type: array
+          items:
+            $ref: "#/components/schemas/SourceReference"
+    PlanInput:
+      type: object
+      required: [course, examTitle, examDate, topics, materials]
+      properties:
+        course: { type: string }
+        examTitle: { type: string }
+        examDate: { type: string }
+        topics:
+          type: array
+          items: { type: string }
+        materials: { type: string }
+        weakConcepts:
+          type: array
+          items: { type: string }
+        minutesPerDay: { type: integer }
+        scheduleConstraints: { type: string }
+    PlanResult:
+      type: object
+      required: [days]
+      properties:
+        days:
+          type: array
+          items:
+            type: object
+            required: [date, phase, focus, task]
+            properties:
+              date: { type: string }
+              phase: { type: string }
+              focus: { type: string }
+              task: { type: string }
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status

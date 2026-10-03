@@ -1,0 +1,77 @@
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+
+# compiled output
+dist
+tmp
+out-tsc
+*.tsbuildinfo
+.expo
+.expo-shared
+
+# dependencies
+node_modules
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# System Files
+.DS_Store
+Thumbs.db
+
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+
+# Replit
+.cache/
+# (.local handled below)
+
+# Keep Replit task notes (referenced by CLAUDE.md), ignore the rest of .local
+.local/*
+!.local/tasks/
+
+# Environment files (secrets) — never commit. Commit *.example templates instead.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Build output and caches
+build/
+web-build/
+coverage/
+.turbo/
+.eslintcache
+.vite/
+*.log
+.metro-health-check*
+
+# Signing material
+*.p8
+*.p12
+*.pem
+*.key
+*.jks
+*.mobileprovision
