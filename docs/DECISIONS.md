@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-03 — D-010: App ID com.danfrancis.studycoach
+- **Decision:** iOS bundle identifier and Android package `com.danfrancis.studycoach` (replaces the placeholder). Permanent once the app is on the App Store.
+- **Context:** Apple Developer Program paid (Individual, D-007). Dan's iPhone already has Developer Mode on (used for Personal Max test builds). Study Coach gets its own app ID and signing; Personal Max's setup is not touched.
+- **Decided by:** Dan.
+
 ## 2026-10-03 — D-009: Approvals for Phase 1 and Phase 2b
 - **Approved:** add `@anthropic-ai/sdk` (server), add `expo-audio` (iPhone app), add a new `lectures` database table (additive; back up first and run the migration by hand, per CLAUDE.md §5).
 - **Decided by:** Dan.

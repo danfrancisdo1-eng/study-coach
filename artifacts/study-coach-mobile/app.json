@@ -8,19 +8,25 @@
     "scheme": "study-coach-mobile",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.danfrancis.studycoach"
     },
-    "android": {},
+    "android": {
+      "package": "com.danfrancis.studycoach"
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       "expo-router",
-      ["expo-image-picker", {
-        "photosPermission": "Allow Study Coach to select a photo or screenshot so you can review its extracted text before saving it to your course.",
-        "cameraPermission": false,
-        "microphonePermission": false
-      }]
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Study Coach to select a photo or screenshot so you can review its extracted text before saving it to your course.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
