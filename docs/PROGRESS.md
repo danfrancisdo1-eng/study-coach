@@ -1,5 +1,22 @@
 # Progress
 
+## Session 1, part 3 — 2026-10-03 (Phase 1 steps 1 and 3)
+
+### Done
+- `049ad08` Golden test: records the exact AI requests of the signed-in coach routes (built server, Clerk test tokens via CLERK_JWT_KEY, stub AI).
+- `175e221` Refactor, no behavior change: all chat AI calls go through `artifacts/api-server/src/ai`; the six prompts moved verbatim into `src/prompts/*.v1.ts`; models from config (`AI_MODEL_<TASK>`). Verified by the golden test (analyze/quiz/plan) and by rebuilding the tutor/session-quiz/photo requests and comparing them with the baseline commit's code. A deliberate one-character prompt edit fails 5 tests.
+- `3bdfa2d` Claude provider behind `AI_PROVIDER` / `AI_PROVIDER_<TASK>` (default stays OpenAI): structured outputs, effort per task, tutor prompt caching, refusal fallback. Tested end-to-end against a stub Claude API.
+- D-008 (no academic-integrity restriction) and D-009 (approvals) logged; CLAUDE.md §7 placeholder replaced.
+- Verified here: typecheck pass; 20/20 tests pass.
+
+### Not verified yet
+- Real Claude calls: no Anthropic key yet. Nothing in production uses Claude until evals pass and the switch is flipped.
+- Study routes (tutor, session quiz, photo) on Claude end-to-end: need a database; covered by request-shape tests only.
+
+### Next
+- Evals (Phase 1 step 2): build fixtures + runner; running them needs Dan's Anthropic and OpenAI API keys.
+- Move off Replit (Dan: "sick of Replit"); first question: does Dan have a clerk.com login for Study Coach?
+
 ## Session 1, part 2 — 2026-10-03 (Phase 0)
 
 ### Done
