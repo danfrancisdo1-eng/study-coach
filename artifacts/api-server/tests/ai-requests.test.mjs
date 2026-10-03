@@ -43,7 +43,7 @@ test('signed-in coach routes send unchanged requests to the AI provider', async 
     assert.equal(res.status, 502, `/api/coach/${route} should fail only because the stub AI failed`);
     const sent = ai.requests.slice(before);
     assert.ok(sent.length >= 1, `/api/coach/${route} made no AI request`);
-    captured[route] = { attempts: sent.length, ...normalize(sent[0]) };
+    captured[route] = { attempts: sent.length, ...normalize({ path: sent[0].path, body: sent[0].body }) };
   }
 
   if (process.env.UPDATE_GOLDEN === '1') {

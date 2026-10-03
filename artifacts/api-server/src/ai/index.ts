@@ -1,6 +1,8 @@
 // Provider-agnostic entry point for every AI call. Routes name a task and supply the
-// prompt and messages; model, limits and provider come from ./tasks.
+// prompt and messages; provider, model and limits come from ./tasks.
 import { chatCompletion, type ChatMessage, type ChatResult } from "@workspace/integrations-openai-ai-server";
+import { anthropicCompletion } from "./anthropic";
+import { TASK_SCHEMAS } from "./schemas";
 import { taskConfig, type AiTask } from "./tasks";
 
 export type { AiTask } from "./tasks";
@@ -15,5 +17,9 @@ export interface AiInput {
 }
 
 export function complete(task: AiTask, input: AiInput): Promise<AiResult> {
-  return chatCompletion({ ...taskConfig(task), ...input });
+  const config = taskConfig(task);
+  if (config.provider === "anthropic") {
+    return anthropicCompletion({ ...config, ...input, jsonSchema: TASK_SCHEMAS[task] });
+  }
+  return chatCompletion({ ...config, ...input });
 }

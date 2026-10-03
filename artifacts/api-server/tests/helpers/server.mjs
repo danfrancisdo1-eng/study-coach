@@ -18,17 +18,20 @@ function listen(server) {
   return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server.address().port)));
 }
 
-// Records every request body sent to the AI provider and answers with HTTP 500,
-// so routes fail after their first AI call without retrying (retries are recorded too).
-export async function startAiStub(t) {
+// Records every request sent to the AI provider. By default answers HTTP 500, so routes
+// fail after their AI call (SDK retries are recorded too). Pass respond(request) to
+// return {status, body} instead.
+export async function startAiStub(t, respond) {
   const requests = [];
   const server = http.createServer((req, res) => {
     let body = '';
     req.on('data', (chunk) => { body += chunk; });
     req.on('end', () => {
-      requests.push({ path: req.url, body: body ? JSON.parse(body) : null });
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end('{"error":{"message":"stub"}}');
+      const request = { path: req.url, headers: req.headers, body: body ? JSON.parse(body) : null };
+      requests.push(request);
+      const reply = respond ? respond(request) : { status: 500, body: { error: { message: 'stub' } } };
+      res.writeHead(reply.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(reply.body));
     });
   });
   const port = await listen(server);
@@ -36,7 +39,7 @@ export async function startAiStub(t) {
   return { port, requests };
 }
 
-export async function startServer(t, aiPort) {
+export async function startServer(t, aiPort, extraEnv = {}) {
   const { publicKey, privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
   const probe = http.createServer();
   const port = await listen(probe);
@@ -55,6 +58,7 @@ export async function startServer(t, aiPort) {
       DATABASE_URL: 'postgres://user:pass@127.0.0.1:1/unused',
       AI_INTEGRATIONS_OPENAI_BASE_URL: `http://127.0.0.1:${aiPort}`,
       AI_INTEGRATIONS_OPENAI_API_KEY: 'dummy',
+      ...extraEnv,
     },
   });
   t.after(() => child.kill());
