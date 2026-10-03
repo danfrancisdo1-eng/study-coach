@@ -231,8 +231,14 @@ Per the preflight skill, items code can't establish are marked "owner to confirm
 - Report-an-AI-response on tutoring replies. S
 - Privacy policy + PRIVACY_DATA.md. M (plus your legal review)
 
+**Phase 2b: iPhone lecture recording (added after D-002, needed for launch)**
+- Native recording with screen locked (background audio), mic permission, local audio storage, resumable upload of long files. L
+- Transcript review/correct + lecture-linked questions on iPhone. M
+- `lib/stt` interface + server-side monthly transcription caps. S–M
+- Apple on-device vs OpenAI quality comparison on real lectures (D-004). S
+
 **Phase 3: free/premium + Apple IAP**
-- Decide premium features (your decision). —
+- Model decided (D-003): one free course, premium unlocks more. Still open: price, subscription vs one-time. —
 - Usage tracking + server-enforced free-tier limits. M
 - StoreKit IAP (e.g. RevenueCat or expo-iap; new dependency → OK first), receipt validation server-side, Restore Purchases, paywall per UX rules. L
 

@@ -29,10 +29,10 @@ A mobile-first study companion for individual high-school and college students *
 | Quizzes | Diagnostic + targeted retest, grading, explanations, question reports | Exists | Keep; reports also after grading **[decide]** |
 | Review | Spaced-repetition review schedule / flashcards | Schedule on iPhone; flashcards web-only | **[decide]** flashcards on iPhone in v1? |
 | Exam plan | Day-by-day plan to an exam date | Web only | **[decide]** iPhone v1? |
-| Lectures | Record/import lecture → transcript → review/correct → source-linked questions | Web only, browser storage | Priority for public version; iPhone capture **[decide: v1 or v1.1]** |
+| Lectures | Record/import lecture → transcript → review/correct → source-linked questions | Web only, browser storage | **iPhone v1, the differentiator (D-002).** Native recording incl. screen locked; transcription via OpenAI behind `lib/stt` (D-004) |
 | Sharing | Session/progress report, preview before sharing, optional guardian | "Dad" reports (web), preview on iPhone | Optional guardian; explicit per-report share |
 | Safety | Report a bad AI response | Quiz questions only, pre-grade | All AI outputs |
-| Monetization | Free tier + premium via Apple IAP, Restore Purchases | Missing | **[decide]** which features are premium; launch with or after v1 |
+| Monetization | Free tier + premium via Apple IAP, Restore Purchases | Missing | **v1 (D-003):** one free course with full features; premium unlocks more courses. Server-enforced. **[decide]** price, subscription vs one-time, lapse behavior, AI caps |
 
 ## 4. AI
 - Provider-agnostic module; model IDs from server config. Target provider: Anthropic Claude (see AUDIT.md §5). OpenAI stays as fallback until evals pass.

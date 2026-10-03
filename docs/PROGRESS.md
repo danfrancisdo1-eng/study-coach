@@ -1,5 +1,26 @@
 # Progress
 
+## Session 1, part 2 — 2026-10-03 (Phase 0)
+
+### Done
+- **Security fix** `480ae3f`: all `/api/coach/*` AI routes now require sign-in. Before the fix, a signed-out request to `/coach/analyze` reached the AI provider (reproduced against the built server: 502 + 3 AI calls). After: 401, 0 AI calls. New integration test `artifacts/api-server/tests/coach-auth.test.mjs`.
+- `80ca1f4`: scripts/post-merge.sh no longer runs `db push` automatically after Replit merges.
+- `5c77cd4`: `.env.example` templates for api-server, mobile, web (placeholders only).
+- Decisions D-002 to D-006 logged (iPhone lecture recording at launch; one free course + premium; OpenAI STT for launch behind `lib/stt`; Render hosting; private GitHub remote). SPEC and AUDIT plan updated (new Phase 2b: iPhone lecture recording).
+- Verified here: `pnpm run typecheck` pass; 10/10 tests pass (9 existing + 1 new).
+
+### Needs a check on Replit (can't be done locally)
+- Signed-in web "classic workspace" syllabus analysis, quiz and exam plan still work after the auth fix. Expected to work: the web's transcription call already passes the same check with the same session. The fix is not on Replit until it's pulled there.
+
+### Next
+- Dan: create the empty private GitHub repo and do the first push (steps given in chat).
+- Dan: enroll in the Apple Developer Program.
+- Phase 1 plan (AI module + evals) for Dan's OK.
+
+### Blockers
+- No Apple Developer account yet (blocks TestFlight, IAP setup, Sign in with Apple production config).
+- Git remote not created yet.
+
 ## Session 1 — 2026-10-03 (Claude Code)
 
 ### Done
