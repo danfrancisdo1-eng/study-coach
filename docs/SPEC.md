@@ -12,7 +12,7 @@ A mobile-first study companion for individual high-school and college students *
 - Student in control: extracted text is editable before saving; extracted course details are drafts until approved one by one; nothing is shared with a guardian automatically.
 - Private by default: account data is visible only to its owner. Users consent before any personal data goes to a named third-party AI provider.
 - Simple intake: one persistent **+** opens Photos, Files, OneDrive, Website link.
-- Academic integrity **[decide]**: suggested rule: coach and explain; for graded work, teach the method rather than produce submittable answers.
+- Academic integrity (D-008): no restriction. The app helps with anything the student asks; success = the student knows the material and scores 100 on the test.
 
 ## 3. Features (v1 public)
 

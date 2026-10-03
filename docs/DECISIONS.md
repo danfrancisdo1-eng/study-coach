@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-03 — D-009: Approvals for Phase 1 and Phase 2b
+- **Approved:** add `@anthropic-ai/sdk` (server), add `expo-audio` (iPhone app), add a new `lectures` database table (additive; back up first and run the migration by hand, per CLAUDE.md §5).
+- **Decided by:** Dan.
+
+## 2026-10-03 — D-008: No academic-integrity restriction; the goal is test mastery
+- **Decision:** The app helps with whatever the student asks, including homework. It does not refuse or hold back answers on "graded work". The product goal is that the student knows the material and scores 100 on the test.
+- **Consequences:** No integrity rule in prompts or evals. Tutoring and quizzes stay focused on making sure the student actually knows the material (check understanding, quiz weak spots), because that is what produces the test score. Replaces the "[Dan to confirm]" placeholder in CLAUDE.md §7.
+- **Decided by:** Dan.
+
 ## 2026-10-03 — D-007: Apple Developer Program as an Individual; LLC later if an app succeeds
 - **Decision:** Enroll as an Individual (personal name shown as seller). Form an LLC only if Study Coach or Personal Max is successful, then transfer the app to the organization account (Apple's app transfer keeps reviews and users).
 - **Why:** An LLC isn't required to publish one app; Individual enrollment is fastest.

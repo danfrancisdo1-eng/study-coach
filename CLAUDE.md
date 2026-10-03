@@ -65,7 +65,7 @@
 - System prompts live in versioned files (e.g., artifacts/api-server/src/prompts/), not inline strings.
 - Every prompt change: bump the version, log it in DECISIONS.md, run the evals (create artifacts/api-server/evals/).
 - Ground answers in the student's saved course material; never invent syllabus details, dates, or teacher requirements. Label supplemental outside content as supplemental, with sources.
-- Academic integrity: [Dan to confirm. Suggested: coach and explain; for graded work, teach the method rather than produce submittable answers].
+- Academic integrity: no restriction (D-008). Help with whatever the student asks; the goal is that they know the material and ace the test.
 - Stream responses where the UI supports it. Handle timeouts, rate-limit and overloaded errors with retry/backoff and a friendly message. Never lose the student's draft, quiz answers, or conversation on failure.
 - Use prompt caching for long static system prompts. Enforce free-tier limits on the server (lectureQuota.ts is the existing pattern).
 
