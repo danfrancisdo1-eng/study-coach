@@ -9,5 +9,9 @@ export async function chatCompletion(request: ChatRequest): Promise<ChatResult> 
     : { timeout: request.timeoutMs, maxRetries: request.maxRetries };
   const response = await openai.chat.completions.create(chatCompletionBody(request), options);
   const choice = response.choices[0];
-  return { text: choice?.message?.content ?? null, finished: choice?.finish_reason === "stop" };
+  return {
+    text: choice?.message?.content ?? null,
+    finished: choice?.finish_reason === "stop",
+    ...(response.usage ? { usage: { inputTokens: response.usage.prompt_tokens, outputTokens: response.usage.completion_tokens } } : {}),
+  };
 }

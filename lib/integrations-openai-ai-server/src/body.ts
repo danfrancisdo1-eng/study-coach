@@ -19,6 +19,7 @@ export interface ChatResult {
   text: string | null;
   /** False when generation stopped early (length limit, content filter, tool call). */
   finished: boolean;
+  usage?: { inputTokens: number; outputTokens: number };
 }
 
 export function chatCompletionBody(request: ChatRequest): OpenAI.Chat.ChatCompletionCreateParamsNonStreaming {

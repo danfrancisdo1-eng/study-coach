@@ -63,9 +63,13 @@ export async function anthropicCompletion(
     ? undefined
     : { timeout: request.timeoutMs, maxRetries: request.maxRetries };
   const response = await anthropic().beta.messages.create(anthropicBody(request), options);
-  if (response.stop_reason === "refusal") return { text: null, finished: false };
+  const usage = {
+    inputTokens: response.usage.input_tokens + (response.usage.cache_read_input_tokens ?? 0) + (response.usage.cache_creation_input_tokens ?? 0),
+    outputTokens: response.usage.output_tokens,
+  };
+  if (response.stop_reason === "refusal") return { text: null, finished: false, usage };
   const text = response.content
     .flatMap((block) => (block.type === "text" ? [block.text] : []))
     .join("");
-  return { text: text || null, finished: response.stop_reason === "end_turn" };
+  return { text: text || null, finished: response.stop_reason === "end_turn", usage };
 }

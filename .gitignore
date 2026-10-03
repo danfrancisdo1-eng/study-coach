@@ -75,3 +75,6 @@ coverage/
 *.key
 *.jks
 *.mobileprovision
+
+# Eval run outputs
+artifacts/api-server/evals/results/

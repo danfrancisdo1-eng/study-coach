@@ -1,0 +1,6 @@
+Solve: x^2 - 5x + 6 = 0
+
+Step 1: factor -> (x - 2)(x - 3) = 0
+Step 2: x - 2 = 0  or  x - 3 = 0
+Step 3: x = 2  or  x = 3
+Check: 2^2 - 5(2) + 6 = 0
