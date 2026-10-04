@@ -1,4 +1,69 @@
-# Study Coach — complete local handoff
+# Study Coach — handoff for the next Claude Code session
+
+Prepared 2026-10-04 at the end of session 1 (Claude Code). **Read this first**, then CLAUDE.md, docs/PROGRESS.md and the newest entries in docs/DECISIONS.md. The previous Codex handoff (2026-10-03) is kept at the bottom for history.
+
+## Who and how
+- Owner: Dan, a solo builder. On his phone he follows the session through Remote Control. Explain things in plain language and keep his steps short and concrete.
+- Personal Max is a separate app built with Codex. **Never touch it**, including its "PersonalMax Recovery QA" simulator and its iPhone profile "PersonalMax Local HTTPS Test".
+- Hard rules are in CLAUDE.md §5: no secrets in git; ask before touching `.env.local`, Clerk, bundle/signing, or schema changes; nothing gets published or submitted without an explicit OK.
+- Never type or paste passwords, API keys or database URLs. Dan pastes them himself.
+
+## Where things live
+| Thing | Location |
+|---|---|
+| Code | `~/Downloads/study-coach-project`, git `main` → private GitHub `danfrancisdo1-eng/study-coach` |
+| Production API | Render web service **study-coach-api**: https://study-coach-api-pskt.onrender.com (Docker, Virginia, Starter). Dashboard id `srv-db0q3qfavr4c738s5ho0`. `autoDeploy: false`, so deploys are manual (Deploys → Manual Deploy → Deploy latest commit). |
+| Production DB | Render Postgres **study-coach-db** (PG16, basic-256mb), id `dpg-db0q38favr4c738s2vd0-a`. Copied from Replit on 2026-10-03: 2 study_states rows (Dan + a Replit test account), 4 study_sessions. |
+| Old backend | Replit project (still running, untouched; it holds the Clerk app). **Don't delete it** until Dan has his own production Clerk app. |
+| Sign-in | Clerk dev instance `safe-firefly-7699.clerk.accounts.dev`, created by Replit; Dan has no Clerk dashboard login. The secret key lives in Replit Secrets → CLERK_SECRET_KEY. |
+| Phone app | Expo Go on Dan's iPhone, served from the Mac: `artifacts/study-coach-mobile`, `node node_modules/expo/bin/cli start --lan --port 8087 --clear` (Mac LAN IP 192.168.12.210). It may still be running in the Claude terminal tab "Study Coach preview". |
+| Phone app's backend | `artifacts/study-coach-mobile/.env.local` → `EXPO_PUBLIC_DOMAIN=study-coach-api-pskt.onrender.com` (switched with Dan's OK). The old Replit line is backed up at `~/.study-coach-env.local.replit-backup`. |
+| AI keys for evals | `artifacts/api-server/.env` (git-ignored, chmod 600): ANTHROPIC_API_KEY (new key, works), OPENAI_API_KEY (works). |
+| Apple | Developer Program active (Individual, account drdanielfrancis@yahoo.com, D-007). App ID `com.danfrancis.studycoach` (D-010). Dan's iPhone has Developer Mode on and already trusts that account. App Store Connect agreements not yet accepted (the page didn't work on mobile Safari). |
+
+## Tooling on this Mac
+- Node 24 and pnpm 11 are not on PATH. Use:
+  `export PATH="$HOME/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$HOME/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:$PATH"`
+- `pnpm run typecheck` (whole repo). `pnpm test` runs all 31 tests **serially**. In parallel, the integration tests race on `artifacts/api-server/dist`.
+- Integration tests build the real server and use a stub AI, Clerk test tokens (CLERK_JWT_KEY) and in-memory Postgres (PGlite, root devDependency) running `lib/db/migrations`.
+- Evals: `pnpm --filter @workspace/api-server run eval [-- --provider anthropic --task tutor]`. They cost real money (about $0.30 per Claude run plus the judge).
+- `git push` sometimes fails once with "could not read Username". Just retry; the keychain has the token.
+- The `grep` in Claude's shell is a wrapper that skips hidden and ignored files. Use `command grep` for full scans.
+- No Docker, Postgres or ffmpeg on the Mac. The web app's production build fails locally, because pnpm overrides remove the rollup darwin binary; Linux builds are fine.
+- iOS simulator: Claude created "Study Coach Test" (UDID 78E13840-40AB-4E07-A9F0-4FAB93225838, Expo Go installed). The simulator tool needs Dan to approve access in the app; that approval hasn't been granted yet.
+- Chrome control (Claude in Chrome, "Browser 2 (macOS)"): Render pages work. **Replit pages can't be automated**, because they never reach idle. When the Chrome window is minimized or in the background, screenshots and page reads time out, though typing still goes through.
+
+## State at handoff
+**Live on Render (deployed commit `0749da5`):** the security fix (all /api/coach routes require sign-in); the AI module with Claude for tutoring, syllabus, session quiz, exam plan and photo OCR, while the classic quiz and transcription stay on OpenAI (D-012); tutor prompt v2 (D-011, homework rule D-008); AI error logging. Verified with Dan on his iPhone: sign-in, his AGENTIC AI data, and a tutoring reply from Claude.
+
+**Merged to `main` but NOT deployed** (main = `f86763c`):
+- Lectures: DB table `lectures` (migration `lib/db/migrations/0001_create_lectures.sql`), `/api/study/lectures` CRUD, reviewed transcripts used as tutor/quiz sources; iPhone recording screens (`app/lectures/[courseId].tsx`, `app/lecture/[id].tsx`, `lib/lecture-*.ts`), expo-audio, background recording.
+- Delete course + delete material: `DELETE /api/study/courses/{id}` (`routes/courses.ts`, transactional, owner-scoped); iPhone `components/CourseManager.tsx` inside Edit course; web equivalents in `AccountExperience.tsx` / `AccountPage.tsx`.
+
+**IMMEDIATE NEXT STEP (where we stopped):**
+1. The additive migration (create `lectures` table + index, `IF NOT EXISTS`) was typed into Render → study-coach-api → **Shell** and run, but its output **could not be read** (Chrome tab unresponsive). Re-run the read-only check in that Shell (from `/app/lib/db`, using `pg` and `$DATABASE_URL`): it should report the lectures table present, 11 columns, 1 index. If it's absent, re-run the CREATE (safe to repeat).
+2. Then Manual Deploy → Deploy latest commit (`f86763c`). Verify `/api/healthz`, and check the Render logs while Dan reloads the phone app.
+3. Have Dan try: Edit course → delete a test material; create a test course and delete it; open a course's Lectures screen (the mic button).
+
+The phone preview already serves `main`, so it shows the new buttons. They'll error until step 2.
+
+## Open items / to-dos
+- **Security:** an Anthropic key was visible in a Claude screenshot while fixing Render env vars. Have Dan create a fresh key, update Render ANTHROPIC_API_KEY plus `artifacts/api-server/.env`, and delete old keys at console.anthropic.com. Also delete the Replit secret `RENDER_DATABASE_URL`, which only existed for the data copy.
+- **Render env gotcha:** values are hidden and look alike, and saving doesn't always restart the service. After any env change, check the variables' shapes from the Render Shell (print only prefix and length) and redeploy manually. Expected prefixes: CLERK_SECRET_KEY `sk_test_`, CLERK_PUBLISHABLE_KEY `pk_test_c2FmZS1maXJlZmx5…` (public), ANTHROPIC_API_KEY `sk-ant-`, AI_INTEGRATIONS_OPENAI_API_KEY `sk-`.
+- The send-on-Enter gap: in the tutoring box, Enter adds a newline and you have to tap Send. Small UX fix, suggested.
+- Lecture recording hasn't been tried on a device. Locked-screen recording needs a development build; the Apple account is ready now.
+- Classic quiz answer-key accuracy (2/40 wrong on Claude): improve, then re-eval before switching it to Claude.
+- `lib/stt` transcription refactor deferred (no ffmpeg locally). The in-memory transcription quota should move to the DB.
+- Web app on Render (Step 6 of docs/plans/move-off-replit.md) isn't done; the web app still runs on Replit with the old backend.
+- Phase 2 (age 13+ gate, account deletion, guardian sharing, privacy policy), Phase 3 (one free course + IAP, D-003), Phase 4 (direct OneDrive), Phase 5 (TestFlight/App Store). See docs/AUDIT.md §8 and docs/plans/.
+- App Store Connect: accept agreements on the Mac.
+
+## Key docs
+docs/AUDIT.md (audit + phased plan) · docs/SPEC.md (draft spec) · docs/DECISIONS.md (D-001…D-012) · docs/PROGRESS.md · docs/plans/ (phase1, phase2b lectures, move-off-replit) · docs/UX_PRINCIPLES.md
+
+---
+
+# Previous handoff (Codex, 2026-10-03), kept for history
 
 Prepared October 3, 2026. Read this before older Replit/export notes, which describe earlier states.
 

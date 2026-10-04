@@ -1,5 +1,22 @@
 # Progress
 
+## Session 1 end — 2026-10-04 (see docs/HANDOFF.md for the full picture)
+
+### Done since part 4
+- Moved off Replit: Render API live (`0749da5`) + Postgres with Dan's data copied (2 states, 4 sessions); phone app points at Render. Verified with Dan: sign-in, data, Claude tutoring reply.
+- Evals run (D-012): Claude for chat tasks; classic quiz and transcription stay on OpenAI. tutor.v2 (D-011).
+- Delete course + delete material (API, iPhone, web), merged with lectures into `main` (`73acd8e`); `pnpm test` runs serially (31/31).
+
+### In progress
+- `lectures` table on Render: migration command ran but its output wasn't confirmed. Verify, then deploy `main`.
+
+### Next
+- Verify the table, deploy, then Dan tests delete and the lectures screen on his phone.
+- Rotate the Anthropic key; delete the Replit secret RENDER_DATABASE_URL.
+
+### Needs real-iPhone check
+- Delete material/course; lecture recording (Expo Go) and locked-screen recording (development build); everything listed in HANDOFF.md.
+
 ## Session 1, part 4 — 2026-10-03 (Phase 2b: lecture recording, branch `feature/lectures`)
 
 Not merged into `main` yet; the Mac's working copy is back on `main`, so the phone preview is unchanged.
