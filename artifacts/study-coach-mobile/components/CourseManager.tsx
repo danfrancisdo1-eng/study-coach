@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { courseConfirmWord, matchesCourseConfirmWord } from '@/lib/course-delete-confirm';
 
 export type ManagedMaterial = { id: string; name: string; extractionFormat?: string };
 
@@ -21,7 +22,8 @@ export function CourseManager({ courseName, materials, busy, onDeleteMaterial, o
   const styles = createStyles(colors);
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState('');
-  const matches = typed.trim().toLowerCase() === courseName.trim().toLowerCase();
+  const confirmWord = courseConfirmWord(courseName);
+  const matches = matchesCourseConfirmWord(typed, courseName);
 
   const confirmMaterial = (material: ManagedMaterial) => {
     Alert.alert(
@@ -59,10 +61,10 @@ export function CourseManager({ courseName, materials, busy, onDeleteMaterial, o
             This permanently deletes <Text style={styles.bold}>{courseName}</Text> with its materials, study sessions, quiz history,
             review items and lectures. It can’t be undone.
           </Text>
-          <Text style={styles.caption}>Type the course name to confirm.</Text>
+          <Text style={styles.caption}>Type <Text style={styles.bold}>{confirmWord}</Text> to confirm.</Text>
           <TextInput
             value={typed} onChangeText={setTyped} autoCapitalize="none" autoCorrect={false} placeholder={courseName}
-            placeholderTextColor={colors.mutedForeground} accessibilityLabel="Type the course name to confirm" style={styles.input} testID="input-confirm-course-name"
+            placeholderTextColor={colors.mutedForeground} accessibilityLabel={`Type ${confirmWord} to confirm`} style={styles.input} testID="input-confirm-course-name"
           />
           <View style={styles.buttons}>
             <Pressable accessibilityRole="button" onPress={() => setConfirming(false)} style={styles.smallButton} testID="button-cancel-delete-course">

@@ -206,9 +206,11 @@ export function AccountExperience(props: AccountExperienceProps) {
                     </div>)}
                     {onDeleteCourse && <button type="button" className="ae-button ae-button--quiet" disabled={busy} style={{ color: 'var(--destructive, #b33b2d)', marginTop: 8 }}
                       onClick={() => {
-                        const typed = window.prompt(`This permanently deletes ${course.name} with its materials, study sessions, quiz history, review items and lectures. It can’t be undone.\n\nType the course name to confirm:`);
-                        if (typed !== null && typed.trim().toLowerCase() === course.name.trim().toLowerCase()) { setEditingId(null); onDeleteCourse(course.id); }
-                        else if (typed !== null) window.alert('The name didn’t match, so nothing was deleted.');
+                        // Same rule as the iPhone app (study-coach-mobile/lib/course-delete-confirm.ts): type the first word of the name.
+                        const confirmWord = course.name.trim().split(/\s+/)[0] ?? '';
+                        const typed = window.prompt(`This permanently deletes ${course.name} with its materials, study sessions, quiz history, review items and lectures. It can’t be undone.\n\nType “${confirmWord}” to confirm:`);
+                        if (typed !== null && confirmWord !== '' && typed.trim().toLowerCase() === confirmWord.toLowerCase()) { setEditingId(null); onDeleteCourse(course.id); }
+                        else if (typed !== null) window.alert('That didn’t match, so nothing was deleted.');
                       }}
                       data-testid={`button-delete-course-${course.id}`}>Delete course…</button>}
                   </div>}
