@@ -53,17 +53,18 @@ Origin: Dan's own method for passing the NCP-AAI and Google certifications (AI-g
 A student with an exam coming up who has put some, not necessarily all, course material into the app.
 
 ### What v1 does
-1. **Chat stays central.** The student can ask anything, any time, including mid-loop. Answers are grounded in the student's materials and reviewed lecture transcripts first; general knowledge fills gaps and is labeled supplemental. Answers are short: one idea at a time, then back to the task. **No lecturing**: the tutor never dumps a textbook-style summary (the Krebs-cycle answer of 2026-10-04 is the anti-example). With no material saved, it says so, answers briefly from general knowledge, and suggests adding material.
-2. **Topic list.** From the course's materials, reviewed transcripts, and (when extracted) syllabus, the AI lists the topics likely on the exam, each tagged *from your material* or *supplemental*. The student ticks one or more, or taps **All topics**.
-3. **Quiz in chunks.** Multiple choice, four options, one question at a time, "Question 4 of 10". Chunks of **10 or 20** (student picks). After each chunk: grade, then the AI either says it has enough to see the gaps or offers another chunk. Original scores are kept separate from retest scores; assisted answers are marked.
-4. **Gap report.** The concepts missed, grouped, with a one-line reason each.
-5. **Memory pass.** For each gap: mnemonics, associations, word tricks, comparisons, a short teach-back check. No games in v1.
-6. **Retest.** 5–10 fresh questions on the gaps plus 1–2 from earlier material. Then back to step 4.
-7. **Student decides when to stop.** No target score ends the loop. Each pass updates the per-concept record (independent / hinted / missed) and the spaced-review schedule.
-8. Everything above is a **study session**; the existing check-in, draft/answer preservation, report-a-question, and optional guardian report (approval every time) stay.
+1. **Chat stays central.** The student can ask anything, any time, including mid-loop. Answers are grounded in the student's materials and reviewed lecture transcripts first; general knowledge fills gaps and is labeled supplemental. Answers are short: one idea at a time, then back to the task. **No lecturing**: the tutor never dumps a textbook-style summary (the Krebs-cycle answer of 2026-10-04 is the anti-example).
+2. **Works with no material.** Students may try the app before uploading anything. Then the AI builds questions from its own knowledge of the course or exam the student names. For a named public exam (e.g., a certification), it may research the exam's published topics and section weights and use those. It shows a one-line flag each time: *"You'll learn what's on your exam much faster if you add your course material."* Never blocks on uploads.
+3. **Topic list.** From the course's materials, reviewed transcripts, syllabus when extracted, or (with no material) the AI's own knowledge of the exam, the AI lists the topics likely on the exam, each tagged *from your material* or *supplemental*. The student ticks one or more, or taps **All topics**.
+4. **Quiz in chunks.** Multiple choice, four options, one question at a time, "Question 4 of 20". The student picks the chunk size, **default 20, never more than 50**. A chunk can be done in pieces: 5 now, the rest later, even one at a time; answers are kept and the chunk resumes where it stopped. Original scores stay separate from retest scores; assisted answers are marked.
+5. **After each chunk:** score, the correct answers for the ones missed, then the student chooses: **memory tricks for the misses**, **another set on everything**, or **another set on just the missed topics**, at whatever size they want (20, 40, 50).
+6. **Memory pass.** For each miss: mnemonics, associations, word tricks, comparisons, a short teach-back check, in the chat. It continues as a conversation until the student asks for the next quiz; the AI may suggest a quiz, or suggest adding material, to check current understanding. No games in v1.
+7. **Retest.** Fresh questions on the chosen scope (missed topics or everything), with 1–2 from earlier material when the scope is the missed topics. Then back to step 5.
+8. **Student decides when to stop.** Scores are shown after every chunk; no target score ends the loop. Each pass updates the per-concept record (independent / hinted / missed) and the spaced-review schedule.
+9. Everything above is a **study session**; the existing check-in, draft/answer preservation, report-a-question, and optional guardian report (approval every time) stay.
 
 ### What v1 doesn't do
-Games; short-answer grading; syllabus-based exam-date inference on iPhone (student picks the exam); teacher or group features; promises about what the real exam contains.
+Games; short-answer grading; syllabus-based exam-date inference on iPhone (student picks the exam); teacher or group features; promises about what the real exam contains; forced minimums (no "you must finish 20 before grading").
 
 ### Builds on
 `/study/sessions/:id/quiz` (diagnostic/targeted), grading, `reviewSchedule`, `session-quiz.v1` and `tutor.v2` prompts, lectures as sources. New: topic extraction, chunked quiz state, gap + memory-pass prompt (versioned), tutor.v3 (short, no lecturing).
