@@ -19,7 +19,7 @@ import {
 } from "@workspace/api-zod";
 import { complete } from "../ai";
 import * as imageOcrPrompt from "../prompts/image-ocr.v1";
-import * as tutorPrompt from "../prompts/tutor.v1";
+import * as tutorPrompt from "../prompts/tutor.v2";
 import * as sessionQuizPrompt from "../prompts/session-quiz.v1";
 import { readPublicPage } from "../lib/public-page";
 

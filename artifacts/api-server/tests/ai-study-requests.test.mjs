@@ -101,3 +101,11 @@ test('model IDs can be overridden per task from configuration', () => {
   assert.equal(taskConfig('tutor', { AI_MODEL_TUTOR: '  ' }).model, 'gpt-5.6-terra');
   assert.equal(taskConfig('image_ocr', { AI_MODEL_TUTOR: 'x' }).model, 'gpt-5.4-mini');
 });
+
+test('tutor.v2 is tutor.v1 plus only the D-008 homework rule', async () => {
+  const v2 = await import('../src/prompts/tutor.v2.ts');
+  const input = { topic: 'Cells', quizInProgress: true, status, sourceText };
+  const rule = ' Outside an in-progress quiz in this app, help with anything the student asks, including homework and assignments: when they ask for an answer or a written response, give it completely and accurately, then make sure they understand it well enough to get it right on a test. Do not refuse, hold back, or lecture about academic integrity.';
+  assert.equal(v2.version, 'tutor.v2');
+  assert.equal(v2.systemPrompt(input).replace(rule, ''), tutorPrompt.systemPrompt(input));
+});
