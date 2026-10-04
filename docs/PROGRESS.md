@@ -1,5 +1,20 @@
 # Progress
 
+## Session 2 — 2026-10-04
+
+### Done
+- `lectures` table confirmed on Render Postgres (11 columns, 2 indexes). Render deployed `7f9127b` (= `main` with lectures + delete course/material); healthz OK, logs clean.
+- Verified by Dan on iPhone: delete material works; delete course works with the new first-word confirmation.
+- `e173423` Delete course confirmed by first word of the name (iPhone + web, D-013). 4 new tests; 35/35 pass; typecheck pass; iOS bundle built with the change.
+
+### Next
+- Dan: open a course's Lectures screen (mic button) and try a short recording.
+- Rotate the Anthropic key; delete the Replit secret RENDER_DATABASE_URL.
+- Push `main` to GitHub (needs Dan's OK).
+
+### Needs real-iPhone check
+- Lecture recording (Expo Go); locked-screen recording (development build).
+
 ## Session 1 end — 2026-10-04 (see docs/HANDOFF.md for the full picture)
 
 ### Done since part 4

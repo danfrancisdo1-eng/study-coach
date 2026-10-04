@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-04 — D-013: Deleting a course is confirmed by typing its first word
+- Was: type the full course name. Now: the first word (case and spaces ignored); on iPhone the full name stays as the gray hint. Same rule on web.
+- **Why:** full names are long to type on a phone; one word still prevents an accidental tap. Dan decided; verified on his iPhone.
+
 ## 2026-10-03 — D-012: First eval results, OpenAI vs Claude; switch approved
 - **Results** (26 synthetic cases each; tutoring re-run twice with tutor.v2):
   - Syllabus dates: both 6/6 (no invented dates, injection ignored).
