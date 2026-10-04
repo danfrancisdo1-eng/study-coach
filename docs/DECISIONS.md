@@ -2,6 +2,29 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-03 — D-012: First eval results, OpenAI vs Claude; switch approved
+- **Results** (26 synthetic cases each; tutoring re-run twice with tutor.v2):
+  - Syllabus dates: both 6/6 (no invented dates, injection ignored).
+  - Exam plan: both 3/3. Session quiz: both 3/3, 0 wrong answer keys of 19.
+  - Photo text: both 4/4 (typed text only so far).
+  - Tutoring (tutor.v2, 2 runs): Claude Sonnet 5.5 12/12; OpenAI gpt-5.6-terra 11/12 (hinted at the answer during an in-app quiz once).
+  - Classic quiz: Claude 4/4 runs valid, 2 of 40 answer keys judged wrong; OpenAI 1 of 4 runs malformed (question without 4 options, the app would show "try again"), 0 of 40 wrong keys.
+  - Latency similar (tutoring: Claude about 10 s, OpenAI about 6 s; quizzes about 30 s for both). Claude cost for a full run about $0.26 plus the judge.
+- **Recommendation:** switch tutoring, syllabus, session quiz, exam plan and photo text to Claude (`AI_PROVIDER=anthropic`) when the server moves to Render; keep the classic quiz on OpenAI (`AI_PROVIDER_CLASSIC_QUIZ=openai`) until answer-key accuracy is improved and re-measured on a larger sample. Transcription stays on OpenAI (D-004).
+- **Caveat:** small synthetic sample; one judge model (Claude Opus 5.5) grades both providers.
+- **Decided by:** Dan approved the recommendation. Applied through render.yaml (AI_PROVIDER=anthropic, AI_PROVIDER_CLASSIC_QUIZ=openai); takes effect when the server moves to Render.
+
+## 2026-10-03 — D-011: Prompt change tutor.v1 -> tutor.v2
+- **Change:** adds one sentence implementing D-008: outside an in-progress in-app quiz, help with anything including homework, give complete answers, no academic-integrity lecture. Everything else is identical (enforced by a test).
+- **Why:** Claude declined to write a homework answer under v1. A first v2 wording made OpenAI reveal an in-app quiz answer, so the rule is scoped to "outside an in-progress quiz".
+- **Evals:** tutoring, 2 runs each: Claude 12/12, OpenAI 11/12.
+- **Decided by:** Dan (D-008); wording by Claude Code.
+
+## 2026-10-03 — D-010: App ID com.danfrancis.studycoach
+- **Decision:** iOS bundle identifier and Android package `com.danfrancis.studycoach` (replaces the placeholder). Permanent once the app is on the App Store.
+- **Context:** Apple Developer Program paid (Individual, D-007). Dan's iPhone already has Developer Mode on (used for Personal Max test builds). Study Coach gets its own app ID and signing; Personal Max's setup is not touched. The paid membership uses the same Apple account as Personal Max's test builds (the account shown in iPhone Settings → VPN & Device Management), which the iPhone already trusts. Don't touch the "PersonalMax Local HTTPS Test" profile.
+- **Decided by:** Dan.
+
 ## 2026-10-03 — D-009: Approvals for Phase 1 and Phase 2b
 - **Approved:** add `@anthropic-ai/sdk` (server), add `expo-audio` (iPhone app), add a new `lectures` database table (additive; back up first and run the migration by hand, per CLAUDE.md §5).
 - **Decided by:** Dan.

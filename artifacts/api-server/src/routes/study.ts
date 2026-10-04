@@ -19,7 +19,7 @@ import {
 } from "@workspace/api-zod";
 import { complete } from "../ai";
 import * as imageOcrPrompt from "../prompts/image-ocr.v1";
-import * as tutorPrompt from "../prompts/tutor.v1";
+import * as tutorPrompt from "../prompts/tutor.v2";
 import * as sessionQuizPrompt from "../prompts/session-quiz.v1";
 import { readPublicPage } from "../lib/public-page";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
@@ -756,7 +756,8 @@ router.post("/study/materials/extract", async (req, res): Promise<void> => {
       if (text.replace(/\[unreadable\]/gi, "").trim().length < 3) throw new Error("No meaningful readable text");
       res.json({ filename, format: "image", text, status: "complete", coverage: "visible_image_text", characterCount: text.length,
         coverageNote: "AI-transcribed visible text from one image; handwriting, small/blurry text, diagrams and cropped content may be missed or misread. [unreadable] marks uncertainty. Review and correct before saving; nothing is saved automatically." });
-    } catch {
+    } catch (error) {
+      req.log.error({ error: aiErrorMessage(error) }, "Photo text extraction failed");
       res.status(422).json({ error: "Readable image text could not be extracted completely. Try a sharper or smaller PNG, JPEG or WebP image. Nothing was saved." });
     } finally { activeMaterialReads.delete(userId); }
     return;
@@ -791,6 +792,11 @@ router.post("/study/materials/extract", async (req, res): Promise<void> => {
     res.status(422).json({ error: "This file is unreadable or damaged; no text was returned." });
   }
 });
+
+// Error text only (provider error type and message); never request content or keys.
+function aiErrorMessage(error: unknown): string {
+  return error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error";
+}
 
 function owner(req: Request): string {
   if (!req.studyOwnerId) throw new Error("Missing authenticated account");
@@ -1180,7 +1186,8 @@ router.post("/study/sessions/:id/messages", async (req, res): Promise<void> => {
       return;
     }
     res.json(safeSession(session));
-  } catch {
+  } catch (error) {
+    req.log.error({ error: aiErrorMessage(error) }, "Tutoring AI request failed");
     res.status(502).json({ error: "The AI coach could not complete this message. Please try again." });
   }
 });
@@ -1277,7 +1284,8 @@ router.post("/study/sessions/:id/quiz", async (req, res): Promise<void> => {
       return;
     }
     res.json(safeSession(session));
-  } catch {
+  } catch (error) {
+    req.log.error({ error: aiErrorMessage(error) }, "Session quiz AI request failed");
     res.status(502).json({ error: "Could not generate a complete quiz. Please try again." });
   }
 });

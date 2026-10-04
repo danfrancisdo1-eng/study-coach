@@ -1,5 +1,32 @@
 # Progress
 
+## Session 1, part 4 — 2026-10-03 (Phase 2b: lecture recording, branch `feature/lectures`)
+
+Not merged into `main` yet; the Mac's working copy is back on `main`, so the phone preview is unchanged.
+
+### Done (on `feature/lectures`)
+- `0a6032b` Reviewed SQL migrations: `0000_baseline` (existing tables; never run on the shared DB) and `0001_create_lectures` (additive). Not applied anywhere real.
+- `cf859b3` Lectures API (list/create/get/update/delete), owner-scoped with optimistic versions; reviewed transcripts feed tutoring and quizzes. End-to-end test: built server + in-memory Postgres (PGlite, test-only) running the real migrations; mutation checks for account isolation and review gating.
+- `290197f` iPhone: Lectures button per course; record screen (background recording, 2-hour auto-stop, interruption handling, audio saved to documents before naming/upload, offline recordings registered later); lecture screen (transcribe with OpenAI confirmation, streamed upload with progress/cancel, edit, save as reviewed, delete audio/lecture). expo-audio added; microphone permission fixed (image-picker plugin was removing it).
+- Verified here: typecheck; 29/29 tests; iOS bundle export includes the new screens.
+
+### Not verified / needs Dan
+- Simulator run blocked: iOS shows an "Open in Expo Go?" prompt, and tapping it needs Dan's approval of the simulator tool. A dedicated simulator "Study Coach Test" exists (PersonalMax and the other simulator untouched).
+- Full flow needs a backend with the lectures endpoints (not Replit). Plan: test after the Render move, or a local server on the Mac with Dan's Clerk secret.
+- Locked-screen recording needs a development build (Apple Developer account).
+- Transcription-module refactor (`lib/stt`) deferred: ffmpeg isn't on this Mac, so it can't be tested here.
+
+### UX checklist (new screens; by code review, not yet seen on a device)
+1. Tap targets ≥ 44 pt, primary action in thumb zone: PASS (bottom bar, 54 pt button; icon buttons 44 pt).
+2. One primary action, ≤ 5 tabs: PASS (one bottom action per state).
+3. Content chunked: PASS (transcript in timed passages).
+4. Native iOS patterns: PASS (stack navigation, system alerts, swipe-back).
+5. Progress shown: PASS (Recorded → Transcribed → Ready to study; upload %).
+6. Single accent, not color-only: PASS (status uses icon + text).
+7. Theme tokens / Dark Mode / Dynamic Type: PARTIAL. Tokens used; the app has no dark palette yet (existing gap); Dynamic Type relies on default scaling, not tested at largest size.
+8. Contrast / labels / Reduce Motion: PARTIAL. Labels on all controls; no animations. Brand orange on off-white is about 3.3:1, so main button text was set to 19 pt bold (large text, passes 3:1); other screens' 17 pt buttons and the orange "link" text fail 4.5:1 (existing palette issue).
+9. Paywall: N/A.
+
 ## Session 1, part 3 — 2026-10-03 (Phase 1 steps 1 and 3)
 
 ### Done
@@ -41,7 +68,7 @@
 - Phase 1 plan (AI module + evals) for Dan's OK.
 
 ### Blockers
-- No Apple Developer account yet (blocks TestFlight, IAP setup, Sign in with Apple production config).
+- Apple Developer Program: paid 2026-10-03 (Individual, D-007); waiting for Apple to activate the membership.
 - (resolved) Git remote set up.
 
 ## Session 1 — 2026-10-03 (Claude Code)

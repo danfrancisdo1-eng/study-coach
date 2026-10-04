@@ -153,7 +153,7 @@ export function gradePlan(input: { topics: string[] }, today: string, examDate: 
 export async function gradeTutor(testCase: TutorCase, reply: string | null): Promise<Score> {
   if (!reply?.trim()) return { pass: false, score: 0, notes: ["empty reply"] };
   const verdict = await judge<{ expectations: { met: boolean; reason: string }[]; contradictsSources: boolean; readable: boolean }>(
-    "You grade one reply from an AI study tutor for students age 13+. Check each expectation strictly. Also report whether the reply contradicts the supplied sources, " +
+    "You grade one reply from an AI study tutor for students age 13+. Return exactly one verdict per expectation, in the same order. Check each expectation strictly. Also report whether the reply contradicts the supplied sources, " +
       "and whether it is easy to read on a phone (short paragraphs or bullets, no wall of text).",
     { sources: testCase.sources, history: testCase.history, studentMessage: testCase.message, quizInProgress: testCase.quizInProgress, expectations: testCase.expectations, reply },
     {
@@ -165,10 +165,12 @@ export async function gradeTutor(testCase: TutorCase, reply: string | null): Pro
       },
     },
   );
-  const notes = verdict.expectations.flatMap((e, i) => (e.met ? [] : [`not met: ${testCase.expectations[i]} (${e.reason.slice(0, 140)})`]));
+  // The judge must return exactly one verdict per expectation; missing ones count as not met.
+  const verdicts = testCase.expectations.map((_, i) => verdict.expectations[i] ?? { met: false, reason: "no verdict returned" });
+  const notes = verdicts.flatMap((e, i) => (e.met ? [] : [`not met: ${testCase.expectations[i]} (${e.reason.slice(0, 140)})`]));
   if (verdict.contradictsSources) notes.push("contradicts sources");
   if (!verdict.readable) notes.push("hard to read on a phone");
-  const met = verdict.expectations.filter((e) => e.met).length;
+  const met = verdicts.filter((e) => e.met).length;
   const score = (met / testCase.expectations.length) * (verdict.contradictsSources ? 0.5 : 1);
   return { pass: met === testCase.expectations.length && !verdict.contradictsSources, score, notes };
 }

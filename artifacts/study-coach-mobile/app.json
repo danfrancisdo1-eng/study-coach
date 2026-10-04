@@ -8,9 +8,12 @@
     "scheme": "study-coach-mobile",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.danfrancis.studycoach"
     },
-    "android": {},
+    "android": {
+      "package": "com.danfrancis.studycoach"
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
