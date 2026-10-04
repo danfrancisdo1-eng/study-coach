@@ -109,3 +109,31 @@ test('tutor.v2 is tutor.v1 plus only the D-008 homework rule', async () => {
   assert.equal(v2.version, 'tutor.v2');
   assert.equal(v2.systemPrompt(input).replace(rule, ''), tutorPrompt.systemPrompt(input));
 });
+
+test('tutor.v3 keeps every tutor.v2 rule and adds the short-answer rules (D-015)', async () => {
+  const v2 = await import('../src/prompts/tutor.v2.ts');
+  const v3 = await import('../src/prompts/tutor.v3.ts');
+  assert.equal(v3.version, 'tutor.v3');
+  for (const quizInProgress of [false, true]) {
+    const input = { topic: 'Cells', quizInProgress, status, sourceText };
+    const v2Text = v2.systemPrompt(input);
+    const v3Text = v3.systemPrompt(input);
+    // Every sentence of v2 survives in v3 (rules are only added, never dropped).
+    for (const sentence of v2Text.split('Material:\n')[0].split('. ').map((s) => s.trim()).filter((s) => s.length > 20)) {
+      assert.ok(v3Text.includes(sentence), `v3 dropped a v2 rule: ${sentence.slice(0, 60)}`);
+    }
+    assert.ok(v3Text.endsWith(`Material:\n${sourceText}`), 'v3 still ends with the material block');
+  }
+  const withMaterial = v3.systemPrompt({ topic: 'Cells', quizInProgress: false, status, sourceText });
+  assert.match(withMaterial, /short/i, 'v3 asks for short answers');
+  assert.match(withMaterial, /lecture|textbook-style/i, 'v3 forbids lecturing');
+  assert.ok(!withMaterial.includes('much faster if you add your course material'), 'no upload flag when material is present');
+});
+
+test('tutor.v3 adds the add-your-material flag only when no material is saved', async () => {
+  const v3 = await import('../src/prompts/tutor.v3.ts');
+  const none = { coverage: 'none', selectedChunks: 0, availableChunks: 0, truncated: false };
+  const text = v3.systemPrompt({ topic: 'Biology', quizInProgress: false, status: none, sourceText: '' });
+  assert.ok(text.includes("You'll learn what's on your exam much faster if you add your course material."), 'flag present');
+  assert.ok(text.endsWith('Material:\n(No source material selected.)'));
+});

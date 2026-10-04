@@ -13,7 +13,7 @@ import { GenerateExamPlanBody, GenerateQuizBody } from "@workspace/api-zod";
 import * as syllabusPrompt from "../src/prompts/syllabus.v1";
 import * as classicQuizPrompt from "../src/prompts/classic-quiz.v1";
 import * as examPlanPrompt from "../src/prompts/exam-plan.v1";
-import * as tutorPrompt from "../src/prompts/tutor.v2";
+import * as tutorPrompt from "../src/prompts/tutor.v3";
 import * as sessionQuizPrompt from "../src/prompts/session-quiz.v1";
 import * as imageOcrPrompt from "../src/prompts/image-ocr.v1";
 import { taskConfig, type AiTask } from "../src/ai/tasks";
