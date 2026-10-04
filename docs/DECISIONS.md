@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-04 — D-014: The core study flow is the "Exam Prep loop" (SPEC §6)
+- Chat stays central and grounded, but short: no lecturing. Topic list with checkboxes + All topics → MCQ in chunks of 10/20 → gap report → memory techniques (mnemonics, associations, tricks; no games) → retest on gaps + 1–2 old items → repeat until the student stops.
+- **Why:** this is the method Dan used to pass his certifications and wrote up as the Danny tutor guide (reference/ docs attached 2026-10-04). Dan decided the shape; detailed spec in SPEC.md §6 awaits his sign-off before any build plan.
+
 ## 2026-10-04 — D-013: Deleting a course is confirmed by typing its first word
 - Was: type the full course name. Now: the first word (case and spaces ignored); on iPhone the full name stays as the gray hint. Same rule on web.
 - **Why:** full names are long to type on a phone; one word still prevents an accidental tap. Dan decided; verified on his iPhone.
