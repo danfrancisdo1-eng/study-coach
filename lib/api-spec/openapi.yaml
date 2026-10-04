@@ -131,6 +131,22 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/StudyStateEnvelope" }
         "409": { description: Version mismatch }
+  /study/courses/{courseId}:
+    parameters:
+      - { name: courseId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
+    delete:
+      operationId: deleteCourse
+      tags: [study]
+      summary: Permanently delete one course and everything saved for it
+      description: Removes the course, its saved materials, its study sessions and their review items, and its lectures and transcripts, in one transaction. Other courses and accounts are untouched.
+      responses:
+        "200":
+          description: Course deleted; the updated study state is returned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseDeletion" }
+        "404": { description: Course not found in this account }
+        "409": { description: Study state kept changing; retry }
   /study/import:
     post:
       operationId: importStudyState
@@ -464,6 +480,20 @@ components:
       properties:
         state: { oneOf: [{ $ref: "#/components/schemas/StudyState" }, { type: "null" }] }
         version: { type: integer, minimum: 0 }
+    CourseDeletion:
+      type: object
+      required: [state, version, deleted]
+      properties:
+        state: { $ref: "#/components/schemas/StudyState" }
+        version: { type: integer, minimum: 1 }
+        deleted:
+          type: object
+          required: [materials, sessions, reviewItems, lectures]
+          properties:
+            materials: { type: integer }
+            sessions: { type: integer }
+            reviewItems: { type: integer }
+            lectures: { type: integer }
     StudyStateUpdate:
       type: object
       required: [state, version]

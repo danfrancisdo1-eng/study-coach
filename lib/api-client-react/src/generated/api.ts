@@ -22,6 +22,7 @@ import type {
 import type {
   AnalyzeInput,
   AnalyzeResult,
+  CourseDeletion,
   HealthStatus,
   Lecture,
   LectureInput,
@@ -669,6 +670,81 @@ export const usePutStudyState = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getPutStudyStateMutationOptions(options));
+    }
+
+export const getDeleteCourseUrl = (courseId: string,) => {
+
+
+
+
+  return `/api/study/courses/${courseId}`
+}
+
+/**
+ * Removes the course, its saved materials, its study sessions and their review items, and its lectures and transcripts, in one transaction. Other courses and accounts are untouched.
+ * @summary Permanently delete one course and everything saved for it
+ */
+export const deleteCourse = async (courseId: string, options?: Parameters<typeof customFetch>[1]): Promise<CourseDeletion> => {
+
+  return customFetch<CourseDeletion>(getDeleteCourseUrl(courseId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteCourseMutationKey = () => ['deleteCourse'] as const;
+
+export const getDeleteCourseMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCourse>>, TError,DeleteCourseMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCourse>>, TError,DeleteCourseMutationVariables, TContext> => {
+
+const mutationKey = getDeleteCourseMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCourse>>, DeleteCourseMutationVariables> = (props) => {
+          const {courseId} = props ?? {};
+
+          return  deleteCourse(courseId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCourseMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCourse>>>
+
+    export type DeleteCourseMutationError = ErrorType<void>
+    export type DeleteCourseMutationVariables = {courseId: string}
+
+    /**
+ * @summary Permanently delete one course and everything saved for it
+ */
+export const useDeleteCourse = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCourse>>, TError,DeleteCourseMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCourse>>,
+        TError,
+        DeleteCourseMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteCourseMutationOptions(options));
     }
 
 export const getImportStudyStateUrl = () => {

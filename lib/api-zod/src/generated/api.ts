@@ -185,6 +185,41 @@ export const PutStudyStateResponse = zod.object({
 
 
 /**
+ * Removes the course, its saved materials, its study sessions and their review items, and its lectures and transcripts, in one transaction. Other courses and accounts are untouched.
+ * @summary Permanently delete one course and everything saved for it
+ */
+export const deleteCoursePathCourseIdMax = 200;
+
+
+
+export const DeleteCourseParams = zod.object({
+  "courseId": zod.coerce.string().min(1).max(deleteCoursePathCourseIdMax)
+})
+
+
+
+
+export const DeleteCourseResponse = zod.object({
+  "state": zod.object({
+  "aiConsent": zod.boolean(),
+  "courses": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "materials": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "topics": zod.record(zod.string(), zod.unknown()).optional(),
+  "deadlines": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "concepts": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+}).describe('Account-owned JSON study state. AI actions require aiConsent true persisted here. Dates should be explicitly confirmed by the student (confirmed: true).'),
+  "version": zod.number().int().min(1),
+  "deleted": zod.object({
+  "materials": zod.number().int(),
+  "sessions": zod.number().int(),
+  "reviewItems": zod.number().int(),
+  "lectures": zod.number().int()
+})
+})
+
+
+/**
  * @summary Import state only when the account has no saved state
  */
 export const ImportStudyStateBody = zod.object({

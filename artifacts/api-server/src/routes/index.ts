@@ -3,6 +3,7 @@ import healthRouter from "./health";
 import coachRouter from "./coach";
 import studyRouter from "./study";
 import lecturesRouter from "./lectures";
+import coursesRouter from "./courses";
 
 export { requireStudyAuth } from "./study";
 
@@ -12,5 +13,6 @@ router.use(healthRouter);
 router.use(coachRouter);
 router.use(studyRouter);
 router.use(lecturesRouter);
+router.use(coursesRouter);
 
 export default router;

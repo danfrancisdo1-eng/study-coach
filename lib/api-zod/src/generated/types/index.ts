@@ -8,6 +8,8 @@
 
 export * from './analyzeInput';
 export * from './analyzeResult';
+export * from './courseDeletion';
+export * from './courseDeletionDeleted';
 export * from './deadline';
 export * from './deadlineKind';
 export * from './healthStatus';

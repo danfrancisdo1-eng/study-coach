@@ -37,6 +37,20 @@ export interface StudyStateEnvelope {
   version: number;
 }
 
+export type CourseDeletionDeleted = {
+  materials: number;
+  sessions: number;
+  reviewItems: number;
+  lectures: number;
+};
+
+export interface CourseDeletion {
+  state: StudyState;
+  /** @minimum 1 */
+  version: number;
+  deleted: CourseDeletionDeleted;
+}
+
 export interface StudyStateUpdate {
   state: StudyState;
   /** @minimum 0 */
