@@ -76,6 +76,10 @@ export type AccountExperienceProps = {
   onSelectCourse: (courseId: string) => void;
   onCreateCourse: (name: string) => void;
   onRenameCourse: (courseId: string, name: string) => void;
+  /** Saved materials per course id, shown while a course is being edited. */
+  savedMaterialsByCourse?: Record<string, { id: string; name: string }[]>;
+  onDeleteMaterial?: (materialId: string) => void;
+  onDeleteCourse?: (courseId: string) => void;
   onStartSession: (courseId: string) => void;
   onMaterialsChoice: (choice: 'add' | 'skip') => void;
   onUploadMaterials: (files: File[]) => void;
@@ -108,6 +112,7 @@ export function AccountExperience(props: AccountExperienceProps) {
     turns, questions, answers, assistedAnswers, qualityNotice, invalidItemCount = 0, flaggedQuestionIds = [],
     quizTutorReply, feedback, reviewSchedule, report, resultSummary, isRetest,
     busy = false, error, onSelectCourse, onCreateCourse, onRenameCourse, onStartSession,
+    savedMaterialsByCourse = {}, onDeleteMaterial, onDeleteCourse,
     onMaterialsChoice, onUploadMaterials, onContinueMaterials, onConsentChange, onSendTurn,
     onReadyForQuiz, onSelectAnswer, onFlagQuestion, onAskDuringQuiz, onMarkAssisted, onSubmitQuiz, onRequestRetest, onShowReport,
     onShareReport, onDismissReport, onRetry,
@@ -185,11 +190,29 @@ export function AccountExperience(props: AccountExperienceProps) {
             <div className="ae-card-top"><div><span className="ae-kicker">01 / COURSE</span><h2 className="ae-heading">What are we studying?</h2></div><BookOpen size={26} strokeWidth={1.5} aria-hidden="true" /></div>
             {courses.length ? <div className="ae-course-list" role="group" aria-label="Choose a course">
               {courses.map(course => <div className={`ae-course ${course.id === selectedCourseId ? 'is-active' : ''}`} key={course.id} data-testid={`row-course-${course.id}`}>
-                {editingId === course.id ? <form className="ae-row" onSubmit={event => saveCourse(event, course.id)} style={{ width: '100%' }}>
+                {editingId === course.id ? <><form className="ae-row" onSubmit={event => saveCourse(event, course.id)} style={{ width: '100%' }}>
                   <input className="ae-input" aria-label={`Rename ${course.name}`} value={editName} onChange={event => setEditName(event.target.value)} maxLength={120} required style={{ flex: 1, minWidth: 150 }} data-testid={`input-rename-course-${course.id}`} />
                   <button type="submit" className="ae-button ae-button--ink" disabled={busy || !editName.trim()} data-testid={`button-save-course-${course.id}`}>Save</button>
                   <button type="button" className="ae-button ae-button--quiet" onClick={() => setEditingId(null)} data-testid={`button-cancel-rename-${course.id}`} aria-label="Cancel rename"><X size={16} /></button>
-                </form> : <>
+                </form>
+                  {(onDeleteMaterial || onDeleteCourse) && <div className="ae-course-manage" style={{ width: '100%', marginTop: 10 }} data-testid={`panel-manage-course-${course.id}`}>
+                    <p className="ae-kicker">Materials in this course</p>
+                    {(savedMaterialsByCourse[course.id] ?? []).length === 0 && <p className="ae-muted">No saved materials yet.</p>}
+                    {(savedMaterialsByCourse[course.id] ?? []).map(material => <div className="ae-row" key={material.id} style={{ justifyContent: 'space-between' }} data-testid={`row-material-${material.id}`}>
+                      <span>{material.name}</span>
+                      {onDeleteMaterial && <button type="button" className="ae-button ae-button--quiet" disabled={busy} style={{ color: 'var(--destructive, #b33b2d)' }}
+                        onClick={() => { if (window.confirm(`Delete “${material.name}”? Tutoring and quizzes for ${course.name} will stop using it. This can’t be undone.`)) onDeleteMaterial(material.id); }}
+                        data-testid={`button-delete-material-${material.id}`}>Delete</button>}
+                    </div>)}
+                    {onDeleteCourse && <button type="button" className="ae-button ae-button--quiet" disabled={busy} style={{ color: 'var(--destructive, #b33b2d)', marginTop: 8 }}
+                      onClick={() => {
+                        const typed = window.prompt(`This permanently deletes ${course.name} with its materials, study sessions, quiz history, review items and lectures. It can’t be undone.\n\nType the course name to confirm:`);
+                        if (typed !== null && typed.trim().toLowerCase() === course.name.trim().toLowerCase()) { setEditingId(null); onDeleteCourse(course.id); }
+                        else if (typed !== null) window.alert('The name didn’t match, so nothing was deleted.');
+                      }}
+                      data-testid={`button-delete-course-${course.id}`}>Delete course…</button>}
+                  </div>}
+                </> : <>
                   <button type="button" className="ae-course-pick" aria-pressed={course.id === selectedCourseId} onClick={() => onSelectCourse(course.id)} disabled={busy || sessionStarted} data-testid={`button-select-course-${course.id}`}>
                     {course.name}{course.code && <small>{course.code}</small>}
                   </button>

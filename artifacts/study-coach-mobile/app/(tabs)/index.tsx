@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { Redirect, router } from 'expo-router';
+import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,6 +29,8 @@ import {
   getGetStudySessionQueryKey,
   getGetStudyStateQueryKey,
   getListStudySessionsQueryKey,
+  getListLecturesQueryKey,
+  deleteCourse,
   useCheckInStudySession,
   useCreateStudySession,
   useExtractStudyMaterial,
@@ -420,6 +423,36 @@ function StudyCoach() {
       await persistStudyState({ ...savedState, aiConsent: savedState.aiConsent === true, courses: nextCourses });
       setCourseName('');
       setEditingCourseId(null);
+    } catch (problem) {
+      handleError(problem);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteMaterial = async (material: ManagedMaterial) => {
+    setError('');
+    setSaving(true);
+    try {
+      await persistStudyState({ ...savedState, materials: (savedState.materials ?? []).filter((item) => objectRecord(item).id !== material.id) });
+    } catch (problem) {
+      handleError(problem);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeCourse = async (courseId: string) => {
+    setError('');
+    setSaving(true);
+    try {
+      const result = await deleteCourse(courseId);
+      if (activeUserIdRef.current !== userId) throw new Error('Your signed-in account changed. Please retry from the current account.');
+      queryClient.setQueryData(accountStateKey, { state: result.state, version: result.version });
+      await queryClient.invalidateQueries({ queryKey: accountSessionsKey });
+      await queryClient.invalidateQueries({ queryKey: getListLecturesQueryKey() });
+      setEditingCourseId(null);
+      if (selectedCourseId === courseId) setSelectedCourseId(null);
     } catch (problem) {
       handleError(problem);
     } finally {
@@ -1326,6 +1359,13 @@ function StudyCoach() {
                     <Text style={styles.cardTitle}>Edit course</Text>
                     <TextInput testID="input-edit-course" value={editCourseName} onChangeText={setEditCourseName} maxLength={120} placeholder="Course name" placeholderTextColor={colors.mutedForeground} style={styles.input} />
                     <View style={styles.buttonRow}><ActionButton label="Save changes" onPress={() => void updateCourse(editCourseName, editingCourseId)} disabled={busy || !editCourseName.trim()} testID="button-save-course" /><ActionButton label="Cancel" secondary onPress={() => setEditingCourseId(null)} testID="button-cancel-edit-course" /></View>
+                    <CourseManager
+                      courseName={courses.find((course) => course.id === editingCourseId)?.name ?? editCourseName}
+                      materials={materialsFrom(savedState, editingCourseId).map((material) => ({ id: material.id, name: material.name, extractionFormat: material.extractionFormat }))}
+                      busy={busy}
+                      onDeleteMaterial={deleteMaterial}
+                      onDeleteCourse={() => removeCourse(editingCourseId)}
+                    />
                   </View>
                 ) : (
                   <View style={styles.formCard}>
