@@ -10,7 +10,13 @@
 - `3bba981` Failed transcriptions no longer use up the 2/day quota (refund unless the provider returned a result). 4 new tests; 39/39 pass. Verified live: failed attempts at 2:13 and 2:17 were not counted.
 - Render env fixed by Dan: `AI_INTEGRATIONS_OPENAI_API_KEY` had held the Anthropic key; a new OpenAI key is in place; `AI_INTEGRATIONS_OPENAI_BASE_URL` = `https://api.openai.com/v1`.
 
+- **Exam Prep loop spec approved** (SPEC §6, D-014). Danny tutor guide saved in docs/reference/.
+- **Piece (a) tutor.v3** (D-015): short, no lecturing, add-your-material flag, quiz guard. 41/41 tests; typecheck; tutor evals 9/9 twice. Merged to `main`; **not yet deployed**.
+- Fixed `artifacts/api-server/.env`: both keys had been pasted on the line below their variable name; joined mechanically (values never displayed).
+
 ### Next
+- Deploy tutor.v3 (Dan: push OK + Render deploy); Dan re-asks the Krebs-cycle question with no material to compare.
+- Piece (b): topic list with checkboxes + All topics (plan for Dan's OK).
 - Dan: review the test transcript, save it as reviewed, and try tutoring/quiz from it.
 - Dan: delete the old OpenAI key at platform.openai.com; put the new key in `artifacts/api-server/.env` (evals). Rotate the Anthropic key; delete the Replit secret RENDER_DATABASE_URL.
 - Polish: after "Delete recording from this iPhone", clear the stale "Transcription didn't finish" banner (`app/lecture/[id].tsx`).

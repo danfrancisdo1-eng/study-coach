@@ -170,9 +170,13 @@ export async function gradeTutor(testCase: TutorCase, reply: string | null): Pro
   const notes = verdicts.flatMap((e, i) => (e.met ? [] : [`not met: ${testCase.expectations[i]} (${e.reason.slice(0, 140)})`]));
   if (verdict.contradictsSources) notes.push("contradicts sources");
   if (!verdict.readable) notes.push("hard to read on a phone");
+  // Code-checked brevity (tutor.v3): "short" is a number, not the judge's opinion.
+  const words = reply.trim().split(/\s+/).length;
+  const tooLong = testCase.maxWords !== undefined && words > testCase.maxWords;
+  if (tooLong) notes.push(`too long: ${words} words > ${testCase.maxWords}`);
   const met = verdicts.filter((e) => e.met).length;
-  const score = (met / testCase.expectations.length) * (verdict.contradictsSources ? 0.5 : 1);
-  return { pass: met === testCase.expectations.length && !verdict.contradictsSources, score, notes };
+  const score = (met / testCase.expectations.length) * (verdict.contradictsSources ? 0.5 : 1) * (tooLong ? 0.5 : 1);
+  return { pass: met === testCase.expectations.length && !verdict.contradictsSources && !tooLong, score, notes };
 }
 
 function similarity(a: string, b: string): number {
