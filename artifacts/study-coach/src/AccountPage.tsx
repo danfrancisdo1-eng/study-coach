@@ -6,6 +6,7 @@ import {
   useSendStudyMessage, useGenerateStudyQuiz, useSaveStudyAnswer, useGradeStudyQuiz,
   useFlagStudyQuestion,
   getGetStudyStateQueryKey, getGetStudySessionQueryKey, getListStudySessionsQueryKey,
+  deleteCourse, getListLecturesQueryKey,
   type StudySession, type StudyState, type StudyStateEnvelope,
 } from '@workspace/api-client-react';
 import AccountExperience, {
@@ -72,6 +73,12 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
     id: item.id, filename: item.name, status: 'ready' as const,
     detail: `${item.text.length.toLocaleString()} characters saved`,
   })) ?? [];
+  const savedMaterialsByCourse: Record<string, { id: string; name: string }[]> = {};
+  for (const item of state.materials ?? []) {
+    if (item && typeof item.courseId === 'string' && typeof item.id === 'string') {
+      (savedMaterialsByCourse[item.courseId] ??= []).push({ id: item.id, name: item.name });
+    }
+  }
   const busy = put.isPending || importer.isPending || create.isPending || checkIn.isPending ||
     send.isPending || quiz.isPending || answer.isPending || grade.isPending || flagQuestion.isPending;
 
@@ -205,6 +212,18 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
           const id = crypto.randomUUID();
           await updateState(previous => ({ ...previous, courses: [...(previous.courses ?? []), { id, name }] }));
           selectCourse(id);
+        })}
+        savedMaterialsByCourse={savedMaterialsByCourse}
+        onDeleteMaterial={materialId => void act(() => updateState(previous => ({
+          ...previous, materials: (previous.materials ?? []).filter(item => item.id !== materialId),
+        })))}
+        onDeleteCourse={id => void act(async () => {
+          const result = await deleteCourse(id);
+          client.setQueryData<StudyStateEnvelope>(stateKey, { state: result.state, version: result.version });
+          await client.invalidateQueries({ queryKey: listKey });
+          await client.invalidateQueries({ queryKey: getListLecturesQueryKey() });
+          if (selectedCourseId === id) selectCourse(null);
+          setNotice(`Deleted the course with ${result.deleted.materials} materials, ${result.deleted.sessions} sessions and ${result.deleted.lectures} lectures.`);
         })}
         onRenameCourse={(id, name) => void act(() => updateState(previous => ({
           ...previous, courses: (previous.courses ?? []).map(course => course.id === id ? { ...course, name } : course),

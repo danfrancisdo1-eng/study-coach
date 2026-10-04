@@ -37,6 +37,20 @@ export interface StudyStateEnvelope {
   version: number;
 }
 
+export type CourseDeletionDeleted = {
+  materials: number;
+  sessions: number;
+  reviewItems: number;
+  lectures: number;
+};
+
+export interface CourseDeletion {
+  state: StudyState;
+  /** @minimum 1 */
+  version: number;
+  deleted: CourseDeletionDeleted;
+}
+
 export interface StudyStateUpdate {
   state: StudyState;
   /** @minimum 0 */
@@ -436,6 +450,75 @@ export interface TranscriptResult {
   segments: TranscriptResultSegmentsItem[];
 }
 
+export interface LectureSegment {
+  /** @minimum 0 */
+  start: number;
+  /** @minimum 0 */
+  end: number;
+  /** @maxLength 20000 */
+  text: string;
+}
+
+/**
+ * recorded = audio only on the device; transcribed = AI transcript not yet reviewed; reviewed = student-approved transcript, used as course material
+ */
+export type LectureStatus = typeof LectureStatus[keyof typeof LectureStatus];
+
+
+export const LectureStatus = {
+  recorded: 'recorded',
+  transcribed: 'transcribed',
+  reviewed: 'reviewed',
+} as const;
+
+export interface LectureInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  courseId: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  recordedAt: string;
+  /**
+     * @minimum 1
+     * @maximum 14400
+     */
+  durationSeconds: number;
+}
+
+export interface LectureUpdate {
+  /** @minimum 1 */
+  version: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  status?: LectureStatus;
+  /** @maxItems 2000 */
+  segments?: LectureSegment[];
+}
+
+export interface LectureSummary {
+  id: string;
+  courseId: string;
+  title: string;
+  recordedAt: string;
+  durationSeconds: number;
+  status: LectureStatus;
+  segmentCount: number;
+  version: number;
+  updatedAt: string;
+}
+
+export type Lecture = LectureSummary & {
+  segments: LectureSegment[];
+};
+
 export type QuestionDistractorsItemErrorType = typeof QuestionDistractorsItemErrorType[keyof typeof QuestionDistractorsItemErrorType];
 
 
@@ -508,5 +591,16 @@ export interface HealthStatus {
 
 export type ListStudySessions200 = {
   sessions: StudySessionSummary[];
+};
+
+export type ListLecturesParams = {
+/**
+ * @maxLength 200
+ */
+courseId?: string;
+};
+
+export type ListLectures200 = {
+  lectures: LectureSummary[];
 };
 

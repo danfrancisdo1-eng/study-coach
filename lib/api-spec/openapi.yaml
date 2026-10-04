@@ -131,6 +131,22 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/StudyStateEnvelope" }
         "409": { description: Version mismatch }
+  /study/courses/{courseId}:
+    parameters:
+      - { name: courseId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
+    delete:
+      operationId: deleteCourse
+      tags: [study]
+      summary: Permanently delete one course and everything saved for it
+      description: Removes the course, its saved materials, its study sessions and their review items, and its lectures and transcripts, in one transaction. Other courses and accounts are untouched.
+      responses:
+        "200":
+          description: Course deleted; the updated study state is returned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseDeletion" }
+        "404": { description: Course not found in this account }
+        "409": { description: Study state kept changing; retry }
   /study/import:
     post:
       operationId: importStudyState
@@ -250,6 +266,80 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/StudySession" }
         "404": { description: Session not found }
+  /study/lectures:
+    get:
+      operationId: listLectures
+      tags: [study]
+      summary: List the signed-in account's lectures (without transcripts), newest first
+      parameters:
+        - { name: courseId, in: query, required: false, schema: { type: string, maxLength: 200 } }
+      responses:
+        "200":
+          description: Lecture summaries
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [lectures]
+                properties:
+                  lectures:
+                    type: array
+                    items: { $ref: "#/components/schemas/LectureSummary" }
+    post:
+      operationId: createLecture
+      tags: [study]
+      summary: Register a lecture recorded or imported on the device. Audio is not uploaded here.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LectureInput" }
+      responses:
+        "201":
+          description: Created lecture
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lecture" }
+        "400": { description: Invalid input or unknown course }
+  /study/lectures/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getLecture
+      tags: [study]
+      summary: Get one lecture with its transcript
+      responses:
+        "200":
+          description: Lecture
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lecture" }
+        "404": { description: Lecture not found }
+    put:
+      operationId: updateLecture
+      tags: [study]
+      summary: Update title, transcript or status. Fails with 409 if the lecture changed since the given version.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LectureUpdate" }
+      responses:
+        "200":
+          description: Updated lecture
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lecture" }
+        "400": { description: Invalid input }
+        "404": { description: Lecture not found }
+        "409": { description: Lecture changed on another device }
+    delete:
+      operationId: deleteLecture
+      tags: [study]
+      summary: Permanently delete a lecture and its transcript
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Lecture not found }
   /study/sessions/{id}/check-in:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
@@ -390,6 +480,20 @@ components:
       properties:
         state: { oneOf: [{ $ref: "#/components/schemas/StudyState" }, { type: "null" }] }
         version: { type: integer, minimum: 0 }
+    CourseDeletion:
+      type: object
+      required: [state, version, deleted]
+      properties:
+        state: { $ref: "#/components/schemas/StudyState" }
+        version: { type: integer, minimum: 1 }
+        deleted:
+          type: object
+          required: [materials, sessions, reviewItems, lectures]
+          properties:
+            materials: { type: integer }
+            sessions: { type: integer }
+            reviewItems: { type: integer }
+            lectures: { type: integer }
     StudyStateUpdate:
       type: object
       required: [state, version]
@@ -672,6 +776,58 @@ components:
               start: { type: number }
               end: { type: number }
               text: { type: string }
+    LectureSegment:
+      type: object
+      required: [start, end, text]
+      properties:
+        start: { type: number, minimum: 0 }
+        end: { type: number, minimum: 0 }
+        text: { type: string, maxLength: 20000 }
+    LectureStatus:
+      type: string
+      enum: [recorded, transcribed, reviewed]
+      description: recorded = audio only on the device; transcribed = AI transcript not yet reviewed; reviewed = student-approved transcript, used as course material
+    LectureInput:
+      type: object
+      required: [courseId, title, recordedAt, durationSeconds]
+      properties:
+        courseId: { type: string, minLength: 1, maxLength: 200 }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        recordedAt: { type: string, format: date-time }
+        durationSeconds: { type: integer, minimum: 1, maximum: 14400 }
+    LectureUpdate:
+      type: object
+      required: [version]
+      properties:
+        version: { type: integer, minimum: 1 }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        status: { $ref: "#/components/schemas/LectureStatus" }
+        segments:
+          type: array
+          maxItems: 2000
+          items: { $ref: "#/components/schemas/LectureSegment" }
+    LectureSummary:
+      type: object
+      required: [id, courseId, title, recordedAt, durationSeconds, status, segmentCount, version, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        courseId: { type: string }
+        title: { type: string }
+        recordedAt: { type: string, format: date-time }
+        durationSeconds: { type: integer }
+        status: { $ref: "#/components/schemas/LectureStatus" }
+        segmentCount: { type: integer }
+        version: { type: integer }
+        updatedAt: { type: string, format: date-time }
+    Lecture:
+      allOf:
+        - { $ref: "#/components/schemas/LectureSummary" }
+        - type: object
+          required: [segments]
+          properties:
+            segments:
+              type: array
+              items: { $ref: "#/components/schemas/LectureSegment" }
     QuizResult:
       type: object
       required: [questions]
