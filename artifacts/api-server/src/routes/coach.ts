@@ -131,6 +131,7 @@ router.post("/coach/transcribe", (req,res,next)=>{
     return;
   }
   let dir:string|undefined;
+  let transcribed=false; // true once the provider has returned a result; only then does the attempt count
   try{
     dir=await mkdtemp(join(tmpdir(),"study-lecture-"));
     const input=join(dir,`lecture.${extensions[type]}`);
@@ -143,6 +144,7 @@ router.post("/coach/transcribe", (req,res,next)=>{
     for(let i=0;i<files.length;i++){
       const file=await readFile(join(dir,files[i]));
       const result=await openai.audio.transcriptions.create({model:"gpt-4o-mini-transcribe",file:new File([file],files[i],{type:"audio/mpeg"})});
+      transcribed=true;
       if(result.text.trim()) segments.push({start:i*300,end:Math.min(duration,(i+1)*300),text:result.text.trim()});
     }
     if(!segments.length)throw new Error("The audio contained no recognizable speech.");
@@ -152,6 +154,7 @@ router.post("/coach/transcribe", (req,res,next)=>{
     res.status(502).json({error:"Transcription failed. Your audio remains in this browser; try again or download it."});
   }finally{
     if(dir)await rm(dir,{recursive:true,force:true}).catch(()=>{});
+    if(!transcribed)reservation.refund();
     reservation.release();
   }
 });
