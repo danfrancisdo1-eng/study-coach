@@ -28,6 +28,11 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      # D-012: Claude for all chat tasks except the classic quiz; transcription stays on OpenAI.
+      - key: AI_PROVIDER
+        value: anthropic
+      - key: AI_PROVIDER_CLASSIC_QUIZ
+        value: openai
 
 databases:
   - name: study-coach-db

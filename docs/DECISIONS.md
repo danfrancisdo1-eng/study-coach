@@ -2,7 +2,7 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
-## 2026-10-03 — D-012: First eval results, OpenAI vs Claude (recommendation pending Dan's OK)
+## 2026-10-03 — D-012: First eval results, OpenAI vs Claude; switch approved
 - **Results** (26 synthetic cases each; tutoring re-run twice with tutor.v2):
   - Syllabus dates: both 6/6 (no invented dates, injection ignored).
   - Exam plan: both 3/3. Session quiz: both 3/3, 0 wrong answer keys of 19.
@@ -12,7 +12,7 @@ Newest first. Each entry: date, decision, why, who decided.
   - Latency similar (tutoring: Claude about 10 s, OpenAI about 6 s; quizzes about 30 s for both). Claude cost for a full run about $0.26 plus the judge.
 - **Recommendation:** switch tutoring, syllabus, session quiz, exam plan and photo text to Claude (`AI_PROVIDER=anthropic`) when the server moves to Render; keep the classic quiz on OpenAI (`AI_PROVIDER_CLASSIC_QUIZ=openai`) until answer-key accuracy is improved and re-measured on a larger sample. Transcription stays on OpenAI (D-004).
 - **Caveat:** small synthetic sample; one judge model (Claude Opus 5.5) grades both providers.
-- **Decided by:** pending Dan.
+- **Decided by:** Dan approved the recommendation. Applied through render.yaml (AI_PROVIDER=anthropic, AI_PROVIDER_CLASSIC_QUIZ=openai); takes effect when the server moves to Render.
 
 ## 2026-10-03 — D-011: Prompt change tutor.v1 -> tutor.v2
 - **Change:** adds one sentence implementing D-008: outside an in-progress in-app quiz, help with anything including homework, give complete answers, no academic-integrity lecture. Everything else is identical (enforced by a test).
