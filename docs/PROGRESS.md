@@ -6,14 +6,18 @@
 - `lectures` table confirmed on Render Postgres (11 columns, 2 indexes). Render deployed `7f9127b` (= `main` with lectures + delete course/material); healthz OK, logs clean.
 - Verified by Dan on iPhone: delete material works; delete course works with the new first-word confirmation.
 - `e173423` Delete course confirmed by first word of the name (iPhone + web, D-013). 4 new tests; 35/35 pass; typecheck pass; iOS bundle built with the change.
+- **Lecture recording + transcription verified on Dan's iPhone** (Render `3bba981`, 2:55 PM: `/api/coach/transcribe` 200 in 2.2 s). Deleting a recording from the phone also verified.
+- `3bba981` Failed transcriptions no longer use up the 2/day quota (refund unless the provider returned a result). 4 new tests; 39/39 pass. Verified live: failed attempts at 2:13 and 2:17 were not counted.
+- Render env fixed by Dan: `AI_INTEGRATIONS_OPENAI_API_KEY` had held the Anthropic key; a new OpenAI key is in place; `AI_INTEGRATIONS_OPENAI_BASE_URL` = `https://api.openai.com/v1`.
 
 ### Next
-- Dan: open a course's Lectures screen (mic button) and try a short recording.
-- Rotate the Anthropic key; delete the Replit secret RENDER_DATABASE_URL.
-- Push `main` to GitHub (needs Dan's OK).
+- Dan: review the test transcript, save it as reviewed, and try tutoring/quiz from it.
+- Dan: delete the old OpenAI key at platform.openai.com; put the new key in `artifacts/api-server/.env` (evals). Rotate the Anthropic key; delete the Replit secret RENDER_DATABASE_URL.
+- Polish: after "Delete recording from this iPhone", clear the stale "Transcription didn't finish" banner (`app/lecture/[id].tsx`).
+- Move the transcription quota from memory to the DB (it resets on every deploy).
 
 ### Needs real-iPhone check
-- Lecture recording (Expo Go); locked-screen recording (development build).
+- Locked-screen recording (development build). Transcript → reviewed → used by tutor/quiz.
 
 ## Session 1 end — 2026-10-04 (see docs/HANDOFF.md for the full picture)
 
