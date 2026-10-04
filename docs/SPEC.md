@@ -45,7 +45,7 @@ A mobile-first study companion for individual high-school and college students *
 - Never lose drafts, quiz answers, or conversation on failure; friendly retry messages.
 - Privacy policy + accurate App Privacy label; docs/PRIVACY_DATA.md kept current.
 
-## 6. Exam Prep loop (v1 core study flow) — DRAFT for Dan's sign-off, 2026-10-04
+## 6. Exam Prep loop (v1 core study flow) — APPROVED by Dan 2026-10-04 (D-014)
 
 Origin: Dan's own method for passing the NCP-AAI and Google certifications (AI-generated quizzes of 10–50 questions → memory tips for what was missed → retest on those items plus 1–2 old ones → repeat), then written up as the "Danny tutor guide" prompt for his son. The app makes that loop a product. The guide's rules carry over wherever they fit (short explanations, one question at a time, independent vs assisted scores, never invent coverage or citations).
 
@@ -65,6 +65,9 @@ A student with an exam coming up who has put some, not necessarily all, course m
 
 ### What v1 doesn't do
 Games; short-answer grading; syllabus-based exam-date inference on iPhone (student picks the exam); teacher or group features; promises about what the real exam contains; forced minimums (no "you must finish 20 before grading").
+
+### Later (not v1, logged 2026-10-04)
+- **Shared course knowledge.** Over time, uploaded materials could teach the app the typical syllabus of a given professor/course, to help other students in the same course. Requires, before any build: explicit opt-in consent from the uploading student, anonymization, a privacy-policy and App Privacy label update (docs/PRIVACY_DATA.md), and a check on copyright for professor-authored material. Until then, every student's material stays private to their account.
 
 ### Builds on
 `/study/sessions/:id/quiz` (diagnostic/targeted), grading, `reviewSchedule`, `session-quiz.v1` and `tutor.v2` prompts, lectures as sources. New: topic extraction, chunked quiz state, gap + memory-pass prompt (versioned), tutor.v3 (short, no lecturing).
