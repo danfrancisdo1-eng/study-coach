@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-04 — D-016: Chat-first shell (SPEC §7)
+- The chat is the home screen and the app; the AI asks for the course, creates it from the student's input, and runs the Exam Prep loop inside the chat with tappable cards. One visible course list remains for finding/editing/deleting; everything there is also doable by asking the AI. Existing screens become the layer behind the chat rather than being rebuilt.
+- **Why:** Dan: "it has to be intuitive"; the origin method (Danny guide) is chat-first. Fewer buttons than building §6 as separate screens. Decided by Dan.
+
 ## 2026-10-04 — D-015: tutor prompt v3 — short answers, no lecturing, add-your-material flag
 - Adds to v2 (every v2 rule kept verbatim, test-enforced): replies normally 2–5 sentences / under ~120 words; broad questions get one short bullet list and stop; longer only when the student asks for detail or a written answer; material first outside quizzes; exactly one closing offer (practice questions or a memory trick); with no material saved, a one-line "You'll learn what's on your exam much faster if you add your course material." During a quiz, never quote material that states the answer (added after an eval run caught v3 quoting the handout).
 - **Evals** (Claude Sonnet 5.5, 9 tutor cases incl. 3 new with a code-checked word cap): runs 1–2 found the broad-question reply too long / two offers → tightened; run 4 found the quiz leak → guard added; runs 5–6: 9/9. Model cost ≈ $0.045 per run plus the judge.

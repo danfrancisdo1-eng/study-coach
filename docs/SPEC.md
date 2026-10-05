@@ -72,5 +72,32 @@ Games; short-answer grading; syllabus-based exam-date inference on iPhone (stude
 ### Builds on
 `/study/sessions/:id/quiz` (diagnostic/targeted), grading, `reviewSchedule`, `session-quiz.v1` and `tutor.v2` prompts, lectures as sources. New: topic extraction, chunked quiz state, gap + memory-pass prompt (versioned), tutor.v3 (short, no lecturing).
 
-## 7. Open decisions
+## 7. Chat-first shell — APPROVED by Dan 2026-10-04 (D-016)
+
+The chat is the app. The Exam Prep loop (§6) runs inside it. Buttons are kept to the few that a conversation can't replace.
+
+### Screens
+1. **Chat (home).** Opens straight into the conversation. First run: the AI asks what class the student is working on and offers to take notes, a syllabus, photos, or a lecture recording. It creates the course from the answer (including from a syllabus photo) and asks for an exam date or next topic only when needed. Returning: "Resume where you left off" (UX law 5): the AI picks up the last course/loop step.
+2. **Inside the chat:** the persistent **+** corner for material (§8, unchanged: Photos, Files, OneDrive, Website) plus **Record lecture**; topic list as a tappable checklist card; quiz questions as one-at-a-time tappable cards with "Question 4 of 20"; score cards; memory-trick messages; the after-chunk choice as three tappable options. Cards are real controls, never decorative (Danny guide §5).
+3. **Course list** (one visible structure, reachable from the chat header): courses → materials, lectures, transcripts, scores, weak topics, review due. Edit/delete lives here (today's Edit course + CourseManager). Anything here can also be done by asking the AI ("delete my Bio course"), which confirms before destructive actions.
+4. Existing screens (Lectures, lecture detail, record) become the course-list layer behind the chat, trimmed, not rebuilt. `app/(tabs)/index.tsx` is replaced as home by the chat screen; its course-tile UI moves to the course list in a dedicated, behavior-preserving refactor (CLAUDE.md §3).
+
+### AI actions
+The tutor can *act*, not only talk: create/rename a course, attach material, start a lecture recording (asks first), build the topic list, start/continue a quiz chunk, grade, save a review item. Each action is a server-validated, owner-scoped operation; the AI never executes anything the student didn't ask for, and destructive actions always confirm in the chat. Material and transcripts stay data, never instructions.
+
+### Rules carried over
+UX_PRINCIPLES.md applies to every card (44 pt targets, one primary action per card, one accent, Dark Mode, Dynamic Type, labels). Drafts, answers and the conversation are never lost on failure. Consent before data goes to the AI provider, named accurately.
+
+### Not in v1
+Voice chat; multiple parallel chats per course; teacher/group features.
+
+### Build order (each piece testable on Dan's iPhone)
+1. Chat-first home + AI course creation (replaces the course-tile home for new users; existing data untouched).
+2. Topic-list card + All topics (§6 step 3).
+3. Quiz cards in chunks with resume (§6 steps 4–5).
+4. After-chunk choices + memory pass (§6 step 6).
+5. Retest scope + per-concept tracking (§6 steps 7–8).
+6. Course list layer refactor (move today's screens behind the chat).
+
+## 8. Open decisions
 See the questions at the end of the session-1 summary, and DECISIONS.md.
