@@ -238,13 +238,13 @@ export const coachCases: CoachCase[] = [
     maxWords: 60,
   },
   {
-    name: "existing class, student wants tutoring: start a session, no duplicate course",
+    name: "existing class, student wants to be taught: explains in the chat, no actions",
     courses: [{ id: "bio-1", name: "BIOL 114", materials: 3, lectures: 1 }, { id: "phil", name: "PHIL 151", materials: 0, lectures: 0 }], firstVisit: false,
     history: [{ role: "assistant", content: "Welcome back. Continue with BIOL 114, or pick a course?" }],
     message: "teach me cell membranes, explain it to me before any questions",
-    expectedActions: [{ type: "start_session", name: "BIOL 114" }],
-    expectations: ["Says briefly that it is opening a study session on cell membranes"],
-    maxWords: 40,
+    expectedActions: [],
+    expectations: ["Explains cell membranes briefly and correctly right in the chat (a few sentences)", "Does not say it is opening a session", "Offers a set of questions afterwards"],
+    maxWords: 120,
   },
   {
     name: "content question in the home chat: short answer, offer a session, no actions",
@@ -270,7 +270,16 @@ export const coachCases: CoachCase[] = [
     expectations: ["Does not claim to have deleted anything", "Says deleting is done from the Courses tab"],
     maxWords: 50,
   },
-  // coach.v2: question sets in the chat (practice vs exam, results, memory tricks).
+  // coach.v2/v3: question sets in the chat (practice vs exam, results, memory tricks).
+  {
+    name: "student accepts the coach's offer of a set: asks practice or exam, no session hand-off",
+    courses: [{ id: "bio-1", name: "Bio 101", materials: 1, lectures: 0 }], firstVisit: false,
+    history: [{ role: "user", content: "I added an outline for the bio 101 course." }, { role: "assistant", content: "Got it, Bio 101 now has your outline. Want to start a quick set of questions based on it, or add more material first?" }],
+    message: "Sure",
+    expectedActions: [], expectedSuggestions: ["Practice", "Exam"],
+    expectations: ["Asks in one short line whether they want practice or exam", "Does not say it is opening a session"],
+    maxWords: 50,
+  },
   {
     name: "wants questions, kind unknown: asks practice or exam, starts nothing",
     courses: [{ id: "bio-1", name: "BIOL 114", materials: 3, lectures: 1 }], firstVisit: false, history: [],

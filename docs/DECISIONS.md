@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-05 — D-018: coach.v3 — no hand-off to the old session screen
+- The coach can no longer start a legacy study session. Accepting an offer of questions ("Sure") goes through the practice/exam question; "teach me" is answered in the chat, then a set is offered. Found on Dan's iPhone: after "Sure", v2 opened the old session screen. Evals: new cases for the "Sure" path and teach-me-in-chat; 13/13 twice.
+
 ## 2026-10-05 — D-017: Question sets run inside the chat; practice vs exam; coach.v2
 - A set is a study session underneath (grading, review items, reports unchanged), created by the coach's `start_quiz` action with the check-in skipped. Before any set the coach asks **Practice** (correct answer + why after each tap) or **Exam** (everything after Grade); both grade the same way. Default 10 questions, max 50. After grading the app sends "I finished the set." for the student; the coach sees the score and every missed question and offers three chips: memory tricks / another set on everything / another set on the missed topics (a targeted retest plus up to 2 earlier questions).
 - Prompt `coach.v2` (replaces v1): practice/exam gate, results context, chips, memory tricks. Evals: 12 cases, 12/12 twice on Claude Sonnet 5.5 (~$0.06 model cost per run). Three v1 eval cases were rewritten for v2 behavior (a quiz request now asks practice/exam first; `start_session` is only for "teach me").
