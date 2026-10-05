@@ -11,8 +11,10 @@
 - + uploader verified by Dan on iPhone (Bio 101 outline PDF saved); merged + pushed `7e2bc37`.
 - **Piece 3, question sets in the chat (D-017):** refactor `lib/session-quiz.ts` (behavior-preserving), then coach.v2 + `start_quiz` + practice/exam + results context + chips on the server; QuizCard on iPhone and web. 57/57 tests; typecheck; coach evals 12/12 ×2; iOS bundle. Merged + pushed (auto-deploy).
 
+- Dan tested from away (Expo tunnel mode now works: `@expo/ngrok` dev dependency + the darwin ngrok binaries un-stripped in pnpm-workspace.yaml; start with `--tunnel`). Found: "Sure" after the coach's offer opened the old session screen → coach.v3 (D-018) removes the hand-off. Evals 13/13 ×2.
+
 ### Next
-- Dan: reload the phone → "quiz me on Bio 101" → Practice → answer → Grade → chips. Report what the cards look like.
+- Dan: reload the phone → "quiz me on Bio 101" (or "Sure" to the offer) → Practice/Exam → answer → Grade → chips. Report what the cards look like.
 - Piece 2 (topic list card), then piece 4 polish (streaming, "Writing your questions…" progress).
 
 ### Needs real-iPhone check

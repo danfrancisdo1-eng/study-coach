@@ -16,7 +16,7 @@ import * as examPlanPrompt from "../src/prompts/exam-plan.v1";
 import * as tutorPrompt from "../src/prompts/tutor.v3";
 import * as sessionQuizPrompt from "../src/prompts/session-quiz.v1";
 import * as imageOcrPrompt from "../src/prompts/image-ocr.v1";
-import * as coachPrompt from "../src/prompts/coach.v2";
+import * as coachPrompt from "../src/prompts/coach.v3";
 import { taskConfig, type AiTask } from "../src/ai/tasks";
 import { classicQuizCases, coachCases, ocrCaseNames, planCases, sessionQuizCases, syllabusCases, tutorCases, type Source } from "./fixtures";
 import { gradeClassicQuiz, gradeCoach, gradeOcr, gradePlan, gradeSessionQuiz, gradeSyllabus, gradeTutor, type Score } from "./graders";
