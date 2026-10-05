@@ -3,7 +3,7 @@
 // chat-first home (routes/chat.ts) can start question sets with the same code.
 import { randomUUID } from "node:crypto";
 import { complete } from "../ai";
-import * as sessionQuizPrompt from "../prompts/session-quiz.v1";
+import * as sessionQuizPrompt from "../prompts/session-quiz.v2";
 
 export type JsonObject = Record<string, unknown>;
 export const SOURCE_CHUNK_LENGTH = 1_200;

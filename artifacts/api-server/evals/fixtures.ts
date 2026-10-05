@@ -71,6 +71,11 @@ const respiration: Source[] = [
   { id: "resp-3", label: "Lecture 7 slides", text: "The electron transport chain is located in the inner mitochondrial membrane. Oxygen is the final electron acceptor and combines with electrons and protons to form water. Most ATP is made here by ATP synthase through chemiosmosis." },
 ];
 
+// SCOPE material (session-quiz.v2): an outline lists topics; it is not content to quiz.
+const bioOutline: Source[] = [
+  { id: "outline-1", label: "Bio_101_Course_Outline.pdf", text: "BIO 101 Introductory Biology - Fall 2026. Week 1: The chemistry of life (atoms, water, macromolecules). Week 2: Cell structure and organelles. Week 3: Membranes and transport (diffusion, osmosis, active transport). Week 4: Energy and enzymes. Week 5: Cellular respiration. Week 6: Photosynthesis. Exam 1 covers weeks 1-6. Grading: exams 60%, labs 25%, quizzes 15%. Office hours Tue 2-4." },
+];
+
 const leadership: Source[] = [
   { id: "lead-1", label: "Reading: Greenleaf", text: "Robert Greenleaf introduced servant leadership in 1970. The servant-leader is servant first: the primary goal is the growth and well-being of people and communities." },
   { id: "lead-2", label: "Lecture 4", text: "Transformational leadership, described by James MacGregor Burns and extended by Bernard Bass, has four components: idealized influence, inspirational motivation, intellectual stimulation, and individualized consideration." },
@@ -110,6 +115,9 @@ export const sessionQuizCases: SessionQuizCase[] = [
     originalPrompts: ["What is osmosis?", "Which way does the sodium-potassium pump move sodium?"], weakConcepts: ["osmosis", "sodium-potassium pump"],
   },
   { name: "diagnostic leadership", topic: "Leadership theories", sources: leadership, expectedCount: 6, originalPrompts: [], weakConcepts: [] },
+  // Only an outline uploaded: the set must test biology, never the outline (D-019).
+  { name: "outline only: real subject questions, none about the document", topic: "Membranes and transport", sources: bioOutline, expectedCount: 8, originalPrompts: [], weakConcepts: [] },
+  { name: "outline only, general review across the exam's topics", topic: "General review", sources: bioOutline, expectedCount: 8, originalPrompts: [], weakConcepts: [] },
 ];
 
 export interface PlanCase {
@@ -203,7 +211,7 @@ export const ocrCaseNames = ["respiration-notes", "syllabus-excerpt", "vocab-lis
 /** Chat-first home coach (prompts/coach.v1, SPEC §7). */
 export interface CoachCase {
   name: string;
-  courses: { id: string; name: string; materials: number; lectures: number }[];
+  courses: { id: string; name: string; materials: number; lectures: number; materialNames?: string[]; scopeExcerpt?: string }[];
   firstVisit: boolean;
   history: { role: "user" | "assistant"; content: string }[];
   message: string;
@@ -243,7 +251,7 @@ export const coachCases: CoachCase[] = [
     history: [{ role: "assistant", content: "Welcome back. Continue with BIOL 114, or pick a course?" }],
     message: "teach me cell membranes, explain it to me before any questions",
     expectedActions: [],
-    expectations: ["Explains cell membranes briefly and correctly right in the chat (a few sentences)", "Does not say it is opening a session", "Offers a set of questions afterwards"],
+    expectations: ["Explains cell membranes briefly and correctly right in the chat (a few sentences)", "Does not say it is opening a session", "Offers a set of questions afterwards, in the text or as a suggestion chip"],
     maxWords: 120,
   },
   {
@@ -270,15 +278,51 @@ export const coachCases: CoachCase[] = [
     expectations: ["Does not claim to have deleted anything", "Says deleting is done from the Courses tab"],
     maxWords: 50,
   },
+  // coach.v4: topic step before a set.
+  {
+    name: "set requested without a topic, outline uploaded: proposes topics from the outline plus All topics",
+    courses: [{ id: "bio-1", name: "Bio 101", materials: 1, lectures: 0, materialNames: ["Bio_101_Course_Outline.pdf"], scopeExcerpt: "BIO 101 Introductory Biology - Fall 2026. Week 1: The chemistry of life (atoms, water, macromolecules). Week 2: Cell structure and organelles. Week 3: Membranes and transport (diffusion, osmosis, active transport). Week 4: Energy and enzymes. Week 5: Cellular respiration. Week 6: Photosynthesis. Exam 1 covers weeks 1-6." }], firstVisit: false,
+    history: [{ role: "assistant", content: "Got it, Bio 101 now has your outline. Want to start a quick set of questions based on it, or add more material first?" }],
+    message: "Sure",
+    expectedActions: [], expectedSuggestions: ["All topics"],
+    expectations: ["Proposes 3-5 topics that appear in the outline (e.g. cell structure, membranes and transport, cellular respiration, photosynthesis, enzymes)", "Asks which topic in one short line", "Does not start the set and does not ask practice/exam yet"],
+    maxWords: 60,
+  },
+  {
+    name: "set requested without a topic, no materials: proposes standard topics for the course",
+    courses: [{ id: "chem", name: "Intro Chemistry", materials: 0, lectures: 0 }], firstVisit: false, history: [],
+    message: "give me a quiz",
+    expectedActions: [], expectedSuggestions: ["All topics"],
+    expectations: ["Proposes 3-5 standard intro chemistry topics (e.g. atomic structure, bonding, stoichiometry, gases, thermochemistry)", "Asks which topic in one short line"],
+    maxWords: 60,
+  },
+  {
+    name: "topic chosen from the chips, kind still unknown: asks practice or exam",
+    courses: [{ id: "bio-1", name: "Bio 101", materials: 1, lectures: 0, materialNames: ["Bio_101_Course_Outline.pdf"] }], firstVisit: false,
+    history: [{ role: "user", content: "Sure" }, { role: "assistant", content: "Which topic: cell structure, membranes and transport, cellular respiration, photosynthesis, or all topics?" }],
+    message: "Membranes and transport",
+    expectedActions: [], expectedSuggestions: ["Practice", "Exam"],
+    expectations: ["Asks practice or exam in one short line", "Does not start the set yet"],
+    maxWords: 50,
+  },
+  {
+    name: "topic and kind known: starts the set on that topic",
+    courses: [{ id: "bio-1", name: "Bio 101", materials: 1, lectures: 0 }], firstVisit: false,
+    history: [{ role: "user", content: "Membranes and transport" }, { role: "assistant", content: "Practice (answers as you go) or exam (results at the end)?" }],
+    message: "Exam",
+    expectedActions: [{ type: "start_quiz", name: "Bio 101", kind: "exam" }],
+    expectations: ["Confirms briefly that the first question is coming", "The set's topic is membranes and transport, not general review"],
+    maxWords: 40,
+  },
   // coach.v2/v3: question sets in the chat (practice vs exam, results, memory tricks).
   {
     name: "student accepts the coach's offer of a set: asks practice or exam, no session hand-off",
     courses: [{ id: "bio-1", name: "Bio 101", materials: 1, lectures: 0 }], firstVisit: false,
     history: [{ role: "user", content: "I added an outline for the bio 101 course." }, { role: "assistant", content: "Got it, Bio 101 now has your outline. Want to start a quick set of questions based on it, or add more material first?" }],
     message: "Sure",
-    expectedActions: [], expectedSuggestions: ["Practice", "Exam"],
-    expectations: ["Asks in one short line whether they want practice or exam", "Does not say it is opening a session"],
-    maxWords: 50,
+    expectedActions: [], expectedSuggestions: ["All topics"],
+    expectations: ["Asks which topic (one or two short sentences), proposing a few", "Does not say it is opening a session", "Does not start a set"],
+    maxWords: 60,
   },
   {
     name: "wants questions, kind unknown: asks practice or exam, starts nothing",
