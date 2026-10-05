@@ -8,9 +8,15 @@
 - Migration 0002 run on Render by Dan (`home_chats columns: 6`); `44c0ef5` deployed and live. Verified on Dan's iPhone: Coach tab opens, "Bio 101" created the course. Render Auto-Deploy is now ON: a push to `main` deploys.
 - Branch `refactor/material-intake-sheet`: (1) behavior-preserving extraction of the material uploader + ActionButton into `components/`; (2) the chat's + opens that sheet directly (course chips when several courses, "Record a lecture" button); web gets a course picker + intake under the chat. 52/52 tests; typecheck; iOS bundle.
 
+- + uploader verified by Dan on iPhone (Bio 101 outline PDF saved); merged + pushed `7e2bc37`.
+- **Piece 3, question sets in the chat (D-017):** refactor `lib/session-quiz.ts` (behavior-preserving), then coach.v2 + `start_quiz` + practice/exam + results context + chips on the server; QuizCard on iPhone and web. 57/57 tests; typecheck; coach evals 12/12 ×2; iOS bundle. Merged + pushed (auto-deploy).
+
 ### Next
-- Dan: reload the phone, + in the chat → Photos → save → ask the coach what Bio 101 has. Then merge + push (auto-deploys).
-- Piece 2 (topic list card).
+- Dan: reload the phone → "quiz me on Bio 101" → Practice → answer → Grade → chips. Report what the cards look like.
+- Piece 2 (topic list card), then piece 4 polish (streaming, "Writing your questions…" progress).
+
+### Needs real-iPhone check
+- Question cards (practice feedback, exam grade, resume after leaving the app), chips, "I finished the set." follow-up, missed-topics retest.
 
 ### Needs real-iPhone check
 - Coach tab end to end; consent card for a brand-new account; Open button on a started session.

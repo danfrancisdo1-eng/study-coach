@@ -238,6 +238,17 @@ export const StudyQuizMode = {
   targeted: 'targeted',
 } as const;
 
+/**
+ * Chat-first sets only. Practice: feedback appears on each answered question before grading.
+ */
+export type StudyQuizKind = typeof StudyQuizKind[keyof typeof StudyQuizKind];
+
+
+export const StudyQuizKind = {
+  practice: 'practice',
+  exam: 'exam',
+} as const;
+
 export type StudyQuestionFlagKind = typeof StudyQuestionFlagKind[keyof typeof StudyQuestionFlagKind];
 
 
@@ -285,12 +296,14 @@ export type StudyQuizQuestionsItem = {
   options: StudyQuizQuestionsItemOptionsItem[];
   flag: StudyQuestionFlag | null;
   answer?: StudyQuizQuestionsItemAnswer;
-  /** Available only after this attempt has been graded. */
+  /** Available after this attempt has been graded, or, in a practice set, as soon as the question is answered. */
   feedback?: StudyQuestionFeedback | null;
 };
 
 export interface StudyQuiz {
   mode: StudyQuizMode;
+  /** Chat-first sets only. Practice: feedback appears on each answered question before grading. */
+  kind?: StudyQuizKind;
   /** @minimum 1 */
   expectedCount: number;
   /** @minimum 0 */
@@ -353,7 +366,19 @@ export type HomeChatActionType = typeof HomeChatActionType[keyof typeof HomeChat
 
 export const HomeChatActionType = {
   create_course: 'create_course',
+  start_quiz: 'start_quiz',
   start_session: 'start_session',
+} as const;
+
+/**
+ * start_quiz: practice reveals feedback per answer; exam only after grading
+ */
+export type HomeChatActionKind = typeof HomeChatActionKind[keyof typeof HomeChatActionKind];
+
+
+export const HomeChatActionKind = {
+  practice: 'practice',
+  exam: 'exam',
 } as const;
 
 export interface HomeChatAction {
@@ -361,9 +386,37 @@ export interface HomeChatAction {
   courseId: string;
   /** create_course: the new course's name */
   name?: string;
-  /** start_session: open this study session */
+  /** start_quiz / start_session: the study session holding the set / conversation */
   sessionId?: string;
   topic?: string;
+  /** start_quiz: practice reveals feedback per answer; exam only after grading */
+  kind?: HomeChatActionKind;
+  /**
+     * start_quiz: questions in the set
+     * @minimum 1
+     * @maximum 50
+     */
+  count?: number;
+}
+
+export type HomeChatActiveQuizKind = typeof HomeChatActiveQuizKind[keyof typeof HomeChatActiveQuizKind];
+
+
+export const HomeChatActiveQuizKind = {
+  practice: 'practice',
+  exam: 'exam',
+} as const;
+
+/**
+ * The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.
+ */
+export interface HomeChatActiveQuiz {
+  sessionId: string;
+  courseId: string;
+  topic: string;
+  kind: HomeChatActiveQuizKind;
+  answered: number;
+  total: number;
 }
 
 export type HomeChatMessageRole = typeof HomeChatMessageRole[keyof typeof HomeChatMessageRole];
@@ -380,11 +433,14 @@ export interface HomeChatMessage {
   content: string;
   at: string;
   actions?: HomeChatAction[];
+  /** Tap-to-reply chips under an assistant message */
+  suggestions?: string[];
 }
 
 export interface HomeChat {
   messages: HomeChatMessage[];
   version: number;
+  activeQuiz?: HomeChatActiveQuiz | null;
 }
 
 export type StudyQuizInputMode = typeof StudyQuizInputMode[keyof typeof StudyQuizInputMode];

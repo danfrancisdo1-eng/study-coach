@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetHomeChatQueryKey, useGetHomeChat, useSendHomeChatMessage, type HomeChat as HomeChatData } from '@workspace/api-client-react';
+import QuizCard from './QuizCard';
+
+const FINISHED_SET_MESSAGE = 'I finished the set.';
 
 /**
  * Chat-first home (SPEC §7, D-016), web version of the iPhone Coach tab. The coach can
@@ -17,21 +20,26 @@ export default function HomeChat({ aiConsent, busy, onCoursesChanged, onOpenSess
   const send = useSendHomeChatMessage();
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
+  const [gradedSessionId, setGradedSessionId] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const messages = chat.data?.messages ?? [];
   const version = chat.data?.version ?? 0;
   const sending = send.isPending;
+  const activeQuiz = chat.data?.activeQuiz ?? null;
+  const quizSessionId = activeQuiz?.sessionId ?? gradedSessionId;
+  const lastMessage = messages[messages.length - 1];
+  const chips = lastMessage?.role === 'assistant' && !activeQuiz ? (lastMessage.suggestions ?? []) : [];
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'nearest' }); }, [messages.length]);
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    const content = draft.trim();
+  const sendText = async (text: string) => {
+    const content = text.trim();
     if (!content || sending || busy || !aiConsent) return;
     setError('');
     try {
       const result: HomeChatData = await send.mutateAsync({ data: { content, version } });
       client.setQueryData(getGetHomeChatQueryKey(), result);
+      if (result.activeQuiz) setGradedSessionId(null);
       setDraft('');
       const actions = result.messages[result.messages.length - 1]?.actions ?? [];
       if (actions.some(action => action.type === 'create_course')) onCoursesChanged();
@@ -44,6 +52,7 @@ export default function HomeChat({ aiConsent, busy, onCoursesChanged, onOpenSess
       setError(data && typeof data.error === 'string' ? data.error : 'The coach could not answer just now. Try again.');
     }
   };
+  const submit = (event: FormEvent) => { event.preventDefault(); void sendText(draft); };
 
   return (
     <section className="ae-card" data-testid="panel-home-chat" style={{ marginBottom: 17 }}>
@@ -63,13 +72,21 @@ export default function HomeChat({ aiConsent, busy, onCoursesChanged, onOpenSess
               <p>{turn.content}</p>
               {turn.actions?.map(action => (
                 <p key={`${action.type}-${action.courseId}-${action.sessionId ?? ''}`} className="ae-muted" style={{ fontSize: '.85rem' }}>
-                  {action.type === 'create_course' ? `Added course: ${action.name ?? ''}` : <>Started a session: {action.topic ?? ''}{action.sessionId && <> · <button type="button" className="ae-button ae-button--quiet" onClick={() => onOpenSession(action.sessionId!)} data-testid="button-open-session">Open</button></>}</>}
+                  {action.type === 'create_course' ? `Added course: ${action.name ?? ''}`
+                    : action.type === 'start_quiz' ? `${action.kind === 'practice' ? 'Practice' : 'Exam'} set: ${action.count ?? ''} questions on ${action.topic ?? ''}`
+                    : <>Started a session: {action.topic ?? ''}{action.sessionId && <> · <button type="button" className="ae-button ae-button--quiet" onClick={() => onOpenSession(action.sessionId!)} data-testid="button-open-session">Open</button></>}</>}
                 </p>
               ))}
             </div>
           </article>
         ))}
-        {sending && <p className="ae-muted">Coach is thinking…</p>}
+        {chips.length > 0 && <div className="ae-row" data-testid="row-suggestions">
+          {chips.map(chip => <button key={chip} type="button" className="ae-button ae-button--outline" disabled={sending || busy} onClick={() => void sendText(chip)} data-testid="button-suggestion">{chip}</button>)}
+        </div>}
+        {quizSessionId && <QuizCard key={quizSessionId} sessionId={quizSessionId}
+          onGraded={graded => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
+          onError={problem => { const data = (problem as { data?: { error?: unknown } }).data; setError(data && typeof data.error === 'string' ? data.error : 'Something went wrong. Try again.'); }} />}
+        {sending && <p className="ae-muted">Coach is working… writing questions can take up to a minute.</p>}
         <div ref={endRef} />
       </div>
       {error && <p className="ae-callout ae-callout--error" role="alert" data-testid="status-chat-error" style={{ marginTop: 12 }}>{error}</p>}

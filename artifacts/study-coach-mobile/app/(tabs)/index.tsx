@@ -14,6 +14,9 @@ import { useColors } from '@/hooks/useColors';
 import { ActionButton } from '@/components/ActionButton';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
 import { defaultIntakeCourse, type IntakeCourse } from '@/lib/intake-course';
+import { QuizCard } from '@/components/QuizCard';
+
+const FINISHED_SET_MESSAGE = 'I finished the set.'; // sent for the student after Grade so the coach can respond to the result
 
 /**
  * Chat-first home (SPEC §7, D-016): the conversation is the app. The coach asks for the
@@ -63,6 +66,7 @@ export default function CoachHome() {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
   const [intakeCourseId, setIntakeCourseId] = useState<string | null>(null); // non-null while the + sheet is open
+  const [gradedSessionId, setGradedSessionId] = useState<string | null>(null); // keeps the score card visible after grading
   const [intakeBusy, setIntakeBusy] = useState(false);
 
   const stateQuery = useGetStudyState({ query: { queryKey: [...getGetStudyStateQueryKey(), userId], enabled: !!userId } });
@@ -76,6 +80,10 @@ export default function CoachHome() {
   const busy = send.isPending || putState.isPending;
   const courses = coursesFrom(stateQuery.data?.state);
   const intakeCourse = courses.find((course) => course.id === intakeCourseId) ?? null;
+  const activeQuiz = chatQuery.data?.activeQuiz ?? null;
+  const quizSessionId = activeQuiz?.sessionId ?? gradedSessionId;
+  const lastMessage = messages[messages.length - 1];
+  const chips = lastMessage?.role === 'assistant' && !activeQuiz ? (lastMessage.suggestions ?? []) : [];
 
   useEffect(() => {
     if (messages.length) setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
@@ -96,13 +104,14 @@ export default function CoachHome() {
     }
   };
 
-  const sendMessage = async () => {
-    const content = draft.trim();
+  const sendText = async (text: string) => {
+    const content = text.trim();
     if (!content || busy || !consented) return;
     setError('');
     try {
       const result: HomeChat = await send.mutateAsync({ data: { content, version } });
       queryClient.setQueryData([...getGetHomeChatQueryKey(), userId], result);
+      if (result.activeQuiz) setGradedSessionId(null); // a new set replaces the old score card
       setDraft('');
       Keyboard.dismiss();
       const last = result.messages[result.messages.length - 1];
@@ -112,6 +121,7 @@ export default function CoachHome() {
       }
       const started = actions.find((a) => a.type === 'start_session' && a.sessionId);
       if (started?.sessionId) router.push({ pathname: '/(tabs)/courses', params: { openSession: started.sessionId } });
+      if (actions.some((a) => a.type === 'start_quiz')) setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 300);
     } catch (problem) {
       const status = (problem as { status?: number }).status;
       if (status === 409) await queryClient.invalidateQueries({ queryKey: [...getGetHomeChatQueryKey(), userId] });
@@ -121,6 +131,8 @@ export default function CoachHome() {
 
   // The + corner (CLAUDE.md §8): opens the material sheet on the course the coach
   // most recently worked on; with no course yet, the coach asks for one first.
+  const sendMessage = () => sendText(draft);
+
   const openPlus = () => {
     const course = defaultIntakeCourse(courses, messages);
     if (!course) {
@@ -148,11 +160,22 @@ export default function CoachHome() {
     <View style={[styles.turn, item.role === 'user' ? styles.userTurn : styles.coachTurn]} testID={`chat-turn-${item.role}`}>
       <Text style={styles.turnRole}>{item.role === 'user' ? 'YOU' : 'COACH'}</Text>
       <Text style={styles.body}>{item.content}</Text>
+      {item.id === lastMessage?.id && chips.length ? (
+        <View style={styles.chipRow}>
+          {chips.map((chip) => (
+            <Pressable key={chip} accessibilityRole="button" disabled={busy} onPress={() => void sendText(chip)} style={[styles.suggestion, busy && styles.disabled]} testID="button-suggestion">
+              <Text style={styles.suggestionText}>{chip}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
       {item.actions?.map((action) => (
         <View key={`${action.type}-${action.courseId}-${action.sessionId ?? ''}`} style={styles.actionChip}>
-          <Feather name={action.type === 'create_course' ? 'plus-circle' : 'play-circle'} size={14} color={colors.primary} />
+          <Feather name={action.type === 'create_course' ? 'plus-circle' : action.type === 'start_quiz' ? 'edit-3' : 'play-circle'} size={14} color={colors.primary} />
           <Text style={styles.actionText}>
-            {action.type === 'create_course' ? `Added course: ${action.name ?? ''}` : `Started a session: ${action.topic ?? ''}`}
+            {action.type === 'create_course' ? `Added course: ${action.name ?? ''}`
+              : action.type === 'start_quiz' ? `${action.kind === 'practice' ? 'Practice' : 'Exam'} set: ${action.count ?? ''} questions on ${action.topic ?? ''}`
+              : `Started a session: ${action.topic ?? ''}`}
           </Text>
           {action.type === 'start_session' && action.sessionId ? (
             <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/(tabs)/courses', params: { openSession: action.sessionId } })} style={styles.openLink} testID="button-open-session">
@@ -216,7 +239,16 @@ export default function CoachHome() {
               <Text style={styles.body}>Hey. What class are we working on? You can also add notes, a syllabus, photos, or record a lecture with the + button.</Text>
             </View>
           )}
-          ListFooterComponent={busy ? <View style={styles.busyRow}><ActivityIndicator color={colors.primary} size="small" /><Text style={styles.caption}>Coach is thinking…</Text></View> : null}
+          ListFooterComponent={(
+            <View style={styles.footer}>
+              {quizSessionId && userId ? (
+                <QuizCard key={quizSessionId} sessionId={quizSessionId} userId={userId}
+                  onGraded={(graded) => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
+                  onError={(problem) => setError(readableError(problem))} />
+              ) : null}
+              {busy ? <View style={styles.busyRow}><ActivityIndicator color={colors.primary} size="small" /><Text style={styles.caption}>{send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '') ? 'Coach is working… writing questions can take up to a minute.' : 'Coach is thinking…'}</Text></View> : null}
+            </View>
+          )}
           testID="list-home-chat"
         />
       )}
@@ -305,6 +337,10 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   openLink: { minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   openLinkText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   busyRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 8 },
+  footer: { gap: 12 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
+  suggestion: { minHeight: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  suggestionText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   composer: { paddingHorizontal: 14, paddingTop: 8, gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
   composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   plusButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },

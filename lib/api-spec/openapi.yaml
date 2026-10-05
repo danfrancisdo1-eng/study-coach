@@ -635,11 +635,24 @@ components:
       type: object
       required: [type, courseId]
       properties:
-        type: { type: string, enum: [create_course, start_session] }
+        type: { type: string, enum: [create_course, start_quiz, start_session] }
         courseId: { type: string }
         name: { type: string, description: "create_course: the new course's name" }
-        sessionId: { type: string, format: uuid, description: "start_session: open this study session" }
+        sessionId: { type: string, format: uuid, description: "start_quiz / start_session: the study session holding the set / conversation" }
         topic: { type: string }
+        kind: { type: string, enum: [practice, exam], description: "start_quiz: practice reveals feedback per answer; exam only after grading" }
+        count: { type: integer, minimum: 1, maximum: 50, description: "start_quiz: questions in the set" }
+    HomeChatActiveQuiz:
+      type: object
+      description: The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.
+      required: [sessionId, courseId, topic, kind, answered, total]
+      properties:
+        sessionId: { type: string, format: uuid }
+        courseId: { type: string }
+        topic: { type: string }
+        kind: { type: string, enum: [practice, exam] }
+        answered: { type: integer }
+        total: { type: integer }
     HomeChatMessage:
       type: object
       required: [id, role, content, at]
@@ -649,12 +662,14 @@ components:
         content: { type: string }
         at: { type: string, format: date-time }
         actions: { type: array, items: { $ref: "#/components/schemas/HomeChatAction" } }
+        suggestions: { type: array, items: { type: string }, description: "Tap-to-reply chips under an assistant message" }
     HomeChat:
       type: object
       required: [messages, version]
       properties:
         messages: { type: array, items: { $ref: "#/components/schemas/HomeChatMessage" } }
         version: { type: integer }
+        activeQuiz: { oneOf: [{ $ref: "#/components/schemas/HomeChatActiveQuiz" }, { type: "null" }] }
     StudySourceStatus:
       type: object
       required: [usedSourceMaterial, selectedChunks, availableChunks, truncated, coverage, sources]
@@ -696,6 +711,7 @@ components:
       required: [mode, expectedCount, invalidItemCount, qualityNotice, questions, sourceStatus]
       properties:
         mode: { type: string, enum: [diagnostic, targeted] }
+        kind: { type: string, enum: [practice, exam], description: "Chat-first sets only. Practice: feedback appears on each answered question before grading." }
         expectedCount: { type: integer, minimum: 1 }
         invalidItemCount: { type: integer, minimum: 0 }
         qualityNotice:
@@ -728,7 +744,7 @@ components:
                   - { type: object, required: [optionId, assisted], properties: { optionId: { type: string, format: uuid }, assisted: { type: boolean } } }
                   - { type: "null" }
               feedback:
-                description: Available only after this attempt has been graded.
+                description: Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.
                 oneOf:
                   - $ref: "#/components/schemas/StudyQuestionFeedback"
                   - { type: "null" }

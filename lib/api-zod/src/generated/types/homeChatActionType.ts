@@ -11,5 +11,6 @@ export type HomeChatActionType = typeof HomeChatActionType[keyof typeof HomeChat
 
 export const HomeChatActionType = {
   create_course: 'create_course',
+  start_quiz: 'start_quiz',
   start_session: 'start_session',
 } as const;

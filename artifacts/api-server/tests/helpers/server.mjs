@@ -46,7 +46,7 @@ export async function startServer(t, aiPort, extraEnv = {}) {
   await new Promise((r) => probe.close(r));
   const child = spawn(process.execPath, ['dist/index.mjs'], {
     cwd: serverDir,
-    stdio: 'ignore',
+    stdio: process.env.TEST_SERVER_LOGS ? 'inherit' : 'ignore', // TEST_SERVER_LOGS=1 to see the server's pino output
     env: {
       PATH: process.env.PATH,
       PORT: String(port),

@@ -353,6 +353,7 @@ export const CreateStudySessionResponse = zod.object({
 })),
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(createStudySessionResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -392,7 +393,7 @@ export const CreateStudySessionResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -407,6 +408,7 @@ export const CreateStudySessionResponse = zod.object({
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(createStudySessionResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -446,7 +448,7 @@ export const CreateStudySessionResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -562,6 +564,7 @@ export const GetStudySessionResponse = zod.object({
 })),
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(getStudySessionResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -601,7 +604,7 @@ export const GetStudySessionResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -616,6 +619,7 @@ export const GetStudySessionResponse = zod.object({
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(getStudySessionResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -655,7 +659,7 @@ export const GetStudySessionResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -871,6 +875,10 @@ export const DeleteLectureResponse = zod.void()
 /**
  * @summary The chat-first home conversation for the signed-in account (SPEC §7)
  */
+export const getHomeChatResponseMessagesItemActionsItemCountMax = 50;
+
+
+
 export const GetHomeChatResponse = zod.object({
   "messages": zod.array(zod.object({
   "id": zod.string(),
@@ -878,14 +886,25 @@ export const GetHomeChatResponse = zod.object({
   "content": zod.string(),
   "at": zod.coerce.date(),
   "actions": zod.array(zod.object({
-  "type": zod.enum(['create_course', 'start_session']),
+  "type": zod.enum(['create_course', 'start_quiz', 'start_session']),
   "courseId": zod.string(),
   "name": zod.string().optional().describe('create_course: the new course\'s name'),
-  "sessionId": zod.string().uuid().optional().describe('start_session: open this study session'),
-  "topic": zod.string().optional()
-})).optional()
+  "sessionId": zod.string().uuid().optional().describe('start_quiz / start_session: the study session holding the set / conversation'),
+  "topic": zod.string().optional(),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('start_quiz: practice reveals feedback per answer; exam only after grading'),
+  "count": zod.number().int().min(1).max(getHomeChatResponseMessagesItemActionsItemCountMax).optional().describe('start_quiz: questions in the set')
+})).optional(),
+  "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message')
 })),
-  "version": zod.number().int()
+  "version": zod.number().int(),
+  "activeQuiz": zod.union([zod.object({
+  "sessionId": zod.string().uuid(),
+  "courseId": zod.string(),
+  "topic": zod.string(),
+  "kind": zod.enum(['practice', 'exam']),
+  "answered": zod.number().int(),
+  "total": zod.number().int()
+}).describe('The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.'),zod.null()]).optional()
 })
 
 
@@ -904,6 +923,10 @@ export const SendHomeChatMessageBody = zod.object({
   "version": zod.number().int().min(sendHomeChatMessageBodyVersionMin).describe('Conversation version from the last GET/POST; 0 for a new conversation.')
 })
 
+export const sendHomeChatMessageResponseMessagesItemActionsItemCountMax = 50;
+
+
+
 export const SendHomeChatMessageResponse = zod.object({
   "messages": zod.array(zod.object({
   "id": zod.string(),
@@ -911,14 +934,25 @@ export const SendHomeChatMessageResponse = zod.object({
   "content": zod.string(),
   "at": zod.coerce.date(),
   "actions": zod.array(zod.object({
-  "type": zod.enum(['create_course', 'start_session']),
+  "type": zod.enum(['create_course', 'start_quiz', 'start_session']),
   "courseId": zod.string(),
   "name": zod.string().optional().describe('create_course: the new course\'s name'),
-  "sessionId": zod.string().uuid().optional().describe('start_session: open this study session'),
-  "topic": zod.string().optional()
-})).optional()
+  "sessionId": zod.string().uuid().optional().describe('start_quiz / start_session: the study session holding the set / conversation'),
+  "topic": zod.string().optional(),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('start_quiz: practice reveals feedback per answer; exam only after grading'),
+  "count": zod.number().int().min(1).max(sendHomeChatMessageResponseMessagesItemActionsItemCountMax).optional().describe('start_quiz: questions in the set')
+})).optional(),
+  "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message')
 })),
-  "version": zod.number().int()
+  "version": zod.number().int(),
+  "activeQuiz": zod.union([zod.object({
+  "sessionId": zod.string().uuid(),
+  "courseId": zod.string(),
+  "topic": zod.string(),
+  "kind": zod.enum(['practice', 'exam']),
+  "answered": zod.number().int(),
+  "total": zod.number().int()
+}).describe('The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.'),zod.null()]).optional()
 })
 
 
@@ -974,6 +1008,7 @@ export const CheckInStudySessionResponse = zod.object({
 })),
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(checkInStudySessionResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1013,7 +1048,7 @@ export const CheckInStudySessionResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -1028,6 +1063,7 @@ export const CheckInStudySessionResponse = zod.object({
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(checkInStudySessionResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1067,7 +1103,7 @@ export const CheckInStudySessionResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -1164,6 +1200,7 @@ export const SendStudyMessageResponse = zod.object({
 })),
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(sendStudyMessageResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1203,7 +1240,7 @@ export const SendStudyMessageResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -1218,6 +1255,7 @@ export const SendStudyMessageResponse = zod.object({
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(sendStudyMessageResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1257,7 +1295,7 @@ export const SendStudyMessageResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -1350,6 +1388,7 @@ export const GenerateStudyQuizResponse = zod.object({
 })),
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(generateStudyQuizResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1389,7 +1428,7 @@ export const GenerateStudyQuizResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -1404,6 +1443,7 @@ export const GenerateStudyQuizResponse = zod.object({
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(generateStudyQuizResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1443,7 +1483,7 @@ export const GenerateStudyQuizResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -1537,6 +1577,7 @@ export const SaveStudyAnswerResponse = zod.object({
 })),
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(saveStudyAnswerResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1576,7 +1617,7 @@ export const SaveStudyAnswerResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -1591,6 +1632,7 @@ export const SaveStudyAnswerResponse = zod.object({
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(saveStudyAnswerResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1630,7 +1672,7 @@ export const SaveStudyAnswerResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -1729,6 +1771,7 @@ export const FlagStudyQuestionResponse = zod.object({
 })),
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(flagStudyQuestionResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1768,7 +1811,7 @@ export const FlagStudyQuestionResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -1783,6 +1826,7 @@ export const FlagStudyQuestionResponse = zod.object({
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(flagStudyQuestionResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1822,7 +1866,7 @@ export const FlagStudyQuestionResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -1910,6 +1954,7 @@ export const GradeStudyQuizResponse = zod.object({
 })),
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(gradeStudyQuizResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1949,7 +1994,7 @@ export const GradeStudyQuizResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -1964,6 +2009,7 @@ export const GradeStudyQuizResponse = zod.object({
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(gradeStudyQuizResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -2003,7 +2049,7 @@ export const GradeStudyQuizResponse = zod.object({
   "explanation": zod.string(),
   "concept": zod.string(),
   "assisted": zod.boolean()
-}),zod.null()]).optional().describe('Available only after this attempt has been graded.')
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
 })),
   "grade": zod.union([zod.object({
   "correct": zod.number().int(),

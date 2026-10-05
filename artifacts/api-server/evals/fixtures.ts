@@ -207,8 +207,15 @@ export interface CoachCase {
   firstVisit: boolean;
   history: { role: "user" | "assistant"; content: string }[];
   message: string;
-  /** Exact action list the coach must return (type + name; topic checked loosely). */
-  expectedActions: { type: "create_course" | "start_session"; name: string }[];
+  /** Exact action list the coach must return (type + name; topic checked loosely; kind/scope when given). */
+  expectedActions: { type: "create_course" | "start_quiz" | "start_session"; name: string; kind?: "practice" | "exam"; scope?: "all" | "missed" }[];
+  /** Suggestion chips that must appear (case-insensitive, in any order), if any. */
+  expectedSuggestions?: string[];
+  /** The latest question set from this chat, as routes/chat.ts would describe it. */
+  quiz?: {
+    courseName: string; topic: string; kind: "practice" | "exam"; answered: number; total: number;
+    graded: { correct: number; percent: number; missed: { concept: string; prompt: string; chose: string | null; correct: string; explanation: string }[] } | null;
+  } | null;
   /** What a good reply must do, for the judge. */
   expectations: string[];
   maxWords: number;
@@ -231,12 +238,12 @@ export const coachCases: CoachCase[] = [
     maxWords: 60,
   },
   {
-    name: "existing class, student wants to study: start a session, no duplicate course",
+    name: "existing class, student wants tutoring: start a session, no duplicate course",
     courses: [{ id: "bio-1", name: "BIOL 114", materials: 3, lectures: 1 }, { id: "phil", name: "PHIL 151", materials: 0, lectures: 0 }], firstVisit: false,
     history: [{ role: "assistant", content: "Welcome back. Continue with BIOL 114, or pick a course?" }],
-    message: "quiz me on bio, cell membranes",
+    message: "teach me cell membranes, explain it to me before any questions",
     expectedActions: [{ type: "start_session", name: "BIOL 114" }],
-    expectations: ["Says it is opening a study session on cell membranes in one short sentence"],
+    expectations: ["Says briefly that it is opening a study session on cell membranes"],
     maxWords: 40,
   },
   {
@@ -262,5 +269,70 @@ export const coachCases: CoachCase[] = [
     expectedActions: [],
     expectations: ["Does not claim to have deleted anything", "Says deleting is done from the Courses tab"],
     maxWords: 50,
+  },
+  // coach.v2: question sets in the chat (practice vs exam, results, memory tricks).
+  {
+    name: "wants questions, kind unknown: asks practice or exam, starts nothing",
+    courses: [{ id: "bio-1", name: "BIOL 114", materials: 3, lectures: 1 }], firstVisit: false, history: [],
+    message: "quiz me on cell membranes, 20 questions",
+    expectedActions: [], expectedSuggestions: ["Practice", "Exam"],
+    expectations: ["Asks in one short line whether they want practice (answers shown as you go) or exam (results at the end)", "Does not start the set yet"],
+    maxWords: 60,
+  },
+  {
+    name: "kind chosen: starts a practice set with the requested count",
+    courses: [{ id: "bio-1", name: "BIOL 114", materials: 3, lectures: 1 }], firstVisit: false,
+    history: [{ role: "user", content: "quiz me on cell membranes, 20 questions" }, { role: "assistant", content: "Practice (answers as you go) or exam (results at the end)?" }],
+    message: "practice",
+    expectedActions: [{ type: "start_quiz", name: "BIOL 114", kind: "practice" }],
+    expectations: ["Briefly confirms (one or two short sentences) that the first question is coming", "Does not write any question text itself"],
+    maxWords: 40,
+  },
+  {
+    name: "set in progress: helps briefly and points back to the set",
+    courses: [{ id: "bio-1", name: "BIOL 114", materials: 3, lectures: 1 }], firstVisit: false, history: [],
+    quiz: { courseName: "BIOL 114", topic: "cell membranes", kind: "exam", answered: 3, total: 10, graded: null },
+    message: "wait, what's the difference between diffusion and osmosis?",
+    expectedActions: [],
+    expectations: ["Answers correctly in 2-4 sentences (osmosis is diffusion of water across a selectively permeable membrane)", "Mentions the set is waiting / to finish it"],
+    maxWords: 100,
+  },
+  {
+    name: "after a graded set with misses: one line plus the three choices",
+    courses: [{ id: "bio-1", name: "BIOL 114", materials: 3, lectures: 1 }], firstVisit: false, history: [],
+    quiz: { courseName: "BIOL 114", topic: "cell membranes", kind: "practice", answered: 10, total: 10, graded: { correct: 7, percent: 70, missed: [
+      { concept: "Osmosis", prompt: "In a hypotonic solution an animal cell will...", chose: "shrink", correct: "swell and may burst", explanation: "Water moves into the cell because solute concentration is higher inside." },
+      { concept: "Active transport", prompt: "Which process requires ATP?", chose: "facilitated diffusion", correct: "sodium-potassium pump", explanation: "Moving ions against their gradient needs energy." },
+      { concept: "Membrane structure", prompt: "What makes the bilayer selectively permeable?", chose: "cholesterol only", correct: "the hydrophobic core plus transport proteins", explanation: "Nonpolar molecules pass; polar/charged ones need proteins." },
+    ] } },
+    message: "I finished the set.",
+    expectedActions: [], expectedSuggestions: ["Memory tricks for the misses", "Another set on everything", "Another set on the missed topics"],
+    expectations: ["One line about the result (7 of 10), no repeat of the corrections", "Offers exactly the three choices as suggestions"],
+    maxWords: 40,
+  },
+  {
+    name: "memory tricks for the misses",
+    courses: [{ id: "bio-1", name: "BIOL 114", materials: 3, lectures: 1 }], firstVisit: false,
+    history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: "7 of 10, solid. What next?" }],
+    quiz: { courseName: "BIOL 114", topic: "cell membranes", kind: "practice", answered: 10, total: 10, graded: { correct: 7, percent: 70, missed: [
+      { concept: "Osmosis", prompt: "In a hypotonic solution an animal cell will...", chose: "shrink", correct: "swell and may burst", explanation: "Water moves into the cell because solute concentration is higher inside." },
+      { concept: "Active transport", prompt: "Which process requires ATP?", chose: "facilitated diffusion", correct: "sodium-potassium pump", explanation: "Moving ions against their gradient needs energy." },
+    ] } },
+    message: "Memory tricks for the misses",
+    expectedActions: [],
+    expectations: ["Gives a mnemonic, association or word trick for the osmosis/hypotonic miss", "Gives one for active transport / sodium-potassium pump needing ATP", "Ends with a teach-back question or an offer to quiz again"],
+    maxWords: 220,
+  },
+  {
+    name: "another set on the missed topics: exam, scope missed",
+    courses: [{ id: "bio-1", name: "BIOL 114", materials: 3, lectures: 1 }], firstVisit: false,
+    history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: "7 of 10, solid. What next?" }],
+    quiz: { courseName: "BIOL 114", topic: "cell membranes", kind: "exam", answered: 10, total: 10, graded: { correct: 7, percent: 70, missed: [
+      { concept: "Osmosis", prompt: "In a hypotonic solution an animal cell will...", chose: "shrink", correct: "swell and may burst", explanation: "Water moves into the cell." },
+    ] } },
+    message: "Another set on the missed topics",
+    expectedActions: [{ type: "start_quiz", name: "BIOL 114", kind: "exam", scope: "missed" }],
+    expectations: ["Briefly confirms (one or two short sentences) that a set on the missed topics is coming"],
+    maxWords: 40,
   },
 ];
