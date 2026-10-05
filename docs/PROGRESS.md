@@ -1,5 +1,17 @@
 # Progress
 
+## Session 3 — 2026-10-05
+
+### Done (branch `feature/chat-first-home`, not merged, not deployed)
+- Chat-first home, piece 1 (SPEC §7, D-016): server (`home_chats` table, `/study/chat`, `coach.v1`, validated actions), iPhone Coach tab + Courses tab, web HomeChat panel. Verified here: typecheck; 48/48 tests (incl. new unit + end-to-end chat tests); coach evals 6/6; iOS bundle builds with the new screen.
+
+### Next
+- Dan: run migration 0002 on Render (additive), push + deploy, then try the Coach tab on his iPhone: first message, name a class, "quiz me on …" → session opens on the Courses tab.
+- Then merge to `main`; piece 2 (topic list card).
+
+### Needs real-iPhone check
+- Coach tab end to end; consent card for a brand-new account; Open button on a started session.
+
 ## Session 2 — 2026-10-04
 
 ### Done

@@ -17,9 +17,15 @@ function NativeTabLayout() {
     <NativeTabs>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Icon
-          sf={{ default: 'house', selected: 'house.fill' }}
+          sf={{ default: 'bubble.left', selected: 'bubble.left.fill' }}
         />
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Coach</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="courses">
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'books.vertical', selected: 'books.vertical.fill' }}
+        />
+        <NativeTabs.Trigger.Label>Courses</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -66,12 +72,24 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'Coach',
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
+              <SymbolView name="bubble.left" tintColor={color} size={24} />
             ) : (
-              <Feather name="home" size={22} color={color} />
+              <Feather name="message-circle" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="courses"
+        options={{
+          title: 'Courses',
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="books.vertical" tintColor={color} size={24} />
+            ) : (
+              <Feather name="book" size={22} color={color} />
             ),
         }}
       />

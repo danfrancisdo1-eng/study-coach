@@ -1,0 +1,83 @@
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { getGetHomeChatQueryKey, useGetHomeChat, useSendHomeChatMessage, type HomeChat as HomeChatData } from '@workspace/api-client-react';
+
+/**
+ * Chat-first home (SPEC §7, D-016), web version of the iPhone Coach tab. The coach can
+ * create a course or start a study session; the parent opens the session.
+ */
+export default function HomeChat({ aiConsent, busy, onCoursesChanged, onOpenSession }: {
+  aiConsent: boolean;
+  busy?: boolean;
+  onCoursesChanged: () => void;
+  onOpenSession: (sessionId: string) => void;
+}) {
+  const client = useQueryClient();
+  const chat = useGetHomeChat();
+  const send = useSendHomeChatMessage();
+  const [draft, setDraft] = useState('');
+  const [error, setError] = useState('');
+  const endRef = useRef<HTMLDivElement>(null);
+  const messages = chat.data?.messages ?? [];
+  const version = chat.data?.version ?? 0;
+  const sending = send.isPending;
+
+  useEffect(() => { endRef.current?.scrollIntoView({ block: 'nearest' }); }, [messages.length]);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    const content = draft.trim();
+    if (!content || sending || busy || !aiConsent) return;
+    setError('');
+    try {
+      const result: HomeChatData = await send.mutateAsync({ data: { content, version } });
+      client.setQueryData(getGetHomeChatQueryKey(), result);
+      setDraft('');
+      const actions = result.messages[result.messages.length - 1]?.actions ?? [];
+      if (actions.some(action => action.type === 'create_course')) onCoursesChanged();
+      const started = actions.find(action => action.type === 'start_session' && action.sessionId);
+      if (started?.sessionId) onOpenSession(started.sessionId);
+    } catch (problem) {
+      const status = (problem as { status?: number }).status;
+      if (status === 409) void client.invalidateQueries({ queryKey: getGetHomeChatQueryKey() });
+      const data = (problem as { data?: { error?: unknown } }).data;
+      setError(data && typeof data.error === 'string' ? data.error : 'The coach could not answer just now. Try again.');
+    }
+  };
+
+  return (
+    <section className="ae-card" data-testid="panel-home-chat" style={{ marginBottom: 17 }}>
+      <div className="ae-card-top"><div><span className="ae-kicker">YOUR COACH</span><h2 className="ae-heading">What are we working on?</h2></div></div>
+      <div className="ae-turns" style={{ display: 'grid', gap: 12, maxHeight: 420, overflowY: 'auto' }}>
+        {chat.isLoading && <p className="ae-muted">Loading your chat…</p>}
+        {chat.error && <p className="ae-muted" role="alert">Couldn’t load your chat. <button type="button" className="ae-button ae-button--quiet" onClick={() => void chat.refetch()}>Try again</button></p>}
+        {!chat.isLoading && !messages.length && (
+          <article className="ae-turn ae-turn--coach"><span className="ae-turn-badge">AI</span>
+            <div className="ae-turn-content"><p>Hey. What class are we working on? You can also add notes, a syllabus, or photos with the materials panel, or record a lecture on your iPhone.</p></div>
+          </article>
+        )}
+        {messages.map(turn => (
+          <article key={turn.id} className={`ae-turn ae-turn--${turn.role === 'user' ? 'student' : 'coach'}`} data-testid={`chat-turn-${turn.role}`}>
+            <span className="ae-turn-badge">{turn.role === 'user' ? 'YOU' : 'AI'}</span>
+            <div className="ae-turn-content">
+              <p>{turn.content}</p>
+              {turn.actions?.map(action => (
+                <p key={`${action.type}-${action.courseId}-${action.sessionId ?? ''}`} className="ae-muted" style={{ fontSize: '.85rem' }}>
+                  {action.type === 'create_course' ? `Added course: ${action.name ?? ''}` : <>Started a session: {action.topic ?? ''}{action.sessionId && <> · <button type="button" className="ae-button ae-button--quiet" onClick={() => onOpenSession(action.sessionId!)} data-testid="button-open-session">Open</button></>}</>}
+                </p>
+              ))}
+            </div>
+          </article>
+        ))}
+        {sending && <p className="ae-muted">Coach is thinking…</p>}
+        <div ref={endRef} />
+      </div>
+      {error && <p className="ae-callout ae-callout--error" role="alert" data-testid="status-chat-error" style={{ marginTop: 12 }}>{error}</p>}
+      <form className="ae-row" onSubmit={event => void submit(event)} style={{ marginTop: 14 }}>
+        <input className="ae-input" aria-label="Message your coach" placeholder={aiConsent ? 'Message your coach' : 'Accept the AI notice below to chat'} value={draft}
+          onChange={event => setDraft(event.target.value)} maxLength={8000} disabled={!aiConsent || sending || busy} style={{ flex: 1, minWidth: 200 }} data-testid="input-home-chat" />
+        <button type="submit" className="ae-button ae-button--ink" disabled={!aiConsent || sending || busy || !draft.trim()} data-testid="button-send-home-chat">Send</button>
+      </form>
+    </section>
+  );
+}
