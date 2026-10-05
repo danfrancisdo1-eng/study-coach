@@ -335,6 +335,58 @@ export interface StudyMessageInput {
   content: string;
 }
 
+export interface HomeChatInput {
+  /**
+     * @minLength 1
+     * @maxLength 8000
+     */
+  content: string;
+  /**
+     * Conversation version from the last GET/POST; 0 for a new conversation.
+     * @minimum 0
+     */
+  version: number;
+}
+
+export type HomeChatActionType = typeof HomeChatActionType[keyof typeof HomeChatActionType];
+
+
+export const HomeChatActionType = {
+  create_course: 'create_course',
+  start_session: 'start_session',
+} as const;
+
+export interface HomeChatAction {
+  type: HomeChatActionType;
+  courseId: string;
+  /** create_course: the new course's name */
+  name?: string;
+  /** start_session: open this study session */
+  sessionId?: string;
+  topic?: string;
+}
+
+export type HomeChatMessageRole = typeof HomeChatMessageRole[keyof typeof HomeChatMessageRole];
+
+
+export const HomeChatMessageRole = {
+  user: 'user',
+  assistant: 'assistant',
+} as const;
+
+export interface HomeChatMessage {
+  id: string;
+  role: HomeChatMessageRole;
+  content: string;
+  at: string;
+  actions?: HomeChatAction[];
+}
+
+export interface HomeChat {
+  messages: HomeChatMessage[];
+  version: number;
+}
+
 export type StudyQuizInputMode = typeof StudyQuizInputMode[keyof typeof StudyQuizInputMode];
 
 

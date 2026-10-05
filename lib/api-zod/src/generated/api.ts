@@ -869,6 +869,60 @@ export const DeleteLectureResponse = zod.void()
 
 
 /**
+ * @summary The chat-first home conversation for the signed-in account (SPEC §7)
+ */
+export const GetHomeChatResponse = zod.object({
+  "messages": zod.array(zod.object({
+  "id": zod.string(),
+  "role": zod.enum(['user', 'assistant']),
+  "content": zod.string(),
+  "at": zod.coerce.date(),
+  "actions": zod.array(zod.object({
+  "type": zod.enum(['create_course', 'start_session']),
+  "courseId": zod.string(),
+  "name": zod.string().optional().describe('create_course: the new course\'s name'),
+  "sessionId": zod.string().uuid().optional().describe('start_session: open this study session'),
+  "topic": zod.string().optional()
+})).optional()
+})),
+  "version": zod.number().int()
+})
+
+
+/**
+ * Requires persisted state.aiConsent=true. Actions the coach took are listed on the assistant message.
+ * @summary Send a message to the coach; it may create a course or start a study session
+ */
+export const sendHomeChatMessageBodyContentMax = 8000;
+
+export const sendHomeChatMessageBodyVersionMin = 0;
+
+
+
+export const SendHomeChatMessageBody = zod.object({
+  "content": zod.string().min(1).max(sendHomeChatMessageBodyContentMax),
+  "version": zod.number().int().min(sendHomeChatMessageBodyVersionMin).describe('Conversation version from the last GET/POST; 0 for a new conversation.')
+})
+
+export const SendHomeChatMessageResponse = zod.object({
+  "messages": zod.array(zod.object({
+  "id": zod.string(),
+  "role": zod.enum(['user', 'assistant']),
+  "content": zod.string(),
+  "at": zod.coerce.date(),
+  "actions": zod.array(zod.object({
+  "type": zod.enum(['create_course', 'start_session']),
+  "courseId": zod.string(),
+  "name": zod.string().optional().describe('create_course: the new course\'s name'),
+  "sessionId": zod.string().uuid().optional().describe('start_session: open this study session'),
+  "topic": zod.string().optional()
+})).optional()
+})),
+  "version": zod.number().int()
+})
+
+
+/**
  * @summary Record an optional session check-in or skip
  */
 export const CheckInStudySessionParams = zod.object({

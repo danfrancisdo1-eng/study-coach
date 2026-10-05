@@ -2,7 +2,8 @@
 // a Claude judge only for things code can't check (answer-key correctness, tutoring quality).
 import Anthropic from "@anthropic-ai/sdk";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
-import type { Source, SyllabusCase, TutorCase } from "./fixtures";
+import type { CoachCase, Source, SyllabusCase, TutorCase } from "./fixtures";
+import { parseCoachReply } from "../src/routes/chatActions";
 
 export interface Score {
   pass: boolean;
@@ -204,4 +205,39 @@ export function gradeOcr(expected: string, text: string | null, finished: boolea
   const notes = finished ? [] : ["generation did not finish"];
   if (score < 0.97) notes.push(`similarity ${score.toFixed(3)}`);
   return { pass: finished && score >= 0.97, score, notes };
+}
+
+export function gradeCoach(testCase: CoachCase, text: string | null): Promise<Score> {
+  return gradeCoachReply(testCase, text);
+}
+
+async function gradeCoachReply(testCase: CoachCase, text: string | null): Promise<Score> {
+  const parsed = parseCoachReply(text);
+  if (!parsed) return { pass: false, score: 0, notes: ["reply was not valid coach JSON"] };
+  const notes: string[] = [];
+  // Actions are checked by code: exact types and course names, in order.
+  const normalize = (value: string) => value.trim().replace(/\s+/g, " ").toLowerCase();
+  // A course name may carry extra words the student gave ("BIOL 114 Intro Biology"), so the
+  // expected name only has to be contained in it.
+  const got = parsed.actions.map((a) => `${a.type}:${normalize(a.name)}`);
+  const want = testCase.expectedActions.map((a) => `${a.type}:${normalize(a.name)}`);
+  const actionsOk = got.length === want.length && parsed.actions.every((a, i) =>
+    a.type === testCase.expectedActions[i]!.type && normalize(a.name).includes(normalize(testCase.expectedActions[i]!.name)));
+  if (!actionsOk) notes.push(`actions ${JSON.stringify(got)} != expected ${JSON.stringify(want)}`);
+  const words = parsed.reply.split(/\s+/).length;
+  const tooLong = words > testCase.maxWords;
+  if (tooLong) notes.push(`too long: ${words} words > ${testCase.maxWords}`);
+  const verdict = await judge<{ expectations: { met: boolean; reason: string }[] }>(
+    "You grade one reply from the AI study coach on an app's home chat, for students age 13+. Return exactly one verdict per expectation, in the same order. Check each expectation strictly.",
+    { courses: testCase.courses, history: testCase.history, studentMessage: testCase.message, expectations: testCase.expectations, reply: parsed.reply, actionsTaken: parsed.actions },
+    {
+      type: "object", additionalProperties: false, required: ["expectations"],
+      properties: { expectations: { type: "array", items: { type: "object", additionalProperties: false, required: ["met", "reason"], properties: { met: { type: "boolean" }, reason: { type: "string" } } } } },
+    },
+  );
+  const verdicts = testCase.expectations.map((_, i) => verdict.expectations[i] ?? { met: false, reason: "no verdict returned" });
+  for (const [i, e] of verdicts.entries()) if (!e.met) notes.push(`not met: ${testCase.expectations[i]} (${e.reason.slice(0, 140)})`);
+  const met = verdicts.filter((e) => e.met).length;
+  const score = (met / testCase.expectations.length) * (actionsOk ? 1 : 0.5) * (tooLong ? 0.5 : 1);
+  return { pass: actionsOk && !tooLong && met === testCase.expectations.length, score, notes };
 }

@@ -4,7 +4,7 @@
 //   AI_PROVIDER_<TASK>=openai|anthropic per-task override, e.g. AI_PROVIDER_TUTOR
 //   AI_MODEL_<TASK>=<model id>          per-task model override, e.g. AI_MODEL_TUTOR
 
-export type AiTask = "image_ocr" | "tutor" | "session_quiz" | "syllabus" | "classic_quiz" | "exam_plan";
+export type AiTask = "image_ocr" | "tutor" | "session_quiz" | "syllabus" | "classic_quiz" | "exam_plan" | "coach";
 export type AiProvider = "openai" | "anthropic";
 export type Effort = "low" | "medium" | "high";
 
@@ -23,7 +23,7 @@ type ProviderDefaults = Omit<TaskConfig, "provider" | "json">;
 
 // JSON output tasks get a schema from ./schemas (TASK_SCHEMAS).
 const JSON_TASKS: Record<AiTask, boolean> = {
-  image_ocr: true, tutor: false, session_quiz: true, syllabus: true, classic_quiz: true, exam_plan: true,
+  image_ocr: true, tutor: false, session_quiz: true, syllabus: true, classic_quiz: true, exam_plan: true, coach: true,
 };
 
 // Today's production settings.
@@ -34,6 +34,7 @@ const OPENAI: Record<AiTask, ProviderDefaults> = {
   syllabus: { model: "gpt-5.6-terra", maxTokens: 8192 },
   classic_quiz: { model: "gpt-5.6-terra", maxTokens: 8192 },
   exam_plan: { model: "gpt-5.6-terra", maxTokens: 8192 },
+  coach: { model: "gpt-5.6-terra", maxTokens: 2500 },
 };
 
 // Starting points from docs/AUDIT.md section 5c; confirmed or changed by evals.
@@ -46,6 +47,8 @@ const ANTHROPIC: Record<AiTask, ProviderDefaults> = {
   syllabus: { model: "claude-sonnet-5-5", maxTokens: 12000, effort: "low" },
   classic_quiz: { model: "claude-sonnet-5-5", maxTokens: 16000, effort: "medium" },
   exam_plan: { model: "claude-haiku-4-5", maxTokens: 8192 },
+  // Chat-first home (SPEC §7): short replies + a small list of validated actions.
+  coach: { model: "claude-sonnet-5-5", maxTokens: 8000, effort: "low", cache: true },
 };
 
 function provider(value: string | undefined): AiProvider | undefined {

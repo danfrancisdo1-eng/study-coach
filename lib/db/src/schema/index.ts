@@ -19,3 +19,4 @@
 
 export * from "./study";
 export * from "./lectures";
+export * from "./homeChats";
