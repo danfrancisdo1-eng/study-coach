@@ -15,13 +15,11 @@ import {
 } from 'react-native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
+import { ActionButton } from '@/components/ActionButton';
+import { MaterialIntake, type IntakeStatus, type SavedMaterial } from '@/components/MaterialIntake';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
-import { selectProviderMaterial } from '@/lib/material-file-provider';
-import { File as ExpoFile } from 'expo-file-system';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -33,8 +31,6 @@ import {
   deleteCourse,
   useCheckInStudySession,
   useCreateStudySession,
-  useExtractStudyMaterial,
-  useExtractStudyWebsite,
   useFlagStudyQuestion,
   useGenerateStudyQuiz,
   useGetStudySession,
@@ -54,18 +50,6 @@ import { useColors } from '@/hooks/useColors';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 
 type Course = { id: string; name: string; code?: string };
-type SavedMaterial = {
-  id: string;
-  courseId: string;
-  name: string;
-  text: string;
-  extractionFormat?: StudyMaterialExtraction['format'];
-  extractionStatus?: StudyMaterialExtraction['status'];
-  extractionCoverage?: StudyMaterialExtraction['coverage'];
-  coverageNote?: string;
-  sourceUrl?: string;
-};
-type PendingMaterial = { id: string; url?: string; uri: string; filename: string; sessionId: string; courseId: string };
 type ViewName = 'home' | 'session';
 type Colors = ReturnType<typeof useColors>;
 
@@ -159,90 +143,6 @@ function Header({ title, subtitle, onBack, onSignOut }: {
   );
 }
 
-function ActionButton({ label, onPress, disabled, secondary, testID, icon }: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  secondary?: boolean;
-  testID?: string;
-  icon?: React.ComponentProps<typeof Feather>['name'];
-}) {
-  const colors = useColors();
-  const styles = createStyles(colors);
-  return (
-    <Pressable
-      accessibilityRole="button"
-      testID={testID}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.actionButton,
-        { backgroundColor: secondary ? colors.card : colors.primary, borderColor: secondary ? colors.border : colors.primary },
-        secondary && styles.secondaryAction,
-        disabled && styles.disabled,
-        pressed && !disabled && styles.pressed,
-      ]}
-    >
-      {icon ? <Feather name={icon} size={16} color={secondary ? colors.foreground : colors.primaryForeground} /> : null}
-      <Text style={[styles.actionText, { color: secondary ? colors.foreground : colors.primaryForeground }]}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function MaterialExtractionTask({ upload, onComplete, onFailure }: {
-  upload: PendingMaterial;
-  onComplete: (upload: PendingMaterial, result: StudyMaterialExtraction) => void;
-  onFailure: (upload: PendingMaterial, problem: unknown) => void;
-}) {
-  const extraction = useExtractStudyMaterial({
-    request: { headers: { 'X-Filename': upload.filename } },
-  });
-  const websiteExtraction = useExtractStudyWebsite();
-  const websiteMutationRef = useRef(websiteExtraction.mutateAsync);
-  websiteMutationRef.current = websiteExtraction.mutateAsync;
-  const mutationRef = useRef(extraction.mutateAsync);
-  const callbacksRef = useRef({ onComplete, onFailure });
-  mutationRef.current = extraction.mutateAsync;
-  callbacksRef.current = { onComplete, onFailure };
-
-  useEffect(() => {
-    let active = true;
-    const extract = async () => {
-      try {
-        if (upload.url) {
-          const result = await websiteMutationRef.current({ data: { url: upload.url } });
-          if (active) callbacksRef.current.onComplete(upload, result);
-          return;
-        }
-        const file = new ExpoFile(upload.uri);
-        if (file.size > 12 * 1024 * 1024) {
-          throw new Error('Files must be 12 MB or smaller. No text was extracted.');
-        }
-        const bytes = await file.bytes();
-        if (bytes.byteLength === 0) {
-          throw new Error('The selected file is empty. No text was extracted.');
-        }
-        if (!active) return;
-        const body = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-        // React Native Blob cannot be constructed from binary views; its fetch transport
-        // accepts ArrayBuffer directly, while the generated endpoint currently types body as Blob.
-        const result = await mutationRef.current({ data: body as unknown as Blob });
-        if (!active) return;
-        if (result.status !== 'complete' || !result.text.trim()) {
-          throw new Error('The server did not return a complete text extraction. Nothing was saved.');
-        }
-        callbacksRef.current.onComplete(upload, result);
-      } catch (problem) {
-        if (active) callbacksRef.current.onFailure(upload, problem);
-      }
-    };
-    void extract();
-    return () => { active = false; };
-  }, [upload.id]);
-
-  return null;
-}
-
 function StudyCoach() {
   const colors = useColors();
   const styles = createStyles(colors);
@@ -275,13 +175,7 @@ function StudyCoach() {
   const [sessionOwnerId, setSessionOwnerId] = useState<string | null>(null);
   const [addingMaterials, setAddingMaterials] = useState(false);
   const [materialsOpen, setMaterialsOpen] = useState(false);
-  const [websiteUrl, setWebsiteUrl] = useState('');
-  const [showWebsiteInput, setShowWebsiteInput] = useState(false);
-  const [showCloudHelp, setShowCloudHelp] = useState(false);
-  const [materialNotice, setMaterialNotice] = useState('');
-  const [materialUpload, setMaterialUpload] = useState<PendingMaterial | null>(null);
-  const [extractedMaterial, setExtractedMaterial] = useState<StudyMaterialExtraction | null>(null);
-  const [materialUploading, setMaterialUploading] = useState(false);
+  const [intakeStatus, setIntakeStatus] = useState<IntakeStatus>({ uploading: false, reviewing: false, saving: false });
   const [reviewSyncPending, setReviewSyncPending] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -306,7 +200,7 @@ function StudyCoach() {
   const session = activeSessionQuery.data;
   const busy = saving || updateState.isPending || createSession.isPending || checkIn.isPending ||
     sendMessage.isPending || generateQuiz.isPending || saveAnswer.isPending || gradeQuiz.isPending ||
-    flagStudyQuestion.isPending || materialUploading || reviewSyncPending;
+    flagStudyQuestion.isPending || intakeStatus.uploading || intakeStatus.saving || reviewSyncPending;
   const course = courses.find((item) => item.id === session?.courseId);
   const courseMaterials = session ? materialsFrom(savedState, session.courseId) : [];
   const activeQuiz = session?.quiz;
@@ -336,13 +230,6 @@ function StudyCoach() {
     setFlagReason('');
     setAddingMaterials(false);
     setMaterialsOpen(false);
-    setWebsiteUrl('');
-    setShowWebsiteInput(false);
-    setShowCloudHelp(false);
-    setMaterialNotice('');
-    setMaterialUpload(null);
-    setExtractedMaterial(null);
-    setMaterialUploading(false);
     if (!userId) {
       setSessionId(null);
       setSessionOwnerId(null);
@@ -495,10 +382,6 @@ function StudyCoach() {
       setSessionId(created.id);
       setView('session');
       setAddingMaterials(false);
-      setMaterialUpload(null);
-      setExtractedMaterial(null);
-      setMaterialUploading(false);
-      setMaterialNotice('');
       setMessage('');
       setSelectedQuestionId(null);
       setFlaggingQuestionId(null);
@@ -514,7 +397,6 @@ function StudyCoach() {
     setSessionOwnerId(userId ?? null);
     setSessionId(summary.id);
     setView('session');
-    setMaterialNotice('');
     setFlaggingQuestionId(null);
     setFlagKind('invalid');
     setFlagReason('');
@@ -539,146 +421,6 @@ function StudyCoach() {
       setAddingMaterials(false);
     } catch (problem) {
       handleError(problem);
-    }
-  };
-
-  const chooseMaterial = async () => {
-    if (!session) return;
-    setError('');
-    try {
-      const picked = await selectProviderMaterial(DocumentPicker.getDocumentAsync);
-      if (!picked || activeUserIdRef.current !== userId) return;
-      const fileName = picked.name || 'Selected file';
-      const extension = fileName.split('.').pop()?.toLowerCase();
-      if (['jpg', 'jpeg', 'png', 'webp'].includes(extension ?? '') && !savedState.aiConsent) {
-        setMaterialNotice('Enable AI-assisted study before reading photos.');
-        return;
-      }
-      if (picked.size && picked.size > 12 * 1024 * 1024) {
-        setMaterialNotice(`${fileName} was not uploaded or saved (larger than 12 MB).`);
-        Alert.alert('File is too large', 'The extraction service accepts files up to 12 MB.');
-        return;
-      }
-      setError('');
-      setExtractedMaterial(null);
-      setMaterialUploading(true);
-      setMaterialNotice(`${fileName} · uploading for text extraction. Nothing is saved yet.`);
-      setMaterialUpload({
-        id: id(),
-        uri: picked.uri,
-        filename: fileName,
-        sessionId: session.id,
-        courseId: session.courseId,
-      });
-    } catch (problem) {
-      if (activeUserIdRef.current !== userId) return;
-      setMaterialNotice(`The file was not saved: ${readableError(problem)}`);
-      handleError(problem);
-    }
-  };
-
-  const choosePhoto = async () => {
-    if (!session || busy || extractedMaterial) return;
-    if (!savedState.aiConsent) {
-      setMaterialNotice('Enable AI-assisted study before reading photos.');
-      return;
-    }
-    try {
-      // The system picker grants access only to the photo the student selects.
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'], quality: 1, allowsMultipleSelection: false,
-        preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
-      });
-      if (result.canceled || !result.assets[0] || activeUserIdRef.current !== userId) return;
-      const asset = result.assets[0];
-      if (asset.fileSize && asset.fileSize > 12 * 1024 * 1024) {
-        setMaterialNotice('Choose a photo smaller than 12 MB.');
-        return;
-      }
-      const filename = asset.fileName || 'Study photo.jpg';
-      setError('');
-      setExtractedMaterial(null);
-      setMaterialUploading(true);
-      setMaterialNotice('Reading your photo…');
-      setMaterialUpload({ id: id(), uri: asset.uri, filename, sessionId: session.id, courseId: session.courseId });
-    } catch (problem) {
-      if (activeUserIdRef.current === userId) setMaterialNotice(`Could not open Photos: ${readableError(problem)}`);
-    }
-  };
-
-  const readWebsite = () => {
-    if (!session || busy || extractedMaterial) return;
-    try {
-      const input = websiteUrl.trim();
-      if (/^[a-z][a-z0-9+.-]*:/i.test(input) && !/^https?:\/\//i.test(input)) throw new Error();
-      const url = new URL(/^https?:\/\//i.test(input) ? input : `https://${input}`);
-      if (!['http:', 'https:'].includes(url.protocol) || !url.hostname.includes('.') || url.username || url.password || url.href.length > 2048) throw new Error();
-      setError('');
-      setExtractedMaterial(null);
-      setMaterialUploading(true);
-      setMaterialNotice('Reading the website…');
-      setMaterialUpload({ id: id(), uri: '', url: url.href, filename: url.hostname, sessionId: session.id, courseId: session.courseId });
-    } catch {
-      setMaterialNotice('Enter a valid public website link.');
-    }
-  };
-
-  const handleMaterialExtracted = (upload: PendingMaterial, result: StudyMaterialExtraction) => {
-    if (activeUserIdRef.current !== userId) return;
-    if (upload.sessionId !== session?.id || upload.courseId !== session.courseId) return;
-    setMaterialUploading(false);
-    setExtractedMaterial(result);
-    setMaterialNotice(`${result.filename} · ready to review · ${result.characterCount.toLocaleString()} characters`);
-  };
-
-  const handleMaterialExtractionError = (upload: PendingMaterial, problem: unknown) => {
-    if (activeUserIdRef.current !== userId) return;
-    if (upload.sessionId !== session?.id || upload.courseId !== session.courseId) return;
-    const filename = upload.filename;
-    const pdfCoverage = /\.pdf$/i.test(filename)
-      ? ' PDF extraction only reads selectable text; scanned or image-only PDFs are unsupported and no OCR was performed.'
-      : '';
-    setMaterialUploading(false);
-    setMaterialUpload(null);
-    setExtractedMaterial(null);
-    setMaterialNotice(`${filename} was not saved; complete text extraction failed: ${readableError(problem)}${pdfCoverage}`);
-  };
-
-  const saveExtractedMaterial = async () => {
-    if (!session || !materialUpload || !extractedMaterial || materialUpload.sessionId !== session.id ||
-      materialUpload.courseId !== session.courseId || !extractedMaterial.text.trim() || busy) return;
-    setError('');
-    setSaving(true);
-    try {
-      const current = savedState.materials ?? [];
-      if (current.some((item) => {
-        const material = objectRecord(item);
-        return material.courseId === session.courseId && material.text === extractedMaterial.text;
-      })) {
-        setMaterialNotice('This material is already saved for this course.');
-        setExtractedMaterial(null);
-        setMaterialUpload(null);
-        return;
-      }
-      const addition: SavedMaterial = {
-        id: id(),
-        courseId: session.courseId,
-        name: extractedMaterial.filename,
-        text: extractedMaterial.text,
-        extractionFormat: extractedMaterial.format,
-        extractionStatus: extractedMaterial.status,
-        extractionCoverage: extractedMaterial.coverage,
-        coverageNote: extractedMaterial.coverageNote,
-        ...(extractedMaterial.sourceUrl ? { sourceUrl: extractedMaterial.sourceUrl } : {}),
-      };
-      await persistStudyState({ ...savedState, materials: [...current, addition] });
-      setMaterialNotice(`${extractedMaterial.filename} · ${extractedMaterial.characterCount.toLocaleString()} characters saved for this course`);
-      setExtractedMaterial(null);
-      setMaterialUpload(null);
-    } catch (problem) {
-      if (activeUserIdRef.current === userId) handleError(problem);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -811,83 +553,35 @@ function StudyCoach() {
     setFlagKind('invalid');
     setFlagReason('');
     setAddingMaterials(false);
-    setMaterialUpload(null);
-    setExtractedMaterial(null);
-    setMaterialUploading(false);
     setMaterialsOpen(false);
-    setMaterialNotice('Any unsaved extraction was discarded; nothing was added to your course.');
   };
 
   const reportText = session?.reportText;
   const sessionSummaries = sessionsQuery.data?.sessions ?? [];
   const statusMessage = error || (stateQuery.isError ? readableError(stateQuery.error) : '');
 
-  const renderMaterialExtractionControls = (checkInActions: boolean) => (
-    <View style={styles.stack}>
-      {materialUploading ? (
-        <View style={styles.extractionPreview} accessibilityRole="progressbar" accessibilityLabel="Extracting course material text" testID="status-material-extracting">
-          <ActivityIndicator color={colors.primary} />
-          <Text style={styles.cardTitle}>Extracting text</Text>
-          <Text style={styles.muted}>The file is being processed transiently. It will not be saved to your course unless you review and choose Save.</Text>
-          <ActionButton
-            label="Cancel extraction"
-            secondary
-            onPress={() => {
-              setMaterialUploading(false);
-              setMaterialUpload(null);
-              setMaterialNotice('Extraction cancelled; no material was saved.');
-            }}
-            testID="button-cancel-material-extraction"
-          />
-        </View>
-      ) : null}
-      {extractedMaterial ? (
-        <View style={styles.extractionPreview} testID="panel-material-extraction-preview">
-          <Text style={styles.kicker}>REVIEW MATERIAL · {extractedMaterial.format.toUpperCase()}</Text>
-          <Text style={styles.cardTitle}>{extractedMaterial.filename} · {extractedMaterial.characterCount.toLocaleString()} characters</Text>
-          <Text style={styles.muted}>{extractedMaterial.coverageNote}</Text>
-          {extractedMaterial.sourceUrl ? <Text selectable style={styles.caption}>{extractedMaterial.sourceUrl}</Text> : null}
-          <TextInput accessibilityLabel="Extracted material text" testID="input-extracted-text" multiline
-            value={extractedMaterial.text} maxLength={100000}
-            onChangeText={text => setExtractedMaterial({ ...extractedMaterial, text, characterCount: text.length })}
-            style={[styles.input, { minHeight: 180, maxHeight: 320, textAlignVertical: 'top' }]} />
-          <View style={styles.buttonRow}>
-            <ActionButton label="Save to course" icon="check" onPress={() => void saveExtractedMaterial()} disabled={busy || !extractedMaterial.text.trim()} testID="button-save-extracted-material" />
-            <ActionButton
-              label="Discard"
-              secondary
-              onPress={() => {
-                setExtractedMaterial(null);
-                setMaterialUpload(null);
-                setMaterialNotice('Extracted text discarded; nothing was saved.');
-              }}
-              testID="button-discard-extracted-material"
-            />
-          </View>
-        </View>
-      ) : null}
-      <View style={styles.sourceGrid}>
-        <ActionButton label="Photos" icon="image" onPress={() => void choosePhoto()} disabled={busy || Boolean(extractedMaterial)} secondary testID="button-pick-photo" />
-        <ActionButton label="Files" icon="file" onPress={chooseMaterial} disabled={busy || Boolean(extractedMaterial)} secondary testID="button-pick-material" />
-        <ActionButton label="OneDrive" icon="cloud" onPress={() => { setShowCloudHelp(true); void chooseMaterial(); }} disabled={busy || Boolean(extractedMaterial)} secondary testID="button-pick-onedrive" />
-        <ActionButton label="Website link" icon="link" onPress={() => setShowWebsiteInput(!showWebsiteInput)} disabled={busy || Boolean(extractedMaterial)} secondary testID="button-website-link" />
-      </View>
-      {showCloudHelp ? <Text style={styles.caption}>In Files, tap Browse → OneDrive. If it is missing, sign into the OneDrive app, then enable OneDrive in Files → Browse → … → Edit.</Text> : null}
-      {showWebsiteInput ? <View style={styles.stack}>
-        <TextInput accessibilityLabel="Website link" testID="input-website-link" value={websiteUrl} onChangeText={setWebsiteUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://…" placeholderTextColor={colors.mutedForeground} style={styles.input} />
-        <ActionButton label="Read page" onPress={readWebsite} disabled={busy || !websiteUrl.trim() || Boolean(extractedMaterial)} testID="button-read-website" />
-      </View> : null}
-      {materialNotice ? <Text style={styles.materialNotice} testID="status-material-extraction">{materialNotice}</Text> : null}
-      {checkInActions ? (
+  const renderMaterialExtractionControls = (checkInActions: boolean) => session ? (
+    <MaterialIntake
+      key={`${userId ?? ''}:${session.id}`}
+      courseId={session.courseId}
+      aiConsent={savedState.aiConsent === true}
+      busy={busy && !intakeStatus.uploading && !intakeStatus.saving}
+      savedMaterials={courseMaterials}
+      onSave={async (addition) => {
+        await persistStudyState({ ...savedState, materials: [...(savedState.materials ?? []), addition] });
+      }}
+      onStatusChange={setIntakeStatus}
+      onError={(problem) => { if (activeUserIdRef.current === userId) handleError(problem); }}
+      footer={(status) => checkInActions ? (
         <>
-          <ActionButton label="Continue with these materials" icon="arrow-right" onPress={() => void handleCheckIn(false)} disabled={busy || Boolean(extractedMaterial)} secondary testID="button-continue-materials" />
-          <ActionButton label="Skip materials" onPress={() => void handleCheckIn(true)} disabled={busy || Boolean(extractedMaterial)} secondary testID="button-skip-materials" />
+          <ActionButton label="Continue with these materials" icon="arrow-right" onPress={() => void handleCheckIn(false)} disabled={busy || status.reviewing} secondary testID="button-continue-materials" />
+          <ActionButton label="Skip materials" onPress={() => void handleCheckIn(true)} disabled={busy || status.reviewing} secondary testID="button-skip-materials" />
         </>
       ) : (
         <ActionButton label="Done adding materials" onPress={() => { setMaterialsOpen(false); setAddingMaterials(false); }} disabled={false} secondary testID="button-done-adding-materials" />
       )}
-    </View>
-  );
+    />
+  ) : null;
 
   const sessionContent = () => {
     if (activeSessionQuery.isLoading || loadingSavedSession) {
@@ -924,7 +618,7 @@ function StudyCoach() {
             {addingMaterials && !materialsOpen ? renderMaterialExtractionControls(true) : (
               <View style={styles.buttonRow}>
                 <ActionButton label="Add materials" icon="plus" onPress={() => setMaterialsOpen(true)} disabled={busy} testID="button-add-materials" />
-                <ActionButton label="Skip" onPress={() => void handleCheckIn(true)} disabled={busy || Boolean(extractedMaterial)} secondary testID="button-skip-materials" />
+                <ActionButton label="Skip" onPress={() => void handleCheckIn(true)} disabled={busy || intakeStatus.reviewing} secondary testID="button-skip-materials" />
               </View>
             )}
           </View>
@@ -1326,7 +1020,6 @@ function StudyCoach() {
 
   return (
     <KeyboardAvoidingView style={[styles.page, { paddingTop: insets.top + 7 }]} behavior="padding" keyboardVerticalOffset={0}>
-      {materialUpload ? <MaterialExtractionTask key={materialUpload.id} upload={materialUpload} onComplete={handleMaterialExtracted} onFailure={handleMaterialExtractionError} /> : null}
       <Header title={view === 'session' ? (session?.topic ?? 'Study session') : 'Study space'} subtitle={view === 'session' ? (course?.name ?? 'Your saved session') : 'Your account · Study space'} onBack={view === 'session' ? openHome : undefined} onSignOut={() => void signOut()} />
       <FlatList
         data={view === 'session' ? [] : ['study-space']}
