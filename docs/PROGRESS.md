@@ -5,9 +5,12 @@
 ### Done (branch `feature/chat-first-home`, not merged, not deployed)
 - Chat-first home, piece 1 (SPEC §7, D-016): server (`home_chats` table, `/study/chat`, `coach.v1`, validated actions), iPhone Coach tab + Courses tab, web HomeChat panel. Verified here: typecheck; 48/48 tests (incl. new unit + end-to-end chat tests); coach evals 6/6; iOS bundle builds with the new screen.
 
+- Migration 0002 run on Render by Dan (`home_chats columns: 6`); `44c0ef5` deployed and live. Verified on Dan's iPhone: Coach tab opens, "Bio 101" created the course. Render Auto-Deploy is now ON: a push to `main` deploys.
+- Branch `refactor/material-intake-sheet`: (1) behavior-preserving extraction of the material uploader + ActionButton into `components/`; (2) the chat's + opens that sheet directly (course chips when several courses, "Record a lecture" button); web gets a course picker + intake under the chat. 52/52 tests; typecheck; iOS bundle.
+
 ### Next
-- Dan: run migration 0002 on Render (additive), push + deploy, then try the Coach tab on his iPhone: first message, name a class, "quiz me on …" → session opens on the Courses tab.
-- Then merge to `main`; piece 2 (topic list card).
+- Dan: reload the phone, + in the chat → Photos → save → ask the coach what Bio 101 has. Then merge + push (auto-deploys).
+- Piece 2 (topic list card).
 
 ### Needs real-iPhone check
 - Coach tab end to end; consent card for a brand-new account; Open button on a started session.

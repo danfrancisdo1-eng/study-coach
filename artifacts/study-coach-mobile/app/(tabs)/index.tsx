@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Redirect, router } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,6 +11,9 @@ import {
   type HomeChat, type HomeChatMessage,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { ActionButton } from '@/components/ActionButton';
+import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
+import { defaultIntakeCourse, type IntakeCourse } from '@/lib/intake-course';
 
 /**
  * Chat-first home (SPEC §7, D-016): the conversation is the app. The coach asks for the
@@ -29,6 +32,26 @@ function readableError(problem: unknown): string {
   return 'Something went wrong. Please try again.';
 }
 
+type StateRecord = Record<string, unknown>;
+const record = (value: unknown): StateRecord => (value && typeof value === 'object' ? value as StateRecord : {});
+
+function coursesFrom(state: unknown): IntakeCourse[] {
+  const courses = record(state).courses;
+  return (Array.isArray(courses) ? courses : []).flatMap((item) => {
+    const course = record(item);
+    return typeof course.id === 'string' && typeof course.name === 'string' ? [{ id: course.id, name: course.name }] : [];
+  });
+}
+
+function materialsFrom(state: unknown, courseId: string): SavedMaterial[] {
+  const materials = record(state).materials;
+  return (Array.isArray(materials) ? materials : []).flatMap((item) => {
+    const material = record(item);
+    return material.courseId === courseId && typeof material.id === 'string' && typeof material.name === 'string' && typeof material.text === 'string'
+      ? [{ id: material.id, courseId, name: material.name, text: material.text }] : [];
+  });
+}
+
 export default function CoachHome() {
   const { isLoaded, isSignedIn, userId } = useAuth();
   const { signOut } = useClerk();
@@ -39,6 +62,8 @@ export default function CoachHome() {
   const listRef = useRef<FlatList<HomeChatMessage>>(null);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
+  const [intakeCourseId, setIntakeCourseId] = useState<string | null>(null); // non-null while the + sheet is open
+  const [intakeBusy, setIntakeBusy] = useState(false);
 
   const stateQuery = useGetStudyState({ query: { queryKey: [...getGetStudyStateQueryKey(), userId], enabled: !!userId } });
   const chatQuery = useGetHomeChat({ query: { queryKey: [...getGetHomeChatQueryKey(), userId], enabled: !!userId } });
@@ -49,6 +74,8 @@ export default function CoachHome() {
   const messages = chatQuery.data?.messages ?? [];
   const version = chatQuery.data?.version ?? 0;
   const busy = send.isPending || putState.isPending;
+  const courses = coursesFrom(stateQuery.data?.state);
+  const intakeCourse = courses.find((course) => course.id === intakeCourseId) ?? null;
 
   useEffect(() => {
     if (messages.length) setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
@@ -92,11 +119,29 @@ export default function CoachHome() {
     }
   };
 
+  // The + corner (CLAUDE.md §8): opens the material sheet on the course the coach
+  // most recently worked on; with no course yet, the coach asks for one first.
   const openPlus = () => {
-    Alert.alert('Add to a course', 'Materials and lecture recording live on the Courses tab for now.', [
-      { text: 'Open Courses', onPress: () => router.push('/(tabs)/courses') },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    const course = defaultIntakeCourse(courses, messages);
+    if (!course) {
+      Alert.alert('Which class?', 'Tell your coach which class you’re taking first, and it will set the course up for you.');
+      return;
+    }
+    setIntakeCourseId(course.id);
+  };
+
+  const saveMaterial = async (addition: SavedMaterial) => {
+    const previous = stateQuery.data;
+    if (!previous) throw new Error('Your account is still loading. Try again in a moment.');
+    const state = record(previous.state);
+    const materials = Array.isArray(state.materials) ? state.materials : [];
+    try {
+      const result = await putState.mutateAsync({ data: { state: { ...state, aiConsent: true, materials: [...materials, addition] }, version: previous.version } });
+      queryClient.setQueryData([...getGetStudyStateQueryKey(), userId], result);
+    } catch (problem) {
+      if ((problem as { status?: number }).status === 409) await queryClient.invalidateQueries({ queryKey: [...getGetStudyStateQueryKey(), userId] });
+      throw problem;
+    }
   };
 
   const renderMessage = ({ item }: { item: HomeChatMessage }) => (
@@ -194,6 +239,47 @@ export default function CoachHome() {
           </View>
         </View>
       ) : null}
+
+      <Modal visible={intakeCourse !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { if (!intakeBusy) setIntakeCourseId(null); }}>
+        {intakeCourse ? (
+          <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: 20 }]}>
+            <View style={styles.header}>
+              <View style={styles.headerCopy}><Text style={styles.sheetTitle}>Add to {intakeCourse.name}</Text><Text style={styles.caption}>Photos, files, a website, or a lecture recording</Text></View>
+              <Pressable accessibilityRole="button" accessibilityLabel="Close" disabled={intakeBusy} onPress={() => setIntakeCourseId(null)} style={styles.iconButton} testID="button-close-intake"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
+            </View>
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.sheetContent, { paddingBottom: insets.bottom + 30 }]}>
+              {courses.length > 1 ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+                  {courses.map((course) => (
+                    <Pressable key={course.id} accessibilityRole="button" accessibilityState={{ selected: course.id === intakeCourse.id }} disabled={intakeBusy}
+                      onPress={() => setIntakeCourseId(course.id)} style={[styles.chip, course.id === intakeCourse.id && styles.chipSelected]} testID={`chip-course-${course.id}`}>
+                      <Text style={[styles.chipText, course.id === intakeCourse.id && styles.chipTextSelected]}>{course.name}</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              ) : null}
+              <MaterialIntake
+                key={`${userId ?? ''}:${intakeCourse.id}`}
+                courseId={intakeCourse.id}
+                aiConsent={consented}
+                busy={busy}
+                savedMaterials={materialsFrom(stateQuery.data?.state, intakeCourse.id)}
+                onSave={saveMaterial}
+                onStatusChange={(status) => setIntakeBusy(status.uploading || status.saving)}
+                onError={(problem) => setError(readableError(problem))}
+                footer={() => (
+                  <ActionButton label="Record a lecture" icon="mic" secondary disabled={intakeBusy}
+                    onPress={() => { setIntakeCourseId(null); router.push({ pathname: '/lectures/[courseId]', params: { courseId: intakeCourse.id, courseName: intakeCourse.name } }); }}
+                    testID="button-record-lecture" />
+                )}
+              />
+              {materialsFrom(stateQuery.data?.state, intakeCourse.id).map((material) => (
+                <View key={material.id} style={styles.savedRow}><Text style={styles.savedName}>{material.name}</Text><Text style={styles.caption}>Saved · {material.text.length.toLocaleString()} characters</Text></View>
+              ))}
+            </ScrollView>
+          </KeyboardAvoidingView>
+        ) : null}
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -236,4 +322,13 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   errorCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.destructive, padding: 15, borderRadius: 14, gap: 8, marginHorizontal: 18, marginTop: 13 },
   errorTitle: { color: colors.destructive, fontSize: 15, fontWeight: '700' },
   errorText: { color: colors.destructive, fontSize: 13 },
+  sheetTitle: { color: colors.foreground, fontSize: 20, fontWeight: '700' },
+  sheetContent: { paddingHorizontal: 18, paddingTop: 10, gap: 15 },
+  chips: { flexDirection: 'row', gap: 8, paddingBottom: 4 },
+  chip: { minHeight: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { color: colors.foreground, fontSize: 14, fontWeight: '600' },
+  chipTextSelected: { color: colors.primaryForeground },
+  savedRow: { gap: 3, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 },
+  savedName: { color: colors.foreground, fontSize: 15, fontWeight: '600' },
 });

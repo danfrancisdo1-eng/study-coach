@@ -7,7 +7,7 @@ import {
   useFlagStudyQuestion,
   getGetStudyStateQueryKey, getGetStudySessionQueryKey, getListStudySessionsQueryKey,
   deleteCourse, getListLecturesQueryKey,
-  type StudySession, type StudyState, type StudyStateEnvelope,
+  type StudyMaterialExtraction, type StudySession, type StudyState, type StudyStateEnvelope,
 } from '@workspace/api-client-react';
 import AccountExperience, {
   type AccountCourse, type MaterialExtraction, type QuestionFeedback,
@@ -59,6 +59,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
   const [adding, setAdding] = useState(false);
   const [uploadStatuses, setUploadStatuses] = useState<MaterialExtraction[]>([]);
   const [intakeFiles, setIntakeFiles] = useState<File[]>([]);
+  const [intakeCourseId, setIntakeCourseId] = useState<string | null>(null); // course for material added from the home chat
   const [assistedDrafts, setAssistedDrafts] = useState<Record<string, boolean>>({});
   const [showReport, setShowReport] = useState(false);
   const [error, setError] = useState('');
@@ -91,6 +92,19 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
   };
   const updateState = async (updater: (previous: AccountState) => AccountState) => {
     await replaceState(updater(state));
+  };
+  // Shared by the in-session intake and the home-chat intake (same rules, one place).
+  const saveMaterial = async (targetCourseId: string, preview: StudyMaterialExtraction) => {
+    if (!preview.text.trim() || preview.text.length > 100000) throw new Error('Material must contain 1–100,000 characters.');
+    try {
+      await updateState(previous => ({ ...previous, materials: [...(previous.materials ?? []), {
+        id: crypto.randomUUID(), courseId: targetCourseId, name: preview.filename, text: preview.text.trim(), addedAt: new Date().toISOString(),
+        sourceUrl: preview.sourceUrl, extractionFormat: preview.format, extractionCoverage: preview.coverage, coverageNote: preview.coverageNote,
+      }] }));
+    } catch (problem) {
+      if (message(problem).includes('409')) await stateQuery.refetch();
+      throw problem;
+    }
   };
   const applySession = (result: StudySession) => {
     client.setQueryData(getGetStudySessionQueryKey(result.id), result);
@@ -187,6 +201,17 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
       {!current && <HomeChat aiConsent={state.aiConsent === true} busy={busy}
         onCoursesChanged={() => void client.invalidateQueries({ queryKey: stateKey })}
         onOpenSession={id => { setIntakeFiles([]); setSessionId(id); setShowReport(false); setAdding(false); void client.invalidateQueries({ queryKey: listKey }); }} />}
+      {!current && courses.length > 0 && (
+        <section className="ae-card" data-testid="panel-home-intake" style={{ marginBottom: 17 }}>
+          <div className="ae-card-top"><div><span className="ae-kicker">ADD MATERIAL</span><h2 className="ae-heading">Which course?</h2></div></div>
+          <select className="ae-input" aria-label="Course for new material" value={intakeCourseId ?? courses[0]!.id} onChange={event => { setIntakeFiles([]); setIntakeCourseId(event.target.value); }} data-testid="select-intake-course" style={{ maxWidth: 360, marginBottom: 12 }}>
+            {courses.map(course => <option key={course.id} value={course.id}>{course.name}</option>)}
+          </select>
+          <MaterialIntake key={intakeCourseId ?? courses[0]!.id} courseName={courses.find(item => item.id === (intakeCourseId ?? courses[0]!.id))?.name ?? 'this course'}
+            consent={state.aiConsent} files={intakeFiles} onFilesChange={setIntakeFiles}
+            onSave={preview => saveMaterial(intakeCourseId ?? courses[0]!.id, preview)} />
+        </section>
+      )}
       {!current && <div className="grid2" style={{ marginBottom: 17 }}>
         <label className="field">Focus topic for this session<input value={topic} maxLength={300} onChange={event => setTopic(event.target.value)} placeholder="e.g. Photosynthesis or today's lecture" data-testid="input-session-topic" /></label>
         <label className="field">Minutes available<input type="number" value={minutes} min={1} max={360} onChange={event => setMinutes(Number(event.target.value))} data-testid="input-session-minutes" /></label>
@@ -337,18 +362,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
       />
       {current ? <MaterialIntake key={current.id} courseName={courses.find(item => item.id === current.courseId)?.name ?? 'this course'}
         consent={state.aiConsent} files={intakeFiles} onFilesChange={setIntakeFiles}
-        onSave={async preview => {
-          if (!preview.text.trim() || preview.text.length > 100000) throw new Error('Material must contain 1–100,000 characters.');
-          try {
-            await updateState(previous => ({ ...previous, materials: [...(previous.materials ?? []), {
-              id: crypto.randomUUID(), courseId: current.courseId, name: preview.filename, text: preview.text.trim(), addedAt: new Date().toISOString(),
-              sourceUrl: preview.sourceUrl, extractionFormat: preview.format, extractionCoverage: preview.coverage, coverageNote: preview.coverageNote,
-            }] }));
-          } catch (problem) {
-            if (message(problem).includes('409')) await stateQuery.refetch();
-            throw problem;
-          }
-        }} /> : null}
+        onSave={preview => saveMaterial(current.courseId, preview)} /> : null}
       {notice && <p className="notice" role="status" data-testid="status-report-share">{notice}</p>}
     </>}
   </div>;
