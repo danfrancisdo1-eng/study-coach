@@ -340,6 +340,37 @@ paths:
       responses:
         "204": { description: Deleted }
         "404": { description: Lecture not found }
+  /study/chat:
+    get:
+      operationId: getHomeChat
+      tags: [study]
+      summary: The chat-first home conversation for the signed-in account (SPEC §7)
+      responses:
+        "200":
+          description: Conversation so far (empty for a new account)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HomeChat" }
+    post:
+      operationId: sendHomeChatMessage
+      tags: [study]
+      summary: Send a message to the coach; it may create a course or start a study session
+      description: Requires persisted state.aiConsent=true. Actions the coach took are listed on the assistant message.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HomeChatInput" }
+      responses:
+        "200":
+          description: Updated conversation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HomeChat" }
+        "400": { description: Invalid message }
+        "403": { description: Explicit persisted AI consent required }
+        "409": { description: Conversation changed on another device; reload }
+        "502": { description: The coach did not answer; nothing was changed }
   /study/sessions/{id}/check-in:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
@@ -594,6 +625,36 @@ components:
       required: [content]
       properties:
         content: { type: string, minLength: 1, maxLength: 8000 }
+    HomeChatInput:
+      type: object
+      required: [content, version]
+      properties:
+        content: { type: string, minLength: 1, maxLength: 8000 }
+        version: { type: integer, minimum: 0, description: "Conversation version from the last GET/POST; 0 for a new conversation." }
+    HomeChatAction:
+      type: object
+      required: [type, courseId]
+      properties:
+        type: { type: string, enum: [create_course, start_session] }
+        courseId: { type: string }
+        name: { type: string, description: "create_course: the new course's name" }
+        sessionId: { type: string, format: uuid, description: "start_session: open this study session" }
+        topic: { type: string }
+    HomeChatMessage:
+      type: object
+      required: [id, role, content, at]
+      properties:
+        id: { type: string }
+        role: { type: string, enum: [user, assistant] }
+        content: { type: string }
+        at: { type: string, format: date-time }
+        actions: { type: array, items: { $ref: "#/components/schemas/HomeChatAction" } }
+    HomeChat:
+      type: object
+      required: [messages, version]
+      properties:
+        messages: { type: array, items: { $ref: "#/components/schemas/HomeChatMessage" } }
+        version: { type: integer }
     StudySourceStatus:
       type: object
       required: [usedSourceMaterial, selectedChunks, availableChunks, truncated, coverage, sources]

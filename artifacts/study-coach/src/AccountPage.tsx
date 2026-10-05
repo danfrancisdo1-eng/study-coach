@@ -14,6 +14,7 @@ import AccountExperience, {
   type ReviewItem, type SessionTurn,
 } from './AccountExperience';
 import MaterialIntake from './MaterialIntake';
+import HomeChat from './HomeChat';
 import { readLegacyStudyData } from './lib/legacy-import';
 
 type AccountState = {
@@ -183,6 +184,9 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
       </select>
     </label> : null}
     {sessionId && sessionQuery.isLoading ? <div className="notice">Restoring your saved session…</div> : sessionId && sessionQuery.error ? <div className="error" role="alert">{message(sessionQuery.error)} <button type="button" onClick={() => void sessionQuery.refetch()} data-testid="button-retry-load-session">Try again</button></div> : <>
+      {!current && <HomeChat aiConsent={state.aiConsent === true} busy={busy}
+        onCoursesChanged={() => void client.invalidateQueries({ queryKey: stateKey })}
+        onOpenSession={id => { setIntakeFiles([]); setSessionId(id); setShowReport(false); setAdding(false); void client.invalidateQueries({ queryKey: listKey }); }} />}
       {!current && <div className="grid2" style={{ marginBottom: 17 }}>
         <label className="field">Focus topic for this session<input value={topic} maxLength={300} onChange={event => setTopic(event.target.value)} placeholder="e.g. Photosynthesis or today's lecture" data-testid="input-session-topic" /></label>
         <label className="field">Minutes available<input type="number" value={minutes} min={1} max={360} onChange={event => setMinutes(Number(event.target.value))} data-testid="input-session-minutes" /></label>

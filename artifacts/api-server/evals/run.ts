@@ -16,9 +16,10 @@ import * as examPlanPrompt from "../src/prompts/exam-plan.v1";
 import * as tutorPrompt from "../src/prompts/tutor.v3";
 import * as sessionQuizPrompt from "../src/prompts/session-quiz.v1";
 import * as imageOcrPrompt from "../src/prompts/image-ocr.v1";
+import * as coachPrompt from "../src/prompts/coach.v1";
 import { taskConfig, type AiTask } from "../src/ai/tasks";
-import { classicQuizCases, ocrCaseNames, planCases, sessionQuizCases, syllabusCases, tutorCases, type Source } from "./fixtures";
-import { gradeClassicQuiz, gradeOcr, gradePlan, gradeSessionQuiz, gradeSyllabus, gradeTutor, type Score } from "./graders";
+import { classicQuizCases, coachCases, ocrCaseNames, planCases, sessionQuizCases, syllabusCases, tutorCases, type Source } from "./fixtures";
+import { gradeClassicQuiz, gradeCoach, gradeOcr, gradePlan, gradeSessionQuiz, gradeSyllabus, gradeTutor, type Score } from "./graders";
 
 const evalDir = path.resolve(process.argv[1] ? path.dirname(process.argv[1]) : ".", "..");
 const serverDir = path.resolve(evalDir, "..");
@@ -35,7 +36,7 @@ const option = (name: string) => args.flatMap((a, i) => (a === `--${name}` && ar
 const dryRun = args.includes("--dry-run");
 const providerArg = option("provider")[0] ?? "both";
 const providers = providerArg === "both" ? ["openai", "anthropic"] : [providerArg];
-const allTasks: AiTask[] = ["syllabus", "classic_quiz", "exam_plan", "session_quiz", "tutor", "image_ocr"];
+const allTasks: AiTask[] = ["syllabus", "classic_quiz", "exam_plan", "session_quiz", "tutor", "image_ocr", "coach"];
 const tasks = option("task").length ? (option("task") as AiTask[]) : allTasks;
 
 // USD per million tokens (input, output). Unknown models show no cost.
@@ -110,6 +111,14 @@ async function main() {
       }),
       grade: (text) => gradeTutor(c, text?.trim() ?? null),
     });
+    if (tasks.includes("coach")) for (const c of coachCases) jobs.push({
+      task: "coach", name: c.name,
+      run: () => complete("coach", {
+        system: coachPrompt.systemPrompt({ today, courses: c.courses, firstVisit: c.firstVisit }),
+        messages: [...c.history, { role: "user", content: c.message }],
+      }),
+      grade: (text) => gradeCoach(c, text),
+    });
     if (tasks.includes("image_ocr")) for (const name of ocrCaseNames) {
       const image = readFileSync(path.join(evalDir, "images", `${name}.png`)).toString("base64");
       const expected = readFileSync(path.join(evalDir, "images", `${name}.txt`), "utf8");
@@ -164,7 +173,7 @@ async function main() {
   const outDir = path.join(evalDir, "results");
   mkdirSync(outDir, { recursive: true });
   const file = path.join(outDir, `${new Date().toISOString().replace(/[:.]/g, "-")}.json`);
-  writeFileSync(file, JSON.stringify({ today, providers, tasks, prompts: { syllabus: syllabusPrompt.version, classicQuiz: classicQuizPrompt.version, examPlan: examPlanPrompt.version, tutor: tutorPrompt.version, sessionQuiz: sessionQuizPrompt.version, imageOcr: imageOcrPrompt.version }, results }, null, 2));
+  writeFileSync(file, JSON.stringify({ today, providers, tasks, prompts: { syllabus: syllabusPrompt.version, classicQuiz: classicQuizPrompt.version, examPlan: examPlanPrompt.version, tutor: tutorPrompt.version, sessionQuiz: sessionQuizPrompt.version, imageOcr: imageOcrPrompt.version, coach: coachPrompt.version }, results }, null, 2));
   console.log(`\nFull results: ${path.relative(process.cwd(), file)} (judge model: ${process.env.EVAL_JUDGE_MODEL || "claude-opus-5-5"}; judge cost not included)`);
 }
 

@@ -52,7 +52,23 @@ export const sessionQuizSchema = object({
 
 export const imageOcrSchema = object({ text: string });
 
+// Chat-first home coach (SPEC §7): a short reply plus zero or more actions. Every
+// action is re-validated and owner-scoped by routes/chat.ts before it is applied.
+export const coachSchema = object({
+  reply: string,
+  actions: {
+    type: "array",
+    items: object({
+      type: { type: "string", enum: ["create_course", "start_session"] },
+      // create_course: the course name. start_session: the course name or id, and a topic.
+      name: string,
+      topic: string,
+    }),
+  },
+});
+
 export const TASK_SCHEMAS: Partial<Record<AiTask, JsonSchema>> = {
+  coach: coachSchema,
   image_ocr: imageOcrSchema,
   session_quiz: sessionQuizSchema,
   syllabus: syllabusSchema,
