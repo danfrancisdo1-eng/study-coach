@@ -16,7 +16,7 @@ export type CoachReply = { reply: string; suggestions: string[]; actions: CoachA
 export type KnownCourse = { id: string; name: string; code?: string };
 
 export const MAX_REPLY_CHARS = 4000;
-export const MAX_SUGGESTIONS = 3;
+export const MAX_SUGGESTIONS = 6; // up to 5 topics + "All topics"
 export const MAX_SUGGESTION_CHARS = 60;
 export const DEFAULT_QUIZ_COUNT = 10;
 export const MAX_QUIZ_COUNT = 50;

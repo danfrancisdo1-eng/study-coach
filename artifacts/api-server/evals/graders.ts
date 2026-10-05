@@ -62,13 +62,14 @@ export function gradeSyllabus(testCase: SyllabusCase, text: string | null): Scor
 interface QuizQuestion { prompt: string; options: string[]; answerIndex: number; concept: string; explanation: string }
 
 async function judgeQuestions(topic: string, sources: Source[], questions: QuizQuestion[]) {
-  return judge<{ questions: { index: number; correct: boolean; reason: string }[] }>(
+  return judge<{ questions: { index: number; correct: boolean; aboutTheDocument: boolean; reason: string }[] }>(
     "You check multiple-choice practice questions for a study app. For each question, decide whether the marked answer (options[answerIndex]) is the single best correct answer, " +
-      "consistent with the supplied source material when it covers the point, and with established knowledge otherwise. A question with two defensible answers, or a wrong key, is not correct. Be strict and brief.",
+      "consistent with the supplied source material when it covers the point, and with established knowledge otherwise. A question with two defensible answers, or a wrong key, is not correct. " +
+      "Also report aboutTheDocument: true when the question asks about the supplied document itself (what an outline/syllabus lists, which week or chapter covers something, dates, grading, policies, the instructor) rather than about the subject matter. Be strict and brief.",
     { topic, sources, questions },
     {
       type: "object", additionalProperties: false, required: ["questions"],
-      properties: { questions: { type: "array", items: { type: "object", additionalProperties: false, required: ["index", "correct", "reason"], properties: { index: { type: "integer" }, correct: { type: "boolean" }, reason: { type: "string" } } } } },
+      properties: { questions: { type: "array", items: { type: "object", additionalProperties: false, required: ["index", "correct", "aboutTheDocument", "reason"], properties: { index: { type: "integer" }, correct: { type: "boolean" }, aboutTheDocument: { type: "boolean" }, reason: { type: "string" } } } } },
     },
   );
 }
@@ -127,7 +128,10 @@ export async function gradeSessionQuiz(input: { topic: string; sources: Source[]
   const verdict = await judgeQuestions(input.topic, input.sources, questions);
   const correct = verdict.questions.filter((q) => q.correct).length;
   for (const q of verdict.questions.filter((v) => !v.correct)) notes.push(`q${q.index} judged wrong: ${q.reason.slice(0, 160)}`);
-  const score = questions.length ? correct / questions.length : 0;
+  // session-quiz.v2: a question about the outline/syllabus itself fails the case (scope material is a map, not content).
+  const meta = verdict.questions.filter((q) => q.aboutTheDocument);
+  for (const q of meta) notes.push(`q${q.index} asks about the document, not the subject: ${q.reason.slice(0, 120)}`);
+  const score = (questions.length ? correct / questions.length : 0) * (meta.length ? 0.5 : 1);
   return { pass: notes.every((n) => n.includes("judged wrong")) && score >= 0.9, score, notes };
 }
 
@@ -221,9 +225,11 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   // expected name only has to be contained in it.
   const got = parsed.actions.map((a) => `${a.type}:${normalize(a.name)}`);
   const want = testCase.expectedActions.map((a) => `${a.type}:${normalize(a.name)}`);
+  // The coach may name a course by its id (the prompt allows "name or id"); resolve ids to names before comparing.
+  const courseName = (ref: string) => testCase.courses.find((c) => c.id === ref.trim())?.name ?? ref;
   const actionsOk = got.length === want.length && parsed.actions.every((a, i) => {
     const e = testCase.expectedActions[i]!;
-    return a.type === e.type && normalize(a.name).includes(normalize(e.name)) && (!e.kind || a.kind === e.kind) && (!e.scope || (a.scope ?? "all") === e.scope);
+    return a.type === e.type && normalize(courseName(a.name)).includes(normalize(e.name)) && (!e.kind || a.kind === e.kind) && (!e.scope || (a.scope ?? "all") === e.scope);
   });
   const wantChips = (testCase.expectedSuggestions ?? []).map(normalize);
   const gotChips = parsed.suggestions.map(normalize);
