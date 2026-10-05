@@ -221,15 +221,21 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   // expected name only has to be contained in it.
   const got = parsed.actions.map((a) => `${a.type}:${normalize(a.name)}`);
   const want = testCase.expectedActions.map((a) => `${a.type}:${normalize(a.name)}`);
-  const actionsOk = got.length === want.length && parsed.actions.every((a, i) =>
-    a.type === testCase.expectedActions[i]!.type && normalize(a.name).includes(normalize(testCase.expectedActions[i]!.name)));
+  const actionsOk = got.length === want.length && parsed.actions.every((a, i) => {
+    const e = testCase.expectedActions[i]!;
+    return a.type === e.type && normalize(a.name).includes(normalize(e.name)) && (!e.kind || a.kind === e.kind) && (!e.scope || (a.scope ?? "all") === e.scope);
+  });
+  const wantChips = (testCase.expectedSuggestions ?? []).map(normalize);
+  const gotChips = parsed.suggestions.map(normalize);
+  const chipsOk = wantChips.every((chip) => gotChips.includes(chip));
+  if (!chipsOk) notes.push(`suggestions ${JSON.stringify(parsed.suggestions)} missing ${JSON.stringify(testCase.expectedSuggestions)}`);
   if (!actionsOk) notes.push(`actions ${JSON.stringify(got)} != expected ${JSON.stringify(want)}`);
   const words = parsed.reply.split(/\s+/).length;
   const tooLong = words > testCase.maxWords;
   if (tooLong) notes.push(`too long: ${words} words > ${testCase.maxWords}`);
   const verdict = await judge<{ expectations: { met: boolean; reason: string }[] }>(
     "You grade one reply from the AI study coach on an app's home chat, for students age 13+. Return exactly one verdict per expectation, in the same order. Check each expectation strictly.",
-    { courses: testCase.courses, history: testCase.history, studentMessage: testCase.message, expectations: testCase.expectations, reply: parsed.reply, actionsTaken: parsed.actions },
+    { courses: testCase.courses, history: testCase.history, latestQuestionSet: testCase.quiz ?? null, studentMessage: testCase.message, expectations: testCase.expectations, reply: parsed.reply, suggestions: parsed.suggestions, actionsTaken: parsed.actions },
     {
       type: "object", additionalProperties: false, required: ["expectations"],
       properties: { expectations: { type: "array", items: { type: "object", additionalProperties: false, required: ["met", "reason"], properties: { met: { type: "boolean" }, reason: { type: "string" } } } } },
@@ -238,6 +244,6 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   const verdicts = testCase.expectations.map((_, i) => verdict.expectations[i] ?? { met: false, reason: "no verdict returned" });
   for (const [i, e] of verdicts.entries()) if (!e.met) notes.push(`not met: ${testCase.expectations[i]} (${e.reason.slice(0, 140)})`);
   const met = verdicts.filter((e) => e.met).length;
-  const score = (met / testCase.expectations.length) * (actionsOk ? 1 : 0.5) * (tooLong ? 0.5 : 1);
-  return { pass: actionsOk && !tooLong && met === testCase.expectations.length, score, notes };
+  const score = (met / testCase.expectations.length) * (actionsOk && chipsOk ? 1 : 0.5) * (tooLong ? 0.5 : 1);
+  return { pass: actionsOk && chipsOk && !tooLong && met === testCase.expectations.length, score, notes };
 }

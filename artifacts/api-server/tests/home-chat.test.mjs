@@ -49,7 +49,7 @@ test('home chat: greet, create course, start session, isolation, failure safety'
   assert.equal(ai.requests.length, 0);
 
   // Empty conversation for a fresh account.
-  assert.deepEqual((await a('GET', '/study/chat')).body, { messages: [], version: 0 });
+  assert.deepEqual((await a('GET', '/study/chat')).body, { messages: [], version: 0, activeQuiz: null });
   assert.equal((await a('POST', '/study/chat', { content: '   ', version: 0 })).status, 400);
 
   // First message: the prompt lists the student's courses; the reply is stored.
@@ -114,10 +114,119 @@ test('home chat: greet, create course, start session, isolation, failure safety'
   assert.equal((await a('GET', '/study/state')).body.version, 2);
 
   // Isolation: user_b sees no conversation and cannot act on user_a's courses.
-  assert.deepEqual((await b('GET', '/study/chat')).body, { messages: [], version: 0 });
+  assert.deepEqual((await b('GET', '/study/chat')).body, { messages: [], version: 0, activeQuiz: null });
   nextReply = () => chatReply(JSON.stringify({ reply: 'Sure.', actions: [{ type: 'start_session', name: 'BIOL 114', topic: 'cells' }] }));
   chat = await b('POST', '/study/chat', { content: 'start BIOL 114', version: 0 });
   assert.equal(chat.status, 200);
   assert.deepEqual(chat.body.messages.at(-1).actions, []);
   assert.deepEqual((await b('GET', '/study/state')).body.state.courses, []);
+});
+
+// Question sets in the chat (SPEC §6 steps 4–7): practice vs exam feedback timing, resume,
+// grading, result context for the coach, and "missed topics" retests.
+// Each generated set gets fresh question texts (the server rejects prompts already used in the session).
+let quizBatch = 0;
+const quizReply = (count) => chatReply(JSON.stringify({
+  questions: Array.from({ length: count }, (_, i) => ({
+    prompt: `Set ${quizBatch} question ${i + 1}?`, options: [`A${i}`, `B${i}`, `C${i}`, `D${i}`], answerIndex: i % 4, concept: `concept-${i % 3}`, explanation: `Because ${i}.`,
+  })),
+}));
+
+test('home chat: practice and exam question sets', async (t) => {
+  buildServer();
+  const database = await startDatabase(t);
+  let coach = { reply: 'Hey!', suggestions: [], actions: [] };
+  let quizCount = 4;
+  const ai = await startAiStub(t, (request) => {
+    const system = request.body.messages[0].content;
+    if (system.startsWith('Create exactly')) { quizBatch += 1; return quizReply(quizCount); }
+    return chatReply(JSON.stringify(coach));
+  });
+  const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url });
+  await seedAccount(database.db, 'user_q', { aiConsent: true, courses: [{ id: 'bio', name: 'BIOL 114' }], materials: [{ id: 'm1', courseId: 'bio', name: 'Notes', text: 'Cells have membranes. Mitochondria make ATP.' }] });
+  const call = async (method, path, body) => {
+    const res = await fetch(`${base}/api${path}`, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${signToken('user_q')}` }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const text = await res.text();
+    return { status: res.status, body: text ? JSON.parse(text) : null };
+  };
+
+  // Without a kind, no set starts (the coach is told to ask first).
+  coach = { reply: 'Practice or exam?', suggestions: ['Practice', 'Exam'], actions: [{ type: 'start_quiz', name: 'BIOL 114', topic: 'cells', count: 4 }] };
+  let chat = await call('POST', '/study/chat', { content: 'quiz me on cells', version: 0 });
+  assert.equal(chat.status, 200);
+  assert.deepEqual(chat.body.messages.at(-1).suggestions, ['Practice', 'Exam']);
+  assert.deepEqual(chat.body.messages.at(-1).actions, []);
+  assert.equal(chat.body.activeQuiz, null);
+
+  // Practice set: 4 questions, session created with the check-in skipped, feedback per answer.
+  coach = { reply: 'First question coming.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 4, kind: 'practice', scope: 'all' }] };
+  chat = await call('POST', '/study/chat', { content: 'practice', version: 1 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  const started = chat.body.messages.at(-1).actions[0];
+  assert.equal(started.type, 'start_quiz');
+  assert.equal(started.kind, 'practice');
+  assert.equal(started.count, 4);
+  assert.deepEqual(chat.body.activeQuiz, { sessionId: started.sessionId, courseId: 'bio', topic: 'cells', kind: 'practice', answered: 0, total: 4 });
+  let session = (await call('GET', `/study/sessions/${started.sessionId}`)).body;
+  assert.equal(session.checkIn.skipped, true);
+  assert.equal(session.quiz.kind, 'practice');
+  assert.equal(session.quiz.questions.length, 4);
+  assert.equal(session.quiz.questions[0].feedback, undefined, 'no feedback before answering');
+  assert.equal(session.quiz.questions[0].correctOptionId, undefined, 'correct answers never exposed');
+  const q0 = session.quiz.questions[0];
+  session = (await call('PUT', `/study/sessions/${started.sessionId}/answers`, { questionId: q0.id, optionId: q0.options[1].id, assisted: false })).body;
+  assert.equal(session.quiz.questions[0].feedback.correctOptionText, 'A0', 'practice: feedback right after answering');
+  assert.equal(session.quiz.questions[0].feedback.selectedOptionText, 'B0');
+  assert.equal(session.quiz.questions[1].feedback, undefined);
+  // Resume: the chat reports progress; the coach is told a set is in progress.
+  chat = await call('GET', '/study/chat');
+  assert.equal(chat.body.activeQuiz.answered, 1);
+  coach = { reply: 'Finish the set first.', suggestions: [], actions: [] };
+  chat = await call('POST', '/study/chat', { content: 'what is ATP?', version: 2 });
+  assert.match(ai.requests.at(-1).body.messages[0].content, /in progress: 1 of 4 answered/);
+  // Answer the rest (q1 right, q2 wrong, q3 right) and grade through the session route.
+  const answers = [[1, 1], [2, 0], [3, 3]];
+  for (const [i, pick] of answers) {
+    const q = session.quiz.questions[i];
+    session = (await call('PUT', `/study/sessions/${started.sessionId}/answers`, { questionId: q.id, optionId: q.options[pick].id, assisted: false })).body;
+  }
+  session = (await call('POST', `/study/sessions/${started.sessionId}/grade`)).body;
+  assert.equal(session.quiz.grade.correct, 2);
+  assert.equal(session.quiz.grade.answered, 4);
+  // After grading: the chat has no active quiz; the coach sees the result and the misses.
+  chat = await call('GET', '/study/chat');
+  assert.equal(chat.body.activeQuiz, null);
+  coach = { reply: '2 of 4. Want tricks?', suggestions: ['Memory tricks for the misses', 'Another set on everything', 'Another set on the missed topics'], actions: [] };
+  chat = await call('POST', '/study/chat', { content: 'I finished the set.', version: 3 });
+  const system = ai.requests.at(-1).body.messages[0].content;
+  assert.match(system, /Latest graded set: practice on BIOL 114 \/ cells: 2 of 4 correct \(50%\)/);
+  assert.match(system, /\[concept-0\] Q: Set 1 question 1\? \| chose: B0 \| correct: A0/);
+  assert.match(system, /\[concept-2\] Q: Set 1 question 3\? \| chose: A2 \| correct: C2/);
+
+  // "Missed topics" set: exam kind, targeted on the missed concepts, plus up to 2 earlier correct questions.
+  quizCount = 3;
+  coach = { reply: 'Here comes a set on what you missed.', suggestions: [], actions: [{ type: 'start_quiz', name: 'BIOL 114', topic: 'cells', count: 3, kind: 'exam', scope: 'missed' }] };
+  chat = await call('POST', '/study/chat', { content: 'Another set on the missed topics', version: 4 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  const retest = chat.body.messages.at(-1).actions[0];
+  assert.equal(retest.kind, 'exam');
+  assert.equal(retest.count, 5, '3 new + 2 earlier correct questions');
+  const quizPrompt = ai.requests.filter((r) => r.body.messages[0].content.startsWith('Create exactly')).at(-1).body.messages[0].content;
+  assert.match(quizPrompt, /Specifically test missed concepts: concept-0, concept-2/);
+  session = (await call('GET', `/study/sessions/${retest.sessionId}`)).body;
+  assert.equal(session.quiz.kind, 'exam');
+  assert.equal(session.quiz.mode, 'targeted');
+  assert.equal(session.quiz.questions.length, 5);
+  const e0 = session.quiz.questions[0];
+  session = (await call('PUT', `/study/sessions/${retest.sessionId}/answers`, { questionId: e0.id, optionId: e0.options[0].id, assisted: false })).body;
+  assert.equal(session.quiz.questions[0].feedback, undefined, 'exam: no feedback until graded');
+
+  // Quiz generation failure: nothing is saved, the student can retry.
+  quizCount = 0;
+  coach = { reply: 'Here comes a set.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 5, kind: 'practice', scope: 'all' }] };
+  chat = await call('POST', '/study/chat', { content: 'Another set on everything', version: 5 });
+  assert.equal(chat.status, 502);
+  chat = await call('GET', '/study/chat');
+  assert.equal(chat.body.version, 5);
+  assert.equal(chat.body.messages.length, 10);
 });

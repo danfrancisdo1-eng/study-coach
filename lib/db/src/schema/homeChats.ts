@@ -3,6 +3,7 @@ import { integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-o
 export type HomeChatRole = "user" | "assistant";
 export type HomeChatAction =
   | { type: "create_course"; courseId: string; name: string }
+  | { type: "start_quiz"; sessionId: string; courseId: string; topic: string; kind: "practice" | "exam"; count: number }
   | { type: "start_session"; sessionId: string; courseId: string; topic: string };
 export type HomeChatMessage = {
   id: string;
@@ -11,6 +12,8 @@ export type HomeChatMessage = {
   at: string;
   /** Actions the coach carried out while answering (assistant messages only). */
   actions?: HomeChatAction[];
+  /** Tap-to-reply chips under an assistant message. */
+  suggestions?: string[];
 };
 
 // One row per account: the chat-first home conversation (SPEC §7). Kept out of

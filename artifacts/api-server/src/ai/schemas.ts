@@ -56,13 +56,19 @@ export const imageOcrSchema = object({ text: string });
 // action is re-validated and owner-scoped by routes/chat.ts before it is applied.
 export const coachSchema = object({
   reply: string,
+  // Up to three short tap-to-reply chips shown under the reply ("Practice", "Exam", ...).
+  suggestions: strings,
   actions: {
     type: "array",
     items: object({
-      type: { type: "string", enum: ["create_course", "start_session"] },
-      // create_course: the course name. start_session: the course name or id, and a topic.
+      type: { type: "string", enum: ["create_course", "start_quiz", "start_session"] },
+      // create_course: the course name. start_quiz / start_session: the course name or id, and a topic.
       name: string,
       topic: string,
+      // start_quiz only: number of questions (1-50), which concepts, and practice vs exam.
+      count: { type: "integer" },
+      scope: { type: "string", enum: ["all", "missed"] },
+      kind: { type: "string", enum: ["practice", "exam"] },
     }),
   },
 });

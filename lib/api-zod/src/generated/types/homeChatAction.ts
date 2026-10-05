@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { HomeChatActionKind } from './homeChatActionKind';
 import type { HomeChatActionType } from './homeChatActionType';
 
 export interface HomeChatAction {
@@ -12,7 +13,15 @@ export interface HomeChatAction {
   courseId: string;
   /** create_course: the new course's name */
   name?: string;
-  /** start_session: open this study session */
+  /** start_quiz / start_session: the study session holding the set / conversation */
   sessionId?: string;
   topic?: string;
+  /** start_quiz: practice reveals feedback per answer; exam only after grading */
+  kind?: HomeChatActionKind;
+  /**
+     * start_quiz: questions in the set
+     * @minimum 1
+     * @maximum 50
+     */
+  count?: number;
 }

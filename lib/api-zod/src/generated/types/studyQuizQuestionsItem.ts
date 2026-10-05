@@ -17,6 +17,6 @@ export type StudyQuizQuestionsItem = {
   options: StudyQuizQuestionsItemOptionsItem[];
   flag: StudyQuestionFlag | null;
   answer?: StudyQuizQuestionsItemAnswer;
-  /** Available only after this attempt has been graded. */
+  /** Available after this attempt has been graded, or, in a practice set, as soon as the question is answered. */
   feedback?: StudyQuestionFeedback | null;
 };

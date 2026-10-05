@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { StudyQuizKind } from './studyQuizKind';
 import type { StudyQuizMode } from './studyQuizMode';
 import type { StudyQuizQuestionsItem } from './studyQuizQuestionsItem';
 import type { StudyScore } from './studyScore';
@@ -12,6 +13,8 @@ import type { StudySourceStatus } from './studySourceStatus';
 
 export interface StudyQuiz {
   mode: StudyQuizMode;
+  /** Chat-first sets only. Practice: feedback appears on each answered question before grading. */
+  kind?: StudyQuizKind;
   /** @minimum 1 */
   expectedCount: number;
   /** @minimum 0 */

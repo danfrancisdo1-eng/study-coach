@@ -7,13 +7,13 @@ import { parseCoachReply, planActions } from '../src/routes/chatActions.ts';
 const courses = [{ id: 'bio-1', name: 'BIOL 114' }, { id: 'phil', name: 'Philosophy of Leadership', code: 'PHIL 151' }];
 
 test('parseCoachReply accepts the schema and rejects junk', () => {
-  assert.deepEqual(parseCoachReply('{"reply":"Hi","actions":[]}'), { reply: 'Hi', actions: [] });
+  assert.deepEqual(parseCoachReply('{"reply":"Hi","actions":[]}'), { reply: 'Hi', suggestions: [], actions: [] });
   assert.equal(parseCoachReply('not json'), null);
   assert.equal(parseCoachReply('{"actions":[]}'), null);
   assert.equal(parseCoachReply('{"reply":"","actions":[]}'), null);
   assert.equal(parseCoachReply('{"reply":"x","actions":"nope"}'), null);
   // Unknown action types are dropped, not fatal.
-  assert.deepEqual(parseCoachReply('{"reply":"x","actions":[{"type":"delete_everything","name":"a","topic":""}]}'), { reply: 'x', actions: [] });
+  assert.deepEqual(parseCoachReply('{"reply":"x","actions":[{"type":"delete_everything","name":"a","topic":""}]}'), { reply: 'x', suggestions: [], actions: [] });
   // Overlong replies are cut, not rejected.
   assert.equal(parseCoachReply(`{"reply":"${'a'.repeat(5000)}","actions":[]}`).reply.length, 4000);
 });
@@ -62,4 +62,36 @@ test('at most one session start per reply; the first wins', () => {
     { type: 'start_session', name: 'phil', topic: 'ethics' },
   ]);
   assert.deepEqual(plan.start, { courseId: 'bio-1', topic: 'cells' });
+});
+
+test('suggestions are bounded chips; missing suggestions is fine', () => {
+  const parsed = parseCoachReply(JSON.stringify({ reply: 'Practice or exam?', suggestions: ['Practice', 'Exam', '  ', 'x'.repeat(100), 'extra', 'more'], actions: [] }));
+  assert.deepEqual(parsed.suggestions, ['Practice', 'Exam', 'x'.repeat(60)]);
+  assert.deepEqual(parseCoachReply('{"reply":"hi","actions":[]}').suggestions, []);
+});
+
+test('start_quiz needs a practice/exam kind; count is clamped to 1-50 and defaults to 10; scope defaults to all', () => {
+  const noKind = planActions(courses, [{ type: 'start_quiz', name: 'BIOL 114', topic: 'cells' }]);
+  assert.equal(noKind.quiz, null);
+  assert.deepEqual(noKind.notes, ['start_quiz without practice/exam kind']);
+  const plain = planActions(courses, [{ type: 'start_quiz', name: 'BIOL 114', topic: 'cells', kind: 'practice' }]);
+  assert.deepEqual(plain.quiz, { courseId: 'bio-1', topic: 'cells', count: 10, scope: 'all', kind: 'practice' });
+  const big = planActions(courses, [{ type: 'start_quiz', name: 'bio-1', topic: '', kind: 'exam', count: 500, scope: 'missed' }]);
+  assert.deepEqual(big.quiz, { courseId: 'bio-1', topic: 'General review', count: 50, scope: 'missed', kind: 'exam' });
+  assert.equal(planActions(courses, [{ type: 'start_quiz', name: 'bio-1', topic: 't', kind: 'exam', count: 0 }]).quiz.count, 1);
+});
+
+test('a quiz on a course created in the same reply, and a quiz replaces any legacy session start', () => {
+  const plan = planActions(courses, [
+    { type: 'create_course', name: 'Stats', topic: '' },
+    { type: 'start_session', name: 'Stats', topic: 'old flow' },
+    { type: 'start_quiz', name: 'Stats', topic: 'z-scores', kind: 'exam', count: 20 },
+  ]);
+  assert.deepEqual(plan.quiz, { courseId: null, courseName: 'Stats', topic: 'z-scores', count: 20, scope: 'all', kind: 'exam' });
+  assert.equal(plan.start, null);
+});
+
+test('parse keeps only valid count/scope/kind values', () => {
+  const parsed = parseCoachReply(JSON.stringify({ reply: 'go', actions: [{ type: 'start_quiz', name: 'a', topic: 'b', count: 'ten', scope: 'some', kind: 'quiz' }] }));
+  assert.deepEqual(parsed.actions, [{ type: 'start_quiz', name: 'a', topic: 'b' }]);
 });

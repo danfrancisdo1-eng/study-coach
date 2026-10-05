@@ -14,4 +14,6 @@ export interface HomeChatMessage {
   content: string;
   at: Date;
   actions?: HomeChatAction[];
+  /** Tap-to-reply chips under an assistant message */
+  suggestions?: string[];
 }

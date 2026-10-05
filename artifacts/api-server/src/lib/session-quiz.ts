@@ -45,8 +45,11 @@ export type StoredQuestion = {
     assisted: boolean;
   };
 };
+export type QuizKind = "practice" | "exam";
 export type Quiz = {
   mode: "diagnostic" | "targeted";
+  /** Chat-first sets (SPEC §6 step 4): practice reveals feedback per answer; exam only after grading. Absent on older sessions (= exam). */
+  kind?: QuizKind;
   expectedCount: number;
   questions: StoredQuestion[];
   sourceStatus: SourceStatus;
@@ -74,9 +77,21 @@ export function jsonObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function practiceFeedback(question: StoredQuestion): NonNullable<StoredQuestion["feedback"]> {
+  const answer = question.answers.at(-1);
+  const selected = answer ? question.options.find((option) => option.id === answer.optionId) : undefined;
+  const correct = question.options.find((option) => option.id === question.correctOptionId)!;
+  return {
+    selectedOptionId: selected?.id ?? null, selectedOptionText: selected?.text ?? null,
+    correctOptionId: correct.id, correctOptionText: correct.text,
+    explanation: question.explanation, concept: question.concept, assisted: answer?.assisted ?? false,
+  };
+}
+
 export function safeSession(session: Session): Record<string, unknown> {
   const publicQuiz = (value: Quiz): Record<string, unknown> => ({
     mode: value.mode,
+    ...(value.kind ? { kind: value.kind } : {}),
     expectedCount: value.expectedCount,
     invalidItemCount: value.invalidItemCount + value.questions.filter((question) => question.invalid || question.flag).length,
     qualityNotice: QUESTION_QUALITY_NOTICE,
@@ -90,7 +105,9 @@ export function safeSession(session: Session): Record<string, unknown> {
         ? { ...question.flag, reason: question.flag.reason ?? null }
         : null,
       answer: question.answers.at(-1) ?? null,
-      ...(value.grade ? { feedback: question.feedback ?? null } : {}),
+      // Feedback after grading; in a practice set, right after the question is answered.
+      ...(value.grade ? { feedback: question.feedback ?? null }
+        : value.kind === "practice" && question.answers.length ? { feedback: practiceFeedback(question) } : {}),
     })),
     grade: value.grade,
   });
@@ -156,6 +173,7 @@ export interface GenerateQuizInput {
   courseId: string;
   topic: string;
   mode: Quiz["mode"];
+  kind?: QuizKind;
   expectedCount: number;
   /** Prompts already used in this session (targeted retests must not repeat them). */
   originalPrompts: string[];
@@ -203,5 +221,5 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
     });
   }
   if (!questions.length) return null;
-  return { mode: input.mode, expectedCount, questions, sourceStatus: status, invalidItemCount, grade: null };
+  return { mode: input.mode, ...(input.kind ? { kind: input.kind } : {}), expectedCount, questions, sourceStatus: status, invalidItemCount, grade: null };
 }
