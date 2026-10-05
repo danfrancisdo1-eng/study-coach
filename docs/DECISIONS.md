@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-05 — D-017: Question sets run inside the chat; practice vs exam; coach.v2
+- A set is a study session underneath (grading, review items, reports unchanged), created by the coach's `start_quiz` action with the check-in skipped. Before any set the coach asks **Practice** (correct answer + why after each tap) or **Exam** (everything after Grade); both grade the same way. Default 10 questions, max 50. After grading the app sends "I finished the set." for the student; the coach sees the score and every missed question and offers three chips: memory tricks / another set on everything / another set on the missed topics (a targeted retest plus up to 2 earlier questions).
+- Prompt `coach.v2` (replaces v1): practice/exam gate, results context, chips, memory tricks. Evals: 12 cases, 12/12 twice on Claude Sonnet 5.5 (~$0.06 model cost per run). Three v1 eval cases were rewritten for v2 behavior (a quiz request now asks practice/exam first; `start_session` is only for "teach me").
+- **Why:** Dan's method (SPEC §6) and his 2026-10-05 addition of practice vs exam; the piece-1 hand-off to the old session screen was the thing he didn't want. Decided by Dan.
+
 ## 2026-10-04 — D-016: Chat-first shell (SPEC §7)
 - The chat is the home screen and the app; the AI asks for the course, creates it from the student's input, and runs the Exam Prep loop inside the chat with tappable cards. One visible course list remains for finding/editing/deleting; everything there is also doable by asking the AI. Existing screens become the layer behind the chat rather than being rebuilt.
 - **Why:** Dan: "it has to be intuitive"; the origin method (Danny guide) is chat-first. Fewer buttons than building §6 as separate screens. Decided by Dan.
