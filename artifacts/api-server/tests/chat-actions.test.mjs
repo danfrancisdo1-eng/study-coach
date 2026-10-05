@@ -65,8 +65,8 @@ test('at most one session start per reply; the first wins', () => {
 });
 
 test('suggestions are bounded chips; missing suggestions is fine', () => {
-  const parsed = parseCoachReply(JSON.stringify({ reply: 'Practice or exam?', suggestions: ['Practice', 'Exam', '  ', 'x'.repeat(100), 'extra', 'more'], actions: [] }));
-  assert.deepEqual(parsed.suggestions, ['Practice', 'Exam', 'x'.repeat(60)]);
+  const parsed = parseCoachReply(JSON.stringify({ reply: 'Practice or exam?', suggestions: ['Practice', 'Exam', '  ', 'x'.repeat(100), 'a', 'b', 'c', 'd', 'e'], actions: [] }));
+  assert.deepEqual(parsed.suggestions, ['Practice', 'Exam', 'x'.repeat(60), 'a', 'b', 'c'], 'blank dropped, long one cut, capped at 6');
   assert.deepEqual(parseCoachReply('{"reply":"hi","actions":[]}').suggestions, []);
 });
 

@@ -10,7 +10,7 @@ import { and, eq } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v3";
+import * as coachPrompt from "../prompts/coach.v4";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { generateSessionQuiz, sourceChunks, sourceTextOf, type Quiz, type Session } from "../lib/session-quiz";
 import { parseCoachReply, planActions, type KnownCourse, type QuizPlan } from "./chatActions";
@@ -22,7 +22,9 @@ router.use("/study/chat", requireStudyAuth);
 const MAX_MESSAGES = 80; // kept in the row; older turns drop off
 const HISTORY_TURNS = 20; // sent to the model
 const DEFAULT_SESSION_MINUTES = 20;
-const OLD_MATERIAL_QUESTIONS = 2; // "missed topics" sets add 1–2 questions from earlier material (SPEC §6 step 7)
+const OLD_MATERIAL_QUESTIONS = 2;
+const SCOPE_MATERIAL = /outline|syllabus|schedule|course description|reading list|contents/i; // a map of topics, not content
+const SCOPE_EXCERPT_CHARS = 1500; // "missed topics" sets add 1–2 questions from earlier material (SPEC §6 step 7)
 
 type JsonObject = Record<string, unknown>;
 const isObject = (value: unknown): value is JsonObject => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -186,12 +188,19 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const courses = knownCourses(state);
   const lectureRows = await db.select({ courseId: lecturesTable.courseId }).from(lecturesTable).where(eq(lecturesTable.ownerId, ownerId));
   const materials = list(state.materials);
-  const summary = courses.map((course) => ({
-    id: course.id,
-    name: course.code ? `${course.name} (${course.code})` : course.name,
-    materials: materials.filter((m) => isObject(m) && m.courseId === course.id).length,
-    lectures: lectureRows.filter((l) => l.courseId === course.id).length,
-  }));
+  const summary = courses.map((course) => {
+    const own = materials.filter((m): m is JsonObject => isObject(m) && m.courseId === course.id);
+    const materialNames = own.map((m) => (typeof m.name === "string" ? m.name : "material"));
+    const scope = own.find((m) => typeof m.name === "string" && SCOPE_MATERIAL.test(m.name) && typeof m.text === "string");
+    return {
+      id: course.id,
+      name: course.code ? `${course.name} (${course.code})` : course.name,
+      materials: own.length,
+      lectures: lectureRows.filter((l) => l.courseId === course.id).length,
+      ...(materialNames.length ? { materialNames } : {}),
+      ...(scope ? { scopeExcerpt: (scope.text as string).replace(/\s+/g, " ").slice(0, SCOPE_EXCERPT_CHARS) } : {}),
+    };
+  });
   const history = messages.slice(-HISTORY_TURNS).map((m) => ({ role: m.role, content: m.content }));
   const lastQuizAction = latestQuizAction(messages);
   const lastQuizSession = lastQuizAction ? await loadSession(ownerId, lastQuizAction.sessionId) : null;

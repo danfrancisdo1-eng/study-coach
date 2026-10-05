@@ -13,8 +13,10 @@
 
 - Dan tested from away (Expo tunnel mode now works: `@expo/ngrok` dev dependency + the darwin ngrok binaries un-stripped in pnpm-workspace.yaml; start with `--tunnel`). Found: "Sure" after the coach's offer opened the old session screen → coach.v3 (D-018) removes the hand-off. Evals 13/13 ×2.
 
+- Dan found the set quizzed his outline instead of biology → D-019: session-quiz.v2 (scope vs content), coach.v4 topic step with chips, Sonnet-vs-Opus comparison (Sonnet stays). Quiz evals 5/5 both models; coach evals 17/17.
+
 ### Next
-- Dan: reload the phone → "quiz me on Bio 101" (or "Sure" to the offer) → Practice/Exam → answer → Grade → chips. Report what the cards look like.
+- Dan: "quiz me on Bio 101" → pick a topic chip (or All topics) → Practice/Exam → answer → Grade → chips. Check the questions are about biology, not the outline.
 - Piece 2 (topic list card), then piece 4 polish (streaming, "Writing your questions…" progress).
 
 ### Needs real-iPhone check

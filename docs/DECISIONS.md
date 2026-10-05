@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-05 — D-019: Outlines are scope, not content; topic step before a set; Sonnet stays for questions
+- **session-quiz.v2:** materials are CONTENT (notes, slides, transcripts: source of truth) or SCOPE (outline, syllabus, schedule: a map of topics). Scope picks topics; questions test the subject from established knowledge; never a question about the document. Found on Dan's iPhone: with only an outline uploaded, v1 quizzed the outline. New eval cases (outline-only) plus a judge check that flags document-about questions: 5/5.
+- **coach.v4:** topic step (SPEC §6 step 3): with no topic named, the coach proposes 3–5 topics (from the outline/syllabus excerpt and material names the route now passes it, else the course's standard topics) as chips plus "All topics", then asks practice/exam; follow-up sets reuse the last set's kind and topic without re-asking. Chip cap raised from 3 to 6. Evals 17/17.
+- **Model for question sets:** Sonnet 5.5 vs Opus 5.5 on the quiz evals (v2 prompt): both 5/5, Opus 2.2× the cost ($0.157 vs $0.073 per run). Sonnet stays; revisit with a larger eval set if quality complaints continue.
+- Not yet: multi-select topics (chips are single-select; "All topics" covers the rest).
+
 ## 2026-10-05 — D-018: coach.v3 — no hand-off to the old session screen
 - The coach can no longer start a legacy study session. Accepting an offer of questions ("Sure") goes through the practice/exam question; "teach me" is answered in the chat, then a set is offered. Found on Dan's iPhone: after "Sure", v2 opened the old session screen. Evals: new cases for the "Sure" path and teach-me-in-chat; 13/13 twice.
 
