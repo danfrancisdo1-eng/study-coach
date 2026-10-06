@@ -15,8 +15,11 @@
 
 - Dan found the set quizzed his outline instead of biology → D-019: session-quiz.v2 (scope vs content), coach.v4 topic step with chips, Sonnet-vs-Opus comparison (Sonnet stays). Quiz evals 5/5 both models; coach evals 17/17.
 
+- Dan: questions now good. Fixed: question card docked above the composer (each step at top); chat opens at the newest message; new-session greeting on open (D-020, `/study/chat/open`, 58/58 tests).
+
 ### Next
-- Dan: "quiz me on Bio 101" → pick a topic chip (or All topics) → Practice/Exam → answer → Grade → chips. Check the questions are about biology, not the outline.
+- Dan: reload → expect "Welcome back…" with chips after a 30-min break; start a set from a chip; confirm the card lands on the question each time.
+- Multi-select topics; "Writing your questions…" progress; streaming.
 - Piece 2 (topic list card), then piece 4 polish (streaming, "Writing your questions…" progress).
 
 ### Needs real-iPhone check

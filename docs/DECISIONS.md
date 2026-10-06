@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-05 — D-020: Opening the app starts a new session in the chat
+- Dan: "if it's reloaded it should be reset to the beginning." Chosen: a new session at the bottom of the chat (not a scroll to the top, not a wiped history): an app-written check-in greeting with chips, after a break of 30+ minutes. Matches the Danny guide's once-per-session check-in. The question card was also docked above the composer (each step starts at the top), and the chat opens at the newest message.
+
 ## 2026-10-05 — D-019: Outlines are scope, not content; topic step before a set; Sonnet stays for questions
 - **session-quiz.v2:** materials are CONTENT (notes, slides, transcripts: source of truth) or SCOPE (outline, syllabus, schedule: a map of topics). Scope picks topics; questions test the subject from established knowledge; never a question about the document. Found on Dan's iPhone: with only an outline uploaded, v1 quizzed the outline. New eval cases (outline-only) plus a judge check that flags document-about questions: 5/5.
 - **coach.v4:** topic step (SPEC §6 step 3): with no topic named, the coach proposes 3–5 topics (from the outline/syllabus excerpt and material names the route now passes it, else the course's standard topics) as chips plus "All topics", then asks practice/exam; follow-up sets reuse the last set's kind and topic without re-asking. Chip cap raised from 3 to 6. Evals 17/17.
