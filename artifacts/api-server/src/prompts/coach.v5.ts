@@ -32,6 +32,8 @@ export interface MissedQuestion {
   chose: string | null;
   correct: string;
   explanation: string;
+  /** The question's own memory hook, when the question writer gave one. */
+  hook?: string;
 }
 
 export interface DeckContext {
@@ -77,7 +79,7 @@ export function systemPrompt({ today, courses, firstVisit, quiz, deck }: CoachPr
     quizBlock = `A ${quiz.kind} set on ${quiz.courseName} / ${quiz.topic} is in progress: ${quiz.answered} of ${quiz.total} answered. The questions are shown to the student as cards in the app; do not write questions yourself. If they ask for something else, help briefly and remind them the set is waiting.`;
   } else if (quiz?.graded) {
     const missed = quiz.graded.missed.length
-      ? quiz.graded.missed.map((m, i) => `${i + 1}. [${m.concept}] Q: ${m.prompt} | chose: ${m.chose ?? "(skipped)"} | correct: ${m.correct} | why: ${m.explanation}`).join("\n")
+      ? quiz.graded.missed.map((m, i) => `${i + 1}. [${m.concept}] Q: ${m.prompt} | chose: ${m.chose ?? "(skipped)"} | correct: ${m.correct} | why: ${m.explanation}${m.hook ? ` | hook: ${m.hook}` : ""}`).join("\n")
       : "(none)";
     quizBlock = `Latest graded set: ${quiz.kind} on ${quiz.courseName} / ${quiz.topic}: ${quiz.graded.correct} of ${quiz.answered} correct (${quiz.graded.percent}%). The app already showed the score and the corrections. Missed questions:\n${missed}`;
   }

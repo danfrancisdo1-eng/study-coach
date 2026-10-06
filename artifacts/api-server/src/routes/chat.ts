@@ -106,6 +106,7 @@ function quizContext(courses: KnownCourse[], action: Extract<HomeChatAction, { t
       chose: q.options.find((o) => o.id === q.answers.at(-1)?.optionId)?.text ?? null,
       correct: q.options.find((o) => o.id === q.correctOptionId)?.text ?? "",
       explanation: q.explanation,
+      ...(q.hook ? { hook: q.hook } : {}),
     }));
   const correct = answered.length - missed.length;
   return { ...base, graded: { correct, percent: answered.length ? Math.round((correct / answered.length) * 100) : 0, missed } };

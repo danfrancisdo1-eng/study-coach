@@ -833,6 +833,7 @@ components:
       type: object
       required: [selectedOptionId, selectedOptionText, correctOptionId, correctOptionText, explanation, concept, assisted]
       properties:
+        hook: { type: string, description: "One-line memory trick for this question (shown when missed)" }
         selectedOptionId: { type: ["string", "null"], format: uuid }
         selectedOptionText: { type: ["string", "null"] }
         correctOptionId: { type: string, format: uuid }

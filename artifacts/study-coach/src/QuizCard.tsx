@@ -46,6 +46,7 @@ export default function QuizCard({ sessionId, onGraded, onError }: {
             <p style={{ color: 'var(--destructive, #b33b2d)' }}>You chose: {q.feedback!.selectedOptionText}</p>
             <p><strong>Correct: {q.feedback!.correctOptionText}</strong></p>
             <p className="ae-muted">{q.feedback!.explanation}</p>
+            {q.feedback!.hook && <p style={{ fontWeight: 600 }}>⚡ {q.feedback!.hook}</p>}
           </div>
         ))}
       </div>
@@ -63,6 +64,7 @@ export default function QuizCard({ sessionId, onGraded, onError }: {
         {!correct && <p style={{ color: 'var(--destructive, #b33b2d)' }}>You chose: {reviewing.feedback.selectedOptionText}</p>}
         <p><strong>Correct: {reviewing.feedback.correctOptionText}</strong></p>
         <p className="ae-muted">{reviewing.feedback.explanation}</p>
+        {!correct && reviewing.feedback.hook && <p style={{ fontWeight: 600 }}>⚡ {reviewing.feedback.hook}</p>}
         <button type="button" className="ae-button ae-button--ink" onClick={() => setReviewingId(null)} data-testid="button-quiz-next">{answered.length >= questions.length ? 'See the score' : 'Next question'}</button>
       </div>
     );
@@ -84,6 +86,7 @@ export default function QuizCard({ sessionId, onGraded, onError }: {
   return (
     <div className="ae-card ae-card--compact" data-testid="panel-quiz-question" ref={topRef}>
       <span className="ae-kicker">{kindLabel} · QUESTION {questions.indexOf(current) + 1} OF {questions.length}</span>
+      <progress value={answered.length} max={questions.length} style={{ width: '100%' }} aria-label="Answered" /><p className="ae-muted" style={{ fontSize: '.8rem' }}>{answered.length} of {questions.length} answered</p>
       <p style={{ fontWeight: 600 }}>{current.prompt}</p>
       <div style={{ display: 'grid', gap: 8 }}>
         {current.options.map((option, i) => (

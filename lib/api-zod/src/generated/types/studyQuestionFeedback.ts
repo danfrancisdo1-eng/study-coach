@@ -7,6 +7,8 @@
  */
 
 export interface StudyQuestionFeedback {
+  /** One-line memory trick for this question (shown when missed) */
+  hook?: string;
   /** @nullable */
   selectedOptionId: string | null;
   /** @nullable */

@@ -386,6 +386,7 @@ export const CreateStudySessionResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -441,6 +442,7 @@ export const CreateStudySessionResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -608,6 +610,7 @@ export const GetStudySessionResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -663,6 +666,7 @@ export const GetStudySessionResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -1123,6 +1127,7 @@ export const CheckInStudySessionResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -1178,6 +1183,7 @@ export const CheckInStudySessionResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -1326,6 +1332,7 @@ export const SendStudyMessageResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -1381,6 +1388,7 @@ export const SendStudyMessageResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -1525,6 +1533,7 @@ export const GenerateStudyQuizResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -1580,6 +1589,7 @@ export const GenerateStudyQuizResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -1725,6 +1735,7 @@ export const SaveStudyAnswerResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -1780,6 +1791,7 @@ export const SaveStudyAnswerResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -1930,6 +1942,7 @@ export const FlagStudyQuestionResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -1985,6 +1998,7 @@ export const FlagStudyQuestionResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -2129,6 +2143,7 @@ export const ReviewFlashcardResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -2184,6 +2199,7 @@ export const ReviewFlashcardResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -2323,6 +2339,7 @@ export const GradeStudyQuizResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),
@@ -2378,6 +2395,7 @@ export const GradeStudyQuizResponse = zod.object({
   "assisted": zod.boolean()
 }),zod.null()]).optional(),
   "feedback": zod.union([zod.object({
+  "hook": zod.string().optional().describe('One-line memory trick for this question (shown when missed)'),
   "selectedOptionId": zod.string().uuid().nullable(),
   "selectedOptionText": zod.string().nullable(),
   "correctOptionId": zod.string().uuid(),

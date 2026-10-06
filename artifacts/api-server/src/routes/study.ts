@@ -1298,6 +1298,7 @@ router.post("/study/sessions/:id/grade", async (req, res): Promise<void> => {
       correctOptionId: correctOption.id,
       correctOptionText: correctOption.text,
       explanation: question.explanation,
+      ...(question.hook ? { hook: question.hook } : {}),
       concept: question.concept,
       assisted: answer?.assisted ?? false,
     };

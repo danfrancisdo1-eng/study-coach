@@ -3,7 +3,7 @@
 // chat-first home (routes/chat.ts) can start question sets with the same code.
 import { randomUUID } from "node:crypto";
 import { complete } from "../ai";
-import * as sessionQuizPrompt from "../prompts/session-quiz.v2";
+import * as sessionQuizPrompt from "../prompts/session-quiz.v3";
 import * as flashcardsPrompt from "../prompts/flashcards.v1";
 
 export type JsonObject = Record<string, unknown>;
@@ -33,6 +33,8 @@ export type StoredQuestion = {
   options: PublicOption[];
   correctOptionId: string;
   explanation: string;
+  /** One-line memory trick, shown when the question is missed (session-quiz.v3). */
+  hook?: string;
   answers: Array<{ optionId: string; assisted: boolean }>;
   invalid?: boolean;
   flag?: StoredQuestionFlag;
@@ -42,6 +44,7 @@ export type StoredQuestion = {
     correctOptionId: string;
     correctOptionText: string;
     explanation: string;
+    hook?: string;
     concept: string;
     assisted: boolean;
   };
@@ -92,7 +95,7 @@ function practiceFeedback(question: StoredQuestion): NonNullable<StoredQuestion[
   return {
     selectedOptionId: selected?.id ?? null, selectedOptionText: selected?.text ?? null,
     correctOptionId: correct.id, correctOptionText: correct.text,
-    explanation: question.explanation, concept: question.concept, assisted: answer?.assisted ?? false,
+    explanation: question.explanation, ...(question.hook ? { hook: question.hook } : {}), concept: question.concept, assisted: answer?.assisted ?? false,
   };
 }
 
@@ -258,7 +261,8 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
     const options = (value.options as string[]).map((text) => ({ id: randomUUID(), text }));
     questions.push({
       id: randomUUID(), prompt: value.prompt.slice(0, 2000), concept: value.concept.slice(0, 300), options,
-      correctOptionId: options[value.answerIndex as number]!.id, explanation: value.explanation.slice(0, 2000), answers: [],
+      correctOptionId: options[value.answerIndex as number]!.id, explanation: value.explanation.slice(0, 2000),
+      ...(typeof value.hook === "string" && value.hook.trim() ? { hook: value.hook.trim().slice(0, 300) } : {}), answers: [],
     });
   }
   if (!questions.length) return null;
