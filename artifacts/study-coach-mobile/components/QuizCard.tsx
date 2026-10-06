@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,12 +13,14 @@ import { useColors } from '@/hooks/useColors';
  * correct answer and why right after each tap; exam sets only after Grade. Answers are
  * saved on the server as they are tapped, so leaving and coming back resumes.
  */
-export function QuizCard({ sessionId, userId, onGraded, onError }: {
+export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }: {
   sessionId: string;
   userId: string | null | undefined;
   /** Called once when the student taps Grade and the server has graded the set. */
   onGraded: (session: StudySession) => void;
   onError: (problem: unknown) => void;
+  /** Fires when what the card shows changes (next question, feedback, grade, score), so the parent can scroll to its top. */
+  onStepChange?: (step: string) => void;
 }) {
   const colors = useColors();
   const styles = createStyles(colors);
@@ -31,6 +33,8 @@ export function QuizCard({ sessionId, userId, onGraded, onError }: {
   const session = sessionQuery.data;
   const quiz = session?.quiz ?? null;
   const busy = saveAnswer.isPending || grade.isPending;
+  const step = !quiz ? 'loading' : quiz.grade ? 'score' : reviewingId ? `feedback:${reviewingId}` : `question:${quiz.questions.find((q) => !q.flag && !q.answer)?.id ?? 'grade'}`;
+  useEffect(() => { onStepChange?.(step); }, [step]);
 
   if (sessionQuery.isLoading) return <View style={styles.card}><ActivityIndicator color={colors.primary} /><Text style={styles.muted}>Loading your questions…</Text></View>;
   if (!session || !quiz) {
