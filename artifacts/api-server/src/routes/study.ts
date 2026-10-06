@@ -14,6 +14,7 @@ import {
   GenerateStudyQuizBody,
   ImportStudyStateBody,
   PutStudyStateBody,
+  ReviewFlashcardBody,
   SaveStudyAnswerBody,
   SendStudyMessageBody,
 } from "@workspace/api-zod";
@@ -1135,6 +1136,56 @@ router.put("/study/sessions/:id/answers", async (req, res): Promise<void> => {
   question.answers.push({ optionId: body.optionId as string, assisted: body.assisted as boolean });
   if (!await saveSession(session, owner(req))) {
     res.status(409).json({ error: "Session answers changed on another device. Reload the session and retry." });
+    return;
+  }
+  res.json(safeSession(session));
+});
+
+// Flashcards (D-021): record "got" / "again" for one card. When every card's latest result
+// is "got", the deck is finished and each card becomes a review item (again => missed).
+router.post("/study/sessions/:id/flashcards/:cardId/review", async (req, res): Promise<void> => {
+  const parsed = ReviewFlashcardBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Result must be got or again." });
+    return;
+  }
+  const session = await requireSession(req, res);
+  if (!session) return;
+  const deck = session.flashcards;
+  if (!deck) {
+    res.status(409).json({ error: "This session has no flashcard deck." });
+    return;
+  }
+  const cardId = Array.isArray(req.params.cardId) ? req.params.cardId[0] : req.params.cardId;
+  const card = deck.cards.find((candidate) => candidate.id === cardId);
+  if (!card) {
+    res.status(404).json({ error: "Card not found." });
+    return;
+  }
+  if (deck.completedAt) {
+    res.json(safeSession(session));
+    return;
+  }
+  card.results.push(parsed.data.result);
+  const finished = deck.cards.every((c) => c.results.at(-1) === "got");
+  if (finished) {
+    const now = new Date();
+    deck.completedAt = now.toISOString();
+    session.reviewSchedule = [...session.reviewSchedule, ...deck.cards.map((c) => {
+      const missed = c.results.includes("again");
+      return {
+        concept: c.concept, result: missed ? "missed" : "correct", sessionId: session.id, quizMode: "flashcards",
+        reviewKey: `${session.id}:flashcards:${c.id}`,
+        dueAt: new Date(now.getTime() + (missed ? 1 : 3) * 86_400_000).toISOString(), intervalDays: missed ? 1 : 3,
+      };
+    })];
+  }
+  if (!await saveSession(session, owner(req))) {
+    res.status(409).json({ error: "Session changed on another device. Reload and retry." });
+    return;
+  }
+  if (finished && !await persistSessionReviews(owner(req), session)) {
+    res.status(409).json({ error: "The deck is finished, but the account review schedule is busy. Retry to sync it." });
     return;
   }
   res.json(safeSession(session));

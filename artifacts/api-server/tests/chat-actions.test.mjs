@@ -95,3 +95,17 @@ test('parse keeps only valid count/scope/kind values', () => {
   const parsed = parseCoachReply(JSON.stringify({ reply: 'go', actions: [{ type: 'start_quiz', name: 'a', topic: 'b', count: 'ten', scope: 'some', kind: 'quiz' }] }));
   assert.deepEqual(parsed.actions, [{ type: 'start_quiz', name: 'a', topic: 'b' }]);
 });
+
+test('start_flashcards: count clamped to 1-30, default 10, scope defaults to all; a deck and a quiz never both start', () => {
+  const deck = planActions(courses, [{ type: 'start_flashcards', name: 'biol 114', topic: 'cells' }]);
+  assert.deepEqual(deck.deck, { courseId: 'bio-1', topic: 'cells', count: 10, scope: 'all' });
+  assert.equal(deck.quiz, null);
+  const big = planActions(courses, [{ type: 'start_flashcards', name: 'bio-1', topic: '', count: 99, scope: 'missed' }]);
+  assert.deepEqual(big.deck, { courseId: 'bio-1', topic: 'General review', count: 30, scope: 'missed' });
+  const both = planActions(courses, [
+    { type: 'start_flashcards', name: 'bio-1', topic: 'cells' },
+    { type: 'start_quiz', name: 'bio-1', topic: 'cells', kind: 'exam' },
+  ]);
+  assert.ok(both.deck && !both.quiz, 'first wins');
+  assert.equal(planActions(courses, [{ type: 'start_flashcards', name: 'Nope', topic: 'x' }]).deck, null);
+});

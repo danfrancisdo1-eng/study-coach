@@ -10,10 +10,10 @@ import { and, eq } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v4";
+import * as coachPrompt from "../prompts/coach.v5";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
-import { generateSessionQuiz, sourceChunks, sourceTextOf, type Quiz, type Session } from "../lib/session-quiz";
-import { parseCoachReply, planActions, type KnownCourse, type QuizPlan } from "./chatActions";
+import { generateFlashcards, generateSessionQuiz, sourceChunks, sourceTextOf, type Quiz, type Session } from "../lib/session-quiz";
+import { parseCoachReply, planActions, type DeckPlan, type KnownCourse, type QuizPlan } from "./chatActions";
 import { requireStudyAuth } from "./study";
 
 const router: IRouter = Router();
@@ -66,6 +66,31 @@ function latestQuizAction(messages: HomeChatMessage[]): Extract<HomeChatAction, 
   return null;
 }
 
+function latestDeckAction(messages: HomeChatMessage[]): Extract<HomeChatAction, { type: "start_flashcards" }> | null {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    for (const action of [...(messages[i]!.actions ?? [])].reverse()) {
+      if (action.type === "start_flashcards") return action;
+    }
+  }
+  return null;
+}
+
+function deckContext(courses: KnownCourse[], session: Session | null): coachPrompt.DeckContext | null {
+  const deck = session?.flashcards;
+  if (!session || !deck) return null;
+  const courseName = courses.find((c) => c.id === session.courseId)?.name ?? session.courseId;
+  const done = deck.cards.filter((c) => c.results.at(-1) === "got").length;
+  const base = { courseName, topic: session.topic, done, total: deck.cards.length };
+  if (!deck.completedAt) return { ...base, finished: null };
+  const again = deck.cards.filter((c) => c.results.includes("again"));
+  return { ...base, finished: { again: again.length, againConcepts: [...new Set(again.map((c) => c.concept))] } };
+}
+
+const activeDeckView = (action: Extract<HomeChatAction, { type: "start_flashcards" }> | null, context: coachPrompt.DeckContext | null) =>
+  action && context && !context.finished
+    ? { sessionId: action.sessionId, courseId: action.courseId, topic: action.topic, done: context.done, total: context.total }
+    : null;
+
 function quizContext(courses: KnownCourse[], action: Extract<HomeChatAction, { type: "start_quiz" }>, session: Session | null): coachPrompt.QuizContext | null {
   const quiz = session?.quiz;
   if (!session || !quiz) return null;
@@ -94,7 +119,9 @@ const activeQuizView = (action: Extract<HomeChatAction, { type: "start_quiz" }> 
 async function chatView(ownerId: string, courses: KnownCourse[], messages: HomeChatMessage[], version: number) {
   const action = latestQuizAction(messages);
   const context = action ? quizContext(courses, action, await loadSession(ownerId, action.sessionId)) : null;
-  return { messages, version, activeQuiz: activeQuizView(action, context) };
+  const deckAction = latestDeckAction(messages);
+  const deck = deckAction ? deckContext(courses, await loadSession(ownerId, deckAction.sessionId)) : null;
+  return { messages, version, activeQuiz: activeQuizView(action, context), activeDeck: activeDeckView(deckAction, deck) };
 }
 
 /** The app-written check-in that opens a new session: no AI call, built from what the server knows. */
@@ -224,6 +251,23 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
   return session;
 }
 
+/** Builds and stores a flashcard deck; null when no valid card came back. Throws on AI failure. */
+async function startDeck(ownerId: string, state: JsonObject, plan: DeckPlan & { courseId: string }, previous: Session | null): Promise<Session | null> {
+  const session = newSession(plan.courseId, plan.topic, true);
+  const { chunks, status } = sourceChunks(state, plan.courseId, plan.topic, await reviewedLectureMaterials(ownerId, plan.courseId));
+  const previousQuiz = previous?.quiz;
+  const focus = plan.scope === "missed" && previousQuiz?.grade
+    ? previousQuiz.questions
+      .filter((q) => q.answers.length && q.answers.at(-1)?.optionId !== q.correctOptionId)
+      .map((q) => ({ concept: q.concept, prompt: q.prompt, correct: q.options.find((o) => o.id === q.correctOptionId)?.text ?? "", explanation: q.explanation }))
+    : [];
+  const deck = await generateFlashcards({ courseId: plan.courseId, topic: plan.topic, expectedCount: plan.count, focus, sourceText: sourceTextOf(chunks), status });
+  if (!deck) return null;
+  session.flashcards = deck;
+  await insertSession(ownerId, session);
+  return session;
+}
+
 router.post("/study/chat", async (req, res): Promise<void> => {
   const parsed = SendHomeChatMessageBody.safeParse(req.body);
   if (!parsed.success || !parsed.data.content.trim()) {
@@ -266,11 +310,13 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const lastQuizAction = latestQuizAction(messages);
   const lastQuizSession = lastQuizAction ? await loadSession(ownerId, lastQuizAction.sessionId) : null;
   const quiz = lastQuizAction ? quizContext(courses, lastQuizAction, lastQuizSession) : null;
+  const lastDeckAction = latestDeckAction(messages);
+  const deck = lastDeckAction ? deckContext(courses, await loadSession(ownerId, lastDeckAction.sessionId)) : null;
 
   let coach;
   try {
     const response = await complete("coach", {
-      system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: summary, firstVisit: messages.length === 0, quiz }),
+      system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: summary, firstVisit: messages.length === 0, quiz, deck }),
       messages: [...history, { role: "user", content }],
     });
     coach = parseCoachReply(response.text);
@@ -304,6 +350,20 @@ router.post("/study/chat", async (req, res): Promise<void> => {
         // The reply promised a set it cannot deliver: save nothing (courses created above stay), let the student retry.
         req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat quiz generation failed");
         res.status(502).json({ error: "The coach could not write your questions just now. Try sending that again." });
+        return;
+      }
+    }
+  } else if (plan.deck) {
+    const courseId = resolveCourse(plan.deck);
+    if (courseId) {
+      try {
+        const latestState = { ...state, courses: [...list(state.courses), ...created] };
+        const session = await startDeck(ownerId, latestState, { ...plan.deck, courseId }, lastQuizSession);
+        if (!session) throw new Error("No valid cards were generated");
+        done.push({ type: "start_flashcards", sessionId: session.id, courseId, topic: plan.deck.topic, count: session.flashcards!.cards.length });
+      } catch (error) {
+        req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat flashcard generation failed");
+        res.status(502).json({ error: "The coach could not write your flashcards just now. Try sending that again." });
         return;
       }
     }

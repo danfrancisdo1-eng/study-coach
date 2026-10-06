@@ -17,9 +17,14 @@
 
 - Dan: questions now good. Fixed: question card docked above the composer (each step at top); chat opens at the newest message; new-session greeting on open (D-020, `/study/chat/open`, 58/58 tests).
 
+- Inverted chat list (opens at the newest message, verified by Dan). Dan verified a second set works.
+
+## Session 4 — 2026-10-06
+- **Flashcards in the chat + full-screen sets/decks (D-021, coach.v5).** 60/60 tests; typecheck; flashcards evals 3/3; coach evals 20/20 ×2; iOS bundle. Merged + pushed (auto-deploy).
+
 ### Next
-- Dan: reload → expect "Welcome back…" with chips after a 30-min break; start a set from a chip; confirm the card lands on the question each time.
-- Multi-select topics; "Writing your questions…" progress; streaming.
+- Dan: reload → "flashcards on cells" (or Flashcards for the misses after a set) → flip, Got it / Again → finish; sets/decks should open full screen with Back to chat and a Resume bar.
+- Then: aesthetics pass (Dan's ideas + UX_PRINCIPLES checklist); multi-select topics; "Writing your questions…" progress; streaming.
 - Piece 2 (topic list card), then piece 4 polish (streaming, "Writing your questions…" progress).
 
 ### Needs real-iPhone check

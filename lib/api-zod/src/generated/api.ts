@@ -484,7 +484,18 @@ export const CreateStudySessionResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable()
+  "reportText": zod.string().nullable(),
+  "flashcards": zod.union([zod.object({
+  "createdAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable(),
+  "cards": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "front": zod.string(),
+  "back": zod.string(),
+  "concept": zod.string(),
+  "results": zod.array(zod.enum(['got', 'again']))
+}))
+}),zod.null()]).optional()
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 
@@ -695,7 +706,18 @@ export const GetStudySessionResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable()
+  "reportText": zod.string().nullable(),
+  "flashcards": zod.union([zod.object({
+  "createdAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable(),
+  "cards": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "front": zod.string(),
+  "back": zod.string(),
+  "concept": zod.string(),
+  "results": zod.array(zod.enum(['got', 'again']))
+}))
+}),zod.null()]).optional()
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 
@@ -886,13 +908,13 @@ export const GetHomeChatResponse = zod.object({
   "content": zod.string(),
   "at": zod.coerce.date(),
   "actions": zod.array(zod.object({
-  "type": zod.enum(['create_course', 'start_quiz', 'start_session']),
+  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'start_session']),
   "courseId": zod.string(),
   "name": zod.string().optional().describe('create_course: the new course\'s name'),
   "sessionId": zod.string().uuid().optional().describe('start_quiz / start_session: the study session holding the set / conversation'),
   "topic": zod.string().optional(),
   "kind": zod.enum(['practice', 'exam']).optional().describe('start_quiz: practice reveals feedback per answer; exam only after grading'),
-  "count": zod.number().int().min(1).max(getHomeChatResponseMessagesItemActionsItemCountMax).optional().describe('start_quiz: questions in the set')
+  "count": zod.number().int().min(1).max(getHomeChatResponseMessagesItemActionsItemCountMax).optional().describe('start_quiz: questions in the set; start_flashcards: cards in the deck')
 })).optional(),
   "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message'),
   "sessionStart": zod.boolean().optional().describe('True for the app-written greeting that opens a new study session (clients draw a divider above it)')
@@ -905,7 +927,14 @@ export const GetHomeChatResponse = zod.object({
   "kind": zod.enum(['practice', 'exam']),
   "answered": zod.number().int(),
   "total": zod.number().int()
-}).describe('The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.'),zod.null()]).optional()
+}).describe('The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.'),zod.null()]).optional(),
+  "activeDeck": zod.union([zod.object({
+  "sessionId": zod.string().uuid(),
+  "courseId": zod.string(),
+  "topic": zod.string(),
+  "done": zod.number().int(),
+  "total": zod.number().int()
+}).describe('The flashcard deck most recently started from this chat, while it is unfinished. Cards come from GET /study/sessions/{sessionId}.'),zod.null()]).optional()
 })
 
 
@@ -935,13 +964,13 @@ export const SendHomeChatMessageResponse = zod.object({
   "content": zod.string(),
   "at": zod.coerce.date(),
   "actions": zod.array(zod.object({
-  "type": zod.enum(['create_course', 'start_quiz', 'start_session']),
+  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'start_session']),
   "courseId": zod.string(),
   "name": zod.string().optional().describe('create_course: the new course\'s name'),
   "sessionId": zod.string().uuid().optional().describe('start_quiz / start_session: the study session holding the set / conversation'),
   "topic": zod.string().optional(),
   "kind": zod.enum(['practice', 'exam']).optional().describe('start_quiz: practice reveals feedback per answer; exam only after grading'),
-  "count": zod.number().int().min(1).max(sendHomeChatMessageResponseMessagesItemActionsItemCountMax).optional().describe('start_quiz: questions in the set')
+  "count": zod.number().int().min(1).max(sendHomeChatMessageResponseMessagesItemActionsItemCountMax).optional().describe('start_quiz: questions in the set; start_flashcards: cards in the deck')
 })).optional(),
   "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message'),
   "sessionStart": zod.boolean().optional().describe('True for the app-written greeting that opens a new study session (clients draw a divider above it)')
@@ -954,7 +983,14 @@ export const SendHomeChatMessageResponse = zod.object({
   "kind": zod.enum(['practice', 'exam']),
   "answered": zod.number().int(),
   "total": zod.number().int()
-}).describe('The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.'),zod.null()]).optional()
+}).describe('The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.'),zod.null()]).optional(),
+  "activeDeck": zod.union([zod.object({
+  "sessionId": zod.string().uuid(),
+  "courseId": zod.string(),
+  "topic": zod.string(),
+  "done": zod.number().int(),
+  "total": zod.number().int()
+}).describe('The flashcard deck most recently started from this chat, while it is unfinished. Cards come from GET /study/sessions/{sessionId}.'),zod.null()]).optional()
 })
 
 
@@ -972,13 +1008,13 @@ export const OpenHomeChatResponse = zod.object({
   "content": zod.string(),
   "at": zod.coerce.date(),
   "actions": zod.array(zod.object({
-  "type": zod.enum(['create_course', 'start_quiz', 'start_session']),
+  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'start_session']),
   "courseId": zod.string(),
   "name": zod.string().optional().describe('create_course: the new course\'s name'),
   "sessionId": zod.string().uuid().optional().describe('start_quiz / start_session: the study session holding the set / conversation'),
   "topic": zod.string().optional(),
   "kind": zod.enum(['practice', 'exam']).optional().describe('start_quiz: practice reveals feedback per answer; exam only after grading'),
-  "count": zod.number().int().min(1).max(openHomeChatResponseMessagesItemActionsItemCountMax).optional().describe('start_quiz: questions in the set')
+  "count": zod.number().int().min(1).max(openHomeChatResponseMessagesItemActionsItemCountMax).optional().describe('start_quiz: questions in the set; start_flashcards: cards in the deck')
 })).optional(),
   "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message'),
   "sessionStart": zod.boolean().optional().describe('True for the app-written greeting that opens a new study session (clients draw a divider above it)')
@@ -991,7 +1027,14 @@ export const OpenHomeChatResponse = zod.object({
   "kind": zod.enum(['practice', 'exam']),
   "answered": zod.number().int(),
   "total": zod.number().int()
-}).describe('The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.'),zod.null()]).optional()
+}).describe('The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.'),zod.null()]).optional(),
+  "activeDeck": zod.union([zod.object({
+  "sessionId": zod.string().uuid(),
+  "courseId": zod.string(),
+  "topic": zod.string(),
+  "done": zod.number().int(),
+  "total": zod.number().int()
+}).describe('The flashcard deck most recently started from this chat, while it is unfinished. Cards come from GET /study/sessions/{sessionId}.'),zod.null()]).optional()
 })
 
 
@@ -1178,7 +1221,18 @@ export const CheckInStudySessionResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable()
+  "reportText": zod.string().nullable(),
+  "flashcards": zod.union([zod.object({
+  "createdAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable(),
+  "cards": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "front": zod.string(),
+  "back": zod.string(),
+  "concept": zod.string(),
+  "results": zod.array(zod.enum(['got', 'again']))
+}))
+}),zod.null()]).optional()
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 
@@ -1370,7 +1424,18 @@ export const SendStudyMessageResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable()
+  "reportText": zod.string().nullable(),
+  "flashcards": zod.union([zod.object({
+  "createdAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable(),
+  "cards": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "front": zod.string(),
+  "back": zod.string(),
+  "concept": zod.string(),
+  "results": zod.array(zod.enum(['got', 'again']))
+}))
+}),zod.null()]).optional()
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 
@@ -1558,7 +1623,18 @@ export const GenerateStudyQuizResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable()
+  "reportText": zod.string().nullable(),
+  "flashcards": zod.union([zod.object({
+  "createdAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable(),
+  "cards": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "front": zod.string(),
+  "back": zod.string(),
+  "concept": zod.string(),
+  "results": zod.array(zod.enum(['got', 'again']))
+}))
+}),zod.null()]).optional()
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 
@@ -1747,7 +1823,18 @@ export const SaveStudyAnswerResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable()
+  "reportText": zod.string().nullable(),
+  "flashcards": zod.union([zod.object({
+  "createdAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable(),
+  "cards": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "front": zod.string(),
+  "back": zod.string(),
+  "concept": zod.string(),
+  "results": zod.array(zod.enum(['got', 'again']))
+}))
+}),zod.null()]).optional()
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 
@@ -1941,7 +2028,217 @@ export const FlagStudyQuestionResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable()
+  "reportText": zod.string().nullable(),
+  "flashcards": zod.union([zod.object({
+  "createdAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable(),
+  "cards": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "front": zod.string(),
+  "back": zod.string(),
+  "concept": zod.string(),
+  "results": zod.array(zod.enum(['got', 'again']))
+}))
+}),zod.null()]).optional()
+}).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
+
+
+/**
+ * @summary Record "got it" or "again" for one flashcard; completing the deck schedules review items
+ */
+export const ReviewFlashcardParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "cardId": zod.coerce.string().uuid()
+})
+
+export const ReviewFlashcardBody = zod.object({
+  "result": zod.enum(['got', 'again'])
+})
+
+
+export const reviewFlashcardResponseQuizOneInvalidItemCountMin = 0;
+
+export const reviewFlashcardResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
+
+
+export const reviewFlashcardResponseAttemptsItemInvalidItemCountMin = 0;
+
+export const reviewFlashcardResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
+
+
+
+export const ReviewFlashcardResponse = zod.object({
+  "id": zod.string().uuid(),
+  "courseId": zod.string(),
+  "topic": zod.string(),
+  "minutes": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "status": zod.enum(['active', 'completed']),
+  "checkIn": zod.union([zod.object({
+  "skipped": zod.boolean(),
+  "recordedAt": zod.coerce.date()
+}),zod.null()]),
+  "messages": zod.array(zod.object({
+  "role": zod.enum(['user', 'assistant']),
+  "content": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "sourceStatus": zod.object({
+  "usedSourceMaterial": zod.boolean(),
+  "selectedChunks": zod.number().int(),
+  "availableChunks": zod.number().int(),
+  "truncated": zod.boolean(),
+  "coverage": zod.enum(['complete', 'selected', 'none']),
+  "sources": zod.array(zod.object({
+  "label": zod.string(),
+  "kind": zod.enum(['source', 'supplemental', 'inferred'])
+}))
+}).optional()
+})),
+  "quiz": zod.union([zod.object({
+  "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "expectedCount": zod.number().int().min(1),
+  "invalidItemCount": zod.number().int().min(reviewFlashcardResponseQuizOneInvalidItemCountMin),
+  "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
+  "sourceStatus": zod.object({
+  "usedSourceMaterial": zod.boolean(),
+  "selectedChunks": zod.number().int(),
+  "availableChunks": zod.number().int(),
+  "truncated": zod.boolean(),
+  "coverage": zod.enum(['complete', 'selected', 'none']),
+  "sources": zod.array(zod.object({
+  "label": zod.string(),
+  "kind": zod.enum(['source', 'supplemental', 'inferred'])
+}))
+}),
+  "questions": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "prompt": zod.string(),
+  "concept": zod.string(),
+  "options": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "text": zod.string()
+})),
+  "flag": zod.union([zod.object({
+  "kind": zod.enum(['invalid', 'ambiguous']),
+  "reason": zod.string().max(reviewFlashcardResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
+  "reportedAt": zod.coerce.date()
+}),zod.null()]),
+  "answer": zod.union([zod.object({
+  "optionId": zod.string().uuid(),
+  "assisted": zod.boolean()
+}),zod.null()]).optional(),
+  "feedback": zod.union([zod.object({
+  "selectedOptionId": zod.string().uuid().nullable(),
+  "selectedOptionText": zod.string().nullable(),
+  "correctOptionId": zod.string().uuid(),
+  "correctOptionText": zod.string(),
+  "explanation": zod.string(),
+  "concept": zod.string(),
+  "assisted": zod.boolean()
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
+})),
+  "grade": zod.union([zod.object({
+  "correct": zod.number().int(),
+  "answered": zod.number().int(),
+  "excluded": zod.number().int(),
+  "invalidItems": zod.number().int(),
+  "unanswered": zod.number().int(),
+  "total": zod.number().int(),
+  "percent": zod.number(),
+  "gradedAt": zod.coerce.date()
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+}),zod.null()]),
+  "attempts": zod.array(zod.object({
+  "mode": zod.enum(['diagnostic', 'targeted']),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "expectedCount": zod.number().int().min(1),
+  "invalidItemCount": zod.number().int().min(reviewFlashcardResponseAttemptsItemInvalidItemCountMin),
+  "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
+  "sourceStatus": zod.object({
+  "usedSourceMaterial": zod.boolean(),
+  "selectedChunks": zod.number().int(),
+  "availableChunks": zod.number().int(),
+  "truncated": zod.boolean(),
+  "coverage": zod.enum(['complete', 'selected', 'none']),
+  "sources": zod.array(zod.object({
+  "label": zod.string(),
+  "kind": zod.enum(['source', 'supplemental', 'inferred'])
+}))
+}),
+  "questions": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "prompt": zod.string(),
+  "concept": zod.string(),
+  "options": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "text": zod.string()
+})),
+  "flag": zod.union([zod.object({
+  "kind": zod.enum(['invalid', 'ambiguous']),
+  "reason": zod.string().max(reviewFlashcardResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
+  "reportedAt": zod.coerce.date()
+}),zod.null()]),
+  "answer": zod.union([zod.object({
+  "optionId": zod.string().uuid(),
+  "assisted": zod.boolean()
+}),zod.null()]).optional(),
+  "feedback": zod.union([zod.object({
+  "selectedOptionId": zod.string().uuid().nullable(),
+  "selectedOptionText": zod.string().nullable(),
+  "correctOptionId": zod.string().uuid(),
+  "correctOptionText": zod.string(),
+  "explanation": zod.string(),
+  "concept": zod.string(),
+  "assisted": zod.boolean()
+}),zod.null()]).optional().describe('Available after this attempt has been graded, or, in a practice set, as soon as the question is answered.')
+})),
+  "grade": zod.union([zod.object({
+  "correct": zod.number().int(),
+  "answered": zod.number().int(),
+  "excluded": zod.number().int(),
+  "invalidItems": zod.number().int(),
+  "unanswered": zod.number().int(),
+  "total": zod.number().int(),
+  "percent": zod.number(),
+  "gradedAt": zod.coerce.date()
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+})).describe('Completed diagnostic and retest attempts, including post-grade question feedback.'),
+  "scores": zod.object({
+  "diagnostic": zod.union([zod.object({
+  "correct": zod.number().int(),
+  "answered": zod.number().int(),
+  "excluded": zod.number().int(),
+  "invalidItems": zod.number().int(),
+  "unanswered": zod.number().int(),
+  "total": zod.number().int(),
+  "percent": zod.number(),
+  "gradedAt": zod.coerce.date()
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]),
+  "targeted": zod.union([zod.object({
+  "correct": zod.number().int(),
+  "answered": zod.number().int(),
+  "excluded": zod.number().int(),
+  "invalidItems": zod.number().int(),
+  "unanswered": zod.number().int(),
+  "total": zod.number().int(),
+  "percent": zod.number(),
+  "gradedAt": zod.coerce.date()
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
+}),
+  "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
+  "reportText": zod.string().nullable(),
+  "flashcards": zod.union([zod.object({
+  "createdAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable(),
+  "cards": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "front": zod.string(),
+  "back": zod.string(),
+  "concept": zod.string(),
+  "results": zod.array(zod.enum(['got', 'again']))
+}))
+}),zod.null()]).optional()
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 
@@ -2124,7 +2421,18 @@ export const GradeStudyQuizResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable()
+  "reportText": zod.string().nullable(),
+  "flashcards": zod.union([zod.object({
+  "createdAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable(),
+  "cards": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "front": zod.string(),
+  "back": zod.string(),
+  "concept": zod.string(),
+  "results": zod.array(zod.enum(['got', 'again']))
+}))
+}),zod.null()]).optional()
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 

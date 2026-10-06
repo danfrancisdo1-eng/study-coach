@@ -4,6 +4,7 @@
 import { randomUUID } from "node:crypto";
 import { complete } from "../ai";
 import * as sessionQuizPrompt from "../prompts/session-quiz.v2";
+import * as flashcardsPrompt from "../prompts/flashcards.v1";
 
 export type JsonObject = Record<string, unknown>;
 export const SOURCE_CHUNK_LENGTH = 1_200;
@@ -56,6 +57,11 @@ export type Quiz = {
   invalidItemCount: number;
   grade: Record<string, unknown> | null;
 };
+// Flashcard deck (D-021): front/back cards reviewed with "got it" / "again"; a card is
+// done once its latest result is "got". Completing the deck schedules review items.
+export type FlashcardResult = "got" | "again";
+export type Flashcard = { id: string; front: string; back: string; concept: string; results: FlashcardResult[] };
+export type Deck = { cards: Flashcard[]; createdAt: string; completedAt: string | null; sourceStatus: SourceStatus };
 export type Session = {
   id: string;
   courseId: string;
@@ -66,6 +72,8 @@ export type Session = {
   checkIn: { skipped: boolean; recordedAt: string } | null;
   messages: Array<Record<string, unknown>>;
   quiz: Quiz | null;
+  /** Chat-first flashcard deck, when this session holds one. */
+  flashcards?: Deck | null;
   attempts: Quiz[];
   scores: { diagnostic: Record<string, unknown> | null; targeted: Record<string, unknown> | null };
   reviewSchedule: Array<Record<string, unknown>>;
@@ -111,12 +119,45 @@ export function safeSession(session: Session): Record<string, unknown> {
     })),
     grade: value.grade,
   });
-  const { _version, attempts = [], quiz: currentQuiz, ...publicSession } = session;
+  const { _version, attempts = [], quiz: currentQuiz, flashcards, ...publicSession } = session;
   return {
     ...publicSession,
     quiz: currentQuiz ? publicQuiz(currentQuiz) : null,
     attempts: attempts.map(publicQuiz),
+    flashcards: flashcards ?? null,
   };
+}
+
+const MAX_CARD_CHARS = 600;
+
+export interface GenerateDeckInput {
+  courseId: string;
+  topic: string;
+  expectedCount: number;
+  focus: flashcardsPrompt.FlashcardsPromptInput["focus"];
+  sourceText: string;
+  status: SourceStatus;
+}
+
+/** One AI call plus validation. Returns null when no valid card came back. Throws on AI failure. */
+export async function generateFlashcards(input: GenerateDeckInput): Promise<Deck | null> {
+  const response = await complete("flashcards", {
+    system: flashcardsPrompt.systemPrompt({ expectedCount: input.expectedCount, focus: input.focus, status: input.status }),
+    messages: [{ role: "user", content: JSON.stringify({ courseId: input.courseId, topic: input.topic, sourceMaterial: input.sourceText }) }],
+  });
+  const parsed: unknown = response.text ? JSON.parse(response.text) : null;
+  const proposed = jsonObject(parsed) && Array.isArray(parsed.cards) ? parsed.cards : [];
+  const seen = new Set<string>();
+  const cards: Flashcard[] = [];
+  for (const value of proposed.slice(0, input.expectedCount)) {
+    if (!jsonObject(value) || typeof value.front !== "string" || !value.front.trim() || typeof value.back !== "string" || !value.back.trim() || typeof value.concept !== "string") continue;
+    const key = value.front.trim().toLowerCase().replace(/\s+/g, " ");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    cards.push({ id: randomUUID(), front: value.front.trim().slice(0, MAX_CARD_CHARS), back: value.back.trim().slice(0, MAX_CARD_CHARS), concept: value.concept.trim().slice(0, 100) || "General", results: [] });
+  }
+  if (!cards.length) return null;
+  return { cards, createdAt: new Date().toISOString(), completedAt: null, sourceStatus: input.status };
 }
 
 export function sourceChunks(state: JsonObject | null, courseId: string, topic: string, extraMaterials: unknown[] = []): {

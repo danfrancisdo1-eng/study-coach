@@ -5,7 +5,7 @@
 export type QuizScope = "all" | "missed";
 export type QuizKind = "practice" | "exam";
 export type CoachAction = {
-  type: "create_course" | "start_quiz" | "start_session";
+  type: "create_course" | "start_quiz" | "start_flashcards" | "start_session";
   name: string;
   topic: string;
   count?: number;
@@ -20,6 +20,8 @@ export const MAX_SUGGESTIONS = 6; // up to 5 topics + "All topics"
 export const MAX_SUGGESTION_CHARS = 60;
 export const DEFAULT_QUIZ_COUNT = 10;
 export const MAX_QUIZ_COUNT = 50;
+export const DEFAULT_DECK_COUNT = 10;
+export const MAX_DECK_COUNT = 30;
 const MAX_COURSE_NAME = 120;
 const MAX_TOPIC = 300;
 const DEFAULT_TOPIC = "General review";
@@ -41,7 +43,7 @@ export function parseCoachReply(text: string | null): CoachReply | null {
   for (const action of actions) {
     if (typeof action !== "object" || action === null) continue;
     const { type, name, topic, count, scope, kind } = action as Record<string, unknown>;
-    if (type !== "create_course" && type !== "start_quiz" && type !== "start_session") continue;
+    if (type !== "create_course" && type !== "start_quiz" && type !== "start_flashcards" && type !== "start_session") continue;
     kept.push({
       type,
       name: typeof name === "string" ? name : "",
@@ -63,12 +65,15 @@ export type StartPlan =
   | { courseId: null; courseName: string; topic: string };
 
 export type QuizPlan = StartPlan & { count: number; scope: QuizScope; kind: QuizKind };
+export type DeckPlan = StartPlan & { count: number; scope: QuizScope };
 
 export interface ActionPlan {
   /** Course names to create, in order, already deduplicated against existing courses. */
   creates: string[];
   /** The one question set to start, if any. courseId is null when the course is created in this same reply. */
   quiz: QuizPlan | null;
+  /** The one flashcard deck to start, if any (never together with a quiz; the first wins). */
+  deck: DeckPlan | null;
   /** The one legacy session to start (opens the Courses tab), if any and only when no quiz was planned. */
   start: StartPlan | null;
   /** Human-readable reasons for anything skipped (surfaced in logs/tests, never shown as AI text). */
@@ -94,7 +99,7 @@ function resolveStart(plan: ActionPlan, courses: KnownCourse[], action: CoachAct
 }
 
 export function planActions(courses: KnownCourse[], actions: CoachAction[]): ActionPlan {
-  const plan: ActionPlan = { creates: [], quiz: null, start: null, notes: [] };
+  const plan: ActionPlan = { creates: [], quiz: null, deck: null, start: null, notes: [] };
   for (const action of actions) {
     if (action.type === "create_course") {
       const name = action.name.trim().replace(/\s+/g, " ");
@@ -106,7 +111,12 @@ export function planActions(courses: KnownCourse[], actions: CoachAction[]): Act
       }
       if (plan.creates.some((c) => normalize(c) === normalize(name))) continue;
       plan.creates.push(name);
-    } else if (action.type === "start_quiz" && plan.quiz === null) {
+    } else if (action.type === "start_flashcards" && plan.deck === null && plan.quiz === null) {
+      const start = resolveStart(plan, courses, action);
+      if (!start) continue;
+      const count = Math.min(MAX_DECK_COUNT, Math.max(1, Math.round(action.count ?? DEFAULT_DECK_COUNT)));
+      plan.deck = { ...start, count, scope: action.scope ?? "all" };
+    } else if (action.type === "start_quiz" && plan.quiz === null && plan.deck === null) {
       if (!action.kind) {
         plan.notes.push("start_quiz without practice/exam kind");
         continue;
@@ -120,6 +130,6 @@ export function planActions(courses: KnownCourse[], actions: CoachAction[]): Act
       if (start) plan.start = start;
     }
   }
-  if (plan.quiz) plan.start = null; // a question set in the chat replaces the legacy hand-off
+  if (plan.quiz || plan.deck) plan.start = null; // a set or deck in the chat replaces the legacy hand-off
   return plan;
 }

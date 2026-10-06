@@ -488,6 +488,27 @@ paths:
         "401": { description: Authentication required }
         "404": { description: Session or question not found }
         "409": { description: "No quiz, quiz already graded, or concurrent session update" }
+  /study/sessions/{id}/flashcards/{cardId}/review:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: cardId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: reviewFlashcard
+      tags: [study]
+      summary: Record "got it" or "again" for one flashcard; completing the deck schedules review items
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FlashcardReviewInput" }
+      responses:
+        "200":
+          description: Updated session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudySession" }
+        "404": { description: Session or card not found }
+        "409": { description: "No deck, or the session changed on another device" }
   /study/sessions/{id}/grade:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
@@ -620,6 +641,29 @@ components:
             targeted: { oneOf: [{ $ref: "#/components/schemas/StudyScore" }, { type: "null" }] }
         reviewSchedule: { type: array, items: { type: object, additionalProperties: true } }
         reportText: { type: ["string", "null"] }
+        flashcards: { oneOf: [{ $ref: "#/components/schemas/StudyFlashcardDeck" }, { type: "null" }] }
+    FlashcardReviewInput:
+      type: object
+      required: [result]
+      properties:
+        result: { type: string, enum: [got, again] }
+    StudyFlashcardDeck:
+      type: object
+      required: [cards, createdAt, completedAt]
+      properties:
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: ["string", "null"], format: date-time }
+        cards:
+          type: array
+          items:
+            type: object
+            required: [id, front, back, concept, results]
+            properties:
+              id: { type: string, format: uuid }
+              front: { type: string }
+              back: { type: string }
+              concept: { type: string }
+              results: { type: array, items: { type: string, enum: [got, again] } }
     StudyCheckIn:
       type: object
       required: [skipped]
@@ -646,13 +690,23 @@ components:
       type: object
       required: [type, courseId]
       properties:
-        type: { type: string, enum: [create_course, start_quiz, start_session] }
+        type: { type: string, enum: [create_course, start_quiz, start_flashcards, start_session] }
         courseId: { type: string }
         name: { type: string, description: "create_course: the new course's name" }
         sessionId: { type: string, format: uuid, description: "start_quiz / start_session: the study session holding the set / conversation" }
         topic: { type: string }
         kind: { type: string, enum: [practice, exam], description: "start_quiz: practice reveals feedback per answer; exam only after grading" }
-        count: { type: integer, minimum: 1, maximum: 50, description: "start_quiz: questions in the set" }
+        count: { type: integer, minimum: 1, maximum: 50, description: "start_quiz: questions in the set; start_flashcards: cards in the deck" }
+    HomeChatActiveDeck:
+      type: object
+      description: The flashcard deck most recently started from this chat, while it is unfinished. Cards come from GET /study/sessions/{sessionId}.
+      required: [sessionId, courseId, topic, done, total]
+      properties:
+        sessionId: { type: string, format: uuid }
+        courseId: { type: string }
+        topic: { type: string }
+        done: { type: integer }
+        total: { type: integer }
     HomeChatActiveQuiz:
       type: object
       description: The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.
@@ -682,6 +736,7 @@ components:
         messages: { type: array, items: { $ref: "#/components/schemas/HomeChatMessage" } }
         version: { type: integer }
         activeQuiz: { oneOf: [{ $ref: "#/components/schemas/HomeChatActiveQuiz" }, { type: "null" }] }
+        activeDeck: { oneOf: [{ $ref: "#/components/schemas/HomeChatActiveDeck" }, { type: "null" }] }
     StudySourceStatus:
       type: object
       required: [usedSourceMaterial, selectedChunks, availableChunks, truncated, coverage, sources]

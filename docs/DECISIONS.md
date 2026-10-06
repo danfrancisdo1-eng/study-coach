@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-06 — D-021: Flashcards in the chat; sets and decks open full screen; coach.v5
+- Dan: "you should be able to ask for flash cards." A deck is a study session (no new table): `start_flashcards` (count ≤ 30, scope all/missed), `flashcards.v1` prompt with the same scope-vs-content rule as questions, Got it / Again per card (`POST /study/sessions/{id}/flashcards/{cardId}/review`), "Again" cards come back around, a finished deck writes review items (again ⇒ missed). The coach offers "Flashcards for the misses" after a graded set and sees deck progress/results. Evals: flashcards 3/3 (incl. outline-only), coach 20/20 ×2.
+- coach.v5 also renames the teach-back check to "Your turn: explain it back to me:" (Dan asked what "teach-back" meant).
+- Dan: "when you start a quiz can you open it to a full screen?" On iPhone a new set or deck opens a full-screen sheet with Back to chat; a Resume bar in the chat reopens it. Web keeps the inline card.
+- Aesthetics: Dan has many ideas; deferred until the loop works end to end.
+
 ## 2026-10-05 — D-020: Opening the app starts a new session in the chat
 - Dan: "if it's reloaded it should be reset to the beginning." Chosen: a new session at the bottom of the chat (not a scroll to the top, not a wiped history): an app-written check-in greeting with chips, after a break of 30+ minutes. Matches the Danny guide's once-per-session check-in. The question card was also docked above the composer (each step starts at the top), and the chat opens at the newest message.
 

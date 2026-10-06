@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { HomeChatActiveDeck } from './homeChatActiveDeck';
 import type { HomeChatActiveQuiz } from './homeChatActiveQuiz';
 import type { HomeChatMessage } from './homeChatMessage';
 
@@ -12,4 +13,5 @@ export interface HomeChat {
   messages: HomeChatMessage[];
   version: number;
   activeQuiz?: HomeChatActiveQuiz | null;
+  activeDeck?: HomeChatActiveDeck | null;
 }
