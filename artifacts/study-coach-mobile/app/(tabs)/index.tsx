@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Redirect, router } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
@@ -63,6 +63,8 @@ export default function CoachHome() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const listRef = useRef<FlatList<HomeChatMessage>>(null);
+  const quizScrollRef = useRef<ScrollView>(null);
+  const { height: windowHeight } = useWindowDimensions();
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
   const [intakeCourseId, setIntakeCourseId] = useState<string | null>(null); // non-null while the + sheet is open
@@ -239,20 +241,24 @@ export default function CoachHome() {
               <Text style={styles.body}>Hey. What class are we working on? You can also add notes, a syllabus, photos, or record a lecture with the + button.</Text>
             </View>
           )}
-          ListFooterComponent={(
-            <View style={styles.footer}>
-              {quizSessionId && userId ? (
-                <QuizCard key={quizSessionId} sessionId={quizSessionId} userId={userId}
-                  onGraded={(graded) => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
-                  onError={(problem) => setError(readableError(problem))} />
-              ) : null}
-              {busy ? <View style={styles.busyRow}><ActivityIndicator color={colors.primary} size="small" /><Text style={styles.caption}>{send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '') ? 'Coach is working… writing questions can take up to a minute.' : 'Coach is thinking…'}</Text></View> : null}
-            </View>
-          )}
+          ListFooterComponent={busy ? <View style={styles.busyRow}><ActivityIndicator color={colors.primary} size="small" /><Text style={styles.caption}>{send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '') ? 'Coach is working… writing questions can take up to a minute.' : 'Coach is thinking…'}</Text></View> : null}
           testID="list-home-chat"
         />
       )}
 
+      {/* The active question set is docked above the composer, outside the chat scroll, so every
+          new question, feedback or score starts at the top of the panel (not at the chat's end). */}
+      {consented && !loading && !loadError && quizSessionId && userId ? (
+        <ScrollView ref={quizScrollRef} style={[styles.quizDock, { maxHeight: Math.round(windowHeight * 0.6) }]} contentContainerStyle={styles.quizDockContent} keyboardShouldPersistTaps="handled" testID="dock-quiz">
+          <QuizCard key={quizSessionId} sessionId={quizSessionId} userId={userId}
+            onStepChange={() => quizScrollRef.current?.scrollTo({ y: 0, animated: false })}
+            onGraded={(graded) => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
+            onError={(problem) => setError(readableError(problem))} />
+          {gradedSessionId && !activeQuiz ? (
+            <Pressable accessibilityRole="button" onPress={() => setGradedSessionId(null)} style={styles.hideScore} testID="button-hide-score"><Text style={styles.hideScoreText}>Hide score card</Text></Pressable>
+          ) : null}
+        </ScrollView>
+      ) : null}
       {consented && !loading && !loadError ? (
         <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10) + 58 }]}>
           {error ? <Text style={styles.errorText} testID="status-chat-error">{error}</Text> : null}
@@ -337,7 +343,10 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   openLink: { minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   openLinkText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   busyRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 8 },
-  footer: { gap: 12 },
+  quizDock: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
+  quizDockContent: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 6, gap: 8 },
+  hideScore: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  hideScoreText: { color: colors.mutedForeground, fontSize: 13, fontWeight: '600' },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
   suggestion: { minHeight: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   suggestionText: { color: colors.primary, fontSize: 14, fontWeight: '700' },

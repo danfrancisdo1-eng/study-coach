@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetStudySessionQueryKey, useGetStudySession, useGradeStudyQuiz, useSaveStudyAnswer, type StudySession } from '@workspace/api-client-react';
 
@@ -20,8 +20,12 @@ export default function QuizCard({ sessionId, onGraded, onError }: {
   const session = sessionQuery.data;
   const quiz = session?.quiz ?? null;
   const busy = saveAnswer.isPending || grade.isPending;
+  const topRef = useRef<HTMLDivElement>(null);
+  const step = !quiz ? 'loading' : quiz.grade ? 'score' : reviewingId ? `feedback:${reviewingId}` : `question:${quiz.questions.find(q => !q.flag && !q.answer)?.id ?? 'grade'}`;
+  // Each new question / feedback / score starts at the top of the card, not at the end of the chat.
+  useEffect(() => { topRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, [step]);
 
-  if (sessionQuery.isLoading) return <div className="ae-card ae-card--compact"><p className="ae-muted">Loading your questions…</p></div>;
+  if (sessionQuery.isLoading) return <div className="ae-card ae-card--compact" ref={topRef}><p className="ae-muted">Loading your questions…</p></div>;
   if (!session || !quiz) return <div className="ae-card ae-card--compact"><p className="ae-muted">Couldn’t load this set. <button type="button" className="ae-button ae-button--quiet" onClick={() => void sessionQuery.refetch()}>Retry</button></p></div>;
 
   const questions = quiz.questions.filter(q => !q.flag);
@@ -31,7 +35,7 @@ export default function QuizCard({ sessionId, onGraded, onError }: {
   if (quiz.grade) {
     const misses = questions.filter(q => q.feedback?.selectedOptionId && q.feedback.selectedOptionId !== q.feedback.correctOptionId);
     return (
-      <div className="ae-card ae-card--compact" data-testid="panel-quiz-score">
+      <div className="ae-card ae-card--compact" data-testid="panel-quiz-score" ref={topRef}>
         <span className="ae-kicker">{kindLabel} · {session.topic}</span>
         <p style={{ fontSize: '2rem', fontWeight: 700, margin: '6px 0' }}>{quiz.grade.correct} / {quiz.grade.answered}</p>
         <p>{quiz.grade.percent}% on the questions you answered{quiz.grade.unanswered ? ` · ${quiz.grade.unanswered} skipped` : ''}.</p>
@@ -52,7 +56,7 @@ export default function QuizCard({ sessionId, onGraded, onError }: {
   if (reviewing?.feedback) {
     const correct = reviewing.feedback.selectedOptionId === reviewing.feedback.correctOptionId;
     return (
-      <div className="ae-card ae-card--compact" data-testid="panel-quiz-feedback">
+      <div className="ae-card ae-card--compact" data-testid="panel-quiz-feedback" ref={topRef}>
         <span className="ae-kicker">{kindLabel} · QUESTION {questions.indexOf(reviewing) + 1} OF {questions.length}</span>
         <p>{reviewing.prompt}</p>
         <p><strong>{correct ? 'Correct' : 'Not quite'}</strong></p>
@@ -67,7 +71,7 @@ export default function QuizCard({ sessionId, onGraded, onError }: {
   const current = questions.find(q => !q.answer);
   if (!current) {
     return (
-      <div className="ae-card ae-card--compact" data-testid="panel-quiz-grade">
+      <div className="ae-card ae-card--compact" data-testid="panel-quiz-grade" ref={topRef}>
         <span className="ae-kicker">{kindLabel} · {session.topic}</span>
         <p>All {questions.length} answered.</p>
         <button type="button" className="ae-button ae-button--ink" disabled={busy} data-testid="button-quiz-grade" onClick={async () => {
@@ -78,7 +82,7 @@ export default function QuizCard({ sessionId, onGraded, onError }: {
   }
 
   return (
-    <div className="ae-card ae-card--compact" data-testid="panel-quiz-question">
+    <div className="ae-card ae-card--compact" data-testid="panel-quiz-question" ref={topRef}>
       <span className="ae-kicker">{kindLabel} · QUESTION {questions.indexOf(current) + 1} OF {questions.length}</span>
       <p style={{ fontWeight: 600 }}>{current.prompt}</p>
       <div style={{ display: 'grid', gap: 8 }}>
