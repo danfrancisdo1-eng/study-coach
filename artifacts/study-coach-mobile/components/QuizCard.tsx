@@ -45,6 +45,12 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   const questions = quiz.questions.filter((q) => !q.flag);
   const answered = questions.filter((q) => q.answer);
   const kindLabel = quiz.kind === 'practice' ? 'Practice' : 'Exam';
+  const progress = (
+    <View style={styles.progress} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: questions.length, now: answered.length }}>
+      <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${questions.length ? Math.round((answered.length / questions.length) * 100) : 0}%` }]} /></View>
+      <Text style={styles.progressText}>{answered.length} of {questions.length} answered</Text>
+    </View>
+  );
 
   if (quiz.grade) {
     const misses = questions.filter((q) => q.feedback && q.feedback.selectedOptionId && q.feedback.selectedOptionId !== q.feedback.correctOptionId);
@@ -60,6 +66,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
             <Text style={styles.wrong}>You chose: {q.feedback!.selectedOptionText}</Text>
             <Text style={styles.right}>Correct: {q.feedback!.correctOptionText}</Text>
             <Text style={styles.muted}>{q.feedback!.explanation}</Text>
+            {q.feedback!.hook ? <View style={styles.hook}><Feather name="zap" size={14} color={colors.foreground} /><Text style={styles.hookText}>{q.feedback!.hook}</Text></View> : null}
           </View>
         ))}
       </View>
@@ -80,6 +87,8 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
         {!correct ? <Text style={styles.wrong}>You chose: {reviewing.feedback.selectedOptionText}</Text> : null}
         <Text style={styles.right}>Correct: {reviewing.feedback.correctOptionText}</Text>
         <Text style={styles.muted}>{reviewing.feedback.explanation}</Text>
+        {!correct && reviewing.feedback.hook ? <View style={styles.hook}><Feather name="zap" size={14} color={colors.foreground} /><Text style={styles.hookText}>{reviewing.feedback.hook}</Text></View> : null}
+        {progress}
         <Pressable accessibilityRole="button" onPress={() => setReviewingId(null)} style={styles.primaryButton} testID="button-quiz-next">
           <Text style={styles.primaryText}>{answered.length >= questions.length ? 'See the score' : 'Next question'}</Text>
         </Pressable>
@@ -118,6 +127,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   return (
     <View style={styles.card} testID="panel-quiz-question">
       <Text style={styles.kicker}>{kindLabel.toUpperCase()} · QUESTION {questions.indexOf(current) + 1} OF {questions.length}</Text>
+      {progress}
       <Text style={styles.prompt}>{current.prompt}</Text>
       {current.options.map((option, i) => (
         <Pressable key={option.id} accessibilityRole="button" disabled={busy} onPress={() => void choose(option.id)}
@@ -134,13 +144,19 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 16, gap: 10 },
   kicker: { color: colors.primary, fontSize: 10, letterSpacing: 1.3, fontWeight: '800' },
-  prompt: { color: colors.foreground, fontSize: 17, lineHeight: 24, fontWeight: '600' },
+  prompt: { color: colors.foreground, fontSize: 16, lineHeight: 24, fontWeight: '500' },
   body: { color: colors.foreground, fontSize: 15, lineHeight: 22 },
   muted: { color: colors.mutedForeground, fontSize: 13, lineHeight: 19 },
+  progress: { gap: 4 },
+  progressTrack: { height: 5, borderRadius: 3, backgroundColor: colors.secondary, overflow: 'hidden' },
+  progressFill: { height: 5, backgroundColor: colors.primary },
+  progressText: { color: colors.mutedForeground, fontSize: 11 },
+  hook: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 10, borderRadius: 10, backgroundColor: colors.secondary },
+  hookText: { flex: 1, color: colors.foreground, fontSize: 13, lineHeight: 19, fontWeight: '600' },
   cardTitle: { color: colors.foreground, fontSize: 17, lineHeight: 23, fontWeight: '700' },
   option: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 13, backgroundColor: colors.background, paddingHorizontal: 13, paddingVertical: 10 },
   optionLetter: { width: 26, height: 26, borderRadius: 13, textAlign: 'center', lineHeight: 26, overflow: 'hidden', backgroundColor: colors.secondary, color: colors.foreground, fontWeight: '700', fontSize: 13 },
-  optionText: { flex: 1, color: colors.foreground, fontSize: 15, lineHeight: 21 },
+  optionText: { flex: 1, color: colors.foreground, fontSize: 14.5, lineHeight: 21 },
   verdict: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 12 },
   wrong: { color: colors.destructive, fontSize: 14, lineHeight: 20 },
   right: { color: colors.foreground, fontSize: 14, lineHeight: 20, fontWeight: '700' },

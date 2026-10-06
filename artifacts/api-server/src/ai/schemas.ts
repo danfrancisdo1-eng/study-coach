@@ -46,7 +46,7 @@ export const examPlanSchema = object({
 export const sessionQuizSchema = object({
   questions: {
     type: "array",
-    items: object({ prompt: string, options: strings, answerIndex: { type: "integer" }, concept: string, explanation: string }),
+    items: object({ prompt: string, options: strings, answerIndex: { type: "integer" }, concept: string, explanation: string, hook: string }),
   },
 });
 
