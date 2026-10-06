@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, FlatList, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Redirect, router } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
@@ -100,15 +100,10 @@ export default function CoachHome() {
   const lastMessage = messages[messages.length - 1];
   const chips = lastMessage?.role === 'assistant' && !activeQuiz ? (lastMessage.suggestions ?? []) : [];
 
-  // Open at the newest message. A fixed timeout fired before the list had laid out, so a
-  // reload landed partway up; instead, keep pinning to the end until the content size settles.
-  const pinToEnd = useRef(true);
-  useEffect(() => {
-    pinToEnd.current = true;
-    const stop = setTimeout(() => { pinToEnd.current = false; }, 1500);
-    listRef.current?.scrollToEnd({ animated: false });
-    return () => clearTimeout(stop);
-  }, [messages.length]);
+  // The list is inverted (newest message first in the data, drawn at the bottom), so it
+  // opens at the newest message with no scroll arithmetic; scrollToEnd kept landing short.
+  const newestFirst = useMemo(() => [...messages].reverse(), [messages]);
+  useEffect(() => { listRef.current?.scrollToOffset({ offset: 0, animated: true }); }, [messages.length]);
 
   if (!isLoaded) return null;
   if (!isSignedIn) return <Redirect href="/(auth)/sign-in" />;
@@ -142,7 +137,7 @@ export default function CoachHome() {
       }
       const started = actions.find((a) => a.type === 'start_session' && a.sessionId);
       if (started?.sessionId) router.push({ pathname: '/(tabs)/courses', params: { openSession: started.sessionId } });
-      if (actions.some((a) => a.type === 'start_quiz')) setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 300);
+
     } catch (problem) {
       const status = (problem as { status?: number }).status;
       if (status === 409) await queryClient.invalidateQueries({ queryKey: [...getGetHomeChatQueryKey(), userId] });
@@ -252,20 +247,19 @@ export default function CoachHome() {
       ) : (
         <FlatList
           ref={listRef}
-          data={messages}
+          data={newestFirst}
+          inverted={newestFirst.length > 0}
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
           contentContainerStyle={styles.list}
           keyboardShouldPersistTaps="handled"
-          onContentSizeChange={() => { if (pinToEnd.current) listRef.current?.scrollToEnd({ animated: false }); }}
-          onLayout={() => { if (pinToEnd.current) listRef.current?.scrollToEnd({ animated: false }); }}
           ListEmptyComponent={(
             <View style={styles.turn}>
               <Text style={styles.turnRole}>COACH</Text>
               <Text style={styles.body}>Hey. What class are we working on? You can also add notes, a syllabus, photos, or record a lecture with the + button.</Text>
             </View>
           )}
-          ListFooterComponent={busy ? <View style={styles.busyRow}><ActivityIndicator color={colors.primary} size="small" /><Text style={styles.caption}>{send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '') ? 'Coach is working… writing questions can take up to a minute.' : 'Coach is thinking…'}</Text></View> : null}
+          ListHeaderComponent={busy ? <View style={styles.busyRow}><ActivityIndicator color={colors.primary} size="small" /><Text style={styles.caption}>{send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '') ? 'Coach is working… writing questions can take up to a minute.' : 'Coach is thinking…'}</Text></View> : null}
           testID="list-home-chat"
         />
       )}
