@@ -87,8 +87,14 @@ export default function CoachHome() {
   const lastMessage = messages[messages.length - 1];
   const chips = lastMessage?.role === 'assistant' && !activeQuiz ? (lastMessage.suggestions ?? []) : [];
 
+  // Open at the newest message. A fixed timeout fired before the list had laid out, so a
+  // reload landed partway up; instead, keep pinning to the end until the content size settles.
+  const pinToEnd = useRef(true);
   useEffect(() => {
-    if (messages.length) setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+    pinToEnd.current = true;
+    const stop = setTimeout(() => { pinToEnd.current = false; }, 1500);
+    listRef.current?.scrollToEnd({ animated: false });
+    return () => clearTimeout(stop);
   }, [messages.length]);
 
   if (!isLoaded) return null;
@@ -235,6 +241,8 @@ export default function CoachHome() {
           renderItem={renderMessage}
           contentContainerStyle={styles.list}
           keyboardShouldPersistTaps="handled"
+          onContentSizeChange={() => { if (pinToEnd.current) listRef.current?.scrollToEnd({ animated: false }); }}
+          onLayout={() => { if (pinToEnd.current) listRef.current?.scrollToEnd({ animated: false }); }}
           ListEmptyComponent={(
             <View style={styles.turn}>
               <Text style={styles.turnRole}>COACH</Text>
