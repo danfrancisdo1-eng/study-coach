@@ -230,3 +230,45 @@ test('home chat: practice and exam question sets', async (t) => {
   assert.equal(chat.body.version, 5);
   assert.equal(chat.body.messages.length, 10);
 });
+
+// Opening the app starts a new session with an app-written greeting (no AI) when the
+// student has been away longer than the session gap.
+test('home chat: session greeting on open', async (t) => {
+  buildServer();
+  const database = await startDatabase(t);
+  let coach = { reply: 'Hey!', suggestions: [], actions: [] };
+  const ai = await startAiStub(t, () => chatReply(JSON.stringify(coach)));
+  // Gap of 0 minutes so the test does not have to wait.
+  const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url, HOME_CHAT_SESSION_GAP_MINUTES: '0' });
+  await seedAccount(database.db, 'user_g', { aiConsent: true, courses: [{ id: 'bio', name: 'Bio 101' }], materials: [] });
+  await seedAccount(database.db, 'user_empty', { aiConsent: true, courses: [], materials: [] });
+  const call = async (user, method, path, body) => {
+    const res = await fetch(`${base}/api${path}`, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${signToken(user)}` }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const text = await res.text();
+    return { status: res.status, body: text ? JSON.parse(text) : null };
+  };
+
+  // No conversation yet: nothing is written (the client shows the first-visit greeting).
+  let chat = await call('user_g', 'POST', '/study/chat/open');
+  assert.equal(chat.status, 200);
+  assert.deepEqual(chat.body, { messages: [], version: 0, activeQuiz: null });
+
+  // After a conversation, opening appends one greeting with chips, and not twice in a row.
+  coach = { reply: 'Added Bio 101. Questions or material?', suggestions: ['Quick set of questions'], actions: [] };
+  await call('user_g', 'POST', '/study/chat', { content: 'hi', version: 0 });
+  chat = await call('user_g', 'POST', '/study/chat/open');
+  assert.equal(chat.body.messages.length, 3);
+  const greeting = chat.body.messages.at(-1);
+  assert.equal(greeting.role, 'assistant');
+  assert.equal(greeting.sessionStart, true);
+  assert.match(greeting.content, /Welcome back\. Continue with Bio 101\?/);
+  assert.deepEqual(greeting.suggestions, ['Quick set of questions', 'Add material']);
+  assert.equal(chat.body.version, 2);
+  chat = await call('user_g', 'POST', '/study/chat/open');
+  assert.equal(chat.body.messages.length, 3, 'no second greeting while the greeting is the last message');
+  assert.equal(ai.requests.length, 1, 'greetings cost no AI call');
+
+  // An account with no courses never gets a greeting.
+  await seedAccount(database.db, 'user_nochat', { aiConsent: true, courses: [{ id: 'x', name: 'X' }], materials: [] });
+  assert.deepEqual((await call('user_empty', 'POST', '/study/chat/open')).body.messages, []);
+});

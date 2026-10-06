@@ -22,6 +22,9 @@ router.use("/study/chat", requireStudyAuth);
 const MAX_MESSAGES = 80; // kept in the row; older turns drop off
 const HISTORY_TURNS = 20; // sent to the model
 const DEFAULT_SESSION_MINUTES = 20;
+// A new study session starts when the app opens and the last message is older than this
+// (SPEC §7 "resume where you left off"; the Danny guide's once-per-session check-in).
+const SESSION_GAP_MS = Number(process.env.HOME_CHAT_SESSION_GAP_MINUTES ?? "30") * 60_000;
 const OLD_MATERIAL_QUESTIONS = 2;
 const SCOPE_MATERIAL = /outline|syllabus|schedule|course description|reading list|contents/i; // a map of topics, not content
 const SCOPE_EXCERPT_CHARS = 1500; // "missed topics" sets add 1–2 questions from earlier material (SPEC §6 step 7)
@@ -93,6 +96,64 @@ async function chatView(ownerId: string, courses: KnownCourse[], messages: HomeC
   const context = action ? quizContext(courses, action, await loadSession(ownerId, action.sessionId)) : null;
   return { messages, version, activeQuiz: activeQuizView(action, context) };
 }
+
+/** The app-written check-in that opens a new session: no AI call, built from what the server knows. */
+function sessionGreeting(courses: KnownCourse[], messages: HomeChatMessage[], quiz: coachPrompt.QuizContext | null, lastCourseId: string | null): { content: string; suggestions: string[] } | null {
+  if (!courses.length) return null; // first visit: the client shows the first-time greeting
+  const course = courses.find((c) => c.id === lastCourseId) ?? courses[0]!;
+  if (quiz && !quiz.graded) {
+    return { content: `Welcome back. Your ${quiz.kind} set on ${quiz.topic} is waiting: ${quiz.answered} of ${quiz.total} answered. Pick up where you left off, or tell me what else you need.`, suggestions: [] };
+  }
+  if (quiz?.graded) {
+    const miss = quiz.graded.missed.length;
+    return {
+      content: `Welcome back. Last time: ${quiz.kind} set on ${quiz.courseName} / ${quiz.topic}, ${quiz.graded.correct} of ${quiz.answered} right${miss ? ` (${miss} to work on)` : ""}. Continue with ${course.name}, or something else?`,
+      suggestions: [...(miss ? ["Another set on the missed topics"] : []), `Continue ${course.name}`, "Pick a topic", "Add material"],
+    };
+  }
+  const multi = courses.length > 1;
+  return {
+    content: `Welcome back. Continue with ${course.name}${multi ? ", or pick another course" : ""}?`,
+    suggestions: ["Quick set of questions", "Add material", ...(multi ? ["Pick a course"] : [])],
+  };
+}
+
+function lastCourseIdOf(messages: HomeChatMessage[]): string | null {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const actions = messages[i]!.actions ?? [];
+    for (let j = actions.length - 1; j >= 0; j -= 1) if (actions[j]!.courseId) return actions[j]!.courseId;
+  }
+  return null;
+}
+
+// Called when the app opens: appends a session greeting when the student has been away.
+router.post("/study/chat/open", async (req, res): Promise<void> => {
+  const ownerId = owner(req);
+  const row = await loadChat(ownerId);
+  const stateRows = await db.select({ state: studyStatesTable.state }).from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
+  const courses = isObject(stateRows[0]?.state) ? knownCourses(stateRows[0]!.state as JsonObject) : [];
+  const messages = row?.messages ?? [];
+  const last = messages[messages.length - 1];
+  const away = !last || Date.now() - Date.parse(last.at) >= SESSION_GAP_MS;
+  if (!row || !messages.length || !away || last?.sessionStart) {
+    res.json(await chatView(ownerId, courses, messages, row?.version ?? 0));
+    return;
+  }
+  const action = latestQuizAction(messages);
+  const quiz = action ? quizContext(courses, action, await loadSession(ownerId, action.sessionId)) : null;
+  const greeting = sessionGreeting(courses, messages, quiz, lastCourseIdOf(messages));
+  if (!greeting) {
+    res.json(await chatView(ownerId, courses, messages, row.version));
+    return;
+  }
+  const next: HomeChatMessage[] = [...messages, { id: randomUUID(), role: "assistant" as const, content: greeting.content, at: new Date().toISOString(), actions: [], sessionStart: true, ...(greeting.suggestions.length ? { suggestions: greeting.suggestions } : {}) }].slice(-MAX_MESSAGES);
+  const updated = await db.update(homeChatsTable)
+    .set({ messages: next, version: row.version + 1, updatedAt: new Date() })
+    .where(and(eq(homeChatsTable.ownerId, ownerId), eq(homeChatsTable.version, row.version)))
+    .returning();
+  const saved = updated[0] ?? (await loadChat(ownerId)); // lost a race with another device: return whatever is current
+  res.json(await chatView(ownerId, courses, saved?.messages ?? messages, saved?.version ?? row.version));
+});
 
 router.get("/study/chat", async (req, res): Promise<void> => {
   const ownerId = owner(req);

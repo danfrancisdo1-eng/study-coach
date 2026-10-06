@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, AppState, FlatList, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Redirect, router } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
@@ -7,7 +7,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import {
-  getGetHomeChatQueryKey, getGetStudyStateQueryKey, useGetHomeChat, useGetStudyState, usePutStudyState, useSendHomeChatMessage,
+  getGetHomeChatQueryKey, getGetStudyStateQueryKey, useGetHomeChat, useGetStudyState, useOpenHomeChat, usePutStudyState, useSendHomeChatMessage,
   type HomeChat, type HomeChatMessage,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
@@ -75,8 +75,21 @@ export default function CoachHome() {
   const chatQuery = useGetHomeChat({ query: { queryKey: [...getGetHomeChatQueryKey(), userId], enabled: !!userId } });
   const putState = usePutStudyState();
   const send = useSendHomeChatMessage();
+  const open = useOpenHomeChat();
 
   const consented = stateQuery.data?.state?.aiConsent === true;
+
+  // A new study session starts when the app opens or comes back to the foreground (the
+  // server adds the check-in greeting only after a real break, so quick reloads are quiet).
+  const openRef = useRef(open.mutateAsync);
+  openRef.current = open.mutateAsync;
+  useEffect(() => {
+    if (!userId || !consented) return;
+    const openSession = () => { openRef.current().then((result) => queryClient.setQueryData([...getGetHomeChatQueryKey(), userId], result)).catch(() => {}); };
+    openSession();
+    const sub = AppState.addEventListener('change', (state) => { if (state === 'active') openSession(); });
+    return () => sub.remove();
+  }, [userId, consented]);
   const messages = chatQuery.data?.messages ?? [];
   const version = chatQuery.data?.version ?? 0;
   const busy = send.isPending || putState.isPending;
@@ -165,6 +178,8 @@ export default function CoachHome() {
   };
 
   const renderMessage = ({ item }: { item: HomeChatMessage }) => (
+    <View>
+    {item.sessionStart ? <View style={styles.sessionDivider}><View style={styles.sessionLine} /><Text style={styles.sessionLabel}>NEW SESSION</Text><View style={styles.sessionLine} /></View> : null}
     <View style={[styles.turn, item.role === 'user' ? styles.userTurn : styles.coachTurn]} testID={`chat-turn-${item.role}`}>
       <Text style={styles.turnRole}>{item.role === 'user' ? 'YOU' : 'COACH'}</Text>
       <Text style={styles.body}>{item.content}</Text>
@@ -192,6 +207,7 @@ export default function CoachHome() {
           ) : null}
         </View>
       ))}
+    </View>
     </View>
   );
 
@@ -351,6 +367,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   openLink: { minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   openLinkText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   busyRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 8 },
+  sessionDivider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 6 },
+  sessionLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
+  sessionLabel: { color: colors.mutedForeground, fontSize: 10, letterSpacing: 1.2, fontWeight: '800' },
   quizDock: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
   quizDockContent: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 6, gap: 8 },
   hideScore: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },

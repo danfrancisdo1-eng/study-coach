@@ -371,6 +371,17 @@ paths:
         "403": { description: Explicit persisted AI consent required }
         "409": { description: Conversation changed on another device; reload }
         "502": { description: The coach did not answer; nothing was changed }
+  /study/chat/open:
+    post:
+      operationId: openHomeChat
+      tags: [study]
+      summary: Called when the app opens. Starts a new session in the chat (a check-in greeting with chips) when the last activity is older than the session gap; otherwise returns the chat unchanged.
+      responses:
+        "200":
+          description: Conversation, possibly with a new session greeting appended
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HomeChat" }
   /study/sessions/{id}/check-in:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
@@ -663,6 +674,7 @@ components:
         at: { type: string, format: date-time }
         actions: { type: array, items: { $ref: "#/components/schemas/HomeChatAction" } }
         suggestions: { type: array, items: { type: string }, description: "Tap-to-reply chips under an assistant message" }
+        sessionStart: { type: boolean, description: "True for the app-written greeting that opens a new study session (clients draw a divider above it)" }
     HomeChat:
       type: object
       required: [messages, version]
