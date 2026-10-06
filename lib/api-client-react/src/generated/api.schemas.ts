@@ -315,6 +315,29 @@ export interface StudyQuiz {
   grade?: StudyScore | null;
 }
 
+export type StudyFlashcardDeckCardsItemResultsItem = typeof StudyFlashcardDeckCardsItemResultsItem[keyof typeof StudyFlashcardDeckCardsItemResultsItem];
+
+
+export const StudyFlashcardDeckCardsItemResultsItem = {
+  got: 'got',
+  again: 'again',
+} as const;
+
+export type StudyFlashcardDeckCardsItem = {
+  id: string;
+  front: string;
+  back: string;
+  concept: string;
+  results: StudyFlashcardDeckCardsItemResultsItem[];
+};
+
+export interface StudyFlashcardDeck {
+  createdAt: string;
+  /** @nullable */
+  completedAt: string | null;
+  cards: StudyFlashcardDeckCardsItem[];
+}
+
 /**
  * Public session payload. Never includes correct option IDs, answer indices, or grading keys.
  */
@@ -334,6 +357,19 @@ export interface StudySession {
   reviewSchedule: StudySessionReviewScheduleItem[];
   /** @nullable */
   reportText: string | null;
+  flashcards?: StudyFlashcardDeck | null;
+}
+
+export type FlashcardReviewInputResult = typeof FlashcardReviewInputResult[keyof typeof FlashcardReviewInputResult];
+
+
+export const FlashcardReviewInputResult = {
+  got: 'got',
+  again: 'again',
+} as const;
+
+export interface FlashcardReviewInput {
+  result: FlashcardReviewInputResult;
 }
 
 export interface StudyCheckIn {
@@ -367,6 +403,7 @@ export type HomeChatActionType = typeof HomeChatActionType[keyof typeof HomeChat
 export const HomeChatActionType = {
   create_course: 'create_course',
   start_quiz: 'start_quiz',
+  start_flashcards: 'start_flashcards',
   start_session: 'start_session',
 } as const;
 
@@ -392,11 +429,22 @@ export interface HomeChatAction {
   /** start_quiz: practice reveals feedback per answer; exam only after grading */
   kind?: HomeChatActionKind;
   /**
-     * start_quiz: questions in the set
+     * start_quiz: questions in the set; start_flashcards: cards in the deck
      * @minimum 1
      * @maximum 50
      */
   count?: number;
+}
+
+/**
+ * The flashcard deck most recently started from this chat, while it is unfinished. Cards come from GET /study/sessions/{sessionId}.
+ */
+export interface HomeChatActiveDeck {
+  sessionId: string;
+  courseId: string;
+  topic: string;
+  done: number;
+  total: number;
 }
 
 export type HomeChatActiveQuizKind = typeof HomeChatActiveQuizKind[keyof typeof HomeChatActiveQuizKind];
@@ -443,6 +491,7 @@ export interface HomeChat {
   messages: HomeChatMessage[];
   version: number;
   activeQuiz?: HomeChatActiveQuiz | null;
+  activeDeck?: HomeChatActiveDeck | null;
 }
 
 export type StudyQuizInputMode = typeof StudyQuizInputMode[keyof typeof StudyQuizInputMode];

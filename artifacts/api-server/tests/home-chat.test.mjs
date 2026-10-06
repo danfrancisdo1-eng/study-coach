@@ -49,7 +49,7 @@ test('home chat: greet, create course, start session, isolation, failure safety'
   assert.equal(ai.requests.length, 0);
 
   // Empty conversation for a fresh account.
-  assert.deepEqual((await a('GET', '/study/chat')).body, { messages: [], version: 0, activeQuiz: null });
+  assert.deepEqual((await a('GET', '/study/chat')).body, { messages: [], version: 0, activeQuiz: null, activeDeck: null });
   assert.equal((await a('POST', '/study/chat', { content: '   ', version: 0 })).status, 400);
 
   // First message: the prompt lists the student's courses; the reply is stored.
@@ -114,7 +114,7 @@ test('home chat: greet, create course, start session, isolation, failure safety'
   assert.equal((await a('GET', '/study/state')).body.version, 2);
 
   // Isolation: user_b sees no conversation and cannot act on user_a's courses.
-  assert.deepEqual((await b('GET', '/study/chat')).body, { messages: [], version: 0, activeQuiz: null });
+  assert.deepEqual((await b('GET', '/study/chat')).body, { messages: [], version: 0, activeQuiz: null, activeDeck: null });
   nextReply = () => chatReply(JSON.stringify({ reply: 'Sure.', actions: [{ type: 'start_session', name: 'BIOL 114', topic: 'cells' }] }));
   chat = await b('POST', '/study/chat', { content: 'start BIOL 114', version: 0 });
   assert.equal(chat.status, 200);
@@ -251,7 +251,7 @@ test('home chat: session greeting on open', async (t) => {
   // No conversation yet: nothing is written (the client shows the first-visit greeting).
   let chat = await call('user_g', 'POST', '/study/chat/open');
   assert.equal(chat.status, 200);
-  assert.deepEqual(chat.body, { messages: [], version: 0, activeQuiz: null });
+  assert.deepEqual(chat.body, { messages: [], version: 0, activeQuiz: null, activeDeck: null });
 
   // After a conversation, opening appends one greeting with chips, and not twice in a row.
   coach = { reply: 'Added Bio 101. Questions or material?', suggestions: ['Quick set of questions'], actions: [] };
@@ -271,4 +271,72 @@ test('home chat: session greeting on open', async (t) => {
   // An account with no courses never gets a greeting.
   await seedAccount(database.db, 'user_nochat', { aiConsent: true, courses: [{ id: 'x', name: 'X' }], materials: [] });
   assert.deepEqual((await call('user_empty', 'POST', '/study/chat/open')).body.messages, []);
+});
+
+// Flashcards in the chat (D-021): a deck is a study session; got/again per card; finishing
+// the deck schedules review items; the coach sees the deck's progress and result.
+const deckReply = (count) => chatReply(JSON.stringify({
+  cards: Array.from({ length: count }, (_, i) => ({ front: `Term ${i + 1}?`, back: `Meaning ${i + 1}.`, concept: `concept-${i % 2}` })),
+}));
+
+test('home chat: flashcard decks', async (t) => {
+  buildServer();
+  const database = await startDatabase(t);
+  let coach = { reply: 'Here come your cards.', suggestions: [], actions: [{ type: 'start_flashcards', name: 'bio', topic: 'cells', count: 3 }] };
+  const ai = await startAiStub(t, (request) => {
+    const system = request.body.messages[0].content;
+    return system.startsWith('Create exactly') && system.includes('flashcards') ? deckReply(3) : chatReply(JSON.stringify(coach));
+  });
+  const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url });
+  await seedAccount(database.db, 'user_f', { aiConsent: true, courses: [{ id: 'bio', name: 'BIOL 114' }], materials: [] });
+  const call = async (method, path, body) => {
+    const res = await fetch(`${base}/api${path}`, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${signToken('user_f')}` }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const text = await res.text();
+    return { status: res.status, body: text ? JSON.parse(text) : null };
+  };
+
+  let chat = await call('POST', '/study/chat', { content: 'flashcards on cells', version: 0 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  const started = chat.body.messages.at(-1).actions[0];
+  assert.equal(started.type, 'start_flashcards');
+  assert.equal(started.count, 3);
+  assert.deepEqual(chat.body.activeDeck, { sessionId: started.sessionId, courseId: 'bio', topic: 'cells', done: 0, total: 3 });
+  assert.equal(chat.body.activeQuiz, null);
+
+  let session = (await call('GET', `/study/sessions/${started.sessionId}`)).body;
+  assert.equal(session.flashcards.cards.length, 3);
+  assert.equal(session.flashcards.completedAt, null);
+  assert.equal(session.checkIn.skipped, true);
+  const [c0, c1, c2] = session.flashcards.cards;
+
+  // got, again, got → not finished (c1 still pending); the coach is told 2 of 3 done.
+  assert.equal((await call('POST', `/study/sessions/${started.sessionId}/flashcards/${c0.id}/review`, { result: 'got' })).status, 200);
+  assert.equal((await call('POST', `/study/sessions/${started.sessionId}/flashcards/${c1.id}/review`, { result: 'again' })).status, 200);
+  session = (await call('POST', `/study/sessions/${started.sessionId}/flashcards/${c2.id}/review`, { result: 'got' })).body;
+  assert.equal(session.flashcards.completedAt, null);
+  chat = await call('GET', '/study/chat');
+  assert.equal(chat.body.activeDeck.done, 2);
+  coach = { reply: 'Keep going.', suggestions: [], actions: [] };
+  await call('POST', '/study/chat', { content: 'what does mitochondria mean?', version: 1 });
+  assert.match(ai.requests.at(-1).body.messages[0].content, /flashcard deck on BIOL 114 \/ cells is in progress: 2 of 3 cards done/);
+
+  // Second pass on c1: got → finished; review items written (again => missed).
+  session = (await call('POST', `/study/sessions/${started.sessionId}/flashcards/${c1.id}/review`, { result: 'got' })).body;
+  assert.ok(session.flashcards.completedAt);
+  assert.deepEqual(session.flashcards.cards.map((c) => c.results), [['got'], ['again', 'got'], ['got']]);
+  const items = session.reviewSchedule.filter((r) => r.quizMode === 'flashcards');
+  assert.equal(items.length, 3);
+  assert.equal(items.filter((r) => r.result === 'missed').length, 1);
+  const state = (await call('GET', '/study/state')).body.state;
+  assert.equal(state.reviewSchedule.filter((r) => r.quizMode === 'flashcards').length, 3, 'review items reach the account schedule');
+  // Finished: no active deck; the coach sees the result; a review after finishing is a no-op.
+  chat = await call('GET', '/study/chat');
+  assert.equal(chat.body.activeDeck, null);
+  await call('POST', '/study/chat', { content: 'I finished the flashcards.', version: 2 });
+  assert.match(ai.requests.at(-1).body.messages[0].content, /Latest finished deck: BIOL 114 \/ cells, 3 cards, 1 needed a second look \(concept-1\)/);
+  session = (await call('POST', `/study/sessions/${started.sessionId}/flashcards/${c0.id}/review`, { result: 'again' })).body;
+  assert.deepEqual(session.flashcards.cards[0].results, ['got']);
+  // Bad input.
+  assert.equal((await call('POST', `/study/sessions/${started.sessionId}/flashcards/${c0.id}/review`, { result: 'meh' })).status, 400);
+  assert.equal((await call('POST', `/study/sessions/${started.sessionId}/flashcards/00000000-0000-4000-8000-000000000000/review`, { result: 'got' })).status, 404);
 });

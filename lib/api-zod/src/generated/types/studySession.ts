@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { StudyCheckInResult } from './studyCheckInResult';
+import type { StudyFlashcardDeck } from './studyFlashcardDeck';
 import type { StudyQuiz } from './studyQuiz';
 import type { StudySessionMessagesItem } from './studySessionMessagesItem';
 import type { StudySessionReviewScheduleItem } from './studySessionReviewScheduleItem';
@@ -31,4 +32,5 @@ export interface StudySession {
   reviewSchedule: StudySessionReviewScheduleItem[];
   /** @nullable */
   reportText: string | null;
+  flashcards?: StudyFlashcardDeck | null;
 }

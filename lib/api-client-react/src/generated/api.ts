@@ -23,6 +23,7 @@ import type {
   AnalyzeInput,
   AnalyzeResult,
   CourseDeletion,
+  FlashcardReviewInput,
   HealthStatus,
   HomeChat,
   HomeChatInput,
@@ -2356,6 +2357,97 @@ export const useFlagStudyQuestion = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getFlagStudyQuestionMutationOptions(options));
+    }
+
+export const getReviewFlashcardUrl = (id: string,
+    cardId: string,) => {
+
+
+
+
+  return `/api/study/sessions/${id}/flashcards/${cardId}/review`
+}
+
+/**
+ * @summary Record "got it" or "again" for one flashcard; completing the deck schedules review items
+ */
+export const reviewFlashcard = async (id: string,
+    cardId: string,
+    flashcardReviewInput: FlashcardReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<StudySession> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StudySession>(getReviewFlashcardUrl(id,cardId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(flashcardReviewInput)
+  }
+);}
+
+
+
+
+
+export const getReviewFlashcardMutationKey = () => ['reviewFlashcard'] as const;
+
+export const getReviewFlashcardMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFlashcard>>, TError,ReviewFlashcardMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewFlashcard>>, TError,ReviewFlashcardMutationVariables, TContext> => {
+
+const mutationKey = getReviewFlashcardMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewFlashcard>>, ReviewFlashcardMutationVariables> = (props) => {
+          const {id,cardId,data} = props ?? {};
+
+          return  reviewFlashcard(id,cardId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewFlashcardMutationResult = NonNullable<Awaited<ReturnType<typeof reviewFlashcard>>>
+    export type ReviewFlashcardMutationBody = BodyType<FlashcardReviewInput>
+    export type ReviewFlashcardMutationError = ErrorType<void>
+    export type ReviewFlashcardMutationVariables = {id: string;cardId: string;data: BodyType<FlashcardReviewInput>}
+
+    /**
+ * @summary Record "got it" or "again" for one flashcard; completing the deck schedules review items
+ */
+export const useReviewFlashcard = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFlashcard>>, TError,ReviewFlashcardMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reviewFlashcard>>,
+        TError,
+        ReviewFlashcardMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewFlashcardMutationOptions(options));
     }
 
 export const getGradeStudyQuizUrl = (id: string,) => {

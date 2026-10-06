@@ -19,7 +19,7 @@ export interface HomeChatAction {
   /** start_quiz: practice reveals feedback per answer; exam only after grading */
   kind?: HomeChatActionKind;
   /**
-     * start_quiz: questions in the set
+     * start_quiz: questions in the set; start_flashcards: cards in the deck
      * @minimum 1
      * @maximum 50
      */

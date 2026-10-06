@@ -2,7 +2,7 @@
 // a Claude judge only for things code can't check (answer-key correctness, tutoring quality).
 import Anthropic from "@anthropic-ai/sdk";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
-import type { CoachCase, Source, SyllabusCase, TutorCase } from "./fixtures";
+import type { CoachCase, FlashcardsCase, Source, SyllabusCase, TutorCase } from "./fixtures";
 import { parseCoachReply } from "../src/routes/chatActions";
 
 export interface Score {
@@ -211,6 +211,41 @@ export function gradeOcr(expected: string, text: string | null, finished: boolea
   return { pass: finished && score >= 0.97, score, notes };
 }
 
+export async function gradeFlashcards(testCase: FlashcardsCase, text: string | null): Promise<Score> {
+  let cards: { front: string; back: string; concept: string }[];
+  try {
+    const raw = parseJson(text) as { cards?: unknown };
+    if (!Array.isArray(raw.cards)) throw new Error("no cards array");
+    cards = raw.cards as { front: string; back: string; concept: string }[];
+  } catch (error) {
+    return { pass: false, score: 0, notes: [`invalid output: ${(error as Error).message.slice(0, 200)}`] };
+  }
+  const notes: string[] = [];
+  if (cards.length !== testCase.expectedCount) notes.push(`expected ${testCase.expectedCount} cards, got ${cards.length}`);
+  const fronts = new Set<string>();
+  cards.forEach((c, i) => {
+    if (!c.front?.trim() || !c.back?.trim()) notes.push(`card ${i}: empty side`);
+    if (fronts.has(normalize(c.front ?? ""))) notes.push(`card ${i}: duplicate front`);
+    fronts.add(normalize(c.front ?? ""));
+    if ((c.back ?? "").split(/\s+/).length > 60) notes.push(`card ${i}: back too long`);
+  });
+  const verdict = await judge<{ cards: { index: number; correct: boolean; aboutTheDocument: boolean; reason: string }[] }>(
+    "You check flashcards for a study app. For each card decide whether the back is a correct, complete-enough answer to the front (consistent with the source material when it covers the point, established knowledge otherwise), and whether the card is about the supplied document itself (an outline's weeks, dates, grading) rather than the subject. Be strict and brief.",
+    { topic: testCase.topic, sources: testCase.sources, focus: testCase.focus, cards },
+    { type: "object", additionalProperties: false, required: ["cards"], properties: { cards: { type: "array", items: { type: "object", additionalProperties: false, required: ["index", "correct", "aboutTheDocument", "reason"], properties: { index: { type: "integer" }, correct: { type: "boolean" }, aboutTheDocument: { type: "boolean" }, reason: { type: "string" } } } } } },
+  );
+  const correct = verdict.cards.filter((c) => c.correct).length;
+  for (const c of verdict.cards.filter((v) => !v.correct)) notes.push(`card ${c.index} judged wrong: ${c.reason.slice(0, 160)}`);
+  const meta = verdict.cards.filter((c) => c.aboutTheDocument);
+  for (const c of meta) notes.push(`card ${c.index} about the document: ${c.reason.slice(0, 120)}`);
+  if (testCase.focus.length) {
+    const texts = cards.map((c) => normalize(`${c.concept} ${c.front} ${c.back}`));
+    for (const f of testCase.focus) if (!texts.some((t) => t.includes(normalize(f.concept).split(" ")[0]!))) notes.push(`no card on missed concept: ${f.concept}`);
+  }
+  const score = (cards.length ? correct / cards.length : 0) * (meta.length ? 0.5 : 1);
+  return { pass: notes.every((n) => n.includes("judged wrong")) && score >= 0.9, score, notes };
+}
+
 export function gradeCoach(testCase: CoachCase, text: string | null): Promise<Score> {
   return gradeCoachReply(testCase, text);
 }
@@ -241,7 +276,7 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   if (tooLong) notes.push(`too long: ${words} words > ${testCase.maxWords}`);
   const verdict = await judge<{ expectations: { met: boolean; reason: string }[] }>(
     "You grade one reply from the AI study coach on an app's home chat, for students age 13+. Return exactly one verdict per expectation, in the same order. Check each expectation strictly.",
-    { courses: testCase.courses, history: testCase.history, latestQuestionSet: testCase.quiz ?? null, studentMessage: testCase.message, expectations: testCase.expectations, reply: parsed.reply, suggestions: parsed.suggestions, actionsTaken: parsed.actions },
+    { courses: testCase.courses, history: testCase.history, latestQuestionSet: testCase.quiz ?? null, latestDeck: testCase.deck ?? null, studentMessage: testCase.message, expectations: testCase.expectations, reply: parsed.reply, suggestions: parsed.suggestions, actionsTaken: parsed.actions },
     {
       type: "object", additionalProperties: false, required: ["expectations"],
       properties: { expectations: { type: "array", items: { type: "object", additionalProperties: false, required: ["met", "reason"], properties: { met: { type: "boolean" }, reason: { type: "string" } } } } },

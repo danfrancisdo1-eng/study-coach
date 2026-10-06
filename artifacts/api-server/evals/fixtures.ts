@@ -120,6 +120,23 @@ export const sessionQuizCases: SessionQuizCase[] = [
   { name: "outline only, general review across the exam's topics", topic: "General review", sources: bioOutline, expectedCount: 8, originalPrompts: [], weakConcepts: [] },
 ];
 
+export interface FlashcardsCase {
+  name: string;
+  topic: string;
+  sources: Source[];
+  expectedCount: number;
+  focus: { concept: string; prompt: string; correct: string; explanation: string }[];
+}
+
+export const flashcardsCases: FlashcardsCase[] = [
+  { name: "topic deck from notes", topic: "Cellular respiration", sources: respiration, expectedCount: 6, focus: [] },
+  { name: "deck for the misses", topic: "Membranes and transport", sources: membranes, expectedCount: 4, focus: [
+    { concept: "Osmosis", prompt: "In a hypotonic solution an animal cell will...", correct: "swell and may burst", explanation: "Water moves into the cell." },
+    { concept: "Active transport", prompt: "Which process requires ATP?", correct: "sodium-potassium pump", explanation: "Against the gradient needs energy." },
+  ] },
+  { name: "outline only: subject cards, none about the document", topic: "Photosynthesis", sources: bioOutline, expectedCount: 6, focus: [] },
+];
+
 export interface PlanCase {
   name: string;
   daysUntilExam: number;
@@ -216,7 +233,7 @@ export interface CoachCase {
   history: { role: "user" | "assistant"; content: string }[];
   message: string;
   /** Exact action list the coach must return (type + name; topic checked loosely; kind/scope when given). */
-  expectedActions: { type: "create_course" | "start_quiz" | "start_session"; name: string; kind?: "practice" | "exam"; scope?: "all" | "missed" }[];
+  expectedActions: { type: "create_course" | "start_quiz" | "start_flashcards" | "start_session"; name: string; kind?: "practice" | "exam"; scope?: "all" | "missed" }[];
   /** Suggestion chips that must appear (case-insensitive, in any order), if any. */
   expectedSuggestions?: string[];
   /** The latest question set from this chat, as routes/chat.ts would describe it. */
@@ -224,6 +241,8 @@ export interface CoachCase {
     courseName: string; topic: string; kind: "practice" | "exam"; answered: number; total: number;
     graded: { correct: number; percent: number; missed: { concept: string; prompt: string; chose: string | null; correct: string; explanation: string }[] } | null;
   } | null;
+  /** The most recent flashcard deck from this chat. */
+  deck?: { courseName: string; topic: string; done: number; total: number; finished: { again: number; againConcepts: string[] } | null } | null;
   /** What a good reply must do, for the judge. */
   expectations: string[];
   maxWords: number;
@@ -278,6 +297,36 @@ export const coachCases: CoachCase[] = [
     expectations: ["Does not claim to have deleted anything", "Says deleting is done from the Courses tab"],
     maxWords: 50,
   },
+  // coach.v5: flashcards.
+  {
+    name: "flashcards on a topic: starts a deck, no practice/exam question",
+    courses: [{ id: "bio-1", name: "Bio 101", materials: 1, lectures: 0 }], firstVisit: false, history: [],
+    message: "give me flashcards on cell membranes",
+    expectedActions: [{ type: "start_flashcards", name: "Bio 101" }],
+    expectations: ["Confirms briefly that the cards are coming", "Does not ask practice or exam"],
+    maxWords: 40,
+  },
+  {
+    name: "flashcards for the misses after a graded set: scope missed",
+    courses: [{ id: "bio-1", name: "Bio 101", materials: 1, lectures: 0 }], firstVisit: false,
+    history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: "7 of 10. What next?" }],
+    quiz: { courseName: "Bio 101", topic: "cell membranes", kind: "practice", answered: 10, total: 10, graded: { correct: 7, percent: 70, missed: [
+      { concept: "Osmosis", prompt: "In a hypotonic solution an animal cell will...", chose: "shrink", correct: "swell and may burst", explanation: "Water moves in." },
+    ] } },
+    message: "Flashcards for the misses",
+    expectedActions: [{ type: "start_flashcards", name: "Bio 101", scope: "missed" }],
+    expectations: ["Confirms briefly that the cards on the missed items are coming"],
+    maxWords: 40,
+  },
+  {
+    name: "deck finished: one line and the next-step chips",
+    courses: [{ id: "bio-1", name: "Bio 101", materials: 1, lectures: 0 }], firstVisit: false, history: [],
+    deck: { courseName: "Bio 101", topic: "cell membranes", done: 10, total: 10, finished: { again: 3, againConcepts: ["Osmosis", "Active transport"] } },
+    message: "I finished the flashcards.",
+    expectedActions: [], expectedSuggestions: ["Quiz me on these", "Another deck", "Pick a topic"],
+    expectations: ["One short line about the deck (10 cards, 3 needed a second look)", "Offers the next steps as suggestions"],
+    maxWords: 40,
+  },
   // coach.v4: topic step before a set.
   {
     name: "set requested without a topic, outline uploaded: proposes topics from the outline plus All topics",
@@ -321,7 +370,7 @@ export const coachCases: CoachCase[] = [
     history: [{ role: "user", content: "I added an outline for the bio 101 course." }, { role: "assistant", content: "Got it, Bio 101 now has your outline. Want to start a quick set of questions based on it, or add more material first?" }],
     message: "Sure",
     expectedActions: [], expectedSuggestions: ["All topics"],
-    expectations: ["Asks which topic (one or two short sentences), proposing a few", "Does not say it is opening a session", "Does not start a set"],
+    expectations: ["Asks which topic briefly (at most three short sentences), proposing a few", "Does not say it is opening a session", "Does not start a set"],
     maxWords: 60,
   },
   {
@@ -359,8 +408,8 @@ export const coachCases: CoachCase[] = [
       { concept: "Membrane structure", prompt: "What makes the bilayer selectively permeable?", chose: "cholesterol only", correct: "the hydrophobic core plus transport proteins", explanation: "Nonpolar molecules pass; polar/charged ones need proteins." },
     ] } },
     message: "I finished the set.",
-    expectedActions: [], expectedSuggestions: ["Memory tricks for the misses", "Another set on everything", "Another set on the missed topics"],
-    expectations: ["One line about the result (7 of 10), no repeat of the corrections", "Offers exactly the three choices as suggestions"],
+    expectedActions: [], expectedSuggestions: ["Memory tricks for the misses", "Flashcards for the misses", "Another set on everything", "Another set on the missed topics"],
+    expectations: ["One line about the result (7 of 10), no repeat of the corrections", "Offers the four choices as suggestions"],
     maxWords: 40,
   },
   {
@@ -373,7 +422,7 @@ export const coachCases: CoachCase[] = [
     ] } },
     message: "Memory tricks for the misses",
     expectedActions: [],
-    expectations: ["Gives a mnemonic, association or word trick for the osmosis/hypotonic miss", "Gives one for active transport / sodium-potassium pump needing ATP", "Ends with a teach-back question or an offer to quiz again"],
+    expectations: ["Gives a mnemonic, association or word trick for the osmosis/hypotonic miss", "Gives one for active transport / sodium-potassium pump needing ATP", "Ends with a check that starts 'Your turn: explain it back to me' (never the words 'teach-back')"],
     maxWords: 220,
   },
   {

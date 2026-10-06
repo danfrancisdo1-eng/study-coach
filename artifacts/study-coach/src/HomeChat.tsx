@@ -2,8 +2,10 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetHomeChatQueryKey, useGetHomeChat, useOpenHomeChat, useSendHomeChatMessage, type HomeChat as HomeChatData } from '@workspace/api-client-react';
 import QuizCard from './QuizCard';
+import FlashcardDeck from './FlashcardDeck';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.';
+const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
 
 /**
  * Chat-first home (SPEC §7, D-016), web version of the iPhone Coach tab. The coach can
@@ -22,14 +24,17 @@ export default function HomeChat({ aiConsent, busy, onCoursesChanged, onOpenSess
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
   const [gradedSessionId, setGradedSessionId] = useState<string | null>(null);
+  const [finishedDeckId, setFinishedDeckId] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const messages = chat.data?.messages ?? [];
   const version = chat.data?.version ?? 0;
   const sending = send.isPending;
   const activeQuiz = chat.data?.activeQuiz ?? null;
+  const activeDeck = chat.data?.activeDeck ?? null;
   const quizSessionId = activeQuiz?.sessionId ?? gradedSessionId;
+  const deckSessionId = activeDeck?.sessionId ?? finishedDeckId;
   const lastMessage = messages[messages.length - 1];
-  const chips = lastMessage?.role === 'assistant' && !activeQuiz ? (lastMessage.suggestions ?? []) : [];
+  const chips = lastMessage?.role === 'assistant' && !activeQuiz && !activeDeck ? (lastMessage.suggestions ?? []) : [];
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'nearest' }); }, [messages.length]);
   // A new study session starts when the page opens or the tab comes back (server adds the greeting only after a real break).
@@ -51,7 +56,8 @@ export default function HomeChat({ aiConsent, busy, onCoursesChanged, onOpenSess
     try {
       const result: HomeChatData = await send.mutateAsync({ data: { content, version } });
       client.setQueryData(getGetHomeChatQueryKey(), result);
-      if (result.activeQuiz) setGradedSessionId(null);
+      if (result.activeQuiz) { setGradedSessionId(null); setFinishedDeckId(null); }
+      if (result.activeDeck) { setFinishedDeckId(null); setGradedSessionId(null); }
       setDraft('');
       const actions = result.messages[result.messages.length - 1]?.actions ?? [];
       if (actions.some(action => action.type === 'create_course')) onCoursesChanged();
@@ -88,6 +94,7 @@ export default function HomeChat({ aiConsent, busy, onCoursesChanged, onOpenSess
                 <p key={`${action.type}-${action.courseId}-${action.sessionId ?? ''}`} className="ae-muted" style={{ fontSize: '.85rem' }}>
                   {action.type === 'create_course' ? `Added course: ${action.name ?? ''}`
                     : action.type === 'start_quiz' ? `${action.kind === 'practice' ? 'Practice' : 'Exam'} set: ${action.count ?? ''} questions on ${action.topic ?? ''}`
+                    : action.type === 'start_flashcards' ? `Flashcards: ${action.count ?? ''} cards on ${action.topic ?? ''}`
                     : <>Started a session: {action.topic ?? ''}{action.sessionId && <> · <button type="button" className="ae-button ae-button--quiet" onClick={() => onOpenSession(action.sessionId!)} data-testid="button-open-session">Open</button></>}</>}
                 </p>
               ))}
@@ -98,7 +105,10 @@ export default function HomeChat({ aiConsent, busy, onCoursesChanged, onOpenSess
         {chips.length > 0 && <div className="ae-row" data-testid="row-suggestions">
           {chips.map(chip => <button key={chip} type="button" className="ae-button ae-button--outline" disabled={sending || busy} onClick={() => void sendText(chip)} data-testid="button-suggestion">{chip}</button>)}
         </div>}
-        {quizSessionId && <QuizCard key={quizSessionId} sessionId={quizSessionId}
+        {deckSessionId && <FlashcardDeck key={deckSessionId} sessionId={deckSessionId}
+          onFinished={finished => { setFinishedDeckId(finished.id); void sendText(FINISHED_DECK_MESSAGE); }}
+          onError={problem => { const data = (problem as { data?: { error?: unknown } }).data; setError(data && typeof data.error === 'string' ? data.error : 'Something went wrong. Try again.'); }} />}
+        {!deckSessionId && quizSessionId && <QuizCard key={quizSessionId} sessionId={quizSessionId}
           onGraded={graded => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
           onError={problem => { const data = (problem as { data?: { error?: unknown } }).data; setError(data && typeof data.error === 'string' ? data.error : 'Something went wrong. Try again.'); }} />}
         {sending && <p className="ae-muted">Coach is working… writing questions can take up to a minute.</p>}
