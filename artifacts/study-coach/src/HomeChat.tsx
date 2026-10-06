@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { getGetHomeChatQueryKey, useGetHomeChat, useSendHomeChatMessage, type HomeChat as HomeChatData } from '@workspace/api-client-react';
+import { getGetHomeChatQueryKey, useGetHomeChat, useOpenHomeChat, useSendHomeChatMessage, type HomeChat as HomeChatData } from '@workspace/api-client-react';
 import QuizCard from './QuizCard';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.';
@@ -18,6 +18,7 @@ export default function HomeChat({ aiConsent, busy, onCoursesChanged, onOpenSess
   const client = useQueryClient();
   const chat = useGetHomeChat();
   const send = useSendHomeChatMessage();
+  const open = useOpenHomeChat();
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
   const [gradedSessionId, setGradedSessionId] = useState<string | null>(null);
@@ -31,6 +32,17 @@ export default function HomeChat({ aiConsent, busy, onCoursesChanged, onOpenSess
   const chips = lastMessage?.role === 'assistant' && !activeQuiz ? (lastMessage.suggestions ?? []) : [];
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'nearest' }); }, [messages.length]);
+  // A new study session starts when the page opens or the tab comes back (server adds the greeting only after a real break).
+  const openRef = useRef(open.mutateAsync);
+  openRef.current = open.mutateAsync;
+  useEffect(() => {
+    if (!aiConsent) return;
+    const openSession = () => { openRef.current().then(result => client.setQueryData(getGetHomeChatQueryKey(), result)).catch(() => {}); };
+    openSession();
+    const onVisible = () => { if (document.visibilityState === 'visible') openSession(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [aiConsent]);
 
   const sendText = async (text: string) => {
     const content = text.trim();
@@ -66,7 +78,9 @@ export default function HomeChat({ aiConsent, busy, onCoursesChanged, onOpenSess
           </article>
         )}
         {messages.map(turn => (
-          <article key={turn.id} className={`ae-turn ae-turn--${turn.role === 'user' ? 'student' : 'coach'}`} data-testid={`chat-turn-${turn.role}`}>
+          <div key={turn.id}>
+          {turn.sessionStart && <p className="ae-kicker" style={{ textAlign: 'center', margin: '6px 0' }}>NEW SESSION</p>}
+          <article className={`ae-turn ae-turn--${turn.role === 'user' ? 'student' : 'coach'}`} data-testid={`chat-turn-${turn.role}`}>
             <span className="ae-turn-badge">{turn.role === 'user' ? 'YOU' : 'AI'}</span>
             <div className="ae-turn-content">
               <p>{turn.content}</p>
@@ -79,6 +93,7 @@ export default function HomeChat({ aiConsent, busy, onCoursesChanged, onOpenSess
               ))}
             </div>
           </article>
+          </div>
         ))}
         {chips.length > 0 && <div className="ae-row" data-testid="row-suggestions">
           {chips.map(chip => <button key={chip} type="button" className="ae-button ae-button--outline" disabled={sending || busy} onClick={() => void sendText(chip)} data-testid="button-suggestion">{chip}</button>)}

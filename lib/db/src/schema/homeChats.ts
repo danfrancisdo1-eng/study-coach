@@ -14,6 +14,8 @@ export type HomeChatMessage = {
   actions?: HomeChatAction[];
   /** Tap-to-reply chips under an assistant message. */
   suggestions?: string[];
+  /** App-written greeting that opens a new study session (SPEC §7: "resume where you left off"). */
+  sessionStart?: boolean;
 };
 
 // One row per account: the chat-first home conversation (SPEC §7). Kept out of

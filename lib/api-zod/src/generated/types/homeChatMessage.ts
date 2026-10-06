@@ -16,4 +16,6 @@ export interface HomeChatMessage {
   actions?: HomeChatAction[];
   /** Tap-to-reply chips under an assistant message */
   suggestions?: string[];
+  /** True for the app-written greeting that opens a new study session (clients draw a divider above it) */
+  sessionStart?: boolean;
 }

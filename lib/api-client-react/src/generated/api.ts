@@ -1834,6 +1834,80 @@ export const useSendHomeChatMessage = <TError = ErrorType<void>,
       return useMutation(getSendHomeChatMessageMutationOptions(options));
     }
 
+export const getOpenHomeChatUrl = () => {
+
+
+
+
+  return `/api/study/chat/open`
+}
+
+/**
+ * @summary Called when the app opens. Starts a new session in the chat (a check-in greeting with chips) when the last activity is older than the session gap; otherwise returns the chat unchanged.
+ */
+export const openHomeChat = async ( options?: Parameters<typeof customFetch>[1]): Promise<HomeChat> => {
+
+  return customFetch<HomeChat>(getOpenHomeChatUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getOpenHomeChatMutationKey = () => ['openHomeChat'] as const;
+
+export const getOpenHomeChatMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openHomeChat>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof openHomeChat>>, TError,void, TContext> => {
+
+const mutationKey = getOpenHomeChatMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof openHomeChat>>, void> = () => {
+
+
+          return  openHomeChat(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type OpenHomeChatMutationResult = NonNullable<Awaited<ReturnType<typeof openHomeChat>>>
+
+    export type OpenHomeChatMutationError = ErrorType<unknown>
+
+
+    /**
+ * @summary Called when the app opens. Starts a new session in the chat (a check-in greeting with chips) when the last activity is older than the session gap; otherwise returns the chat unchanged.
+ */
+export const useOpenHomeChat = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openHomeChat>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof openHomeChat>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getOpenHomeChatMutationOptions(options));
+    }
+
 export const getCheckInStudySessionUrl = (id: string,) => {
 
 

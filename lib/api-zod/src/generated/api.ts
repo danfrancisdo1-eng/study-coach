@@ -894,7 +894,8 @@ export const GetHomeChatResponse = zod.object({
   "kind": zod.enum(['practice', 'exam']).optional().describe('start_quiz: practice reveals feedback per answer; exam only after grading'),
   "count": zod.number().int().min(1).max(getHomeChatResponseMessagesItemActionsItemCountMax).optional().describe('start_quiz: questions in the set')
 })).optional(),
-  "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message')
+  "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message'),
+  "sessionStart": zod.boolean().optional().describe('True for the app-written greeting that opens a new study session (clients draw a divider above it)')
 })),
   "version": zod.number().int(),
   "activeQuiz": zod.union([zod.object({
@@ -942,7 +943,45 @@ export const SendHomeChatMessageResponse = zod.object({
   "kind": zod.enum(['practice', 'exam']).optional().describe('start_quiz: practice reveals feedback per answer; exam only after grading'),
   "count": zod.number().int().min(1).max(sendHomeChatMessageResponseMessagesItemActionsItemCountMax).optional().describe('start_quiz: questions in the set')
 })).optional(),
-  "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message')
+  "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message'),
+  "sessionStart": zod.boolean().optional().describe('True for the app-written greeting that opens a new study session (clients draw a divider above it)')
+})),
+  "version": zod.number().int(),
+  "activeQuiz": zod.union([zod.object({
+  "sessionId": zod.string().uuid(),
+  "courseId": zod.string(),
+  "topic": zod.string(),
+  "kind": zod.enum(['practice', 'exam']),
+  "answered": zod.number().int(),
+  "total": zod.number().int()
+}).describe('The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.'),zod.null()]).optional()
+})
+
+
+/**
+ * @summary Called when the app opens. Starts a new session in the chat (a check-in greeting with chips) when the last activity is older than the session gap; otherwise returns the chat unchanged.
+ */
+export const openHomeChatResponseMessagesItemActionsItemCountMax = 50;
+
+
+
+export const OpenHomeChatResponse = zod.object({
+  "messages": zod.array(zod.object({
+  "id": zod.string(),
+  "role": zod.enum(['user', 'assistant']),
+  "content": zod.string(),
+  "at": zod.coerce.date(),
+  "actions": zod.array(zod.object({
+  "type": zod.enum(['create_course', 'start_quiz', 'start_session']),
+  "courseId": zod.string(),
+  "name": zod.string().optional().describe('create_course: the new course\'s name'),
+  "sessionId": zod.string().uuid().optional().describe('start_quiz / start_session: the study session holding the set / conversation'),
+  "topic": zod.string().optional(),
+  "kind": zod.enum(['practice', 'exam']).optional().describe('start_quiz: practice reveals feedback per answer; exam only after grading'),
+  "count": zod.number().int().min(1).max(openHomeChatResponseMessagesItemActionsItemCountMax).optional().describe('start_quiz: questions in the set')
+})).optional(),
+  "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message'),
+  "sessionStart": zod.boolean().optional().describe('True for the app-written greeting that opens a new study session (clients draw a divider above it)')
 })),
   "version": zod.number().int(),
   "activeQuiz": zod.union([zod.object({
