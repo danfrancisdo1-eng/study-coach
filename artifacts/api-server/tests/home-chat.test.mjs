@@ -442,3 +442,53 @@ test('home chat: memory sheet fills itself from a graded set; a set from the she
   state = (await call('GET', '/study/state')).body.state;
   assert.equal(state.memorySheet.length, 3);
 });
+
+// Answer-key check (D-027): after the writer's reply, the checker's verdicts are applied
+// before the set is stored; a checker failure keeps the set as written.
+test('home chat: answer-key check fixes a wrong key and drops an unclear question', async (t) => {
+  buildServer();
+  const database = await startDatabase(t);
+  const coach = { reply: 'Set coming.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 4, kind: 'practice', scope: 'all' }] };
+  let check = { checks: [
+    { index: 0, consistent: false, correctIndex: 2 },
+    { index: 1, consistent: false, correctIndex: -1 },
+    { index: 2, consistent: true, correctIndex: 2 },
+    { index: 3, consistent: true, correctIndex: 3 },
+  ] };
+  const ai = await startAiStub(t, (request) => {
+    const system = request.body.messages[0].content;
+    if (system.startsWith('Create exactly')) { quizBatch += 1; return quizReply(4); }
+    if (system.startsWith('You check the answer key')) return check ? chatReply(JSON.stringify(check)) : { status: 500, body: { error: { message: 'stub' } } };
+    return chatReply(JSON.stringify(coach));
+  });
+  const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url });
+  await seedAccount(database.db, 'user_k', { aiConsent: true, courses: [{ id: 'bio', name: 'BIOL 114' }], materials: [] });
+  const call = async (method, path, body) => {
+    const res = await fetch(`${base}/api${path}`, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${signToken('user_k')}` }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const text = await res.text();
+    return { status: res.status, body: text ? JSON.parse(text) : null };
+  };
+
+  let chat = await call('POST', '/study/chat', { content: 'practice', version: 0 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  const started = chat.body.messages.at(-1).actions[0];
+  assert.equal(started.count, 3, 'the unclear question is dropped');
+  const checkRequest = ai.requests.filter((r) => r.body.messages[0].content.startsWith('You check the answer key')).at(-1).body;
+  const sent = JSON.parse(checkRequest.messages[1].content).questions;
+  assert.equal(sent.length, 4);
+  assert.deepEqual(sent[0].options, ['A0', 'B0', 'C0', 'D0']);
+  assert.equal(sent[0].answerIndex, 0);
+  let session = (await call('GET', `/study/sessions/${started.sessionId}`)).body;
+  assert.equal(session.quiz.invalidItemCount, 1);
+  assert.deepEqual(session.quiz.questions.map((q) => q.prompt), [`Set ${quizBatch} question 1?`, `Set ${quizBatch} question 3?`, `Set ${quizBatch} question 4?`]);
+  // Question 1's key was moved from A0 to C0 (what its explanation supports).
+  const q0 = session.quiz.questions[0];
+  session = (await call('PUT', `/study/sessions/${started.sessionId}/answers`, { questionId: q0.id, optionId: q0.options[2].id, assisted: false })).body;
+  assert.equal(session.quiz.questions[0].feedback.correctOptionText, 'C0');
+
+  // Checker failure: the set is stored as written.
+  check = null;
+  chat = await call('POST', '/study/chat', { content: 'another', version: 1 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  assert.equal(chat.body.messages.at(-1).actions[0].count, 4);
+});

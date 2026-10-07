@@ -35,6 +35,8 @@
 
 ### Next
 - **Automatic memory sheet (D-026):** rows are written after every graded set / finished deck with no chip; chips and chat card removed (coach.v10). 67/67 tests; coach evals 27/27; iOS bundle.
+- **Answer-key check (D-027):** session-quiz.v5 + `quiz_check` (Haiku) after every set; wrong keys fixed, unclear questions dropped. 70/70 tests; evals quiz_check 2/2, session_quiz 6/6.
+- Dan (answer keys): the two Copilot-style mismatches should no longer appear; if a question still contradicts its own explanation, send the screenshot.
 - Dan (memory sheet): finish a set → open the course → "MEMORY SHEET · N" shows rows for the misses without asking; say "Quiz me from my memory sheet" → a set built from the rows; "put <idea> on my memory sheet" adds a row.
 - Dan: reload → add a certification exam (e.g. "AWS Solutions Architect Associate") → row shows "looking up the exam guide…" then "4 sections"; tap it to see the guide; "quiz me" → chips are the sections with %.
 - Score trends + readiness call; multi-select topics; streaming; then aesthetics with Dan's ideas (hook color, palette).

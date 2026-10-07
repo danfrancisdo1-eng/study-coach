@@ -84,7 +84,12 @@ export const memorySheetSchema = object({
   rows: { type: "array", items: object({ term: string, trick: string, whenYouSee: string, think: string }) },
 });
 
+export const quizCheckSchema = object({
+  checks: { type: "array", items: object({ index: { type: "integer" }, consistent: { type: "boolean" }, correctIndex: { type: "integer" } }) },
+});
+
 export const TASK_SCHEMAS: Partial<Record<AiTask, JsonSchema>> = {
+  quiz_check: quizCheckSchema,
   coach: coachSchema,
   memory_sheet: memorySheetSchema,
   flashcards: flashcardsSchema,

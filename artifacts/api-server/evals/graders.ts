@@ -2,7 +2,8 @@
 // a Claude judge only for things code can't check (answer-key correctness, tutoring quality).
 import Anthropic from "@anthropic-ai/sdk";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
-import type { CoachCase, ExamGuideCase, FlashcardsCase, MemorySheetCase, Source, SyllabusCase, TutorCase } from "./fixtures";
+import type { CoachCase, ExamGuideCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase } from "./fixtures";
+import { parseQuizCheck } from "../src/lib/quiz-check";
 import { parseExamGuideReply } from "../src/lib/exam-guide-parse";
 import { parseCoachReply } from "../src/routes/chatActions";
 
@@ -266,6 +267,24 @@ export async function gradeFlashcards(testCase: FlashcardsCase, text: string | n
   }
   const score = (cards.length ? correct / cards.length : 0) * (meta.length ? 0.5 : 1);
   return { pass: notes.every((n) => n.includes("judged wrong")) && score >= 0.9, score, notes };
+}
+
+export function gradeQuizCheck(testCase: QuizCheckCase, text: string | null): Score {
+  let checks: Map<number, { consistent: boolean; correctIndex: number | null }>;
+  try {
+    checks = parseQuizCheck(parseJson(text), testCase.questions.length);
+  } catch (error) {
+    return { pass: false, score: 0, notes: [`invalid output: ${(error as Error).message.slice(0, 200)}`] };
+  }
+  const notes: string[] = [];
+  testCase.expected.forEach((e, i) => {
+    const got = checks.get(i);
+    if (!got) { notes.push(`q${i}: no verdict`); return; }
+    const want = e.correctIndex === -1 ? null : e.correctIndex;
+    if (got.consistent !== e.consistent || got.correctIndex !== want) notes.push(`q${i}: got ${JSON.stringify(got)}, wanted ${JSON.stringify({ consistent: e.consistent, correctIndex: want })}`);
+  });
+  const score = 1 - notes.length / testCase.expected.length;
+  return { pass: notes.length === 0, score: Math.max(0, score), notes };
 }
 
 export async function gradeMemorySheet(testCase: MemorySheetCase, text: string | null): Promise<Score> {
