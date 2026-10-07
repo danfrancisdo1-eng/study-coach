@@ -91,7 +91,12 @@ export default function HomeChat({ aiConsent, busy, courseId, onCoursesChanged, 
           <article className={`ae-turn ae-turn--${turn.role === 'user' ? 'student' : 'coach'}`} data-testid={`chat-turn-${turn.role}`}>
             <span className="ae-turn-badge">{turn.role === 'user' ? 'YOU' : 'AI'}</span>
             <div className="ae-turn-content">
-              <p>{turn.content}</p>
+              {turn.role === 'assistant'
+                ? turn.content.split(/\n+/).map(l => l.trim()).filter(Boolean).map((line, i) => {
+                  const numbered = /^(\d+)[.)]\s+(.*)$/.exec(line);
+                  return numbered ? <p key={i} className="sc-miss-hook sc-trick">⚡ {numbered[2]}</p> : <p key={i}>{line}</p>;
+                })
+                : <p>{turn.content}</p>}
               {turn.actions?.map(action => (
                 <p key={`${action.type}-${action.courseId}-${action.sessionId ?? ''}`} className="ae-muted" style={{ fontSize: '.85rem' }}>
                   {action.type === 'create_course' ? `Added course: ${action.name ?? ''}`

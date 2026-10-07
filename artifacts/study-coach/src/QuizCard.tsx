@@ -41,12 +41,12 @@ export default function QuizCard({ sessionId, onGraded, onError }: {
         <p>{quiz.grade.percent}% on the questions you answered{quiz.grade.unanswered ? ` · ${quiz.grade.unanswered} skipped` : ''}.</p>
         <h3 className="ae-heading" style={{ fontSize: '1.05rem' }}>{misses.length ? 'What you missed' : 'Nothing missed. Nice.'}</h3>
         {misses.map((q, i) => (
-          <div key={q.id} data-testid={`quiz-miss-${i}`} style={{ borderTop: '1px solid var(--ae-line)', paddingTop: 8, marginTop: 8 }}>
-            <p>{q.prompt}</p>
-            <p style={{ color: 'var(--destructive, #b33b2d)' }}>You chose: {q.feedback!.selectedOptionText}</p>
-            <p><strong>Correct: {q.feedback!.correctOptionText}</strong></p>
-            <p className="ae-muted">{q.feedback!.explanation}</p>
-            {q.feedback!.hook && <p style={{ fontWeight: 600 }}>⚡ {q.feedback!.hook}</p>}
+          <div key={q.id} data-testid={`quiz-miss-${i}`} className="sc-miss">
+            <p className="sc-miss-prompt">{q.prompt}</p>
+            <p className="sc-miss-wrong">You chose: {q.feedback!.selectedOptionText}</p>
+            <p className="sc-miss-right">Correct: {q.feedback!.correctOptionText}</p>
+            <p className="sc-miss-explain">{q.feedback!.explanation}</p>
+            {q.feedback!.hook && <p className="sc-miss-hook">⚡ {q.feedback!.hook}</p>}
           </div>
         ))}
       </div>
@@ -59,12 +59,14 @@ export default function QuizCard({ sessionId, onGraded, onError }: {
     return (
       <div className="ae-card ae-card--compact" data-testid="panel-quiz-feedback" ref={topRef}>
         <span className="ae-kicker">{kindLabel} · QUESTION {questions.indexOf(reviewing) + 1} OF {questions.length}</span>
-        <p>{reviewing.prompt}</p>
-        <p><strong>{correct ? 'Correct' : 'Not quite'}</strong></p>
-        {!correct && <p style={{ color: 'var(--destructive, #b33b2d)' }}>You chose: {reviewing.feedback.selectedOptionText}</p>}
-        <p><strong>Correct: {reviewing.feedback.correctOptionText}</strong></p>
-        <p className="ae-muted">{reviewing.feedback.explanation}</p>
-        {!correct && reviewing.feedback.hook && <p style={{ fontWeight: 600 }}>⚡ {reviewing.feedback.hook}</p>}
+        <div className="sc-miss">
+          <p className="sc-miss-prompt">{reviewing.prompt}</p>
+          <p className={correct ? 'sc-miss-right' : 'sc-miss-wrong'}><strong>{correct ? 'Correct' : 'Not quite'}</strong></p>
+          {!correct && <p className="sc-miss-wrong">You chose: {reviewing.feedback.selectedOptionText}</p>}
+          <p className="sc-miss-right">Correct: {reviewing.feedback.correctOptionText}</p>
+          <p className="sc-miss-explain">{reviewing.feedback.explanation}</p>
+          {!correct && reviewing.feedback.hook && <p className="sc-miss-hook">⚡ {reviewing.feedback.hook}</p>}
+        </div>
         <button type="button" className="ae-button ae-button--ink" onClick={() => setReviewingId(null)} data-testid="button-quiz-next">{answered.length >= questions.length ? 'See the score' : 'Next question'}</button>
       </div>
     );

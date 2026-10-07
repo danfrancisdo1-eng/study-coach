@@ -62,11 +62,11 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
         {misses.length ? <Text style={styles.cardTitle}>What you missed</Text> : <Text style={styles.cardTitle}>Nothing missed. Nice.</Text>}
         {misses.map((q, i) => (
           <View key={q.id} style={styles.miss} testID={`quiz-miss-${i}`}>
-            <Text style={styles.body}>{q.prompt}</Text>
+            <Text style={styles.missPrompt}>{q.prompt}</Text>
             <Text style={styles.wrong}>You chose: {q.feedback!.selectedOptionText}</Text>
             <Text style={styles.right}>Correct: {q.feedback!.correctOptionText}</Text>
-            <Text style={styles.muted}>{q.feedback!.explanation}</Text>
-            {q.feedback!.hook ? <View style={styles.hook}><Feather name="zap" size={14} color={colors.foreground} /><Text style={styles.hookText}>{q.feedback!.hook}</Text></View> : null}
+            <Text style={styles.missExplain}>{q.feedback!.explanation}</Text>
+            {q.feedback!.hook ? <View style={styles.hook}><Feather name="zap" size={14} color={DARK.hookText} /><Text style={styles.hookText}>{q.feedback!.hook}</Text></View> : null}
           </View>
         ))}
       </View>
@@ -79,15 +79,17 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
     return (
       <View style={styles.card} testID="panel-quiz-feedback">
         <Text style={styles.kicker}>{kindLabel.toUpperCase()} · QUESTION {questions.indexOf(reviewing) + 1} OF {questions.length}</Text>
-        <Text style={styles.body}>{reviewing.prompt}</Text>
-        <View style={[styles.verdict, { backgroundColor: correct ? colors.accent : colors.secondary }]}>
-          <Feather name={correct ? 'check-circle' : 'x-circle'} size={18} color={colors.foreground} />
-          <Text style={styles.cardTitle}>{correct ? 'Correct' : 'Not quite'}</Text>
+        <View style={styles.miss}>
+          <Text style={styles.missPrompt}>{reviewing.prompt}</Text>
+          <View style={styles.verdict}>
+            <Feather name={correct ? 'check-circle' : 'x-circle'} size={18} color={correct ? DARK.right : DARK.wrong} />
+            <Text style={[styles.verdictText, { color: correct ? DARK.right : DARK.wrong }]}>{correct ? 'Correct' : 'Not quite'}</Text>
+          </View>
+          {!correct ? <Text style={styles.wrong}>You chose: {reviewing.feedback.selectedOptionText}</Text> : null}
+          <Text style={styles.right}>Correct: {reviewing.feedback.correctOptionText}</Text>
+          <Text style={styles.missExplain}>{reviewing.feedback.explanation}</Text>
+          {!correct && reviewing.feedback.hook ? <View style={styles.hook}><Feather name="zap" size={14} color={DARK.hookText} /><Text style={styles.hookText}>{reviewing.feedback.hook}</Text></View> : null}
         </View>
-        {!correct ? <Text style={styles.wrong}>You chose: {reviewing.feedback.selectedOptionText}</Text> : null}
-        <Text style={styles.right}>Correct: {reviewing.feedback.correctOptionText}</Text>
-        <Text style={styles.muted}>{reviewing.feedback.explanation}</Text>
-        {!correct && reviewing.feedback.hook ? <View style={styles.hook}><Feather name="zap" size={14} color={colors.foreground} /><Text style={styles.hookText}>{reviewing.feedback.hook}</Text></View> : null}
         {progress}
         <Pressable accessibilityRole="button" onPress={() => setReviewingId(null)} style={styles.primaryButton} testID="button-quiz-next">
           <Text style={styles.primaryText}>{answered.length >= questions.length ? 'See the score' : 'Next question'}</Text>
@@ -141,6 +143,11 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   );
 }
 
+// Review bubbles are dark on purpose (Dan, 2026-10-06): black background, white text,
+// red for the student's wrong answer, green for the correct one. Fixed palette for now;
+// becomes theme tokens in the aesthetics pass.
+const DARK = { bg: '#101418', text: '#eef2f6', muted: '#aab6c3', wrong: '#ff6b61', right: '#4cd964', hookBg: '#1f2f4f', hookText: '#b9d0ff' };
+
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 16, gap: 10 },
   kicker: { color: colors.primary, fontSize: 10, letterSpacing: 1.3, fontWeight: '800' },
@@ -151,16 +158,19 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   progressTrack: { height: 5, borderRadius: 3, backgroundColor: colors.secondary, overflow: 'hidden' },
   progressFill: { height: 5, backgroundColor: colors.primary },
   progressText: { color: colors.mutedForeground, fontSize: 11 },
-  hook: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 10, borderRadius: 10, backgroundColor: colors.secondary },
-  hookText: { flex: 1, color: colors.foreground, fontSize: 13, lineHeight: 19, fontWeight: '600' },
+  hook: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 10, borderRadius: 10, backgroundColor: DARK.hookBg },
+  hookText: { flex: 1, color: DARK.hookText, fontSize: 13, lineHeight: 19, fontWeight: '600' },
   cardTitle: { color: colors.foreground, fontSize: 17, lineHeight: 23, fontWeight: '700' },
   option: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 13, backgroundColor: colors.background, paddingHorizontal: 13, paddingVertical: 10 },
   optionLetter: { width: 26, height: 26, borderRadius: 13, textAlign: 'center', lineHeight: 26, overflow: 'hidden', backgroundColor: colors.secondary, color: colors.foreground, fontWeight: '700', fontSize: 13 },
   optionText: { flex: 1, color: colors.foreground, fontSize: 14.5, lineHeight: 21 },
-  verdict: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 12 },
-  wrong: { color: colors.destructive, fontSize: 14, lineHeight: 20 },
-  right: { color: colors.foreground, fontSize: 14, lineHeight: 20, fontWeight: '700' },
-  miss: { gap: 4, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 },
+  verdict: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  verdictText: { fontSize: 16, fontWeight: '700' },
+  wrong: { color: DARK.wrong, fontSize: 15, lineHeight: 21, fontWeight: '600' },
+  right: { color: DARK.right, fontSize: 15, lineHeight: 21, fontWeight: '700' },
+  miss: { gap: 8, padding: 14, borderRadius: 16, backgroundColor: DARK.bg },
+  missPrompt: { color: DARK.text, fontSize: 16, lineHeight: 23, fontWeight: '600' },
+  missExplain: { color: DARK.muted, fontSize: 14, lineHeight: 20 },
   score: { color: colors.primary, fontSize: 40, fontWeight: '700', letterSpacing: -1 },
   primaryButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: colors.primary, paddingHorizontal: 16 },
   primaryText: { color: colors.primaryForeground, fontSize: 16, fontWeight: '700' },

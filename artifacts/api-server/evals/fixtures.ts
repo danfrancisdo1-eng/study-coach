@@ -292,11 +292,11 @@ export const coachCases: CoachCase[] = [
     maxWords: 80,
   },
   {
-    name: "request outside the coach's powers: points to the Courses tab, no actions",
+    name: "request outside the coach's powers: points to the course on the home screen, no actions",
     courses: [{ id: "bio-1", name: "BIOL 114", materials: 3, lectures: 1 }], firstVisit: false, history: [],
     message: "delete my bio course",
     expectedActions: [],
-    expectations: ["Does not claim to have deleted anything", "Says deleting is done from the Courses tab"],
+    expectations: ["Does not claim to have deleted anything", "Says to tap the course on the home screen to delete it (never mentions a Courses tab)"],
     maxWords: 50,
   },
   // coach.v6: certification exams and the home-screen focus course.
