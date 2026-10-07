@@ -496,24 +496,23 @@ export const coachCases: CoachCase[] = [
       { concept: "Membrane structure", prompt: "What makes the bilayer selectively permeable?", chose: "cholesterol only", correct: "the hydrophobic core plus transport proteins", explanation: "Nonpolar molecules pass; polar/charged ones need proteins." },
     ] } },
     message: "I finished the set.",
-    expectedActions: [], expectedSuggestions: ["Memory tricks for the misses", "Flashcards for the misses", "Add the misses to my memory sheet", "Another set on everything", "Another set on the missed topics"],
-    expectations: ["One line about the result (7 of 10), no repeat of the corrections", "Offers the five choices as suggestions"],
+    expectedActions: [], expectedSuggestions: ["Memory tricks for the misses", "Flashcards for the misses", "Another set on everything", "Another set on the missed topics"],
+    expectations: ["One line about the result (7 of 10), no repeat of the corrections", "Offers the four choices as suggestions"],
     maxWords: 40,
   },
   // coach.v9 (D-025): the memory sheet.
   {
-    name: "add the misses to my memory sheet: one action, one line",
-    courses: [{ id: "bio-1", name: "BIOL 114", materials: 3, lectures: 1 }], firstVisit: false, history: [
+    name: "after a graded set the student asks to save the misses: nothing to do, the sheet is automatic",
+    courses: [{ id: "bio-1", name: "BIOL 114", materials: 3, lectures: 1, memoryRows: 5 }], firstVisit: false, history: [
       { role: "user", content: "I finished the set." }, { role: "assistant", content: "7 of 10. What next?" },
     ],
     quiz: { courseName: "BIOL 114", topic: "cell membranes", kind: "practice", answered: 10, total: 10, graded: { correct: 7, percent: 70, missed: [
       { concept: "Osmosis", prompt: "In a hypotonic solution an animal cell will...", chose: "shrink", correct: "swell and may burst", explanation: "Water moves into the cell because solute concentration is higher inside." },
-      { concept: "Active transport", prompt: "Which process requires ATP?", chose: "facilitated diffusion", correct: "sodium-potassium pump", explanation: "Moving ions against their gradient needs energy." },
     ] } },
-    message: "Add the misses to my memory sheet",
-    expectedActions: [{ type: "update_memory_sheet", name: "BIOL 114", scope: "missed" }], expectedSuggestions: ["Quiz me from my memory sheet", "Another set on everything"],
-    expectations: ["One short line saying the misses are being added to the sheet; does not write out the tricks or rows itself (the app shows them)"],
-    maxWords: 30,
+    message: "save what I missed to my memory sheet",
+    expectedActions: [],
+    expectations: ["Says the misses are already saved to the sheet automatically (no action needed), in one short line"],
+    maxWords: 40,
   },
   {
     name: "add a named idea to the memory sheet",
@@ -526,7 +525,7 @@ export const coachCases: CoachCase[] = [
   {
     name: "quiz me from my memory sheet: a set on the sheet in the latest kind",
     courses: [{ id: "bio-1", name: "BIOL 114", materials: 3, lectures: 1, memoryRows: 9 }], firstVisit: false, history: [
-      { role: "user", content: "Add the misses to my memory sheet" }, { role: "assistant", content: "Added 2 rows to your BIOL 114 memory sheet." },
+      { role: "user", content: "I finished the set." }, { role: "assistant", content: "8 of 10. What next?" },
     ],
     quiz: { courseName: "BIOL 114", topic: "cell membranes", kind: "practice", answered: 10, total: 10, graded: { correct: 8, percent: 80, missed: [
       { concept: "Osmosis", prompt: "In a hypotonic solution an animal cell will...", chose: "shrink", correct: "swell and may burst", explanation: "Water moves into the cell because solute concentration is higher inside." },

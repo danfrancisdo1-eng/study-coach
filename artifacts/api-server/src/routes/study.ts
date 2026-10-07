@@ -23,6 +23,7 @@ import * as imageOcrPrompt from "../prompts/image-ocr.v1";
 import * as tutorPrompt from "../prompts/tutor.v3";
 import { readPublicPage } from "../lib/public-page";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
+import { rememberMisses } from "../lib/memory-sheet";
 import {
   generateSessionQuiz, jsonObject, safeSession, sourceChunks, sourceTextOf,
   type JsonObject, type Quiz, type Session, type SourceStatus, type StoredQuestion, type StoredQuestionFlag, type StudyQuestionFlagKind,
@@ -1189,6 +1190,7 @@ router.post("/study/sessions/:id/flashcards/:cardId/review", async (req, res): P
     return;
   }
   res.json(safeSession(session));
+  if (finished) rememberMisses(owner(req), session, req.log);
 });
 
 router.put("/study/sessions/:id/questions/:questionId/flag", async (req, res): Promise<void> => {
@@ -1360,6 +1362,7 @@ router.post("/study/sessions/:id/grade", async (req, res): Promise<void> => {
     return;
   }
   res.json(safeSession(session));
+  rememberMisses(owner(req), session, req.log);
 });
 
 export default router;

@@ -10,10 +10,10 @@ import { and, eq } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v9";
+import * as coachPrompt from "../prompts/coach.v10";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { generateFlashcards, generateSessionQuiz, sourceChunks, sourceTextOf, type Quiz, type Session } from "../lib/session-quiz";
-import { generateMemoryRows, rowsFromState, sheetAsText, type MemoryItem, type MemoryRow } from "../lib/memory-sheet";
+import { itemsFromSession, rowsFromState, sheetAsText, updateMemorySheet, type MemoryItem } from "../lib/memory-sheet";
 import { parseCoachReply, planActions, type DeckPlan, type KnownCourse, type QuizPlan, type SheetPlan } from "./chatActions";
 import { requireStudyAuth } from "./study";
 
@@ -296,40 +296,11 @@ async function startDeck(ownerId: string, state: JsonObject, plan: DeckPlan & { 
   return session;
 }
 
-/** Items for the memory sheet: misses of the latest graded set, again-cards of the latest deck, and anything the student named. */
+/** Items for an explicit memory-sheet request: the latest set's misses / deck's again-cards (scope "missed") and anything the student named. */
 function memoryItems(plan: SheetPlan, quizSession: Session | null, deckSession: Session | null): MemoryItem[] {
-  const items: MemoryItem[] = [];
-  if (plan.scope === "missed") {
-    const quiz = quizSession?.quiz;
-    if (quiz?.grade) for (const q of quiz.questions) {
-      if (!q.answers.length || q.answers.at(-1)?.optionId === q.correctOptionId) continue;
-      items.push({ kind: "missed_question", concept: q.concept, prompt: q.prompt, correct: q.options.find((o) => o.id === q.correctOptionId)?.text ?? "", explanation: q.explanation, ...(q.hook ? { hook: q.hook } : {}) });
-    }
-    const deck = deckSession?.flashcards;
-    if (deck?.completedAt) for (const c of deck.cards) if (c.results.includes("again")) items.push({ kind: "flashcard_again", concept: c.concept, front: c.front, back: c.back });
-  }
+  const items: MemoryItem[] = plan.scope === "missed" ? [...itemsFromSession(quizSession), ...itemsFromSession(deckSession)] : [];
   for (const text of plan.requests) items.push({ kind: "student_request", text });
   return items;
-}
-
-/** Writes new rows to state.memorySheet, retrying if the state changed meanwhile. Returns the rows added, or null when the state could not be updated. */
-async function updateMemorySheet(ownerId: string, courseId: string, courseName: string, items: MemoryItem[]): Promise<MemoryRow[] | null> {
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const rows = await db.select({ state: studyStatesTable.state, version: studyStatesTable.version })
-      .from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
-    const row = rows[0];
-    if (!row || !isObject(row.state)) return null;
-    const existing = rowsFromState(row.state, courseId);
-    const { added } = await generateMemoryRows(courseName, existing, items, courseId, randomUUID);
-    if (!added.length) return [];
-    const nextState: JsonObject = { ...row.state, memorySheet: [...list(row.state.memorySheet), ...added] };
-    const updated = await db.update(studyStatesTable)
-      .set({ state: nextState, version: row.version + 1, updatedAt: new Date() })
-      .where(and(eq(studyStatesTable.ownerId, ownerId), eq(studyStatesTable.version, row.version)))
-      .returning({ version: studyStatesTable.version });
-    if (updated[0]) return added;
-  }
-  return null;
 }
 
 router.post("/study/chat", async (req, res): Promise<void> => {
@@ -414,7 +385,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     if (courseId && items.length) {
       try {
         const courseName = [...courses, ...created].find((c) => c.id === courseId)?.name ?? courseId;
-        const added = await updateMemorySheet(ownerId, courseId, courseName, items);
+        const added = await updateMemorySheet(ownerId, courseId, items, courseName);
         if (added === null) {
           res.status(409).json({ error: "Your study data changed on another device. Reload and send again.", version });
           return;
