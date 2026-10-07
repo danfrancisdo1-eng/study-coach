@@ -74,7 +74,7 @@ export type AccountExperienceProps = {
   busy?: boolean;
   error?: string | null;
   onSelectCourse: (courseId: string) => void;
-  onCreateCourse: (name: string) => void;
+  onCreateCourse: (name: string, kind: 'course' | 'exam', examDate?: string) => void;
   onRenameCourse: (courseId: string, name: string) => void;
   /** Saved materials per course id, shown while a course is being edited. */
   savedMaterialsByCourse?: Record<string, { id: string; name: string }[]>;
@@ -118,6 +118,8 @@ export function AccountExperience(props: AccountExperienceProps) {
     onShareReport, onDismissReport, onRetry,
   } = props;
   const [newCourse, setNewCourse] = useState('');
+  const [newKind, setNewKind] = useState<'course' | 'exam'>('course');
+  const [newExamDate, setNewExamDate] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [draft, setDraft] = useState('');
@@ -140,8 +142,8 @@ export function AccountExperience(props: AccountExperienceProps) {
     event.preventDefault();
     const name = newCourse.trim();
     if (!name || busy) return;
-    onCreateCourse(name);
-    setNewCourse('');
+    onCreateCourse(name, newKind, newKind === 'exam' && newExamDate ? newExamDate : undefined);
+    setNewCourse(''); setNewExamDate(''); setNewKind('course');
   }
   function saveCourse(event: FormEvent<HTMLFormElement>, id: string) {
     event.preventDefault();
@@ -223,10 +225,19 @@ export function AccountExperience(props: AccountExperienceProps) {
               </div>)}
             </div> : <p className="ae-muted" data-testid="text-no-courses">No courses yet. Add the class you want to study first.</p>}
             {!sessionStarted && <form className="ae-row" onSubmit={createCourse}>
-              <label className="ae-field" style={{ flex: 1, minWidth: 180 }}>Add a course
-                <input className="ae-input" value={newCourse} onChange={event => setNewCourse(event.target.value)} placeholder="Course name" maxLength={120} required data-testid="input-new-course" />
+              <label className="ae-field" style={{ minWidth: 150 }}>Type
+                <select className="ae-input" value={newKind} onChange={event => setNewKind(event.target.value as 'course' | 'exam')} data-testid="select-new-kind">
+                  <option value="course">College course</option>
+                  <option value="exam">Certification exam</option>
+                </select>
               </label>
-              <button type="submit" className="ae-button ae-button--outline" disabled={busy || !newCourse.trim()} data-testid="button-add-course"><Plus size={16} /> Add course</button>
+              <label className="ae-field" style={{ flex: 1, minWidth: 180 }}>{newKind === 'exam' ? 'Add an exam' : 'Add a course'}
+                <input className="ae-input" value={newCourse} onChange={event => setNewCourse(event.target.value)} placeholder={newKind === 'exam' ? 'e.g. AWS Solutions Architect Associate' : 'Course name'} maxLength={120} required data-testid="input-new-course" />
+              </label>
+              {newKind === 'exam' && <label className="ae-field" style={{ minWidth: 150 }}>Exam date
+                <input className="ae-input" type="date" value={newExamDate} onChange={event => setNewExamDate(event.target.value)} data-testid="input-new-exam-date" />
+              </label>}
+              <button type="submit" className="ae-button ae-button--outline" disabled={busy || !newCourse.trim()} data-testid="button-add-course"><Plus size={16} /> {newKind === 'exam' ? 'Add exam' : 'Add course'}</button>
             </form>}
           </div>
 

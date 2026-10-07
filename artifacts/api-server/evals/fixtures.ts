@@ -228,12 +228,14 @@ export const ocrCaseNames = ["respiration-notes", "syllabus-excerpt", "vocab-lis
 /** Chat-first home coach (prompts/coach.v1, SPEC §7). */
 export interface CoachCase {
   name: string;
-  courses: { id: string; name: string; materials: number; lectures: number; materialNames?: string[]; scopeExcerpt?: string }[];
+  courses: { id: string; name: string; kind?: "course" | "exam"; examDate?: string; materials: number; lectures: number; materialNames?: string[]; scopeExcerpt?: string }[];
   firstVisit: boolean;
+  /** The course/exam selected on the home screen. */
+  focusCourseId?: string;
   history: { role: "user" | "assistant"; content: string }[];
   message: string;
   /** Exact action list the coach must return (type + name; topic checked loosely; kind/scope when given). */
-  expectedActions: { type: "create_course" | "start_quiz" | "start_flashcards" | "start_session"; name: string; kind?: "practice" | "exam"; scope?: "all" | "missed" }[];
+  expectedActions: { type: "create_course" | "start_quiz" | "start_flashcards" | "start_session"; name: string; kind?: "practice" | "exam"; scope?: "all" | "missed"; courseKind?: "course" | "exam"; examDate?: string }[];
   /** Suggestion chips that must appear (case-insensitive, in any order), if any. */
   expectedSuggestions?: string[];
   /** The latest question set from this chat, as routes/chat.ts would describe it. */
@@ -296,6 +298,24 @@ export const coachCases: CoachCase[] = [
     expectedActions: [],
     expectations: ["Does not claim to have deleted anything", "Says deleting is done from the Courses tab"],
     maxWords: 50,
+  },
+  // coach.v6: certification exams and the home-screen focus course.
+  {
+    name: "names a certification exam with a date: creates it as an exam",
+    courses: [], firstVisit: false, history: [{ role: "assistant", content: "Hey! What class are we working on?" }],
+    message: "I'm studying for the AWS Solutions Architect Associate exam, it's on 2026-11-14",
+    expectedActions: [{ type: "create_course", name: "AWS Solutions Architect", courseKind: "exam", examDate: "2026-11-14" }],
+    expectations: ["Confirms the exam was added (with the date)", "Asks whether to add material (exam guide, notes) or start with a quick set of questions"],
+    maxWords: 70,
+  },
+  {
+    name: "focus course selected: 'quiz me' goes straight to the topic step for that course",
+    courses: [{ id: "bio-1", name: "Bio 101", materials: 1, lectures: 0 }, { id: "aws", name: "AWS Solutions Architect", kind: "exam", examDate: "2026-11-14", materials: 0, lectures: 0 }], firstVisit: false, history: [],
+    focusCourseId: "aws",
+    message: "quiz me",
+    expectedActions: [], expectedSuggestions: ["All topics"],
+    expectations: ["Does not ask which course; it assumes the AWS exam", "Proposes 3-5 AWS Solutions Architect exam sections as topics"],
+    maxWords: 70,
   },
   // coach.v5: flashcards.
   {

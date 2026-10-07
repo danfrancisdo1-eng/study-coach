@@ -397,6 +397,11 @@ export interface HomeChatInput {
      * @minimum 0
      */
   version: number;
+  /**
+     * The course or exam the student is focused on in the app (home screen selector); the coach assumes it when a message does not name one.
+     * @maxLength 200
+     */
+  courseId?: string;
 }
 
 export type HomeChatActionType = typeof HomeChatActionType[keyof typeof HomeChatActionType];
@@ -407,6 +412,17 @@ export const HomeChatActionType = {
   start_quiz: 'start_quiz',
   start_flashcards: 'start_flashcards',
   start_session: 'start_session',
+} as const;
+
+/**
+ * create_course: a college course or a certification exam
+ */
+export type HomeChatActionCourseKind = typeof HomeChatActionCourseKind[keyof typeof HomeChatActionCourseKind];
+
+
+export const HomeChatActionCourseKind = {
+  course: 'course',
+  exam: 'exam',
 } as const;
 
 /**
@@ -425,6 +441,10 @@ export interface HomeChatAction {
   courseId: string;
   /** create_course: the new course's name */
   name?: string;
+  /** create_course: a college course or a certification exam */
+  courseKind?: HomeChatActionCourseKind;
+  /** create_course (exam): YYYY-MM-DD when the student gave a date */
+  examDate?: string;
   /** start_quiz / start_session: the study session holding the set / conversation */
   sessionId?: string;
   topic?: string;

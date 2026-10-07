@@ -21,12 +21,7 @@ function NativeTabLayout() {
         />
         <NativeTabs.Trigger.Label>Coach</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="courses">
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'books.vertical', selected: 'books.vertical.fill' }}
-        />
-        <NativeTabs.Trigger.Label>Courses</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="courses" hidden />
     </NativeTabs>
   );
 }
@@ -81,18 +76,7 @@ function ClassicTabLayout() {
             ),
         }}
       />
-      <Tabs.Screen
-        name="courses"
-        options={{
-          title: 'Courses',
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="books.vertical" tintColor={color} size={24} />
-            ) : (
-              <Feather name="book" size={22} color={color} />
-            ),
-        }}
-      />
+      <Tabs.Screen name="courses" options={{ href: null }} />
     </Tabs>
   );
 }

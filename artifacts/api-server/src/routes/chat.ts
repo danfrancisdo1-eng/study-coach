@@ -10,7 +10,7 @@ import { and, eq } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v5";
+import * as coachPrompt from "../prompts/coach.v6";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { generateFlashcards, generateSessionQuiz, sourceChunks, sourceTextOf, type Quiz, type Session } from "../lib/session-quiz";
 import { parseCoachReply, planActions, type DeckPlan, type KnownCourse, type QuizPlan } from "./chatActions";
@@ -41,7 +41,7 @@ function owner(req: Request): string {
 function knownCourses(state: JsonObject): KnownCourse[] {
   return list(state.courses).flatMap((course) => {
     if (!isObject(course) || typeof course.id !== "string" || typeof course.name !== "string") return [];
-    return [{ id: course.id, name: course.name, ...(typeof course.code === "string" ? { code: course.code } : {}) }];
+    return [{ id: course.id, name: course.name, ...(typeof course.code === "string" ? { code: course.code } : {}), kind: course.kind === "exam" ? "exam" as const : "course" as const, ...(typeof course.examDate === "string" ? { examDate: course.examDate } : {}) }];
   });
 }
 
@@ -193,14 +193,14 @@ router.get("/study/chat", async (req, res): Promise<void> => {
 
 // Adds courses to the account's study state, retrying if the state changed meanwhile.
 // Returns the created courses (id + name), or null if the state could not be updated.
-async function createCourses(ownerId: string, names: string[]): Promise<{ id: string; name: string }[] | null> {
-  if (!names.length) return [];
+async function createCourses(ownerId: string, specs: { name: string; kind: "course" | "exam"; examDate?: string }[]): Promise<{ id: string; name: string }[] | null> {
+  if (!specs.length) return [];
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const rows = await db.select({ state: studyStatesTable.state, version: studyStatesTable.version })
       .from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
     const row = rows[0];
     if (!row || !isObject(row.state)) return null;
-    const created = names.map((name) => ({ id: randomUUID(), name }));
+    const created = specs.map((spec) => ({ id: randomUUID(), name: spec.name, kind: spec.kind, ...(spec.examDate ? { examDate: spec.examDate } : {}) }));
     const nextState: JsonObject = { ...row.state, courses: [...list(row.state.courses), ...created] };
     const updated = await db.update(studyStatesTable)
       .set({ state: nextState, version: row.version + 1, updatedAt: new Date() })
@@ -301,6 +301,8 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     return {
       id: course.id,
       name: course.code ? `${course.name} (${course.code})` : course.name,
+      kind: course.kind ?? "course",
+      ...(course.examDate ? { examDate: course.examDate } : {}),
       materials: own.length,
       lectures: lectureRows.filter((l) => l.courseId === course.id).length,
       ...(materialNames.length ? { materialNames } : {}),
@@ -317,7 +319,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   let coach;
   try {
     const response = await complete("coach", {
-      system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: summary, firstVisit: messages.length === 0, quiz, deck }),
+      system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null }),
       messages: [...history, { role: "user", content }],
     });
     coach = parseCoachReply(response.text);

@@ -915,6 +915,8 @@ export const GetHomeChatResponse = zod.object({
   "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'start_session']),
   "courseId": zod.string(),
   "name": zod.string().optional().describe('create_course: the new course\'s name'),
+  "courseKind": zod.enum(['course', 'exam']).optional().describe('create_course: a college course or a certification exam'),
+  "examDate": zod.string().optional().describe('create_course (exam): YYYY-MM-DD when the student gave a date'),
   "sessionId": zod.string().uuid().optional().describe('start_quiz / start_session: the study session holding the set / conversation'),
   "topic": zod.string().optional(),
   "kind": zod.enum(['practice', 'exam']).optional().describe('start_quiz: practice reveals feedback per answer; exam only after grading'),
@@ -950,11 +952,14 @@ export const sendHomeChatMessageBodyContentMax = 8000;
 
 export const sendHomeChatMessageBodyVersionMin = 0;
 
+export const sendHomeChatMessageBodyCourseIdMax = 200;
+
 
 
 export const SendHomeChatMessageBody = zod.object({
   "content": zod.string().min(1).max(sendHomeChatMessageBodyContentMax),
-  "version": zod.number().int().min(sendHomeChatMessageBodyVersionMin).describe('Conversation version from the last GET/POST; 0 for a new conversation.')
+  "version": zod.number().int().min(sendHomeChatMessageBodyVersionMin).describe('Conversation version from the last GET/POST; 0 for a new conversation.'),
+  "courseId": zod.string().max(sendHomeChatMessageBodyCourseIdMax).optional().describe('The course or exam the student is focused on in the app (home screen selector); the coach assumes it when a message does not name one.')
 })
 
 export const sendHomeChatMessageResponseMessagesItemActionsItemCountMax = 50;
@@ -971,6 +976,8 @@ export const SendHomeChatMessageResponse = zod.object({
   "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'start_session']),
   "courseId": zod.string(),
   "name": zod.string().optional().describe('create_course: the new course\'s name'),
+  "courseKind": zod.enum(['course', 'exam']).optional().describe('create_course: a college course or a certification exam'),
+  "examDate": zod.string().optional().describe('create_course (exam): YYYY-MM-DD when the student gave a date'),
   "sessionId": zod.string().uuid().optional().describe('start_quiz / start_session: the study session holding the set / conversation'),
   "topic": zod.string().optional(),
   "kind": zod.enum(['practice', 'exam']).optional().describe('start_quiz: practice reveals feedback per answer; exam only after grading'),
@@ -1015,6 +1022,8 @@ export const OpenHomeChatResponse = zod.object({
   "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'start_session']),
   "courseId": zod.string(),
   "name": zod.string().optional().describe('create_course: the new course\'s name'),
+  "courseKind": zod.enum(['course', 'exam']).optional().describe('create_course: a college course or a certification exam'),
+  "examDate": zod.string().optional().describe('create_course (exam): YYYY-MM-DD when the student gave a date'),
   "sessionId": zod.string().uuid().optional().describe('start_quiz / start_session: the study session holding the set / conversation'),
   "topic": zod.string().optional(),
   "kind": zod.enum(['practice', 'exam']).optional().describe('start_quiz: practice reveals feedback per answer; exam only after grading'),

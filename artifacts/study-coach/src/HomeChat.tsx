@@ -11,9 +11,11 @@ const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
  * Chat-first home (SPEC §7, D-016), web version of the iPhone Coach tab. The coach can
  * create a course or start a study session; the parent opens the session.
  */
-export default function HomeChat({ aiConsent, busy, onCoursesChanged, onOpenSession }: {
+export default function HomeChat({ aiConsent, busy, courseId, onCoursesChanged, onOpenSession }: {
   aiConsent: boolean;
   busy?: boolean;
+  /** The course/exam selected on the page; the coach assumes it when a message does not name one. */
+  courseId?: string | null;
   onCoursesChanged: () => void;
   onOpenSession: (sessionId: string) => void;
 }) {
@@ -54,7 +56,7 @@ export default function HomeChat({ aiConsent, busy, onCoursesChanged, onOpenSess
     if (!content || sending || busy || !aiConsent) return;
     setError('');
     try {
-      const result: HomeChatData = await send.mutateAsync({ data: { content, version } });
+      const result: HomeChatData = await send.mutateAsync({ data: { content, version, ...(courseId ? { courseId } : {}) } });
       client.setQueryData(getGetHomeChatQueryKey(), result);
       if (result.activeQuiz) { setGradedSessionId(null); setFinishedDeckId(null); }
       if (result.activeDeck) { setFinishedDeckId(null); setGradedSessionId(null); }

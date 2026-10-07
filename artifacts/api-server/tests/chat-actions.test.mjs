@@ -24,7 +24,7 @@ test('create_course: new names are created, existing ones (any case/spacing) res
     { type: 'create_course', name: 'biol 114', topic: '' },
     { type: 'create_course', name: 'phil 151', topic: '' },
   ]);
-  assert.deepEqual(plan.creates, ['Intro Chem']);
+  assert.deepEqual(plan.creates, [{ name: 'Intro Chem', kind: 'course' }]);
   assert.deepEqual(plan.notes, ['BIOL 114 already exists', 'Philosophy of Leadership already exists']);
 });
 
@@ -35,7 +35,17 @@ test('create_course: blank, overlong and duplicate-in-one-reply names are skippe
     { type: 'create_course', name: 'Stats', topic: '' },
     { type: 'create_course', name: 'stats', topic: '' },
   ]);
-  assert.deepEqual(plan.creates, ['Stats']);
+  assert.deepEqual(plan.creates, [{ name: 'Stats', kind: 'course' }]);
+});
+
+test('create_course: a certification exam keeps its kind and a valid date; a bad date is dropped', () => {
+  const plan = planActions(courses, [
+    { type: 'create_course', name: 'AWS SAA', topic: '', courseKind: 'exam', examDate: '2026-11-14' },
+    { type: 'create_course', name: 'PMP', topic: '', courseKind: 'exam' },
+  ]);
+  assert.deepEqual(plan.creates, [{ name: 'AWS SAA', kind: 'exam', examDate: '2026-11-14' }, { name: 'PMP', kind: 'exam' }]);
+  const parsed = parseCoachReply(JSON.stringify({ reply: 'ok', actions: [{ type: 'create_course', name: 'X', topic: '', courseKind: 'exam', examDate: 'next friday' }] }));
+  assert.deepEqual(parsed.actions, [{ type: 'create_course', name: 'X', topic: '', courseKind: 'exam' }]);
 });
 
 test('start_session resolves the course by id or name and defaults the topic', () => {
@@ -49,7 +59,7 @@ test('start_session may target a course created in the same reply; unknown cours
     { type: 'create_course', name: 'Stats', topic: '' },
     { type: 'start_session', name: 'Stats', topic: 'z-scores' },
   ]);
-  assert.deepEqual(plan.creates, ['Stats']);
+  assert.deepEqual(plan.creates, [{ name: 'Stats', kind: 'course' }]);
   assert.deepEqual(plan.start, { courseId: null, courseName: 'Stats', topic: 'z-scores' });
   const refused = planActions(courses, [{ type: 'start_session', name: 'Underwater basket weaving', topic: 'knots' }]);
   assert.equal(refused.start, null);

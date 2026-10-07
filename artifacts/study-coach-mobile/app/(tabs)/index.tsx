@@ -5,9 +5,10 @@ import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import {
-  getGetHomeChatQueryKey, getGetStudyStateQueryKey, useGetHomeChat, useGetStudyState, useOpenHomeChat, usePutStudyState, useSendHomeChatMessage,
+  getGetHomeChatQueryKey, getGetStudyStateQueryKey, getListStudySessionsQueryKey, useGetHomeChat, useGetStudyState, useListStudySessions, useOpenHomeChat, usePutStudyState, useSendHomeChatMessage,
   type HomeChat, type HomeChatMessage,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
@@ -40,13 +41,19 @@ function readableError(problem: unknown): string {
 type StateRecord = Record<string, unknown>;
 const record = (value: unknown): StateRecord => (value && typeof value === 'object' ? value as StateRecord : {});
 
-function coursesFrom(state: unknown): IntakeCourse[] {
+type HomeCourse = IntakeCourse & { kind: 'course' | 'exam'; examDate?: string };
+
+function coursesFrom(state: unknown): HomeCourse[] {
   const courses = record(state).courses;
   return (Array.isArray(courses) ? courses : []).flatMap((item) => {
     const course = record(item);
-    return typeof course.id === 'string' && typeof course.name === 'string' ? [{ id: course.id, name: course.name }] : [];
+    return typeof course.id === 'string' && typeof course.name === 'string'
+      ? [{ id: course.id, name: course.name, kind: course.kind === 'exam' ? 'exam' as const : 'course' as const, ...(typeof course.examDate === 'string' ? { examDate: course.examDate } : {}) }]
+      : [];
   });
 }
+
+const newId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
 
 function materialsFrom(state: unknown, courseId: string): SavedMaterial[] {
   const materials = record(state).materials;
@@ -70,6 +77,12 @@ export default function CoachHome() {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
   const [intakeCourseId, setIntakeCourseId] = useState<string | null>(null); // non-null while the + sheet is open
+  const [focusCourseId, setFocusCourseId] = useState<string | null>(null); // the course/exam the coach assumes (home selector)
+  const [listOpen, setListOpen] = useState(true);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addKind, setAddKind] = useState<'course' | 'exam'>('course');
+  const [addName, setAddName] = useState('');
+  const [addDate, setAddDate] = useState('');
   const [gradedSessionId, setGradedSessionId] = useState<string | null>(null); // keeps the score card visible after grading
   const [finishedDeckId, setFinishedDeckId] = useState<string | null>(null); // keeps the deck summary visible after finishing
   const [studyOpen, setStudyOpen] = useState(false); // the full-screen sheet for the active set / deck
@@ -81,6 +94,7 @@ export default function CoachHome() {
   const putState = usePutStudyState();
   const send = useSendHomeChatMessage();
   const open = useOpenHomeChat();
+  const sessionsQuery = useListStudySessions({ query: { queryKey: [...getListStudySessionsQueryKey(), userId], enabled: !!userId } });
 
   const consented = stateQuery.data?.state?.aiConsent === true;
 
@@ -100,6 +114,60 @@ export default function CoachHome() {
   const busy = send.isPending || putState.isPending;
   const courses = coursesFrom(stateQuery.data?.state);
   const intakeCourse = courses.find((course) => course.id === intakeCourseId) ?? null;
+  const focusCourse = courses.find((course) => course.id === focusCourseId) ?? null;
+  // Remember the selected course per account; fall back to the most recently used one.
+  useEffect(() => {
+    if (!userId) return;
+    AsyncStorage.getItem(`study-coach-focus:${userId}`).then((saved) => { if (saved) setFocusCourseId(saved); }).catch(() => {});
+  }, [userId]);
+  const selectCourse = (id: string | null) => {
+    setFocusCourseId(id);
+    if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, id ?? '').catch(() => {});
+  };
+  useEffect(() => {
+    if (!focusCourseId && courses.length && messages.length) {
+      const recent = defaultIntakeCourse(courses, messages);
+      if (recent) setFocusCourseId(recent.id);
+    }
+  }, [courses.length, messages.length]);
+  // Last result per course, from the session list (newest first).
+  const lastResult = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const summary of sessionsQuery.data?.sessions ?? []) {
+      if (map.has(summary.courseId)) continue;
+      const score = summary.targetedScore ?? summary.diagnosticScore;
+      if (typeof score === 'number') map.set(summary.courseId, `last set ${Math.round(score)}%`);
+    }
+    return map;
+  }, [sessionsQuery.data]);
+  const materialCount = (courseId: string) => materialsFrom(stateQuery.data?.state, courseId).length;
+
+  const addCourse = async () => {
+    const name = addName.trim();
+    if (!name || busy) return;
+    if (addKind === 'exam' && addDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(addDate.trim())) { setError('Exam date must look like 2026-11-14.'); return; }
+    setError('');
+    try {
+      const previous = stateQuery.data;
+      const state = record(previous?.state);
+      const course = { id: newId(), name, kind: addKind, ...(addKind === 'exam' && addDate.trim() ? { examDate: addDate.trim() } : {}) };
+      const result = await putState.mutateAsync({ data: { state: { aiConsent: true, materials: [], ...state, courses: [...(Array.isArray(state.courses) ? state.courses : []), course] }, version: previous?.version ?? 0 } });
+      queryClient.setQueryData([...getGetStudyStateQueryKey(), userId], result);
+      setAddOpen(false); setAddName(''); setAddDate(''); setAddKind('course');
+      selectCourse(course.id);
+    } catch (problem) {
+      if ((problem as { status?: number }).status === 409) await queryClient.invalidateQueries({ queryKey: [...getGetStudyStateQueryKey(), userId] });
+      setError(readableError(problem));
+    }
+  };
+
+  const pickFocus = () => {
+    if (!courses.length) { setAddOpen(true); return; }
+    Alert.alert('Which course or exam?', undefined, [
+      ...courses.slice(0, 8).map((course) => ({ text: course.name, onPress: () => selectCourse(course.id) })),
+      { text: 'Cancel', style: 'cancel' as const },
+    ]);
+  };
   const activeQuiz = chatQuery.data?.activeQuiz ?? null;
   const activeDeck = chatQuery.data?.activeDeck ?? null;
   const quizSessionId = activeQuiz?.sessionId ?? gradedSessionId;
@@ -137,7 +205,7 @@ export default function CoachHome() {
     if (!content || busy || !consented) return;
     setError('');
     try {
-      const result: HomeChat = await send.mutateAsync({ data: { content, version } });
+      const result: HomeChat = await send.mutateAsync({ data: { content, version, ...(focusCourseId ? { courseId: focusCourseId } : {}) } });
       queryClient.setQueryData([...getGetHomeChatQueryKey(), userId], result);
       if (result.activeQuiz) { setGradedSessionId(null); setFinishedDeckId(null); } // a new set replaces the old cards
       if (result.activeDeck) { setFinishedDeckId(null); setGradedSessionId(null); }
@@ -163,7 +231,7 @@ export default function CoachHome() {
   const sendMessage = () => sendText(draft);
 
   const openPlus = () => {
-    const course = defaultIntakeCourse(courses, messages);
+    const course = focusCourse ?? defaultIntakeCourse(courses, messages);
     if (!course) {
       Alert.alert('Which class?', 'Tell your coach which class you’re taking first, and it will set the course up for you.');
       return;
@@ -235,6 +303,38 @@ export default function CoachHome() {
           <Feather name="log-out" size={18} color={colors.foreground} />
         </Pressable>
       </View>
+
+      {consented && !loading && !loadError ? (
+        <View style={styles.courseBlock} testID="panel-courses">
+          <View style={styles.courseHead}>
+            <Pressable accessibilityRole="button" accessibilityLabel={listOpen ? 'Collapse courses' : 'Expand courses'} onPress={() => setListOpen((v) => !v)} style={styles.courseHeadLeft} testID="button-toggle-courses">
+              <Text style={styles.kicker}>YOUR COURSES & EXAMS · {courses.length}</Text>
+              <Feather name={listOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => setAddOpen(true)} style={styles.addButton} testID="button-add-course">
+              <Feather name="plus" size={16} color={colors.primary} /><Text style={styles.addText}>Add</Text>
+            </Pressable>
+          </View>
+          {listOpen ? (courses.length ? courses.map((course) => (
+            <Pressable key={course.id} accessibilityRole="button" onPress={() => router.push({ pathname: '/course/[courseId]', params: { courseId: course.id } })}
+              style={({ pressed }) => [styles.courseRow, pressed && styles.pressed]} testID={`row-course-${course.id}`}>
+              <Feather name={course.kind === 'exam' ? 'award' : 'book'} size={16} color={course.id === focusCourseId ? colors.primary : colors.mutedForeground} />
+              <View style={styles.courseCopy}>
+                <Text numberOfLines={1} style={[styles.courseName, course.id === focusCourseId && { color: colors.primary }]}>{course.name}</Text>
+                <Text numberOfLines={1} style={styles.caption}>
+                  {course.kind === 'exam' ? `exam${course.examDate ? ` · ${course.examDate}` : ''}` : 'course'} · {materialCount(course.id)} material{materialCount(course.id) === 1 ? '' : 's'}{lastResult.get(course.id) ? ` · ${lastResult.get(course.id)}` : ''}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+            </Pressable>
+          )) : <Text style={styles.caption}>Add your first course or exam, or just tell the coach what you're studying.</Text>) : null}
+          <Pressable accessibilityRole="button" onPress={pickFocus} style={styles.focusBar} testID="button-focus-course">
+            <Text style={styles.kicker}>COACH</Text>
+            <Text numberOfLines={1} style={styles.focusText}>{focusCourse ? focusCourse.name : 'All courses'}</Text>
+            <Feather name="chevron-down" size={16} color={colors.foreground} />
+          </Pressable>
+        </View>
+      ) : null}
 
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>
@@ -337,6 +437,30 @@ export default function CoachHome() {
         </View>
       ) : null}
 
+      <Modal visible={addOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setAddOpen(false)}>
+        <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: 20 }]}>
+          <View style={styles.header}>
+            <View style={styles.headerCopy}><Text style={styles.sheetTitle}>Add a course or exam</Text></View>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setAddOpen(false)} style={styles.iconButton} testID="button-close-add"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
+          </View>
+          <View style={styles.sheetContent}>
+            <View style={styles.segment}>
+              {(['course', 'exam'] as const).map((kind) => (
+                <Pressable key={kind} accessibilityRole="button" accessibilityState={{ selected: addKind === kind }} onPress={() => setAddKind(kind)} style={[styles.segmentItem, addKind === kind && styles.segmentSelected]} testID={`button-kind-${kind}`}>
+                  <Text style={[styles.segmentText, addKind === kind && styles.segmentTextSelected]}>{kind === 'course' ? 'College course' : 'Certification exam'}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <TextInput value={addName} onChangeText={setAddName} maxLength={120} placeholder={addKind === 'exam' ? 'e.g. AWS Solutions Architect Associate' : 'e.g. BIOL 114'} placeholderTextColor={colors.mutedForeground} style={styles.input} accessibilityLabel="Name" testID="input-add-name" autoFocus />
+            {addKind === 'exam' ? <TextInput value={addDate} onChangeText={setAddDate} placeholder="Exam date, e.g. 2026-11-14 (optional)" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-add-date" /> : null}
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            <Pressable accessibilityRole="button" disabled={busy || !addName.trim()} onPress={() => void addCourse()} style={[styles.primaryButton, (busy || !addName.trim()) && styles.disabled]} testID="button-save-add">
+              <Text style={styles.primaryButtonText}>{addKind === 'exam' ? 'Add exam' : 'Add course'}</Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       <Modal visible={intakeCourse !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { if (!intakeBusy) setIntakeCourseId(null); }}>
         {intakeCourse ? (
           <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: 20 }]}>
@@ -435,6 +559,23 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   errorTitle: { color: colors.destructive, fontSize: 15, fontWeight: '700' },
   errorText: { color: colors.destructive, fontSize: 13 },
   sheetTitle: { color: colors.foreground, fontSize: 20, fontWeight: '700' },
+  kicker: { color: colors.primary, fontSize: 10, letterSpacing: 1.3, fontWeight: '800' },
+  courseBlock: { paddingHorizontal: 14, paddingBottom: 6, gap: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  courseHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 36 },
+  courseHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, flex: 1 },
+  addButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10 },
+  addText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
+  courseRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
+  courseCopy: { flex: 1, minWidth: 0 },
+  courseName: { color: colors.foreground, fontSize: 15, fontWeight: '600' },
+  focusBar: { minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  focusText: { flex: 1, color: colors.foreground, fontSize: 14, fontWeight: '600' },
+  segment: { flexDirection: 'row', borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
+  segmentItem: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
+  segmentSelected: { backgroundColor: colors.primary },
+  segmentText: { color: colors.foreground, fontSize: 14, fontWeight: '600' },
+  segmentTextSelected: { color: colors.primaryForeground },
+  pressed: { opacity: 0.8 },
   sheetContent: { paddingHorizontal: 18, paddingTop: 10, gap: 15 },
   chips: { flexDirection: 'row', gap: 8, paddingBottom: 4 },
   chip: { minHeight: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },

@@ -264,7 +264,8 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   const courseName = (ref: string) => testCase.courses.find((c) => c.id === ref.trim())?.name ?? ref;
   const actionsOk = got.length === want.length && parsed.actions.every((a, i) => {
     const e = testCase.expectedActions[i]!;
-    return a.type === e.type && normalize(courseName(a.name)).includes(normalize(e.name)) && (!e.kind || a.kind === e.kind) && (!e.scope || (a.scope ?? "all") === e.scope);
+    return a.type === e.type && normalize(courseName(a.name)).includes(normalize(e.name)) && (!e.kind || a.kind === e.kind) && (!e.scope || (a.scope ?? "all") === e.scope)
+      && (!e.courseKind || (a.courseKind ?? "course") === e.courseKind) && (!e.examDate || a.examDate === e.examDate);
   });
   const wantChips = (testCase.expectedSuggestions ?? []).map(normalize);
   const gotChips = parsed.suggestions.map(normalize);

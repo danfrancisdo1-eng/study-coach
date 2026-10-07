@@ -11,9 +11,12 @@ export type CoachAction = {
   count?: number;
   scope?: QuizScope;
   kind?: QuizKind;
+  courseKind?: CourseKind;
+  examDate?: string;
 };
+export type CourseKind = "course" | "exam";
 export type CoachReply = { reply: string; suggestions: string[]; actions: CoachAction[] };
-export type KnownCourse = { id: string; name: string; code?: string };
+export type KnownCourse = { id: string; name: string; code?: string; kind?: CourseKind; examDate?: string };
 
 export const MAX_REPLY_CHARS = 4000;
 export const MAX_SUGGESTIONS = 6; // up to 5 topics + "All topics"
@@ -42,7 +45,7 @@ export function parseCoachReply(text: string | null): CoachReply | null {
   const kept: CoachAction[] = [];
   for (const action of actions) {
     if (typeof action !== "object" || action === null) continue;
-    const { type, name, topic, count, scope, kind } = action as Record<string, unknown>;
+    const { type, name, topic, count, scope, kind, courseKind, examDate } = action as Record<string, unknown>;
     if (type !== "create_course" && type !== "start_quiz" && type !== "start_flashcards" && type !== "start_session") continue;
     kept.push({
       type,
@@ -51,6 +54,8 @@ export function parseCoachReply(text: string | null): CoachReply | null {
       ...(typeof count === "number" && Number.isFinite(count) ? { count } : {}),
       ...(scope === "all" || scope === "missed" ? { scope } : {}),
       ...(kind === "practice" || kind === "exam" ? { kind } : {}),
+      ...(courseKind === "course" || courseKind === "exam" ? { courseKind } : {}),
+      ...(typeof examDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(examDate) ? { examDate } : {}),
     });
   }
   const chips = (Array.isArray(suggestions) ? suggestions : [])
@@ -68,8 +73,8 @@ export type QuizPlan = StartPlan & { count: number; scope: QuizScope; kind: Quiz
 export type DeckPlan = StartPlan & { count: number; scope: QuizScope };
 
 export interface ActionPlan {
-  /** Course names to create, in order, already deduplicated against existing courses. */
-  creates: string[];
+  /** Courses to create, in order, already deduplicated against existing courses. */
+  creates: { name: string; kind: CourseKind; examDate?: string }[];
   /** The one question set to start, if any. courseId is null when the course is created in this same reply. */
   quiz: QuizPlan | null;
   /** The one flashcard deck to start, if any (never together with a quiz; the first wins). */
@@ -92,8 +97,8 @@ function resolveStart(plan: ActionPlan, courses: KnownCourse[], action: CoachAct
   const topic = action.topic.trim().replace(/\s+/g, " ").slice(0, MAX_TOPIC) || DEFAULT_TOPIC;
   const existing = findCourse(courses, action.name);
   if (existing) return { courseId: existing.id, topic };
-  const pending = plan.creates.find((c) => normalize(c) === normalize(action.name));
-  if (pending) return { courseId: null, courseName: pending, topic };
+  const pending = plan.creates.find((c) => normalize(c.name) === normalize(action.name));
+  if (pending) return { courseId: null, courseName: pending.name, topic };
   plan.notes.push(`No course called "${action.name.trim()}"`);
   return null;
 }
@@ -109,8 +114,8 @@ export function planActions(courses: KnownCourse[], actions: CoachAction[]): Act
         plan.notes.push(`${existing.name} already exists`);
         continue;
       }
-      if (plan.creates.some((c) => normalize(c) === normalize(name))) continue;
-      plan.creates.push(name);
+      if (plan.creates.some((c) => normalize(c.name) === normalize(name))) continue;
+      plan.creates.push({ name, kind: action.courseKind ?? "course", ...(action.examDate ? { examDate: action.examDate } : {}) });
     } else if (action.type === "start_flashcards" && plan.deck === null && plan.quiz === null) {
       const start = resolveStart(plan, courses, action);
       if (!start) continue;

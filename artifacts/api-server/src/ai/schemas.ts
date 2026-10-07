@@ -69,6 +69,9 @@ export const coachSchema = object({
       count: { type: "integer" },
       scope: { type: "string", enum: ["all", "missed"] },
       kind: { type: "string", enum: ["practice", "exam"] },
+      // create_course only: a college course or a certification exam, with the exam date when known.
+      courseKind: { type: "string", enum: ["course", "exam"] },
+      examDate: string,
     }),
   },
 });

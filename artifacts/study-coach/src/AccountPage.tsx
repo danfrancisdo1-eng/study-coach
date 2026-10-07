@@ -198,7 +198,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
       </select>
     </label> : null}
     {sessionId && sessionQuery.isLoading ? <div className="notice">Restoring your saved session…</div> : sessionId && sessionQuery.error ? <div className="error" role="alert">{message(sessionQuery.error)} <button type="button" onClick={() => void sessionQuery.refetch()} data-testid="button-retry-load-session">Try again</button></div> : <>
-      {!current && <HomeChat aiConsent={state.aiConsent === true} busy={busy}
+      {!current && <HomeChat aiConsent={state.aiConsent === true} busy={busy} courseId={selectedCourseId}
         onCoursesChanged={() => void client.invalidateQueries({ queryKey: stateKey })}
         onOpenSession={id => { setIntakeFiles([]); setSessionId(id); setShowReport(false); setAdding(false); void client.invalidateQueries({ queryKey: listKey }); }} />}
       {!current && courses.length > 0 && (
@@ -237,9 +237,9 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
         resultSummary={resultSummary} isRetest={current?.quiz?.mode === 'targeted'}
         busy={busy} error={error}
         onSelectCourse={selectCourse}
-        onCreateCourse={name => void act(async () => {
+        onCreateCourse={(name, kind, examDate) => void act(async () => {
           const id = crypto.randomUUID();
-          await updateState(previous => ({ ...previous, courses: [...(previous.courses ?? []), { id, name }] }));
+          await updateState(previous => ({ ...previous, courses: [...(previous.courses ?? []), { id, name, kind, ...(examDate ? { examDate } : {}) }] }));
           selectCourse(id);
         })}
         savedMaterialsByCourse={savedMaterialsByCourse}

@@ -16,7 +16,7 @@ import * as examPlanPrompt from "../src/prompts/exam-plan.v1";
 import * as tutorPrompt from "../src/prompts/tutor.v3";
 import * as sessionQuizPrompt from "../src/prompts/session-quiz.v3";
 import * as imageOcrPrompt from "../src/prompts/image-ocr.v1";
-import * as coachPrompt from "../src/prompts/coach.v5";
+import * as coachPrompt from "../src/prompts/coach.v6";
 import * as flashcardsPrompt from "../src/prompts/flashcards.v1";
 import { taskConfig, type AiTask } from "../src/ai/tasks";
 import { classicQuizCases, coachCases, flashcardsCases, ocrCaseNames, planCases, sessionQuizCases, syllabusCases, tutorCases, type Source } from "./fixtures";
@@ -115,7 +115,7 @@ async function main() {
     if (tasks.includes("coach")) for (const c of coachCases) jobs.push({
       task: "coach", name: c.name,
       run: () => complete("coach", {
-        system: coachPrompt.systemPrompt({ today, courses: c.courses, firstVisit: c.firstVisit, quiz: c.quiz ?? null, deck: c.deck ?? null }),
+        system: coachPrompt.systemPrompt({ today, courses: c.courses, firstVisit: c.firstVisit, quiz: c.quiz ?? null, deck: c.deck ?? null, focusCourseId: c.focusCourseId ?? null }),
         messages: [...c.history, { role: "user", content: c.message }],
       }),
       grade: (text) => gradeCoach(c, text),

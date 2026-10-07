@@ -17,4 +17,9 @@ export interface HomeChatInput {
      * @minimum 0
      */
   version: number;
+  /**
+     * The course or exam the student is focused on in the app (home screen selector); the coach assumes it when a message does not name one.
+     * @maxLength 200
+     */
+  courseId?: string;
 }

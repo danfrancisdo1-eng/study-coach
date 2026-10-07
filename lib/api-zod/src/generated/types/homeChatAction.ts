@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { HomeChatActionCourseKind } from './homeChatActionCourseKind';
 import type { HomeChatActionKind } from './homeChatActionKind';
 import type { HomeChatActionType } from './homeChatActionType';
 
@@ -13,6 +14,10 @@ export interface HomeChatAction {
   courseId: string;
   /** create_course: the new course's name */
   name?: string;
+  /** create_course: a college course or a certification exam */
+  courseKind?: HomeChatActionCourseKind;
+  /** create_course (exam): YYYY-MM-DD when the student gave a date */
+  examDate?: string;
   /** start_quiz / start_session: the study session holding the set / conversation */
   sessionId?: string;
   topic?: string;

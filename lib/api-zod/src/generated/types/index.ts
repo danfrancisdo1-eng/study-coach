@@ -17,6 +17,7 @@ export * from './flashcardReviewInputResult';
 export * from './healthStatus';
 export * from './homeChat';
 export * from './homeChatAction';
+export * from './homeChatActionCourseKind';
 export * from './homeChatActionKind';
 export * from './homeChatActionType';
 export * from './homeChatActiveDeck';

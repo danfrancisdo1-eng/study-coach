@@ -686,6 +686,7 @@ components:
       properties:
         content: { type: string, minLength: 1, maxLength: 8000 }
         version: { type: integer, minimum: 0, description: "Conversation version from the last GET/POST; 0 for a new conversation." }
+        courseId: { type: string, maxLength: 200, description: "The course or exam the student is focused on in the app (home screen selector); the coach assumes it when a message does not name one." }
     HomeChatAction:
       type: object
       required: [type, courseId]
@@ -693,6 +694,8 @@ components:
         type: { type: string, enum: [create_course, start_quiz, start_flashcards, start_session] }
         courseId: { type: string }
         name: { type: string, description: "create_course: the new course's name" }
+        courseKind: { type: string, enum: [course, exam], description: "create_course: a college course or a certification exam" }
+        examDate: { type: string, description: "create_course (exam): YYYY-MM-DD when the student gave a date" }
         sessionId: { type: string, format: uuid, description: "start_quiz / start_session: the study session holding the set / conversation" }
         topic: { type: string }
         kind: { type: string, enum: [practice, exam], description: "start_quiz: practice reveals feedback per answer; exam only after grading" }
