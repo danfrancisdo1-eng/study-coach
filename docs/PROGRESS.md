@@ -25,8 +25,10 @@
 - Flashcards verified by Dan ("looking good"). Hooks per question + progress bar + lighter type (D-022). Reviewed Dan's two reference docs (quiz HTML with hooks/sections; memory-sheet conversation): adopted hooks/progress now; memory sheet, score trends, exam sections with weights queued.
 - **One home screen (D-023):** courses & certification exams list, Add sheet, course screen, coach focus; coach.v6 22/22; 61/61 tests; iOS bundle. UX checklist (code review): 44 pt targets PASS; one primary action per block PASS; ≤5 tabs PASS (1); chunked content PASS; native patterns PASS (sheets, chevrons); progress/resume PASS (last result per course, Resume bar); single accent PASS, not color-only (icons + text); theme tokens PASS, Dark Mode/Dynamic Type PARTIAL (existing gap); labels PASS; paywall N/A.
 
+- Dark review bubbles + hook-style tricks + coach.v7 (no Courses tab wording) deployed `c3cf949`.
+- **Verified by Dan on iPhone (2026-10-06 night):** delete course works (he had mistyped the confirm word); added a certification exam (Microsoft AB731) with no material and got a good 20-question set; new review bubbles and tricks.
+
 ### Next
-- Dan: reload → home shows courses/exams list + Add + "Coach · Bio 101 ▾"; add a certification exam; tap a course row; "quiz me" with a focus set.
 - Exam-guide lookup for named certifications (server web search); memory sheet; score trends; multi-select topics; streaming; aesthetics pass with Dan's ideas.
 - Piece 2 (topic list card), then piece 4 polish (streaming, "Writing your questions…" progress).
 
