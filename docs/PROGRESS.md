@@ -22,9 +22,12 @@
 ## Session 4 — 2026-10-06
 - **Flashcards in the chat + full-screen sets/decks (D-021, coach.v5).** 60/60 tests; typecheck; flashcards evals 3/3; coach evals 20/20 ×2; iOS bundle. Merged + pushed (auto-deploy).
 
+- Flashcards verified by Dan ("looking good"). Hooks per question + progress bar + lighter type (D-022). Reviewed Dan's two reference docs (quiz HTML with hooks/sections; memory-sheet conversation): adopted hooks/progress now; memory sheet, score trends, exam sections with weights queued.
+- **One home screen (D-023):** courses & certification exams list, Add sheet, course screen, coach focus; coach.v6 22/22; 61/61 tests; iOS bundle. UX checklist (code review): 44 pt targets PASS; one primary action per block PASS; ≤5 tabs PASS (1); chunked content PASS; native patterns PASS (sheets, chevrons); progress/resume PASS (last result per course, Resume bar); single accent PASS, not color-only (icons + text); theme tokens PASS, Dark Mode/Dynamic Type PARTIAL (existing gap); labels PASS; paywall N/A.
+
 ### Next
-- Dan: reload → "flashcards on cells" (or Flashcards for the misses after a set) → flip, Got it / Again → finish; sets/decks should open full screen with Back to chat and a Resume bar.
-- Then: aesthetics pass (Dan's ideas + UX_PRINCIPLES checklist); multi-select topics; "Writing your questions…" progress; streaming.
+- Dan: reload → home shows courses/exams list + Add + "Coach · Bio 101 ▾"; add a certification exam; tap a course row; "quiz me" with a focus set.
+- Exam-guide lookup for named certifications (server web search); memory sheet; score trends; multi-select topics; streaming; aesthetics pass with Dan's ideas.
 - Piece 2 (topic list card), then piece 4 polish (streaming, "Writing your questions…" progress).
 
 ### Needs real-iPhone check

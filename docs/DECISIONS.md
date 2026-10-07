@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-06 — D-023: One home screen; courses and certification exams; coach focus; coach.v6
+- Dan: the two-tab home was "cluttered and confusing"; wanted a home page listing courses with Add and the coach's message box; and "instead of just courses also put certification exam" (the app's origin). Built: courses/exams list with counts and last result → tap opens a trimmed course screen (rename, exam date, materials, lectures, delete; reuses CourseManager + MaterialIntake) → the chat below with a "Coach · <course> ▾" selector; Add sheet asks College course / Certification exam (+ date). The Courses tab is hidden (file kept; delete needs Dan's OK). Course objects gain `kind` and `examDate` (study-state JSON, no migration).
+- coach.v6: create_course carries courseKind/examDate; the chat input carries the focused courseId so the coach assumes it; exam topics = published sections, scenario-style questions. Evals 22/22. Exam-guide web lookup for named certifications: next piece.
+- D-022 (same day): a memory hook per question (session-quiz.v3), progress bar, lighter question type.
+
 ## 2026-10-06 — D-021: Flashcards in the chat; sets and decks open full screen; coach.v5
 - Dan: "you should be able to ask for flash cards." A deck is a study session (no new table): `start_flashcards` (count ≤ 30, scope all/missed), `flashcards.v1` prompt with the same scope-vs-content rule as questions, Got it / Again per card (`POST /study/sessions/{id}/flashcards/{cardId}/review`), "Again" cards come back around, a finished deck writes review items (again ⇒ missed). The coach offers "Flashcards for the misses" after a graded set and sees deck progress/results. Evals: flashcards 3/3 (incl. outline-only), coach 20/20 ×2.
 - coach.v5 also renames the teach-back check to "Your turn: explain it back to me:" (Dan asked what "teach-back" meant).
