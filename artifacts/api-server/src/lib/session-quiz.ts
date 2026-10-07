@@ -3,7 +3,7 @@
 // chat-first home (routes/chat.ts) can start question sets with the same code.
 import { randomUUID } from "node:crypto";
 import { complete } from "../ai";
-import * as sessionQuizPrompt from "../prompts/session-quiz.v3";
+import * as sessionQuizPrompt from "../prompts/session-quiz.v4";
 import * as flashcardsPrompt from "../prompts/flashcards.v1";
 
 export type JsonObject = Record<string, unknown>;
@@ -224,6 +224,7 @@ export interface GenerateQuizInput {
   weakConcepts: string[];
   sourceText: string;
   status: SourceStatus;
+  sectionWeights?: { name: string; weight: number | null }[];
 }
 
 /**
@@ -234,7 +235,7 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
   const { expectedCount, originalPrompts, weakConcepts, status } = input;
   const usedPrompts = new Set(originalPrompts.map((prompt) => prompt.trim().toLowerCase().replace(/\s+/g, " ")));
   const response = await complete("session_quiz", {
-    system: sessionQuizPrompt.systemPrompt({ expectedCount, originalPrompts, weakConcepts, status }),
+    system: sessionQuizPrompt.systemPrompt({ expectedCount, originalPrompts, weakConcepts, status, sectionWeights: input.sectionWeights }),
     messages: [{ role: "user", content: JSON.stringify({ courseId: input.courseId, topic: input.topic, sourceMaterial: input.sourceText }) }],
   });
   const raw = response.text;

@@ -131,6 +131,24 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/StudyStateEnvelope" }
         "409": { description: Version mismatch }
+  /study/courses/{courseId}/exam-guide:
+    parameters:
+      - { name: courseId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
+    post:
+      operationId: lookupExamGuide
+      tags: [study]
+      summary: Look up the official exam guide (sections and weights) for a certification exam with web search and save it on the exam
+      description: Requires persisted state.aiConsent=true. Only the exam's name is sent to the AI provider's web search. Replaces any previously saved guide.
+      responses:
+        "200":
+          description: The saved guide (found may be false)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExamGuide" }
+        "400": { description: Not a certification exam }
+        "403": { description: Explicit persisted AI consent required }
+        "404": { description: Course not found }
+        "502": { description: The lookup failed; nothing was saved }
   /study/courses/{courseId}:
     parameters:
       - { name: courseId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
@@ -642,6 +660,25 @@ components:
         reviewSchedule: { type: array, items: { type: object, additionalProperties: true } }
         reportText: { type: ["string", "null"] }
         flashcards: { oneOf: [{ $ref: "#/components/schemas/StudyFlashcardDeck" }, { type: "null" }] }
+    ExamGuide:
+      type: object
+      required: [found, examName, examCode, vendor, sections, sourceUrl, notes, fetchedAt]
+      properties:
+        found: { type: boolean }
+        examName: { type: string }
+        examCode: { type: string }
+        vendor: { type: string }
+        sections:
+          type: array
+          items:
+            type: object
+            required: [name, weight]
+            properties:
+              name: { type: string }
+              weight: { type: ["number", "null"], description: "Percent of the exam, when the guide publishes it" }
+        sourceUrl: { type: ["string", "null"] }
+        notes: { type: string }
+        fetchedAt: { type: string, format: date-time }
     FlashcardReviewInput:
       type: object
       required: [result]

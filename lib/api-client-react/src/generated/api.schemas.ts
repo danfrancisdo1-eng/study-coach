@@ -362,6 +362,27 @@ export interface StudySession {
   flashcards?: StudyFlashcardDeck | null;
 }
 
+export type ExamGuideSectionsItem = {
+  name: string;
+  /**
+     * Percent of the exam, when the guide publishes it
+     * @nullable
+     */
+  weight: number | null;
+};
+
+export interface ExamGuide {
+  found: boolean;
+  examName: string;
+  examCode: string;
+  vendor: string;
+  sections: ExamGuideSectionsItem[];
+  /** @nullable */
+  sourceUrl: string | null;
+  notes: string;
+  fetchedAt: string;
+}
+
 export type FlashcardReviewInputResult = typeof FlashcardReviewInputResult[keyof typeof FlashcardReviewInputResult];
 
 

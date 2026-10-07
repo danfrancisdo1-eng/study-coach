@@ -25,7 +25,11 @@ export interface AnthropicRequest extends TaskConfig {
   system: string;
   messages: AiMessage[];
   jsonSchema?: JsonSchema;
+  webSearch?: { maxUses: number };
 }
+
+const WEB_SEARCH_TOOL = "web_search_20260209" as const;
+const MAX_PAUSE_CONTINUATIONS = 3;
 
 export function anthropicBody(request: AnthropicRequest): Anthropic.Beta.MessageCreateParamsNonStreaming {
   const messages: Anthropic.Beta.BetaMessageParam[] = request.messages.map((message) => {
@@ -47,6 +51,7 @@ export function anthropicBody(request: AnthropicRequest): Anthropic.Beta.Message
   return {
     model: request.model,
     max_tokens: request.maxTokens,
+    ...(request.webSearch ? { tools: [{ type: WEB_SEARCH_TOOL, name: "web_search" as const, max_uses: request.webSearch.maxUses }] } : {}),
     system: request.cache
       ? [{ type: "text", text: request.system, cache_control: { type: "ephemeral" } }]
       : request.system,
@@ -62,11 +67,19 @@ export async function anthropicCompletion(
   const options = request.timeoutMs === undefined && request.maxRetries === undefined
     ? undefined
     : { timeout: request.timeoutMs, maxRetries: request.maxRetries };
-  const response = await anthropic().beta.messages.create(anthropicBody(request), options);
-  const usage = {
-    inputTokens: response.usage.input_tokens + (response.usage.cache_read_input_tokens ?? 0) + (response.usage.cache_creation_input_tokens ?? 0),
-    outputTokens: response.usage.output_tokens,
+  const body = anthropicBody(request);
+  let response = await anthropic().beta.messages.create(body, options);
+  const usage = { inputTokens: 0, outputTokens: 0 };
+  const add = (r: typeof response) => {
+    usage.inputTokens += r.usage.input_tokens + (r.usage.cache_read_input_tokens ?? 0) + (r.usage.cache_creation_input_tokens ?? 0);
+    usage.outputTokens += r.usage.output_tokens;
   };
+  add(response);
+  // A long server-tool turn (web search) may pause; continue it by replaying the turn so far.
+  for (let i = 0; i < MAX_PAUSE_CONTINUATIONS && response.stop_reason === "pause_turn"; i += 1) {
+    response = await anthropic().beta.messages.create({ ...body, messages: [...body.messages, { role: "assistant", content: response.content }] }, options);
+    add(response);
+  }
   if (response.stop_reason === "refusal") return { text: null, finished: false, usage };
   const text = response.content
     .flatMap((block) => (block.type === "text" ? [block.text] : []))

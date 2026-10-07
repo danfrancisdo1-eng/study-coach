@@ -4,7 +4,7 @@ import {
   useGetStudyState, usePutStudyState, useImportStudyState, useListStudySessions,
   useCreateStudySession, useGetStudySession, useCheckInStudySession,
   useSendStudyMessage, useGenerateStudyQuiz, useSaveStudyAnswer, useGradeStudyQuiz,
-  useFlagStudyQuestion,
+  useFlagStudyQuestion, useLookupExamGuide,
   getGetStudyStateQueryKey, getGetStudySessionQueryKey, getListStudySessionsQueryKey,
   deleteCourse, getListLecturesQueryKey,
   type StudyMaterialExtraction, type StudySession, type StudyState, type StudyStateEnvelope,
@@ -53,6 +53,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
   const answer = useSaveStudyAnswer();
   const grade = useGradeStudyQuiz();
   const flagQuestion = useFlagStudyQuestion();
+  const lookupGuide = useLookupExamGuide();
   const [selectedCourseId, selectCourse] = useState<string | null>(null);
   const [topic, setTopic] = useState('');
   const [minutes, setMinutes] = useState(35);
@@ -241,8 +242,11 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
           const id = crypto.randomUUID();
           await updateState(previous => ({ ...previous, courses: [...(previous.courses ?? []), { id, name, kind, ...(examDate ? { examDate } : {}) }] }));
           selectCourse(id);
+          if (kind === 'exam') { try { await lookupGuide.mutateAsync({ courseId: id }); } catch { /* shown as "no guide" */ } await stateQuery.refetch(); }
         })}
         savedMaterialsByCourse={savedMaterialsByCourse}
+        examGuides={Object.fromEntries((state.courses ?? []).filter((c): c is AccountCourse & { examGuide?: unknown } => !!c && typeof (c as { id?: unknown }).id === 'string').map(c => [c.id, (c as { examGuide?: { found?: boolean; sections?: { name: string; weight: number | null }[]; sourceUrl?: string | null } }).examGuide ?? null]))}
+        onRefreshExamGuide={courseId => void act(async () => { await lookupGuide.mutateAsync({ courseId }); await stateQuery.refetch(); })}
         onDeleteMaterial={materialId => void act(() => updateState(previous => ({
           ...previous, materials: (previous.materials ?? []).filter(item => item.id !== materialId),
         })))}

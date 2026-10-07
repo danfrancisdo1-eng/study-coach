@@ -14,6 +14,8 @@ export interface AiInput {
   messages: AiMessage[];
   timeoutMs?: number;
   maxRetries?: number;
+  /** Let the model search the web (Anthropic server tool). Only for tasks that need live facts, e.g. exam guides. */
+  webSearch?: { maxUses: number };
 }
 
 export function complete(task: AiTask, input: AiInput): Promise<AiResult> {
@@ -21,5 +23,6 @@ export function complete(task: AiTask, input: AiInput): Promise<AiResult> {
   if (config.provider === "anthropic") {
     return anthropicCompletion({ ...config, ...input, jsonSchema: TASK_SCHEMAS[task] });
   }
+  if (input.webSearch) throw new Error(`Task ${task} needs web search, which is only available on the anthropic provider.`);
   return chatCompletion({ ...config, ...input });
 }

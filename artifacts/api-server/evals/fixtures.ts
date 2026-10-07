@@ -100,6 +100,7 @@ export const classicQuizCases: ClassicQuizCase[] = [
 ];
 
 export interface SessionQuizCase {
+  sectionWeights?: { name: string; weight: number | null }[];
   name: string;
   topic: string;
   sources: Source[];
@@ -118,6 +119,9 @@ export const sessionQuizCases: SessionQuizCase[] = [
   // Only an outline uploaded: the set must test biology, never the outline (D-019).
   { name: "outline only: real subject questions, none about the document", topic: "Membranes and transport", sources: bioOutline, expectedCount: 8, originalPrompts: [], weakConcepts: [] },
   { name: "outline only, general review across the exam's topics", topic: "General review", sources: bioOutline, expectedCount: 8, originalPrompts: [], weakConcepts: [] },
+  // D-024: a certification "All topics" set is spread by the guide's weights, scenario-style.
+  { name: "certification set weighted by the exam guide", topic: "All topics: Design Secure Architectures, Design Resilient Architectures, Design High-Performing Architectures, Design Cost-Optimized Architectures", sources: [], expectedCount: 10, originalPrompts: [], weakConcepts: [],
+    sectionWeights: [{ name: "Design Secure Architectures", weight: 30 }, { name: "Design Resilient Architectures", weight: 26 }, { name: "Design High-Performing Architectures", weight: 24 }, { name: "Design Cost-Optimized Architectures", weight: 20 }] },
 ];
 
 export interface FlashcardsCase {
@@ -135,6 +139,23 @@ export const flashcardsCases: FlashcardsCase[] = [
     { concept: "Active transport", prompt: "Which process requires ATP?", correct: "sodium-potassium pump", explanation: "Against the gradient needs energy." },
   ] },
   { name: "outline only: subject cards, none about the document", topic: "Photosynthesis", sources: bioOutline, expectedCount: 6, focus: [] },
+];
+
+/** Exam-guide lookup (real web search): well-known exams whose guides are public. */
+export interface ExamGuideCase {
+  name: string;
+  examName: string;
+  /** Words that must appear among the section names (case-insensitive). */
+  expectSections: string[];
+  /** Expect found=false (made-up or ambiguous exam). */
+  expectNotFound?: boolean;
+}
+
+export const examGuideCases: ExamGuideCase[] = [
+  { name: "AWS Solutions Architect Associate", examName: "AWS Certified Solutions Architect - Associate (SAA-C03)", expectSections: ["secure", "resilient", "performing", "cost"] },
+  { name: "Microsoft AZ-900", examName: "Microsoft Azure Fundamentals AZ-900", expectSections: ["cloud concepts", "architecture", "management"] },
+  { name: "CompTIA Security+", examName: "CompTIA Security+", expectSections: ["threats", "architecture", "operations"] },
+  { name: "made-up exam code", examName: "Zorblax Certified Widget Engineer ZX-999", expectSections: [], expectNotFound: true },
 ];
 
 export interface PlanCase {
@@ -228,7 +249,7 @@ export const ocrCaseNames = ["respiration-notes", "syllabus-excerpt", "vocab-lis
 /** Chat-first home coach (prompts/coach.v1, SPEC §7). */
 export interface CoachCase {
   name: string;
-  courses: { id: string; name: string; kind?: "course" | "exam"; examDate?: string; materials: number; lectures: number; materialNames?: string[]; scopeExcerpt?: string }[];
+  courses: { id: string; name: string; kind?: "course" | "exam"; examDate?: string; materials: number; lectures: number; materialNames?: string[]; scopeExcerpt?: string; guideSections?: { name: string; weight: number | null }[]; guideMissing?: boolean }[];
   firstVisit: boolean;
   /** The course/exam selected on the home screen. */
   focusCourseId?: string;
@@ -298,6 +319,24 @@ export const coachCases: CoachCase[] = [
     expectedActions: [],
     expectations: ["Does not claim to have deleted anything", "Says to tap the course on the home screen to delete it (never mentions a Courses tab)"],
     maxWords: 50,
+  },
+  // coach.v8: exam-guide sections become the topic chips with weights.
+  {
+    name: "exam with an official guide: topic chips are the guide's sections with weights",
+    courses: [{ id: "saa", name: "AWS Solutions Architect Associate", kind: "exam", examDate: "2026-11-14", materials: 0, lectures: 0, guideSections: [{ name: "Design Secure Architectures", weight: 30 }, { name: "Design Resilient Architectures", weight: 26 }, { name: "Design High-Performing Architectures", weight: 24 }, { name: "Design Cost-Optimized Architectures", weight: 20 }] }],
+    firstVisit: false, history: [], focusCourseId: "saa",
+    message: "quiz me",
+    expectedActions: [], expectedSuggestions: ["All topics"],
+    expectations: ["Proposes exactly the four guide sections as topics, each with its percent", "Asks which topic in one short line"],
+    maxWords: 70,
+  },
+  {
+    name: "exam without a guide: says the sections are from memory",
+    courses: [{ id: "ab", name: "Microsoft AB731", kind: "exam", materials: 0, lectures: 0, guideMissing: true }], firstVisit: false, history: [], focusCourseId: "ab",
+    message: "give me a quiz",
+    expectedActions: [], expectedSuggestions: ["All topics"],
+    expectations: ["Proposes a few topics and says they come from its own knowledge / no official guide was found", "Asks which topic"],
+    maxWords: 80,
   },
   // coach.v6: certification exams and the home-screen focus course.
   {

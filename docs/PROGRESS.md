@@ -28,8 +28,13 @@
 - Dark review bubbles + hook-style tricks + coach.v7 (no Courses tab wording) deployed `c3cf949`.
 - **Verified by Dan on iPhone (2026-10-06 night):** delete course works (he had mistyped the confirm word); added a certification exam (Microsoft AB731) with no material and got a good 20-question set; new review bubbles and tricks.
 
+## Session 5 — 2026-10-07
+- **Exam-guide lookup (D-024):** web search in the AI provider, `exam-guide.v1`, endpoint, auto-lookup after adding an exam (iPhone + web), course screen section with Refresh; coach.v8 + quiz v4 use the sections/weights. 63/63 tests; typecheck; evals exam_guide 4/4, coach 24/24, quiz 6/6; iOS bundle. Merged + pushed (auto-deploy).
+- Agreed queue (Dan, 2026-10-07): memory sheet → score trends & readiness → multi-select topics → then the aesthetics conversation ("the entire color palette has to go").
+
 ### Next
-- Exam-guide lookup for named certifications (server web search); memory sheet; score trends; multi-select topics; streaming; aesthetics pass with Dan's ideas.
+- Dan: reload → add a certification exam (e.g. "AWS Solutions Architect Associate") → row shows "looking up the exam guide…" then "4 sections"; tap it to see the guide; "quiz me" → chips are the sections with %.
+- Memory sheet per course; score trends + readiness; multi-select topics; streaming; then aesthetics with Dan's ideas.
 - Piece 2 (topic list card), then piece 4 polish (streaming, "Writing your questions…" progress).
 
 ### Needs real-iPhone check

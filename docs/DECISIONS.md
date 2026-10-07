@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-07 — D-024: Exam-guide lookup with web search; sections become topics; weighted sets
+- For a certification exam, `POST /study/courses/{id}/exam-guide` asks Claude Sonnet 5.5 with the web-search server tool (`web_search_20260209`, max 5 searches, pause_turn continued) for the official guide; `exam-guide.v1` replies JSON in text (no structured-output mode alongside server tools), `lib/exam-guide-parse.ts` validates (2–15 sections, weights 0–100 or null, http(s) source only, found=false when thin), and the result is saved on the course as `examGuide`. Only the exam's name is sent. About 5¢ per lookup. The app fetches it right after an exam is added (Add sheet, web form, or the coach); the course screen shows sections, weights, source, notes, Refresh.
+- coach.v8: guide sections (with weights) are the topic chips; without a guide the coach says sections are from memory. session-quiz.v4: an "All topics" set on an exam with a guide is spread by weight, scenario-style, with the section in each question's concept.
+- Evals: exam_guide 4/4 (AWS SAA-C03, AZ-900, Security+ found with sources; made-up exam correctly not found), coach 24/24, session_quiz 6/6. The task is Anthropic-only (`AI_PROVIDER_EXAM_GUIDE=openai` would fail cleanly with 502).
+- Not yet: re-checking a guide when the exam version changes (manual Refresh for now).
+
 ## 2026-10-06 — D-023: One home screen; courses and certification exams; coach focus; coach.v6
 - Dan: the two-tab home was "cluttered and confusing"; wanted a home page listing courses with Add and the coach's message box; and "instead of just courses also put certification exam" (the app's origin). Built: courses/exams list with counts and last result → tap opens a trimmed course screen (rename, exam date, materials, lectures, delete; reuses CourseManager + MaterialIntake) → the chat below with a "Coach · <course> ▾" selector; Add sheet asks College course / Certification exam (+ date). The Courses tab is hidden (file kept; delete needs Dan's OK). Course objects gain `kind` and `examDate` (study-state JSON, no migration).
 - coach.v6: create_course carries courseKind/examDate; the chat input carries the focused courseId so the coach assumes it; exam topics = published sections, scenario-style questions. Evals 22/22. Exam-guide web lookup for named certifications: next piece.

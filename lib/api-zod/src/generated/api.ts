@@ -185,6 +185,33 @@ export const PutStudyStateResponse = zod.object({
 
 
 /**
+ * Requires persisted state.aiConsent=true. Only the exam's name is sent to the AI provider's web search. Replaces any previously saved guide.
+ * @summary Look up the official exam guide (sections and weights) for a certification exam with web search and save it on the exam
+ */
+export const lookupExamGuidePathCourseIdMax = 200;
+
+
+
+export const LookupExamGuideParams = zod.object({
+  "courseId": zod.coerce.string().min(1).max(lookupExamGuidePathCourseIdMax)
+})
+
+export const LookupExamGuideResponse = zod.object({
+  "found": zod.boolean(),
+  "examName": zod.string(),
+  "examCode": zod.string(),
+  "vendor": zod.string(),
+  "sections": zod.array(zod.object({
+  "name": zod.string(),
+  "weight": zod.number().nullable().describe('Percent of the exam, when the guide publishes it')
+})),
+  "sourceUrl": zod.string().nullable(),
+  "notes": zod.string(),
+  "fetchedAt": zod.coerce.date()
+})
+
+
+/**
  * Removes the course, its saved materials, its study sessions and their review items, and its lectures and transcripts, in one transaction. Other courses and accounts are untouched.
  * @summary Permanently delete one course and everything saved for it
  */

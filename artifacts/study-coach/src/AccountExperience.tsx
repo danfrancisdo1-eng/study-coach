@@ -78,6 +78,9 @@ export type AccountExperienceProps = {
   onRenameCourse: (courseId: string, name: string) => void;
   /** Saved materials per course id, shown while a course is being edited. */
   savedMaterialsByCourse?: Record<string, { id: string; name: string }[]>;
+  /** Official exam-guide per course id (certification exams), shown while editing. */
+  examGuides?: Record<string, { found?: boolean; sections?: { name: string; weight: number | null }[]; sourceUrl?: string | null } | null>;
+  onRefreshExamGuide?: (courseId: string) => void;
   onDeleteMaterial?: (materialId: string) => void;
   onDeleteCourse?: (courseId: string) => void;
   onStartSession: (courseId: string) => void;
@@ -111,7 +114,7 @@ export function AccountExperience(props: AccountExperienceProps) {
     courses, selectedCourseId, phase, sessionStarted, materialsCheck, aiConsent, materials,
     turns, questions, answers, assistedAnswers, qualityNotice, invalidItemCount = 0, flaggedQuestionIds = [],
     quizTutorReply, feedback, reviewSchedule, report, resultSummary, isRetest,
-    busy = false, error, onSelectCourse, onCreateCourse, onRenameCourse, onStartSession,
+    busy = false, error, onSelectCourse, onCreateCourse, onRenameCourse, onStartSession, examGuides = {}, onRefreshExamGuide,
     savedMaterialsByCourse = {}, onDeleteMaterial, onDeleteCourse,
     onMaterialsChoice, onUploadMaterials, onContinueMaterials, onConsentChange, onSendTurn,
     onReadyForQuiz, onSelectAnswer, onFlagQuestion, onAskDuringQuiz, onMarkAssisted, onSubmitQuiz, onRequestRetest, onShowReport,
@@ -197,6 +200,13 @@ export function AccountExperience(props: AccountExperienceProps) {
                   <button type="submit" className="ae-button ae-button--ink" disabled={busy || !editName.trim()} data-testid={`button-save-course-${course.id}`}>Save</button>
                   <button type="button" className="ae-button ae-button--quiet" onClick={() => setEditingId(null)} data-testid={`button-cancel-rename-${course.id}`} aria-label="Cancel rename"><X size={16} /></button>
                 </form>
+                  {(course as { kind?: string }).kind === 'exam' && <div className="ae-course-manage" style={{ width: '100%', marginTop: 10 }} data-testid={`panel-exam-guide-${course.id}`}>
+                    <p className="ae-kicker">Official exam guide {onRefreshExamGuide && <button type="button" className="ae-button ae-button--quiet" disabled={busy} onClick={() => onRefreshExamGuide(course.id)} data-testid={`button-refresh-guide-${course.id}`}>{examGuides[course.id] ? 'Refresh' : 'Look up'}</button>}</p>
+                    {examGuides[course.id]?.found ? <>
+                      {(examGuides[course.id]?.sections ?? []).map((s, i) => <div className="ae-row" key={i} style={{ justifyContent: 'space-between' }}><span>{s.name}</span><span className="ae-muted">{s.weight !== null ? `${s.weight}%` : ''}</span></div>)}
+                      {examGuides[course.id]?.sourceUrl && <p className="ae-muted" style={{ fontSize: '.8rem' }}>Source: {examGuides[course.id]?.sourceUrl}</p>}
+                    </> : examGuides[course.id] ? <p className="ae-muted">No official guide found; the coach uses its own knowledge of the exam.</p> : <p className="ae-muted">Not looked up yet.</p>}
+                  </div>}
                   {(onDeleteMaterial || onDeleteCourse) && <div className="ae-course-manage" style={{ width: '100%', marginTop: 10 }} data-testid={`panel-manage-course-${course.id}`}>
                     <p className="ae-kicker">Materials in this course</p>
                     {(savedMaterialsByCourse[course.id] ?? []).length === 0 && <p className="ae-muted">No saved materials yet.</p>}

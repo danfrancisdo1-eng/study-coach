@@ -12,6 +12,8 @@ export * from './courseDeletion';
 export * from './courseDeletionDeleted';
 export * from './deadline';
 export * from './deadlineKind';
+export * from './examGuide';
+export * from './examGuideSectionsItem';
 export * from './flashcardReviewInput';
 export * from './flashcardReviewInputResult';
 export * from './healthStatus';

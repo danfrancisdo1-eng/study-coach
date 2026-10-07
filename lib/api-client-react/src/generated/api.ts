@@ -23,6 +23,7 @@ import type {
   AnalyzeInput,
   AnalyzeResult,
   CourseDeletion,
+  ExamGuide,
   FlashcardReviewInput,
   HealthStatus,
   HomeChat,
@@ -673,6 +674,81 @@ export const usePutStudyState = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getPutStudyStateMutationOptions(options));
+    }
+
+export const getLookupExamGuideUrl = (courseId: string,) => {
+
+
+
+
+  return `/api/study/courses/${courseId}/exam-guide`
+}
+
+/**
+ * Requires persisted state.aiConsent=true. Only the exam's name is sent to the AI provider's web search. Replaces any previously saved guide.
+ * @summary Look up the official exam guide (sections and weights) for a certification exam with web search and save it on the exam
+ */
+export const lookupExamGuide = async (courseId: string, options?: Parameters<typeof customFetch>[1]): Promise<ExamGuide> => {
+
+  return customFetch<ExamGuide>(getLookupExamGuideUrl(courseId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getLookupExamGuideMutationKey = () => ['lookupExamGuide'] as const;
+
+export const getLookupExamGuideMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof lookupExamGuide>>, TError,LookupExamGuideMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof lookupExamGuide>>, TError,LookupExamGuideMutationVariables, TContext> => {
+
+const mutationKey = getLookupExamGuideMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof lookupExamGuide>>, LookupExamGuideMutationVariables> = (props) => {
+          const {courseId} = props ?? {};
+
+          return  lookupExamGuide(courseId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LookupExamGuideMutationResult = NonNullable<Awaited<ReturnType<typeof lookupExamGuide>>>
+
+    export type LookupExamGuideMutationError = ErrorType<void>
+    export type LookupExamGuideMutationVariables = {courseId: string}
+
+    /**
+ * @summary Look up the official exam guide (sections and weights) for a certification exam with web search and save it on the exam
+ */
+export const useLookupExamGuide = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof lookupExamGuide>>, TError,LookupExamGuideMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof lookupExamGuide>>,
+        TError,
+        LookupExamGuideMutationVariables,
+        TContext
+      > => {
+      return useMutation(getLookupExamGuideMutationOptions(options));
     }
 
 export const getDeleteCourseUrl = (courseId: string,) => {

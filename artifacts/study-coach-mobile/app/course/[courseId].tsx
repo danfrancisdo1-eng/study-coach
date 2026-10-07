@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import {
-  deleteCourse, getGetStudyStateQueryKey, getListLecturesQueryKey, getListStudySessionsQueryKey, useGetStudyState, useListLectures, usePutStudyState,
+  deleteCourse, getGetStudyStateQueryKey, getListLecturesQueryKey, getListStudySessionsQueryKey, useGetStudyState, useListLectures, useLookupExamGuide, usePutStudyState,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { ActionButton } from '@/components/ActionButton';
@@ -37,6 +37,7 @@ export default function CourseScreen() {
   const stateQuery = useGetStudyState({ query: { queryKey: stateKey, enabled: !!userId } });
   const lecturesQuery = useListLectures({ courseId }, { query: { queryKey: [...getListLecturesQueryKey({ courseId }), userId], enabled: !!userId && !!courseId } });
   const putState = usePutStudyState();
+  const lookupGuide = useLookupExamGuide();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
   const [examDate, setExamDate] = useState('');
@@ -53,7 +54,16 @@ export default function CourseScreen() {
     .filter((m) => m.courseId === courseId && typeof m.id === 'string' && typeof m.name === 'string' && typeof m.text === 'string')
     .map((m) => ({ id: m.id as string, courseId: courseId!, name: m.name as string, text: m.text as string, extractionFormat: m.extractionFormat as SavedMaterial['extractionFormat'] }));
   const isExam = course?.kind === 'exam';
-  const busy = saving || putState.isPending;
+  const busy = saving || putState.isPending || lookupGuide.isPending;
+  const guide = isExam && course?.examGuide && typeof course.examGuide === 'object' ? record(course.examGuide) : null;
+  const guideSections = Array.isArray(guide?.sections) ? (guide!.sections as unknown[]).map(record) : [];
+  const refreshGuide = async () => {
+    setError('');
+    try {
+      await lookupGuide.mutateAsync({ courseId: courseId! });
+      await queryClient.invalidateQueries({ queryKey: stateKey });
+    } catch (problem) { setError(readable(problem)); }
+  };
 
   const persist = async (next: StateRecord) => {
     const previous = stateQuery.data;
@@ -117,6 +127,26 @@ export default function CourseScreen() {
                 <ActionButton label="Save" icon="check" onPress={() => void saveDetails()} disabled={busy || !name.trim()} testID="button-save-course" />
                 <ActionButton label="Cancel" secondary onPress={() => setEditing(false)} testID="button-cancel-edit" />
               </View>
+            </View>
+          ) : null}
+
+          {isExam ? (
+            <View style={styles.card} testID="panel-exam-guide">
+              <View style={styles.rowBetween}>
+                <Text style={styles.kicker}>OFFICIAL EXAM GUIDE</Text>
+                <ActionButton label={guide ? 'Refresh' : 'Look up'} icon="refresh-cw" secondary disabled={busy} onPress={() => void refreshGuide()} testID="button-refresh-guide" />
+              </View>
+              {lookupGuide.isPending ? <View style={styles.row}><ActivityIndicator color={colors.primary} /><Text style={styles.caption}>Searching for the official guide…</Text></View> : null}
+              {guide?.found === true ? (
+                <>
+                  {guideSections.map((s, i) => (
+                    <View key={i} style={styles.rowBetween}><Text style={styles.body}>{String(s.name)}</Text><Text style={styles.caption}>{typeof s.weight === 'number' ? `${s.weight}%` : ''}</Text></View>
+                  ))}
+                  {typeof guide.sourceUrl === 'string' ? <Text selectable style={styles.caption}>Source: {guide.sourceUrl}</Text> : null}
+                  {typeof guide.notes === 'string' && guide.notes ? <Text style={styles.caption}>{guide.notes}</Text> : null}
+                </>
+              ) : guide ? <Text style={styles.caption}>No official guide was found{typeof guide.notes === 'string' && guide.notes ? `: ${guide.notes}` : ''}. The coach uses its own knowledge of the exam.</Text>
+                : !lookupGuide.isPending ? <Text style={styles.caption}>Look up the published sections and weights so topics and sets match the real exam.</Text> : null}
             </View>
           ) : null}
 
