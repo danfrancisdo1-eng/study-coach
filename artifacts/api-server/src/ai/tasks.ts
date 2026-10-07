@@ -4,7 +4,7 @@
 //   AI_PROVIDER_<TASK>=openai|anthropic per-task override, e.g. AI_PROVIDER_TUTOR
 //   AI_MODEL_<TASK>=<model id>          per-task model override, e.g. AI_MODEL_TUTOR
 
-export type AiTask = "image_ocr" | "tutor" | "session_quiz" | "syllabus" | "classic_quiz" | "exam_plan" | "coach" | "flashcards" | "exam_guide";
+export type AiTask = "image_ocr" | "tutor" | "session_quiz" | "syllabus" | "classic_quiz" | "exam_plan" | "coach" | "flashcards" | "exam_guide" | "memory_sheet";
 export type AiProvider = "openai" | "anthropic";
 export type Effort = "low" | "medium" | "high";
 
@@ -23,7 +23,7 @@ type ProviderDefaults = Omit<TaskConfig, "provider" | "json">;
 
 // JSON output tasks get a schema from ./schemas (TASK_SCHEMAS).
 const JSON_TASKS: Record<AiTask, boolean> = {
-  image_ocr: true, tutor: false, session_quiz: true, syllabus: true, classic_quiz: true, exam_plan: true, coach: true, flashcards: true, exam_guide: false,
+  image_ocr: true, tutor: false, session_quiz: true, syllabus: true, classic_quiz: true, exam_plan: true, coach: true, flashcards: true, exam_guide: false, memory_sheet: true,
 };
 
 // Today's production settings.
@@ -37,6 +37,7 @@ const OPENAI: Record<AiTask, ProviderDefaults> = {
   coach: { model: "gpt-5.6-terra", maxTokens: 2500 },
   flashcards: { model: "gpt-5.6-terra", maxTokens: 4000 },
   exam_guide: { model: "gpt-5.6-terra", maxTokens: 4000 }, // unused: the task needs web search, Anthropic only
+  memory_sheet: { model: "gpt-5.6-terra", maxTokens: 3000 },
 };
 
 // Starting points from docs/AUDIT.md section 5c; confirmed or changed by evals.
@@ -54,6 +55,8 @@ const ANTHROPIC: Record<AiTask, ProviderDefaults> = {
   flashcards: { model: "claude-sonnet-5-5", maxTokens: 10000, effort: "low" },
   // Exam-guide lookup (D-024): web search for a named certification's official sections and weights.
   exam_guide: { model: "claude-sonnet-5-5", maxTokens: 12000, effort: "medium" },
+  // Memory sheet rows (D-025): term → trick → when you see X, think Y.
+  memory_sheet: { model: "claude-sonnet-5-5", maxTokens: 8000, effort: "low" },
 };
 
 function provider(value: string | undefined): AiProvider | undefined {

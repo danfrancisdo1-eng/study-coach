@@ -10,10 +10,11 @@ import { and, eq } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v8";
+import * as coachPrompt from "../prompts/coach.v9";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { generateFlashcards, generateSessionQuiz, sourceChunks, sourceTextOf, type Quiz, type Session } from "../lib/session-quiz";
-import { parseCoachReply, planActions, type DeckPlan, type KnownCourse, type QuizPlan } from "./chatActions";
+import { generateMemoryRows, rowsFromState, sheetAsText, type MemoryItem, type MemoryRow } from "../lib/memory-sheet";
+import { parseCoachReply, planActions, type DeckPlan, type KnownCourse, type QuizPlan, type SheetPlan } from "./chatActions";
 import { requireStudyAuth } from "./study";
 
 const router: IRouter = Router();
@@ -27,7 +28,8 @@ const DEFAULT_SESSION_MINUTES = 20;
 const SESSION_GAP_MS = Number(process.env.HOME_CHAT_SESSION_GAP_MINUTES ?? "30") * 60_000;
 const OLD_MATERIAL_QUESTIONS = 2;
 const SCOPE_MATERIAL = /outline|syllabus|schedule|course description|reading list|contents/i; // a map of topics, not content
-const SCOPE_EXCERPT_CHARS = 1500; // "missed topics" sets add 1–2 questions from earlier material (SPEC §6 step 7)
+const SCOPE_EXCERPT_CHARS = 1500;
+const SHEET_TOPIC = /memory sheet/i; // "Quiz me from my memory sheet": the sheet is the only source (D-025) // "missed topics" sets add 1–2 questions from earlier material (SPEC §6 step 7)
 
 type JsonObject = Record<string, unknown>;
 const isObject = (value: unknown): value is JsonObject => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -49,6 +51,7 @@ function knownCourses(state: JsonObject): KnownCourse[] {
       id: course.id, name: course.name, ...(typeof course.code === "string" ? { code: course.code } : {}),
       kind: course.kind === "exam" ? "exam" as const : "course" as const, ...(typeof course.examDate === "string" ? { examDate: course.examDate } : {}),
       ...(sections.length ? { guideSections: sections } : {}), ...(guide && guide.found === false ? { guideMissing: true } : {}),
+      ...(rowsFromState(state, course.id).length ? { memoryRows: rowsFromState(state, course.id).length } : {}),
     }];
   });
 }
@@ -219,6 +222,13 @@ async function createCourses(ownerId: string, specs: { name: string; kind: "cour
   return null;
 }
 
+/** The study state after this turn's course creations and sheet updates (re-read when something was written). */
+async function latestStateFor(ownerId: string, state: JsonObject, created: { id: string }[]): Promise<JsonObject> {
+  const rows = await db.select({ state: studyStatesTable.state }).from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
+  const fresh = rows[0]?.state;
+  return isObject(fresh) ? fresh : { ...state, courses: [...list(state.courses), ...created] };
+}
+
 function newSession(courseId: string, topic: string, checkedIn: boolean): Session {
   const now = new Date().toISOString();
   return {
@@ -235,9 +245,17 @@ async function insertSession(ownerId: string, session: Session): Promise<void> {
 }
 
 /** Builds and stores a question set; returns the session or null when no valid question came back. Throws on AI failure. */
+/** Materials for a set or deck: saved materials + reviewed lectures + the memory sheet; the sheet alone when the topic is the sheet. */
+async function sourcesFor(ownerId: string, state: JsonObject, courseId: string, topic: string) {
+  const rows = rowsFromState(state, courseId);
+  const sheet = rows.length ? [{ courseId, name: "Memory sheet", text: sheetAsText(rows) }] : [];
+  if (SHEET_TOPIC.test(topic)) return sourceChunks({ ...state, materials: [] }, courseId, topic, sheet);
+  return sourceChunks(state, courseId, topic, [...await reviewedLectureMaterials(ownerId, courseId), ...sheet]);
+}
+
 async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { courseId: string }, previous: Session | null, sectionWeights?: { name: string; weight: number | null }[]): Promise<Session | null> {
   const session = newSession(plan.courseId, plan.topic, true);
-  const { chunks, status } = sourceChunks(state, plan.courseId, plan.topic, await reviewedLectureMaterials(ownerId, plan.courseId));
+  const { chunks, status } = await sourcesFor(ownerId, state, plan.courseId, plan.topic);
   const previousQuiz = previous?.quiz;
   const originalPrompts = previousQuiz ? previousQuiz.questions.map((q) => q.prompt) : [];
   const missed = plan.scope === "missed" && previousQuiz?.grade
@@ -264,7 +282,7 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
 /** Builds and stores a flashcard deck; null when no valid card came back. Throws on AI failure. */
 async function startDeck(ownerId: string, state: JsonObject, plan: DeckPlan & { courseId: string }, previous: Session | null): Promise<Session | null> {
   const session = newSession(plan.courseId, plan.topic, true);
-  const { chunks, status } = sourceChunks(state, plan.courseId, plan.topic, await reviewedLectureMaterials(ownerId, plan.courseId));
+  const { chunks, status } = await sourcesFor(ownerId, state, plan.courseId, plan.topic);
   const previousQuiz = previous?.quiz;
   const focus = plan.scope === "missed" && previousQuiz?.grade
     ? previousQuiz.questions
@@ -276,6 +294,42 @@ async function startDeck(ownerId: string, state: JsonObject, plan: DeckPlan & { 
   session.flashcards = deck;
   await insertSession(ownerId, session);
   return session;
+}
+
+/** Items for the memory sheet: misses of the latest graded set, again-cards of the latest deck, and anything the student named. */
+function memoryItems(plan: SheetPlan, quizSession: Session | null, deckSession: Session | null): MemoryItem[] {
+  const items: MemoryItem[] = [];
+  if (plan.scope === "missed") {
+    const quiz = quizSession?.quiz;
+    if (quiz?.grade) for (const q of quiz.questions) {
+      if (!q.answers.length || q.answers.at(-1)?.optionId === q.correctOptionId) continue;
+      items.push({ kind: "missed_question", concept: q.concept, prompt: q.prompt, correct: q.options.find((o) => o.id === q.correctOptionId)?.text ?? "", explanation: q.explanation, ...(q.hook ? { hook: q.hook } : {}) });
+    }
+    const deck = deckSession?.flashcards;
+    if (deck?.completedAt) for (const c of deck.cards) if (c.results.includes("again")) items.push({ kind: "flashcard_again", concept: c.concept, front: c.front, back: c.back });
+  }
+  for (const text of plan.requests) items.push({ kind: "student_request", text });
+  return items;
+}
+
+/** Writes new rows to state.memorySheet, retrying if the state changed meanwhile. Returns the rows added, or null when the state could not be updated. */
+async function updateMemorySheet(ownerId: string, courseId: string, courseName: string, items: MemoryItem[]): Promise<MemoryRow[] | null> {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const rows = await db.select({ state: studyStatesTable.state, version: studyStatesTable.version })
+      .from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
+    const row = rows[0];
+    if (!row || !isObject(row.state)) return null;
+    const existing = rowsFromState(row.state, courseId);
+    const { added } = await generateMemoryRows(courseName, existing, items, courseId, randomUUID);
+    if (!added.length) return [];
+    const nextState: JsonObject = { ...row.state, memorySheet: [...list(row.state.memorySheet), ...added] };
+    const updated = await db.update(studyStatesTable)
+      .set({ state: nextState, version: row.version + 1, updatedAt: new Date() })
+      .where(and(eq(studyStatesTable.ownerId, ownerId), eq(studyStatesTable.version, row.version)))
+      .returning({ version: studyStatesTable.version });
+    if (updated[0]) return added;
+  }
+  return null;
 }
 
 router.post("/study/chat", async (req, res): Promise<void> => {
@@ -314,6 +368,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       ...(course.examDate ? { examDate: course.examDate } : {}),
       ...(course.guideSections ? { guideSections: course.guideSections } : {}),
       ...(course.guideMissing ? { guideMissing: true } : {}),
+      ...(course.memoryRows ? { memoryRows: course.memoryRows } : {}),
       materials: own.length,
       lectures: lectureRows.filter((l) => l.courseId === course.id).length,
       ...(materialNames.length ? { materialNames } : {}),
@@ -325,7 +380,8 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const lastQuizSession = lastQuizAction ? await loadSession(ownerId, lastQuizAction.sessionId) : null;
   const quiz = lastQuizAction ? quizContext(courses, lastQuizAction, lastQuizSession) : null;
   const lastDeckAction = latestDeckAction(messages);
-  const deck = lastDeckAction ? deckContext(courses, await loadSession(ownerId, lastDeckAction.sessionId)) : null;
+  const lastDeckSession = lastDeckAction ? await loadSession(ownerId, lastDeckAction.sessionId) : null;
+  const deck = lastDeckAction ? deckContext(courses, lastDeckSession) : null;
 
   let coach;
   try {
@@ -352,11 +408,31 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   for (const course of created) done.push({ type: "create_course", courseId: course.id, name: course.name, ...(course.kind === "exam" ? { courseKind: "exam" as const } : {}) });
   const resolveCourse = (start: { courseId: string | null; courseName?: string }) =>
     start.courseId ?? created.find((c) => c.name === start.courseName)?.id ?? null;
+  if (plan.sheet) {
+    const courseId = resolveCourse(plan.sheet);
+    const items = memoryItems(plan.sheet, lastQuizSession, lastDeckSession);
+    if (courseId && items.length) {
+      try {
+        const courseName = [...courses, ...created].find((c) => c.id === courseId)?.name ?? courseId;
+        const added = await updateMemorySheet(ownerId, courseId, courseName, items);
+        if (added === null) {
+          res.status(409).json({ error: "Your study data changed on another device. Reload and send again.", version });
+          return;
+        }
+        // Nothing new (every term was already on the sheet): no card in the chat.
+        if (added.length) done.push({ type: "update_memory_sheet", courseId, rows: added.map(({ id, term, trick, whenYouSee, think }) => ({ id, term, trick, whenYouSee, think })) });
+      } catch (error) {
+        req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat memory sheet update failed");
+        res.status(502).json({ error: "The coach could not update your memory sheet just now. Try sending that again." });
+        return;
+      }
+    } else if (courseId) req.log.info("Home chat memory sheet update skipped: nothing to add");
+  }
   if (plan.quiz) {
     const courseId = resolveCourse(plan.quiz);
     if (courseId) {
       try {
-        const latestState = { ...state, courses: [...list(state.courses), ...created] };
+        const latestState = await latestStateFor(ownerId, state, created);
         // "All topics" on an exam with an official guide: spread the set by the guide's weights.
         const guideSections = courses.find((c) => c.id === courseId)?.guideSections;
         const allTopics = /^all topics/i.test(plan.quiz.topic);
@@ -374,7 +450,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     const courseId = resolveCourse(plan.deck);
     if (courseId) {
       try {
-        const latestState = { ...state, courses: [...list(state.courses), ...created] };
+        const latestState = await latestStateFor(ownerId, state, created);
         const session = await startDeck(ownerId, latestState, { ...plan.deck, courseId }, lastQuizSession);
         if (!session) throw new Error("No valid cards were generated");
         done.push({ type: "start_flashcards", sessionId: session.id, courseId, topic: plan.deck.topic, count: session.flashcards!.cards.length });

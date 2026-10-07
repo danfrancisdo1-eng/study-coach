@@ -80,6 +80,8 @@ export type AccountExperienceProps = {
   savedMaterialsByCourse?: Record<string, { id: string; name: string }[]>;
   /** Official exam-guide per course id (certification exams), shown while editing. */
   examGuides?: Record<string, { found?: boolean; sections?: { name: string; weight: number | null }[]; sourceUrl?: string | null } | null>;
+  /** Memory-sheet rows per course (D-025). */
+  memorySheets?: Record<string, { id: string; term: string; trick: string; whenYouSee: string; think: string }[]>;
   onRefreshExamGuide?: (courseId: string) => void;
   onDeleteMaterial?: (materialId: string) => void;
   onDeleteCourse?: (courseId: string) => void;
@@ -114,7 +116,7 @@ export function AccountExperience(props: AccountExperienceProps) {
     courses, selectedCourseId, phase, sessionStarted, materialsCheck, aiConsent, materials,
     turns, questions, answers, assistedAnswers, qualityNotice, invalidItemCount = 0, flaggedQuestionIds = [],
     quizTutorReply, feedback, reviewSchedule, report, resultSummary, isRetest,
-    busy = false, error, onSelectCourse, onCreateCourse, onRenameCourse, onStartSession, examGuides = {}, onRefreshExamGuide,
+    busy = false, error, onSelectCourse, onCreateCourse, onRenameCourse, onStartSession, examGuides = {}, onRefreshExamGuide, memorySheets = {},
     savedMaterialsByCourse = {}, onDeleteMaterial, onDeleteCourse,
     onMaterialsChoice, onUploadMaterials, onContinueMaterials, onConsentChange, onSendTurn,
     onReadyForQuiz, onSelectAnswer, onFlagQuestion, onAskDuringQuiz, onMarkAssisted, onSubmitQuiz, onRequestRetest, onShowReport,
@@ -206,6 +208,14 @@ export function AccountExperience(props: AccountExperienceProps) {
                       {(examGuides[course.id]?.sections ?? []).map((s, i) => <div className="ae-row" key={i} style={{ justifyContent: 'space-between' }}><span>{s.name}</span><span className="ae-muted">{s.weight !== null ? `${s.weight}%` : ''}</span></div>)}
                       {examGuides[course.id]?.sourceUrl && <p className="ae-muted" style={{ fontSize: '.8rem' }}>Source: {examGuides[course.id]?.sourceUrl}</p>}
                     </> : examGuides[course.id] ? <p className="ae-muted">No official guide found; the coach uses its own knowledge of the exam.</p> : <p className="ae-muted">Not looked up yet.</p>}
+                  </div>}
+                  {(memorySheets[course.id] ?? []).length > 0 && <div className="ae-course-manage" style={{ width: '100%', marginTop: 10 }} data-testid={`panel-memory-sheet-${course.id}`}>
+                    <p className="ae-kicker">Memory sheet · {memorySheets[course.id]!.length}</p>
+                    <div className="sc-sheet">{memorySheets[course.id]!.map(row => <div className="sc-sheet-row" key={row.id}>
+                      <strong>{row.term}</strong>
+                      <span className="sc-miss-hook">⚡ {row.trick}</span>
+                      {(row.whenYouSee || row.think) && <span className="ae-muted" style={{ fontSize: '.8rem' }}>When you see {row.whenYouSee} → think {row.think}</span>}
+                    </div>)}</div>
                   </div>}
                   {(onDeleteMaterial || onDeleteCourse) && <div className="ae-course-manage" style={{ width: '100%', marginTop: 10 }} data-testid={`panel-manage-course-${course.id}`}>
                     <p className="ae-kicker">Materials in this course</p>

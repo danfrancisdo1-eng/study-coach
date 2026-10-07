@@ -312,7 +312,21 @@ export default function CoachHome() {
           ))}
         </View>
       ) : null}
-      {item.actions?.map((action) => (
+      {item.actions?.map((action) => action.type === 'update_memory_sheet' ? (
+        <View key={`sheet-${action.courseId}-${action.rows?.[0]?.id ?? ''}`} style={styles.sheetCard} testID="card-memory-sheet">
+          <View style={styles.row}>
+            <Feather name="bookmark" size={14} color={colors.primary} />
+            <Text style={styles.actionText}>Memory sheet: {action.rows?.length ?? 0} new {action.rows?.length === 1 ? 'row' : 'rows'}</Text>
+          </View>
+          {(action.rows ?? []).map((row) => (
+            <View key={row.id} style={styles.sheetRow}>
+              <Text style={styles.sheetTerm}>{row.term}</Text>
+              <Text style={styles.sheetTrick}>⚡ {row.trick}</Text>
+              {row.whenYouSee || row.think ? <Text style={styles.sheetCue}>When you see {row.whenYouSee} → think {row.think}</Text> : null}
+            </View>
+          ))}
+        </View>
+      ) : (
         <View key={`${action.type}-${action.courseId}-${action.sessionId ?? ''}`} style={styles.actionChip}>
           <Feather name={action.type === 'create_course' ? 'plus-circle' : action.type === 'start_quiz' ? 'edit-3' : action.type === 'start_flashcards' ? 'layers' : 'play-circle'} size={14} color={colors.primary} />
           <Text style={styles.actionText}>
@@ -572,6 +586,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   caption: { color: colors.mutedForeground, fontSize: 12 },
   actionChip: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   actionText: { flex: 1, color: colors.foreground, fontSize: 13, fontWeight: '600' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sheetCard: { gap: 8, marginTop: 4, padding: 10, borderRadius: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
+  sheetRow: { gap: 3, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border },
+  sheetTerm: { color: colors.foreground, fontSize: 14, fontWeight: '700' },
+  sheetTrick: { color: HOOK.text, backgroundColor: HOOK.bg, borderRadius: 8, paddingVertical: 5, paddingHorizontal: 8, fontSize: 13, fontWeight: '600', alignSelf: 'flex-start' },
+  sheetCue: { color: colors.mutedForeground, fontSize: 12 },
   openLink: { minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   openLinkText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   busyRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 8 },

@@ -31,10 +31,12 @@
 ## Session 5 — 2026-10-07
 - **Exam-guide lookup (D-024):** web search in the AI provider, `exam-guide.v1`, endpoint, auto-lookup after adding an exam (iPhone + web), course screen section with Refresh; coach.v8 + quiz v4 use the sections/weights. 63/63 tests; typecheck; evals exam_guide 4/4, coach 24/24, quiz 6/6; iOS bundle. Merged + pushed (auto-deploy).
 - Agreed queue (Dan, 2026-10-07): memory sheet → score trends & readiness → multi-select topics → then the aesthetics conversation ("the entire color palette has to go").
+- **Memory sheet (D-025):** `update_memory_sheet` coach action + `memory_sheet` AI task (memory-sheet.v1) + merge/dedupe lib; rows in study state; chat card with the new rows and course-screen sheet on iPhone and web; "Quiz me from my memory sheet" uses the sheet as the only source; coach.v9. Verified here: typecheck; 67/67 tests (3 new unit, 1 new end-to-end); evals memory_sheet 2/2, coach 27/27; iOS dev bundle builds with the new card and panel. UX checklist (code review): targets ≥44 pt PASS (no new buttons; chips unchanged); one primary action per block PASS; choices ≤6 chips PASS (5 after a set); chunked content PASS (one row per term, ⚡ trick on its own line); native patterns PASS (card in the chat, list on the course screen); progress/resume PASS (row count in the coach's list; sheet persists per course); distinct item PASS (trick in the hook color, rest neutral); theme tokens PASS except the fixed hook color (same as D-022; replaced in the aesthetics pass); labels PASS (selectable text, testIDs); Dark Mode/Dynamic Type PARTIAL (existing gap); paywall N/A.
 
 ### Next
+- Dan (memory sheet): finish a set → tap "Add the misses to my memory sheet" → a card with the rows appears; open the course → "MEMORY SHEET · N"; say "Quiz me from my memory sheet" → a set built from the rows; "put <idea> on my memory sheet" adds a row.
 - Dan: reload → add a certification exam (e.g. "AWS Solutions Architect Associate") → row shows "looking up the exam guide…" then "4 sections"; tap it to see the guide; "quiz me" → chips are the sections with %.
-- Memory sheet per course; score trends + readiness; multi-select topics; streaming; then aesthetics with Dan's ideas.
+- Score trends + readiness call; multi-select topics; streaming; then aesthetics with Dan's ideas (hook color, palette).
 - Piece 2 (topic list card), then piece 4 polish (streaming, "Writing your questions…" progress).
 
 ### Needs real-iPhone check

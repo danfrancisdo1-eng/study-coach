@@ -5,7 +5,7 @@
 export type QuizScope = "all" | "missed";
 export type QuizKind = "practice" | "exam";
 export type CoachAction = {
-  type: "create_course" | "start_quiz" | "start_flashcards" | "start_session";
+  type: "create_course" | "start_quiz" | "start_flashcards" | "update_memory_sheet" | "start_session";
   name: string;
   topic: string;
   count?: number;
@@ -16,7 +16,7 @@ export type CoachAction = {
 };
 export type CourseKind = "course" | "exam";
 export type CoachReply = { reply: string; suggestions: string[]; actions: CoachAction[] };
-export type KnownCourse = { id: string; name: string; code?: string; kind?: CourseKind; examDate?: string; guideSections?: { name: string; weight: number | null }[]; guideMissing?: boolean };
+export type KnownCourse = { id: string; name: string; code?: string; kind?: CourseKind; examDate?: string; guideSections?: { name: string; weight: number | null }[]; guideMissing?: boolean; memoryRows?: number };
 
 export const MAX_REPLY_CHARS = 4000;
 export const MAX_SUGGESTIONS = 6; // up to 5 topics + "All topics"
@@ -46,7 +46,7 @@ export function parseCoachReply(text: string | null): CoachReply | null {
   for (const action of actions) {
     if (typeof action !== "object" || action === null) continue;
     const { type, name, topic, count, scope, kind, courseKind, examDate } = action as Record<string, unknown>;
-    if (type !== "create_course" && type !== "start_quiz" && type !== "start_flashcards" && type !== "start_session") continue;
+    if (type !== "create_course" && type !== "start_quiz" && type !== "start_flashcards" && type !== "update_memory_sheet" && type !== "start_session") continue;
     kept.push({
       type,
       name: typeof name === "string" ? name : "",
@@ -71,6 +71,8 @@ export type StartPlan =
 
 export type QuizPlan = StartPlan & { count: number; scope: QuizScope; kind: QuizKind };
 export type DeckPlan = StartPlan & { count: number; scope: QuizScope };
+/** Memory-sheet update: the misses of the latest set/deck (scope "missed") and/or things the student named. */
+export type SheetPlan = { courseId: string | null; courseName?: string; scope: QuizScope; requests: string[] };
 
 export interface ActionPlan {
   /** Courses to create, in order, already deduplicated against existing courses. */
@@ -79,6 +81,8 @@ export interface ActionPlan {
   quiz: QuizPlan | null;
   /** The one flashcard deck to start, if any (never together with a quiz; the first wins). */
   deck: DeckPlan | null;
+  /** The one memory-sheet update, if any. */
+  sheet: SheetPlan | null;
   /** The one legacy session to start (opens the Courses tab), if any and only when no quiz was planned. */
   start: StartPlan | null;
   /** Human-readable reasons for anything skipped (surfaced in logs/tests, never shown as AI text). */
@@ -104,7 +108,7 @@ function resolveStart(plan: ActionPlan, courses: KnownCourse[], action: CoachAct
 }
 
 export function planActions(courses: KnownCourse[], actions: CoachAction[]): ActionPlan {
-  const plan: ActionPlan = { creates: [], quiz: null, deck: null, start: null, notes: [] };
+  const plan: ActionPlan = { creates: [], quiz: null, deck: null, sheet: null, start: null, notes: [] };
   for (const action of actions) {
     if (action.type === "create_course") {
       const name = action.name.trim().replace(/\s+/g, " ");
@@ -116,6 +120,11 @@ export function planActions(courses: KnownCourse[], actions: CoachAction[]): Act
       }
       if (plan.creates.some((c) => normalize(c.name) === normalize(name))) continue;
       plan.creates.push({ name, kind: action.courseKind ?? "course", ...(action.examDate ? { examDate: action.examDate } : {}) });
+    } else if (action.type === "update_memory_sheet" && plan.sheet === null) {
+      const start = resolveStart(plan, courses, action);
+      if (!start) continue;
+      const requests = action.topic.split(/[;\n]/).map((t) => t.trim().replace(/\s+/g, " ")).filter((t) => t && t.toLowerCase() !== "general review").slice(0, 10);
+      plan.sheet = { courseId: start.courseId, ...("courseName" in start ? { courseName: start.courseName } : {}), scope: action.scope ?? (requests.length ? "all" : "missed"), requests };
     } else if (action.type === "start_flashcards" && plan.deck === null && plan.quiz === null) {
       const start = resolveStart(plan, courses, action);
       if (!start) continue;

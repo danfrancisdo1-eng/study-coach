@@ -61,7 +61,7 @@ export const coachSchema = object({
   actions: {
     type: "array",
     items: object({
-      type: { type: "string", enum: ["create_course", "start_quiz", "start_flashcards", "start_session"] },
+      type: { type: "string", enum: ["create_course", "start_quiz", "start_flashcards", "update_memory_sheet", "start_session"] },
       // create_course: the course name. start_quiz / start_session: the course name or id, and a topic.
       name: string,
       topic: string,
@@ -80,8 +80,13 @@ export const flashcardsSchema = object({
   cards: { type: "array", items: object({ front: string, back: string, concept: string }) },
 });
 
+export const memorySheetSchema = object({
+  rows: { type: "array", items: object({ term: string, trick: string, whenYouSee: string, think: string }) },
+});
+
 export const TASK_SCHEMAS: Partial<Record<AiTask, JsonSchema>> = {
   coach: coachSchema,
+  memory_sheet: memorySheetSchema,
   flashcards: flashcardsSchema,
   image_ocr: imageOcrSchema,
   session_quiz: sessionQuizSchema,

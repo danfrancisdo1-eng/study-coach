@@ -125,4 +125,6 @@
 .sc-miss-right { color: #4cd964; font-weight: 700; }
 .sc-miss-explain { color: #aab6c3; font-size: .92rem; }
 .sc-miss-hook { background: #1f2f4f; color: #b9d0ff; border-radius: 10px; padding: 8px 10px; font-weight: 600; }
+.sc-sheet { display: grid; gap: 8px; margin-top: 6px; }
+.sc-sheet-row { display: grid; gap: 4px; padding-top: 8px; border-top: 1px solid var(--ae-line); justify-items: start; }
 .sc-trick { background: var(--ae-paper); border: 1px solid var(--ae-line); border-radius: 14px; padding: 10px 12px; margin: 8px 0 !important; }

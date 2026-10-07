@@ -21,6 +21,7 @@ export * from './homeChat';
 export * from './homeChatAction';
 export * from './homeChatActionCourseKind';
 export * from './homeChatActionKind';
+export * from './homeChatActionRowsItem';
 export * from './homeChatActionType';
 export * from './homeChatActiveDeck';
 export * from './homeChatActiveQuiz';

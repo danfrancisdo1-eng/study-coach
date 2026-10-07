@@ -36,6 +36,20 @@ const formatDate = (value: unknown) => {
   return Number.isNaN(date.getTime()) ? undefined : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
 
+type SheetRow = { id: string; term: string; trick: string; whenYouSee: string; think: string };
+/** Groups state.memorySheet rows by course, keeping only well-formed rows (D-025). */
+function memorySheetsByCourse(sheet: unknown): Record<string, SheetRow[]> {
+  const out: Record<string, SheetRow[]> = {};
+  if (!Array.isArray(sheet)) return out;
+  for (const item of sheet) {
+    if (!item || typeof item !== 'object') continue;
+    const r = item as Record<string, unknown>;
+    if (typeof r.courseId !== 'string' || typeof r.id !== 'string' || typeof r.term !== 'string') continue;
+    (out[r.courseId] ??= []).push({ id: r.id, term: r.term, trick: typeof r.trick === 'string' ? r.trick : '', whenYouSee: typeof r.whenYouSee === 'string' ? r.whenYouSee : '', think: typeof r.think === 'string' ? r.think : '' });
+  }
+  return out;
+}
+
 export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; onSignOut: () => void }) {
   const client = useQueryClient();
   const stateQuery = useGetStudyState();
@@ -247,6 +261,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
         savedMaterialsByCourse={savedMaterialsByCourse}
         examGuides={Object.fromEntries((state.courses ?? []).filter((c): c is AccountCourse & { examGuide?: unknown } => !!c && typeof (c as { id?: unknown }).id === 'string').map(c => [c.id, (c as { examGuide?: { found?: boolean; sections?: { name: string; weight: number | null }[]; sourceUrl?: string | null } }).examGuide ?? null]))}
         onRefreshExamGuide={courseId => void act(async () => { await lookupGuide.mutateAsync({ courseId }); await stateQuery.refetch(); })}
+        memorySheets={memorySheetsByCourse((state as { memorySheet?: unknown }).memorySheet)}
         onDeleteMaterial={materialId => void act(() => updateState(previous => ({
           ...previous, materials: (previous.materials ?? []).filter(item => item.id !== materialId),
         })))}

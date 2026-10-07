@@ -5,6 +5,7 @@ export type HomeChatAction =
   | { type: "create_course"; courseId: string; name: string; courseKind?: "course" | "exam" }
   | { type: "start_quiz"; sessionId: string; courseId: string; topic: string; kind: "practice" | "exam"; count: number }
   | { type: "start_flashcards"; sessionId: string; courseId: string; topic: string; count: number }
+  | { type: "update_memory_sheet"; courseId: string; rows: { id: string; term: string; trick: string; whenYouSee: string; think: string }[] }
   | { type: "start_session"; sessionId: string; courseId: string; topic: string };
 export type HomeChatMessage = {
   id: string;

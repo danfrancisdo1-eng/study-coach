@@ -57,6 +57,7 @@ export default function CourseScreen() {
   const busy = saving || putState.isPending || lookupGuide.isPending;
   const guide = isExam && course?.examGuide && typeof course.examGuide === 'object' ? record(course.examGuide) : null;
   const guideSections = Array.isArray(guide?.sections) ? (guide!.sections as unknown[]).map(record) : [];
+  const memoryRows = (Array.isArray(state.memorySheet) ? state.memorySheet.map(record) : []).filter((r) => r.courseId === courseId && typeof r.term === 'string');
   const refreshGuide = async () => {
     setError('');
     try {
@@ -150,6 +151,17 @@ export default function CourseScreen() {
             </View>
           ) : null}
 
+          <View style={styles.card} testID="panel-memory-sheet">
+            <Text style={styles.kicker}>MEMORY SHEET · {memoryRows.length}</Text>
+            {memoryRows.length ? memoryRows.map((row) => (
+              <View key={String(row.id)} style={styles.sheetRow}>
+                <Text selectable style={styles.sheetTerm}>{String(row.term)}</Text>
+                <Text selectable style={styles.sheetTrick}>⚡ {String(row.trick ?? '')}</Text>
+                {row.whenYouSee || row.think ? <Text selectable style={styles.caption}>When you see {String(row.whenYouSee ?? '')} → think {String(row.think ?? '')}</Text> : null}
+              </View>
+            )) : <Text style={styles.caption}>Nothing here yet. After a graded set, tap "Add the misses to my memory sheet" in the coach chat. Then say "Quiz me from my memory sheet".</Text>}
+          </View>
+
           <View style={styles.card}>
             <Text style={styles.kicker}>ADD MATERIAL</Text>
             <MaterialIntake
@@ -197,6 +209,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   headerCopy: { flex: 1, minWidth: 0 },
   title: { color: colors.foreground, fontSize: 20, fontWeight: '700' },
   caption: { color: colors.mutedForeground, fontSize: 12 },
+  sheetRow: { gap: 3, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border },
+  sheetTerm: { color: colors.foreground, fontSize: 14, fontWeight: '700' },
+  sheetTrick: { color: '#b9d0ff', backgroundColor: '#1f2f4f', borderRadius: 8, paddingVertical: 5, paddingHorizontal: 8, fontSize: 13, fontWeight: '600', alignSelf: 'flex-start' },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   content: { paddingHorizontal: 16, paddingTop: 8, gap: 14 },
