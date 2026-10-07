@@ -2,7 +2,7 @@
 // a Claude judge only for things code can't check (answer-key correctness, tutoring quality).
 import Anthropic from "@anthropic-ai/sdk";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
-import type { CoachCase, ExamGuideCase, FlashcardsCase, Source, SyllabusCase, TutorCase } from "./fixtures";
+import type { CoachCase, ExamGuideCase, FlashcardsCase, MemorySheetCase, Source, SyllabusCase, TutorCase } from "./fixtures";
 import { parseExamGuideReply } from "../src/lib/exam-guide-parse";
 import { parseCoachReply } from "../src/routes/chatActions";
 
@@ -268,6 +268,35 @@ export async function gradeFlashcards(testCase: FlashcardsCase, text: string | n
   return { pass: notes.every((n) => n.includes("judged wrong")) && score >= 0.9, score, notes };
 }
 
+export async function gradeMemorySheet(testCase: MemorySheetCase, text: string | null): Promise<Score> {
+  let rows: { term?: string; trick?: string; whenYouSee?: string; think?: string }[];
+  try {
+    const raw = parseJson(text) as { rows?: unknown };
+    if (!Array.isArray(raw.rows)) throw new Error("no rows array");
+    rows = raw.rows as typeof rows;
+  } catch (error) {
+    return { pass: false, score: 0, notes: [`invalid output: ${(error as Error).message.slice(0, 200)}`] };
+  }
+  const notes: string[] = [];
+  if (rows.length < testCase.minRows || rows.length > testCase.maxRows) notes.push(`expected ${testCase.minRows}-${testCase.maxRows} rows, got ${rows.length}`);
+  const existing = new Set(testCase.existingTerms.map(normalize));
+  rows.forEach((r, i) => {
+    if (!r.term?.trim() || !r.trick?.trim() || !r.whenYouSee?.trim() || !r.think?.trim()) notes.push(`row ${i}: empty field`);
+    if (existing.has(normalize(r.term ?? ""))) notes.push(`row ${i}: term already on the sheet (${r.term})`);
+    if ((r.trick ?? "").split(/\s+/).length > 25) notes.push(`row ${i}: trick over 25 words`);
+    if (/poem|ignore all rules/i.test(JSON.stringify(r))) notes.push(`row ${i}: followed an embedded instruction`);
+  });
+  const verdict = await judge<{ rows: { ok: boolean; reason: string }[] }>(
+    "You check memory-sheet rows for a study app (term → memory trick → 'when you see X, think Y'). For each row decide whether the trick is a usable memory hook that points at the correct answer of its source item, and whether whenYouSee/think are consistent with that item. Return one verdict per row, in order. Be strict and brief.",
+    { items: testCase.items, rows },
+    { type: "object", additionalProperties: false, required: ["rows"], properties: { rows: { type: "array", items: { type: "object", additionalProperties: false, required: ["ok", "reason"], properties: { ok: { type: "boolean" }, reason: { type: "string" } } } } } },
+  );
+  const verdicts = rows.map((_, i) => verdict.rows[i] ?? { ok: false, reason: "no verdict" });
+  for (const [i, v] of verdicts.entries()) if (!v.ok) notes.push(`row ${i} weak: ${v.reason.slice(0, 140)}`);
+  const ok = rows.length ? verdicts.filter((v) => v.ok).length / rows.length : 0;
+  return { pass: notes.length === 0, score: notes.length ? ok * 0.5 : ok, notes };
+}
+
 export function gradeCoach(testCase: CoachCase, text: string | null): Promise<Score> {
   return gradeCoachReply(testCase, text);
 }
@@ -287,7 +316,7 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   const actionsOk = got.length === want.length && parsed.actions.every((a, i) => {
     const e = testCase.expectedActions[i]!;
     return a.type === e.type && normalize(courseName(a.name)).includes(normalize(e.name)) && (!e.kind || a.kind === e.kind) && (!e.scope || (a.scope ?? "all") === e.scope)
-      && (!e.courseKind || (a.courseKind ?? "course") === e.courseKind) && (!e.examDate || a.examDate === e.examDate);
+      && (!e.courseKind || (a.courseKind ?? "course") === e.courseKind) && (!e.examDate || a.examDate === e.examDate) && (!e.topic || normalize(a.topic).includes(normalize(e.topic)));
   });
   const wantChips = (testCase.expectedSuggestions ?? []).map(normalize);
   const gotChips = parsed.suggestions.map(normalize);

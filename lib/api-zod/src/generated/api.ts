@@ -939,10 +939,17 @@ export const GetHomeChatResponse = zod.object({
   "content": zod.string(),
   "at": zod.coerce.date(),
   "actions": zod.array(zod.object({
-  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'start_session']),
+  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'update_memory_sheet', 'start_session']),
   "courseId": zod.string(),
   "name": zod.string().optional().describe('create_course: the new course\'s name'),
   "courseKind": zod.enum(['course', 'exam']).optional().describe('create_course: a college course or a certification exam'),
+  "rows": zod.array(zod.object({
+  "id": zod.string(),
+  "term": zod.string(),
+  "trick": zod.string(),
+  "whenYouSee": zod.string(),
+  "think": zod.string()
+})).optional().describe('update_memory_sheet: the rows that were added'),
   "examDate": zod.string().optional().describe('create_course (exam): YYYY-MM-DD when the student gave a date'),
   "sessionId": zod.string().uuid().optional().describe('start_quiz / start_session: the study session holding the set / conversation'),
   "topic": zod.string().optional(),
@@ -1000,10 +1007,17 @@ export const SendHomeChatMessageResponse = zod.object({
   "content": zod.string(),
   "at": zod.coerce.date(),
   "actions": zod.array(zod.object({
-  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'start_session']),
+  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'update_memory_sheet', 'start_session']),
   "courseId": zod.string(),
   "name": zod.string().optional().describe('create_course: the new course\'s name'),
   "courseKind": zod.enum(['course', 'exam']).optional().describe('create_course: a college course or a certification exam'),
+  "rows": zod.array(zod.object({
+  "id": zod.string(),
+  "term": zod.string(),
+  "trick": zod.string(),
+  "whenYouSee": zod.string(),
+  "think": zod.string()
+})).optional().describe('update_memory_sheet: the rows that were added'),
   "examDate": zod.string().optional().describe('create_course (exam): YYYY-MM-DD when the student gave a date'),
   "sessionId": zod.string().uuid().optional().describe('start_quiz / start_session: the study session holding the set / conversation'),
   "topic": zod.string().optional(),
@@ -1046,10 +1060,17 @@ export const OpenHomeChatResponse = zod.object({
   "content": zod.string(),
   "at": zod.coerce.date(),
   "actions": zod.array(zod.object({
-  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'start_session']),
+  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'update_memory_sheet', 'start_session']),
   "courseId": zod.string(),
   "name": zod.string().optional().describe('create_course: the new course\'s name'),
   "courseKind": zod.enum(['course', 'exam']).optional().describe('create_course: a college course or a certification exam'),
+  "rows": zod.array(zod.object({
+  "id": zod.string(),
+  "term": zod.string(),
+  "trick": zod.string(),
+  "whenYouSee": zod.string(),
+  "think": zod.string()
+})).optional().describe('update_memory_sheet: the rows that were added'),
   "examDate": zod.string().optional().describe('create_course (exam): YYYY-MM-DD when the student gave a date'),
   "sessionId": zod.string().uuid().optional().describe('start_quiz / start_session: the study session holding the set / conversation'),
   "topic": zod.string().optional(),

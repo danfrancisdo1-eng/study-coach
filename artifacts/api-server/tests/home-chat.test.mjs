@@ -340,3 +340,101 @@ test('home chat: flashcard decks', async (t) => {
   assert.equal((await call('POST', `/study/sessions/${started.sessionId}/flashcards/${c0.id}/review`, { result: 'meh' })).status, 400);
   assert.equal((await call('POST', `/study/sessions/${started.sessionId}/flashcards/00000000-0000-4000-8000-000000000000/review`, { result: 'got' })).status, 404);
 });
+
+// Memory sheet (D-025): after a graded set, "Add the misses to my memory sheet" asks the
+// memory_sheet task for rows, merges them into state.memorySheet, and the chat shows them;
+// "Quiz me from my memory sheet" uses the sheet as the only source material.
+test('home chat: memory sheet rows from misses, then a set from the sheet', async (t) => {
+  buildServer();
+  const database = await startDatabase(t);
+  let coach = { reply: 'Hey!', suggestions: [], actions: [] };
+  let sheetReply = { rows: [
+    { term: 'concept-0', trick: 'Zero is the hero: A comes first', whenYouSee: 'Set 1 question 1', think: 'A0' },
+    { term: 'concept-2', trick: 'Two → C (third letter)', whenYouSee: 'Set 1 question 3', think: 'C2' },
+  ] };
+  const ai = await startAiStub(t, (request) => {
+    const system = request.body.messages[0].content;
+    if (system.startsWith('Create exactly')) { quizBatch += 1; return quizReply(4); }
+    if (system.startsWith('You write rows for a student')) return sheetReply ? chatReply(JSON.stringify(sheetReply)) : { status: 500, body: { error: { message: 'stub' } } };
+    return chatReply(JSON.stringify(coach));
+  });
+  const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url });
+  await seedAccount(database.db, 'user_m', { aiConsent: true, courses: [{ id: 'bio', name: 'BIOL 114' }], materials: [{ id: 'm1', courseId: 'bio', name: 'Notes', text: 'Cells have membranes. Mitochondria make ATP.' }] });
+  const call = async (method, path, body) => {
+    const res = await fetch(`${base}/api${path}`, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${signToken('user_m')}` }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const text = await res.text();
+    return { status: res.status, body: text ? JSON.parse(text) : null };
+  };
+
+  // Nothing graded yet: a "missed" update has nothing to add and writes nothing (no AI call).
+  coach = { reply: 'Nothing to add yet.', suggestions: [], actions: [{ type: 'update_memory_sheet', name: 'BIOL 114', scope: 'missed' }] };
+  let chat = await call('POST', '/study/chat', { content: 'Add the misses to my memory sheet', version: 0 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  assert.deepEqual(chat.body.messages.at(-1).actions, []);
+  assert.equal(ai.requests.filter((r) => r.body.messages[0].content.startsWith('You write rows')).length, 0);
+
+  // A graded practice set with two misses (q0, q2).
+  coach = { reply: 'Set coming.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 4, kind: 'practice', scope: 'all' }] };
+  chat = await call('POST', '/study/chat', { content: 'practice', version: 1 });
+  const started = chat.body.messages.at(-1).actions[0];
+  let session = (await call('GET', `/study/sessions/${started.sessionId}`)).body;
+  for (const [i, pick] of [[0, 1], [1, 1], [2, 0], [3, 3]]) {
+    const q = session.quiz.questions[i];
+    session = (await call('PUT', `/study/sessions/${started.sessionId}/answers`, { questionId: q.id, optionId: q.options[pick].id, assisted: false })).body;
+  }
+  session = (await call('POST', `/study/sessions/${started.sessionId}/grade`)).body;
+  assert.equal(session.quiz.grade.correct, 2);
+
+  // The chip: rows written from the misses; the action carries them; state holds them.
+  coach = { reply: 'Added 2 rows.', suggestions: ['Quiz me from my memory sheet', 'Another set on everything'], actions: [{ type: 'update_memory_sheet', name: 'BIOL 114', scope: 'missed' }] };
+  chat = await call('POST', '/study/chat', { content: 'Add the misses to my memory sheet', version: 2 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  const update = chat.body.messages.at(-1).actions[0];
+  assert.equal(update.type, 'update_memory_sheet');
+  assert.equal(update.courseId, 'bio');
+  assert.deepEqual(update.rows.map((r) => r.term), ['concept-0', 'concept-2']);
+  const sheetRequest = ai.requests.filter((r) => r.body.messages[0].content.startsWith('You write rows')).at(-1).body;
+  assert.match(sheetRequest.messages[0].content, /memory sheet for BIOL 114/);
+  const items = JSON.parse(sheetRequest.messages[1].content).items;
+  assert.deepEqual(items.map((i) => [i.kind, i.concept]), [['missed_question', 'concept-0'], ['missed_question', 'concept-2']]);
+  assert.equal(items[0].correct, 'A0');
+  let state = (await call('GET', '/study/state')).body.state;
+  assert.equal(state.memorySheet.length, 2);
+  assert.equal(state.memorySheet[0].courseId, 'bio');
+  assert.equal(state.memorySheet[0].trick, 'Zero is the hero: A comes first');
+
+  // The coach now sees the row count; a repeat add skips duplicate terms (nothing new).
+  coach = { reply: 'Already there.', suggestions: [], actions: [{ type: 'update_memory_sheet', name: 'bio', scope: 'missed' }] };
+  chat = await call('POST', '/study/chat', { content: 'Add the misses to my memory sheet', version: 3 });
+  assert.match(ai.requests.filter((r) => !r.body.messages[0].content.startsWith('You write rows') && !r.body.messages[0].content.startsWith('Create exactly')).at(-1).body.messages[0].content, /memory sheet: 2 rows/);
+  assert.deepEqual(chat.body.messages.at(-1).actions, []);
+  state = (await call('GET', '/study/state')).body.state;
+  assert.equal(state.memorySheet.length, 2);
+
+  // A student request adds a row on its own (scope "all": no misses are sent).
+  sheetReply = { rows: [{ term: 'Osmosis', trick: 'Water follows salt', whenYouSee: 'hypotonic', think: 'cell swells' }] };
+  coach = { reply: 'Added osmosis.', suggestions: [], actions: [{ type: 'update_memory_sheet', name: 'bio', scope: 'all', topic: 'osmosis' }] };
+  chat = await call('POST', '/study/chat', { content: 'add osmosis to my memory sheet', version: 4 });
+  assert.equal(chat.body.messages.at(-1).actions[0].rows[0].term, 'Osmosis');
+  const requestItems = JSON.parse(ai.requests.filter((r) => r.body.messages[0].content.startsWith('You write rows')).at(-1).body.messages[1].content).items;
+  assert.deepEqual(requestItems, [{ kind: 'student_request', text: 'osmosis' }]);
+
+  // "Quiz me from my memory sheet": the set's source is the sheet, not the saved notes.
+  coach = { reply: 'From your sheet.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'Memory sheet', count: 4, kind: 'practice', scope: 'all' }] };
+  chat = await call('POST', '/study/chat', { content: 'Quiz me from my memory sheet', version: 5 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  assert.equal(chat.body.messages.at(-1).actions[0].topic, 'Memory sheet');
+  const quizPrompt = ai.requests.filter((r) => r.body.messages[0].content.startsWith('Create exactly')).at(-1).body.messages.map((m) => m.content).join('\n');
+  assert.match(quizPrompt, /Zero is the hero/);
+  assert.match(quizPrompt, /Osmosis: Water follows salt/);
+  assert.doesNotMatch(quizPrompt, /Mitochondria make ATP/);
+
+  // A memory-sheet AI failure: nothing saved, the student can retry.
+  sheetReply = null;
+  coach = { reply: 'Adding.', suggestions: [], actions: [{ type: 'update_memory_sheet', name: 'bio', scope: 'all', topic: 'ATP' }] };
+  chat = await call('POST', '/study/chat', { content: 'add ATP', version: 6 });
+  assert.equal(chat.status, 502);
+  state = (await call('GET', '/study/state')).body.state;
+  assert.equal(state.memorySheet.length, 3);
+  assert.equal((await call('GET', '/study/chat')).body.version, 6);
+});

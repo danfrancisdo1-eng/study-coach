@@ -432,6 +432,7 @@ export const HomeChatActionType = {
   create_course: 'create_course',
   start_quiz: 'start_quiz',
   start_flashcards: 'start_flashcards',
+  update_memory_sheet: 'update_memory_sheet',
   start_session: 'start_session',
 } as const;
 
@@ -445,6 +446,14 @@ export const HomeChatActionCourseKind = {
   course: 'course',
   exam: 'exam',
 } as const;
+
+export type HomeChatActionRowsItem = {
+  id: string;
+  term: string;
+  trick: string;
+  whenYouSee: string;
+  think: string;
+};
 
 /**
  * start_quiz: practice reveals feedback per answer; exam only after grading
@@ -464,6 +473,8 @@ export interface HomeChatAction {
   name?: string;
   /** create_course: a college course or a certification exam */
   courseKind?: HomeChatActionCourseKind;
+  /** update_memory_sheet: the rows that were added */
+  rows?: HomeChatActionRowsItem[];
   /** create_course (exam): YYYY-MM-DD when the student gave a date */
   examDate?: string;
   /** start_quiz / start_session: the study session holding the set / conversation */

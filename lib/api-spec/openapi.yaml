@@ -728,10 +728,22 @@ components:
       type: object
       required: [type, courseId]
       properties:
-        type: { type: string, enum: [create_course, start_quiz, start_flashcards, start_session] }
+        type: { type: string, enum: [create_course, start_quiz, start_flashcards, update_memory_sheet, start_session] }
         courseId: { type: string }
         name: { type: string, description: "create_course: the new course's name" }
         courseKind: { type: string, enum: [course, exam], description: "create_course: a college course or a certification exam" }
+        rows:
+          type: array
+          description: "update_memory_sheet: the rows that were added"
+          items:
+            type: object
+            required: [id, term, trick, whenYouSee, think]
+            properties:
+              id: { type: string }
+              term: { type: string }
+              trick: { type: string }
+              whenYouSee: { type: string }
+              think: { type: string }
         examDate: { type: string, description: "create_course (exam): YYYY-MM-DD when the student gave a date" }
         sessionId: { type: string, format: uuid, description: "start_quiz / start_session: the study session holding the set / conversation" }
         topic: { type: string }

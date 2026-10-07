@@ -7,6 +7,7 @@
  */
 import type { HomeChatActionCourseKind } from './homeChatActionCourseKind';
 import type { HomeChatActionKind } from './homeChatActionKind';
+import type { HomeChatActionRowsItem } from './homeChatActionRowsItem';
 import type { HomeChatActionType } from './homeChatActionType';
 
 export interface HomeChatAction {
@@ -16,6 +17,8 @@ export interface HomeChatAction {
   name?: string;
   /** create_course: a college course or a certification exam */
   courseKind?: HomeChatActionCourseKind;
+  /** update_memory_sheet: the rows that were added */
+  rows?: HomeChatActionRowsItem[];
   /** create_course (exam): YYYY-MM-DD when the student gave a date */
   examDate?: string;
   /** start_quiz / start_session: the study session holding the set / conversation */

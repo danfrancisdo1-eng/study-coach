@@ -13,5 +13,6 @@ export const HomeChatActionType = {
   create_course: 'create_course',
   start_quiz: 'start_quiz',
   start_flashcards: 'start_flashcards',
+  update_memory_sheet: 'update_memory_sheet',
   start_session: 'start_session',
 } as const;
