@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import {
-  getGetHomeChatQueryKey, getGetStudyStateQueryKey, getListStudySessionsQueryKey, useGetHomeChat, useGetStudyState, useListStudySessions, useOpenHomeChat, usePutStudyState, useSendHomeChatMessage,
+  getGetHomeChatQueryKey, getGetStudyStateQueryKey, getListStudySessionsQueryKey, useGetHomeChat, useGetStudyState, useListStudySessions, useLookupExamGuide, useOpenHomeChat, usePutStudyState, useSendHomeChatMessage,
   type HomeChat, type HomeChatMessage,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
@@ -41,14 +41,15 @@ function readableError(problem: unknown): string {
 type StateRecord = Record<string, unknown>;
 const record = (value: unknown): StateRecord => (value && typeof value === 'object' ? value as StateRecord : {});
 
-type HomeCourse = IntakeCourse & { kind: 'course' | 'exam'; examDate?: string };
+type HomeCourse = IntakeCourse & { kind: 'course' | 'exam'; examDate?: string; guide?: { found: boolean; sections: number } | null };
 
 function coursesFrom(state: unknown): HomeCourse[] {
   const courses = record(state).courses;
   return (Array.isArray(courses) ? courses : []).flatMap((item) => {
     const course = record(item);
     return typeof course.id === 'string' && typeof course.name === 'string'
-      ? [{ id: course.id, name: course.name, kind: course.kind === 'exam' ? 'exam' as const : 'course' as const, ...(typeof course.examDate === 'string' ? { examDate: course.examDate } : {}) }]
+      ? [{ id: course.id, name: course.name, kind: course.kind === 'exam' ? 'exam' as const : 'course' as const, ...(typeof course.examDate === 'string' ? { examDate: course.examDate } : {}),
+          guide: course.examGuide && typeof course.examGuide === 'object' ? { found: record(course.examGuide).found === true, sections: Array.isArray(record(course.examGuide).sections) ? (record(course.examGuide).sections as unknown[]).length : 0 } : null }]
       : [];
   });
 }
@@ -98,6 +99,17 @@ export default function CoachHome() {
   const send = useSendHomeChatMessage();
   const open = useOpenHomeChat();
   const sessionsQuery = useListStudySessions({ query: { queryKey: [...getListStudySessionsQueryKey(), userId], enabled: !!userId } });
+  const lookupGuide = useLookupExamGuide();
+  const [lookingUp, setLookingUp] = useState<string | null>(null); // course id whose exam guide is being fetched
+  // After an exam is added, fetch its official guide (sections + weights) once; the row shows progress.
+  const fetchGuide = async (courseId: string) => {
+    setLookingUp(courseId);
+    try {
+      await lookupGuide.mutateAsync({ courseId });
+      await queryClient.invalidateQueries({ queryKey: [...getGetStudyStateQueryKey(), userId] });
+    } catch { /* the row shows "no guide"; the course screen has Refresh */ }
+    finally { setLookingUp(null); }
+  };
 
   const consented = stateQuery.data?.state?.aiConsent === true;
 
@@ -158,6 +170,7 @@ export default function CoachHome() {
       queryClient.setQueryData([...getGetStudyStateQueryKey(), userId], result);
       setAddOpen(false); setAddName(''); setAddDate(''); setAddKind('course');
       selectCourse(course.id);
+      if (course.kind === 'exam') void fetchGuide(course.id);
     } catch (problem) {
       if ((problem as { status?: number }).status === 409) await queryClient.invalidateQueries({ queryKey: [...getGetStudyStateQueryKey(), userId] });
       setError(readableError(problem));
@@ -218,6 +231,7 @@ export default function CoachHome() {
       const actions = last?.actions ?? [];
       if (actions.some((a) => a.type === 'create_course')) {
         await queryClient.invalidateQueries({ queryKey: [...getGetStudyStateQueryKey(), userId] });
+        for (const a of actions) if (a.type === 'create_course' && a.courseKind === 'exam') void fetchGuide(a.courseId);
       }
       const started = actions.find((a) => a.type === 'start_session' && a.sessionId);
       if (started?.sessionId) router.push({ pathname: '/(tabs)/courses', params: { openSession: started.sessionId } });
@@ -352,7 +366,7 @@ export default function CoachHome() {
               <View style={styles.courseCopy}>
                 <Text numberOfLines={1} style={[styles.courseName, course.id === focusCourseId && { color: colors.primary }]}>{course.name}</Text>
                 <Text numberOfLines={1} style={styles.caption}>
-                  {course.kind === 'exam' ? `exam${course.examDate ? ` · ${course.examDate}` : ''}` : 'course'} · {materialCount(course.id)} material{materialCount(course.id) === 1 ? '' : 's'}{lastResult.get(course.id) ? ` · ${lastResult.get(course.id)}` : ''}
+                  {course.kind === 'exam' ? `exam${course.examDate ? ` · ${course.examDate}` : ''}` : 'course'} · {materialCount(course.id)} material{materialCount(course.id) === 1 ? '' : 's'}{lastResult.get(course.id) ? ` · ${lastResult.get(course.id)}` : ''}{course.kind === 'exam' ? (lookingUp === course.id ? ' · looking up the exam guide…' : course.guide?.found ? ` · ${course.guide.sections} sections` : course.guide ? ' · no official guide found' : '') : ''}
                 </Text>
               </View>
               <Feather name="chevron-right" size={16} color={colors.mutedForeground} />

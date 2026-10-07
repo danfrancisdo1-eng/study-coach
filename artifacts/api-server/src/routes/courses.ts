@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request } from "express";
 import { and, eq, TransactionRollbackError } from "drizzle-orm";
 import { db, lecturesTable, studySessionsTable, studyStatesTable } from "@workspace/db";
 import { requireStudyAuth } from "./study";
+import { lookupExamGuide, type ExamGuide } from "../lib/exam-guide";
 
 const router: IRouter = Router();
 router.use("/study/courses", requireStudyAuth);
@@ -83,3 +84,54 @@ router.delete("/study/courses/:courseId", async (req, res): Promise<void> => {
 });
 
 export default router;
+
+// Exam-guide lookup (D-024): find the official sections/weights of a certification exam and
+// save them on the exam in study state. Only the exam's name goes to the AI provider.
+router.post("/study/courses/:courseId/exam-guide", async (req, res): Promise<void> => {
+  const courseId = req.params.courseId;
+  if (typeof courseId !== "string" || !courseId.trim() || courseId.length > 200) {
+    res.status(400).json({ error: "Invalid course id." });
+    return;
+  }
+  const ownerId = owner(req);
+  const rows = await db.select({ state: studyStatesTable.state }).from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
+  const state = isObject(rows[0]?.state) ? rows[0]!.state as JsonObject : null;
+  if (!state || state.aiConsent !== true) {
+    res.status(403).json({ error: "Persist explicit AI consent in study state (aiConsent: true) before using AI coaching." });
+    return;
+  }
+  const course = list(state.courses).find((c): c is JsonObject => isObject(c) && c.id === courseId);
+  if (!course) {
+    res.status(404).json({ error: "Course not found." });
+    return;
+  }
+  if (course.kind !== "exam" || typeof course.name !== "string") {
+    res.status(400).json({ error: "Exam guides are looked up for certification exams only." });
+    return;
+  }
+  let guide: ExamGuide | null;
+  try {
+    guide = await lookupExamGuide(course.name);
+    if (!guide) throw new Error("Reply was not valid exam-guide JSON");
+  } catch (error) {
+    req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Exam guide lookup failed");
+    res.status(502).json({ error: "Couldn't look up the exam guide just now. Try again in a moment." });
+    return;
+  }
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const latest = await db.select({ state: studyStatesTable.state, version: studyStatesTable.version })
+      .from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
+    const row = latest[0];
+    if (!row || !isObject(row.state)) break;
+    const nextState: JsonObject = { ...row.state, courses: list(row.state.courses).map((c) => (isObject(c) && c.id === courseId ? { ...c, examGuide: guide } : c)) };
+    const updated = await db.update(studyStatesTable)
+      .set({ state: nextState, version: row.version + 1, updatedAt: new Date() })
+      .where(and(eq(studyStatesTable.ownerId, ownerId), eq(studyStatesTable.version, row.version)))
+      .returning({ version: studyStatesTable.version });
+    if (updated[0]) {
+      res.json(guide);
+      return;
+    }
+  }
+  res.status(409).json({ error: "Your courses changed on another device. Reload and try again." });
+});

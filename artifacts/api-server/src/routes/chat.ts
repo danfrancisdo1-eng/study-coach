@@ -10,7 +10,7 @@ import { and, eq } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v7";
+import * as coachPrompt from "../prompts/coach.v8";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { generateFlashcards, generateSessionQuiz, sourceChunks, sourceTextOf, type Quiz, type Session } from "../lib/session-quiz";
 import { parseCoachReply, planActions, type DeckPlan, type KnownCourse, type QuizPlan } from "./chatActions";
@@ -41,7 +41,15 @@ function owner(req: Request): string {
 function knownCourses(state: JsonObject): KnownCourse[] {
   return list(state.courses).flatMap((course) => {
     if (!isObject(course) || typeof course.id !== "string" || typeof course.name !== "string") return [];
-    return [{ id: course.id, name: course.name, ...(typeof course.code === "string" ? { code: course.code } : {}), kind: course.kind === "exam" ? "exam" as const : "course" as const, ...(typeof course.examDate === "string" ? { examDate: course.examDate } : {}) }];
+    const guide = isObject(course.examGuide) ? course.examGuide : null;
+    const sections = guide && guide.found === true && Array.isArray(guide.sections)
+      ? guide.sections.flatMap((s) => (isObject(s) && typeof s.name === "string" ? [{ name: s.name, weight: typeof s.weight === "number" ? s.weight : null }] : []))
+      : [];
+    return [{
+      id: course.id, name: course.name, ...(typeof course.code === "string" ? { code: course.code } : {}),
+      kind: course.kind === "exam" ? "exam" as const : "course" as const, ...(typeof course.examDate === "string" ? { examDate: course.examDate } : {}),
+      ...(sections.length ? { guideSections: sections } : {}), ...(guide && guide.found === false ? { guideMissing: true } : {}),
+    }];
   });
 }
 
@@ -193,7 +201,7 @@ router.get("/study/chat", async (req, res): Promise<void> => {
 
 // Adds courses to the account's study state, retrying if the state changed meanwhile.
 // Returns the created courses (id + name), or null if the state could not be updated.
-async function createCourses(ownerId: string, specs: { name: string; kind: "course" | "exam"; examDate?: string }[]): Promise<{ id: string; name: string }[] | null> {
+async function createCourses(ownerId: string, specs: { name: string; kind: "course" | "exam"; examDate?: string }[]): Promise<{ id: string; name: string; kind: "course" | "exam" }[] | null> {
   if (!specs.length) return [];
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const rows = await db.select({ state: studyStatesTable.state, version: studyStatesTable.version })
@@ -227,7 +235,7 @@ async function insertSession(ownerId: string, session: Session): Promise<void> {
 }
 
 /** Builds and stores a question set; returns the session or null when no valid question came back. Throws on AI failure. */
-async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { courseId: string }, previous: Session | null): Promise<Session | null> {
+async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { courseId: string }, previous: Session | null, sectionWeights?: { name: string; weight: number | null }[]): Promise<Session | null> {
   const session = newSession(plan.courseId, plan.topic, true);
   const { chunks, status } = sourceChunks(state, plan.courseId, plan.topic, await reviewedLectureMaterials(ownerId, plan.courseId));
   const previousQuiz = previous?.quiz;
@@ -239,6 +247,7 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
     courseId: plan.courseId, topic: plan.topic, kind: plan.kind,
     mode: missed.length ? "targeted" : "diagnostic",
     expectedCount: plan.count, originalPrompts, weakConcepts: missed, sourceText: sourceTextOf(chunks), status,
+    ...(sectionWeights?.length && !missed.length ? { sectionWeights } : {}),
   });
   if (!quiz) return null;
   // "Missed topics" sets carry 1–2 questions from the earlier set that were answered correctly (SPEC §6 step 7).
@@ -303,6 +312,8 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       name: course.code ? `${course.name} (${course.code})` : course.name,
       kind: course.kind ?? "course",
       ...(course.examDate ? { examDate: course.examDate } : {}),
+      ...(course.guideSections ? { guideSections: course.guideSections } : {}),
+      ...(course.guideMissing ? { guideMissing: true } : {}),
       materials: own.length,
       lectures: lectureRows.filter((l) => l.courseId === course.id).length,
       ...(materialNames.length ? { materialNames } : {}),
@@ -338,7 +349,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     res.status(409).json({ error: "Your courses changed on another device. Reload and send again.", version });
     return;
   }
-  for (const course of created) done.push({ type: "create_course", courseId: course.id, name: course.name });
+  for (const course of created) done.push({ type: "create_course", courseId: course.id, name: course.name, ...(course.kind === "exam" ? { courseKind: "exam" as const } : {}) });
   const resolveCourse = (start: { courseId: string | null; courseName?: string }) =>
     start.courseId ?? created.find((c) => c.name === start.courseName)?.id ?? null;
   if (plan.quiz) {
@@ -346,7 +357,10 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     if (courseId) {
       try {
         const latestState = { ...state, courses: [...list(state.courses), ...created] };
-        const session = await startQuiz(ownerId, latestState, { ...plan.quiz, courseId }, lastQuizSession);
+        // "All topics" on an exam with an official guide: spread the set by the guide's weights.
+        const guideSections = courses.find((c) => c.id === courseId)?.guideSections;
+        const allTopics = /^all topics/i.test(plan.quiz.topic);
+        const session = await startQuiz(ownerId, latestState, { ...plan.quiz, courseId }, lastQuizSession, allTopics ? guideSections : undefined);
         if (!session) throw new Error("No valid questions were generated");
         done.push({ type: "start_quiz", sessionId: session.id, courseId, topic: plan.quiz.topic, kind: plan.quiz.kind, count: session.quiz!.questions.length });
       } catch (error) {

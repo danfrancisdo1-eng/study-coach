@@ -2,7 +2,8 @@
 // a Claude judge only for things code can't check (answer-key correctness, tutoring quality).
 import Anthropic from "@anthropic-ai/sdk";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
-import type { CoachCase, FlashcardsCase, Source, SyllabusCase, TutorCase } from "./fixtures";
+import type { CoachCase, ExamGuideCase, FlashcardsCase, Source, SyllabusCase, TutorCase } from "./fixtures";
+import { parseExamGuideReply } from "../src/lib/exam-guide-parse";
 import { parseCoachReply } from "../src/routes/chatActions";
 
 export interface Score {
@@ -209,6 +210,27 @@ export function gradeOcr(expected: string, text: string | null, finished: boolea
   const notes = finished ? [] : ["generation did not finish"];
   if (score < 0.97) notes.push(`similarity ${score.toFixed(3)}`);
   return { pass: finished && score >= 0.97, score, notes };
+}
+
+export function gradeExamGuide(testCase: ExamGuideCase, text: string | null): Score {
+  const guide = parseExamGuideReply(text);
+  if (!guide) return { pass: false, score: 0, notes: ["reply was not valid exam-guide JSON"] };
+  const notes: string[] = [];
+  if (testCase.expectNotFound) {
+    if (guide.found) notes.push(`found a guide for a made-up exam: ${guide.sections.map((s) => s.name).join(" | ")}`);
+    return { pass: notes.length === 0, score: notes.length ? 0 : 1, notes };
+  }
+  if (!guide.found) return { pass: false, score: 0, notes: [`not found: ${guide.notes}`] };
+  const names = guide.sections.map((s) => s.name.toLowerCase());
+  for (const word of testCase.expectSections) if (!names.some((n) => n.includes(word))) notes.push(`no section mentioning "${word}"; got ${names.join(" | ")}`);
+  const weights = guide.sections.map((s) => s.weight).filter((w): w is number => w !== null);
+  if (weights.length === guide.sections.length) {
+    const sum = weights.reduce((a, b) => a + b, 0);
+    if (sum < 90 || sum > 110) notes.push(`weights sum to ${sum}`);
+  } else notes.push(`${guide.sections.length - weights.length} section(s) without a weight`);
+  if (!guide.sourceUrl) notes.push("no source url");
+  const score = Math.max(0, 1 - notes.length * 0.25);
+  return { pass: notes.every((n) => n.startsWith("no source") || n.includes("without a weight")) && score >= 0.5, score, notes };
 }
 
 export async function gradeFlashcards(testCase: FlashcardsCase, text: string | null): Promise<Score> {

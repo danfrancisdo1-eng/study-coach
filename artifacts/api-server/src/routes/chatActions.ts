@@ -16,7 +16,7 @@ export type CoachAction = {
 };
 export type CourseKind = "course" | "exam";
 export type CoachReply = { reply: string; suggestions: string[]; actions: CoachAction[] };
-export type KnownCourse = { id: string; name: string; code?: string; kind?: CourseKind; examDate?: string };
+export type KnownCourse = { id: string; name: string; code?: string; kind?: CourseKind; examDate?: string; guideSections?: { name: string; weight: number | null }[]; guideMissing?: boolean };
 
 export const MAX_REPLY_CHARS = 4000;
 export const MAX_SUGGESTIONS = 6; // up to 5 topics + "All topics"
