@@ -3,7 +3,9 @@
 // chat-first home (routes/chat.ts) can start question sets with the same code.
 import { randomUUID } from "node:crypto";
 import { complete } from "../ai";
-import * as sessionQuizPrompt from "../prompts/session-quiz.v4";
+import * as sessionQuizPrompt from "../prompts/session-quiz.v5";
+import * as quizCheckPrompt from "../prompts/quiz-check.v1";
+import { applyQuizCheck, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
 import * as flashcardsPrompt from "../prompts/flashcards.v1";
 
 export type JsonObject = Record<string, unknown>;
@@ -231,6 +233,20 @@ export interface GenerateQuizInput {
  * One AI call plus validation of every proposed question. Returns null when no valid
  * question came back (the caller answers 502 and saves nothing). Throws on AI failure.
  */
+async function checkAnswerKeys(valid: ProposedQuestion[]): Promise<{ kept: ProposedQuestion[]; fixed: number; dropped: number }> {
+  if (!valid.length) return { kept: valid, fixed: 0, dropped: 0 };
+  try {
+    const response = await complete("quiz_check", {
+      system: quizCheckPrompt.systemPrompt(valid.length),
+      messages: [{ role: "user", content: JSON.stringify({ questions: valid.map((q, index) => ({ index, prompt: q.prompt, options: q.options, answerIndex: q.answerIndex, explanation: q.explanation })) }) }],
+    });
+    const parsed: unknown = response.text ? JSON.parse(response.text) : null;
+    return applyQuizCheck(valid, parseQuizCheck(parsed, valid.length));
+  } catch {
+    return { kept: valid, fixed: 0, dropped: 0 };
+  }
+}
+
 export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Quiz | null> {
   const { expectedCount, originalPrompts, weakConcepts, status } = input;
   const usedPrompts = new Set(originalPrompts.map((prompt) => prompt.trim().toLowerCase().replace(/\s+/g, " ")));
@@ -241,8 +257,8 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
   const raw = response.text;
   const parsed: unknown = raw ? JSON.parse(raw) : null;
   const proposed = jsonObject(parsed) && Array.isArray(parsed.questions) ? parsed.questions : [];
-  const questions: StoredQuestion[] = [];
   let invalidItemCount = Math.max(0, expectedCount - proposed.length) + Math.max(0, proposed.length - expectedCount);
+  const valid: ProposedQuestion[] = [];
   for (const value of proposed.slice(0, expectedCount)) {
     if (!jsonObject(value) || typeof value.prompt !== "string" || !value.prompt.trim() ||
       typeof value.concept !== "string" || !value.concept.trim() || typeof value.explanation !== "string" ||
@@ -259,13 +275,19 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
       continue;
     }
     usedPrompts.add(normalizedPrompt);
-    const options = (value.options as string[]).map((text) => ({ id: randomUUID(), text }));
-    questions.push({
-      id: randomUUID(), prompt: value.prompt.slice(0, 2000), concept: value.concept.slice(0, 300), options,
-      correctOptionId: options[value.answerIndex as number]!.id, explanation: value.explanation.slice(0, 2000),
-      ...(typeof value.hook === "string" && value.hook.trim() ? { hook: value.hook.trim().slice(0, 300) } : {}), answers: [],
+    valid.push({
+      prompt: value.prompt.slice(0, 2000), options: value.options as string[], answerIndex: value.answerIndex as number, concept: value.concept.slice(0, 300),
+      explanation: value.explanation.slice(0, 2000), ...(typeof value.hook === "string" && value.hook.trim() ? { hook: value.hook.trim().slice(0, 300) } : {}),
     });
   }
+  // Answer-key consistency check (D-027): fix keys the explanation contradicts, drop unclear ones.
+  // A failed check keeps the set as written (the writer is right far more often than not).
+  const { kept, dropped } = await checkAnswerKeys(valid);
+  invalidItemCount += dropped;
+  const questions: StoredQuestion[] = kept.map((q) => {
+    const options = q.options.map((text) => ({ id: randomUUID(), text }));
+    return { id: randomUUID(), prompt: q.prompt, concept: q.concept, options, correctOptionId: options[q.answerIndex]!.id, explanation: q.explanation, ...(q.hook ? { hook: q.hook } : {}), answers: [] };
+  });
   if (!questions.length) return null;
   return { mode: input.mode, ...(input.kind ? { kind: input.kind } : {}), expectedCount, questions, sourceStatus: status, invalidItemCount, grade: null };
 }

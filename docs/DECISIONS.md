@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-07 — D-027: Answer keys are checked after every set (session-quiz.v5, quiz-check.v1)
+- Dan's screenshots (Copilot set): twice the writer's explanation supported one option while "answerIndex" pointed at another, and the writer left a note ("option index 3 is incorrect here", "this is a trap check") instead of fixing it. The grader trusted the index, so the student was marked wrong on right answers.
+- Two layers. session-quiz.v5: the index must be the option the explanation supports; re-check before finishing; never write notes about mistakes. New `quiz_check` task (Haiku 4.5, structured output, about 1.5 s and a fraction of a cent per set): reads each question and reports which option the explanation supports, from the explanation text only (no outside knowledge, so it cannot overrule the writer on facts). Keys the explanation contradicts are corrected; questions whose explanation names no clear option are dropped (counted in invalidItemCount); a failed check keeps the set as written. Pure parse/apply in lib/quiz-check.ts.
+- Evals: quiz_check 2/2 (the two Copilot questions fixed, "it depends" dropped, embedded instruction ignored), session_quiz 6/6 on v5. Tests 70/70 (1 unit, 1 end-to-end). Decided by Dan.
+
 ## 2026-10-07 — D-026: The memory sheet fills itself (coach.v10)
 - Dan, after D-025 shipped: "this shouldn't have to be requested. The AI should automatically store this in memory. No need for a sheet that even has to be seen." Now the server writes the rows right after a set is graded or a deck is finished (`rememberMisses` in lib/memory-sheet.ts, after the response is sent; a failure only logs). The chat chips "Add the misses / these to my memory sheet" and the rows card are gone; a named idea ("put osmosis on my memory sheet") still adds a row and shows a one-line "Saved to your memory sheet". The course screen keeps the sheet list (quiet, no action needed). Sets, decks and "Quiz me from my memory sheet" keep using the rows as source.
 - Evals coach 27/27 (chip case replaced by "asks to save the misses → nothing to do"); tests 67/67. Decided by Dan.
