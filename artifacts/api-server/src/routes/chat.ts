@@ -10,7 +10,7 @@ import { and, eq } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v6";
+import * as coachPrompt from "../prompts/coach.v7";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { generateFlashcards, generateSessionQuiz, sourceChunks, sourceTextOf, type Quiz, type Session } from "../lib/session-quiz";
 import { parseCoachReply, planActions, type DeckPlan, type KnownCourse, type QuizPlan } from "./chatActions";

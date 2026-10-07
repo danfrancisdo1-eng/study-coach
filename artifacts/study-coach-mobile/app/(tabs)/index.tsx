@@ -53,6 +53,9 @@ function coursesFrom(state: unknown): HomeCourse[] {
   });
 }
 
+// Same hook chip palette as QuizCard (fixed for now; theme tokens in the aesthetics pass).
+const HOOK = { bg: '#1f2f4f', text: '#b9d0ff' };
+
 const newId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
 
 function materialsFrom(state: unknown, courseId: string): SavedMaterial[] {
@@ -253,12 +256,39 @@ export default function CoachHome() {
     }
   };
 
+  // Coach replies: blank line between paragraphs; "1. Label: trick" lines become their own
+  // hook chips (same ⚡ style as the question hooks; Dan: tricks ran together as one paragraph).
+  const renderCoachText = (content: string) => {
+    const blocks = content.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+    return (
+      <View style={styles.coachBlocks}>
+        {blocks.map((line, i) => {
+          const numbered = /^(\d+)[.)]\s+(.*)$/.exec(line);
+          if (numbered) {
+            const [, n, rest] = numbered;
+            const split = /^([^:]{2,40}):\s*(.*)$/.exec(rest!);
+            return (
+              <View key={i} style={styles.trickCard} testID="chat-trick">
+                <Feather name="zap" size={15} color={HOOK.text} />
+                <Text style={styles.trickText}>
+                  {split ? <><Text style={styles.trickLabel}>{split[1]}: </Text>{split[2]}</> : rest}
+                  <Text style={styles.trickNumber}>  {n}</Text>
+                </Text>
+              </View>
+            );
+          }
+          return <Text key={i} style={styles.body}>{line}</Text>;
+        })}
+      </View>
+    );
+  };
+
   const renderMessage = ({ item }: { item: HomeChatMessage }) => (
     <View>
     {item.sessionStart ? <View style={styles.sessionDivider}><View style={styles.sessionLine} /><Text style={styles.sessionLabel}>NEW SESSION</Text><View style={styles.sessionLine} /></View> : null}
     <View style={[styles.turn, item.role === 'user' ? styles.userTurn : styles.coachTurn]} testID={`chat-turn-${item.role}`}>
       <Text style={styles.turnRole}>{item.role === 'user' ? 'YOU' : 'COACH'}</Text>
-      <Text style={styles.body}>{item.content}</Text>
+      {item.role === 'assistant' ? renderCoachText(item.content) : <Text style={styles.body}>{item.content}</Text>}
       {item.id === lastMessage?.id && chips.length ? (
         <View style={styles.chipRow}>
           {chips.map((chip) => (
@@ -519,6 +549,11 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   userTurn: { backgroundColor: colors.secondary, alignSelf: 'flex-end', maxWidth: '92%' },
   coachTurn: { backgroundColor: colors.accent, alignSelf: 'stretch' },
   turnRole: { color: colors.primary, fontSize: 9, letterSpacing: 1, fontWeight: '800' },
+  coachBlocks: { gap: 8 },
+  trickCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 12, borderRadius: 14, backgroundColor: HOOK.bg },
+  trickText: { flex: 1, color: HOOK.text, fontSize: 15, lineHeight: 22 },
+  trickLabel: { fontWeight: '700', color: '#ffffff' },
+  trickNumber: { color: HOOK.text, fontSize: 11, opacity: 0.7 },
   body: { color: colors.foreground, fontSize: 15, lineHeight: 22 },
   caption: { color: colors.mutedForeground, fontSize: 12 },
   actionChip: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
