@@ -159,7 +159,7 @@ export default function CourseScreen() {
                 <Text selectable style={styles.sheetTrick}>⚡ {String(row.trick ?? '')}</Text>
                 {row.whenYouSee || row.think ? <Text selectable style={styles.caption}>When you see {String(row.whenYouSee ?? '')} → think {String(row.think ?? '')}</Text> : null}
               </View>
-            )) : <Text style={styles.caption}>Nothing here yet. After a graded set, tap "Add the misses to my memory sheet" in the coach chat. Then say "Quiz me from my memory sheet".</Text>}
+            )) : <Text style={styles.caption}>Fills itself from the questions you miss. Ask the coach "Quiz me from my memory sheet" any time.</Text>}
           </View>
 
           <View style={styles.card}>

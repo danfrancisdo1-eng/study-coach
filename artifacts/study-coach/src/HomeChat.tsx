@@ -98,14 +98,7 @@ export default function HomeChat({ aiConsent, busy, courseId, onCoursesChanged, 
                 })
                 : <p>{turn.content}</p>}
               {turn.actions?.map(action => action.type === 'update_memory_sheet' ? (
-                <div key={`sheet-${action.courseId}-${action.rows?.[0]?.id ?? ''}`} className="sc-sheet" data-testid="card-memory-sheet">
-                  <p className="ae-muted" style={{ fontSize: '.85rem' }}>Memory sheet: {action.rows?.length ?? 0} new {action.rows?.length === 1 ? 'row' : 'rows'}</p>
-                  {(action.rows ?? []).map(row => <div className="sc-sheet-row" key={row.id}>
-                    <strong>{row.term}</strong>
-                    <span className="sc-miss-hook">⚡ {row.trick}</span>
-                    {(row.whenYouSee || row.think) && <span className="ae-muted" style={{ fontSize: '.8rem' }}>When you see {row.whenYouSee} → think {row.think}</span>}
-                  </div>)}
-                </div>
+                <p key={`sheet-${action.courseId}-${action.rows?.[0]?.id ?? ''}`} className="ae-muted" style={{ fontSize: '.85rem' }} data-testid="card-memory-sheet">Saved to your memory sheet</p>
               ) : (
                 <p key={`${action.type}-${action.courseId}-${action.sessionId ?? ''}`} className="ae-muted" style={{ fontSize: '.85rem' }}>
                   {action.type === 'create_course' ? `Added course: ${action.name ?? ''}`
