@@ -1,12 +1,13 @@
-// Bundles the eval runner (TypeScript + workspace packages) into evals/dist/run.mjs.
+// Bundles the eval runner and the answer-key audit (TypeScript + workspace packages) into evals/dist/*.mjs.
 import { build } from "esbuild";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 await build({
-  entryPoints: [path.join(dir, "run.ts")],
-  outfile: path.join(dir, "dist", "run.mjs"),
+  entryPoints: [path.join(dir, "run.ts"), path.join(dir, "audit.ts")],
+  outdir: path.join(dir, "dist"),
+  outExtension: { ".js": ".mjs" },
   platform: "node",
   format: "esm",
   bundle: true,
