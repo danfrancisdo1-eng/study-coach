@@ -20,7 +20,10 @@ export default function HomeChat({ aiConsent, busy, courseId, onCoursesChanged, 
   onOpenSession: (sessionId: string) => void;
 }) {
   const client = useQueryClient();
-  const chat = useGetHomeChat();
+  // One thread per course (D-038): the chat follows the selected course; none = the general thread.
+  const chatParams = courseId ? { courseId } : undefined;
+  const chatKey = getGetHomeChatQueryKey(chatParams);
+  const chat = useGetHomeChat(chatParams);
   const send = useSendHomeChatMessage();
   const open = useOpenHomeChat();
   const [draft, setDraft] = useState('');
@@ -44,12 +47,14 @@ export default function HomeChat({ aiConsent, busy, courseId, onCoursesChanged, 
   openRef.current = open.mutateAsync;
   useEffect(() => {
     if (!aiConsent) return;
-    const openSession = () => { openRef.current().then(result => client.setQueryData(getGetHomeChatQueryKey(), result)).catch(() => {}); };
+    const key = chatKey;
+    const openSession = () => { openRef.current({ data: chatParams ?? {} }).then(result => client.setQueryData(key, result)).catch(() => {}); };
     openSession();
     const onVisible = () => { if (document.visibilityState === 'visible') openSession(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [aiConsent]);
+  }, [aiConsent, courseId]);
+  useEffect(() => { setGradedSessionId(null); setFinishedDeckId(null); }, [courseId]);
 
   const sendText = async (text: string) => {
     const content = text.trim();
@@ -57,7 +62,7 @@ export default function HomeChat({ aiConsent, busy, courseId, onCoursesChanged, 
     setError('');
     try {
       const result: HomeChatData = await send.mutateAsync({ data: { content, version, ...(courseId ? { courseId } : {}) } });
-      client.setQueryData(getGetHomeChatQueryKey(), result);
+      client.setQueryData(chatKey, result);
       if (result.activeQuiz) { setGradedSessionId(null); setFinishedDeckId(null); }
       if (result.activeDeck) { setFinishedDeckId(null); setGradedSessionId(null); }
       setDraft('');
@@ -67,7 +72,7 @@ export default function HomeChat({ aiConsent, busy, courseId, onCoursesChanged, 
       if (started?.sessionId) onOpenSession(started.sessionId);
     } catch (problem) {
       const status = (problem as { status?: number }).status;
-      if (status === 409) void client.invalidateQueries({ queryKey: getGetHomeChatQueryKey() });
+      if (status === 409) void client.invalidateQueries({ queryKey: chatKey });
       const data = (problem as { data?: { error?: unknown } }).data;
       setError(data && typeof data.error === 'string' ? data.error : 'The coach could not answer just now. Try again.');
     }

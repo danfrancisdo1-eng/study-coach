@@ -954,8 +954,16 @@ export const DeleteLectureResponse = zod.void()
 
 
 /**
- * @summary The chat-first home conversation for the signed-in account (SPEC §7)
+ * @summary The chat-first home conversation for the signed-in account (SPEC §7); one thread per course or exam
  */
+export const getHomeChatQueryCourseIdMax = 200;
+
+
+
+export const GetHomeChatQueryParams = zod.object({
+  "courseId": zod.coerce.string().max(getHomeChatQueryCourseIdMax).optional().describe('The course or exam whose thread to return; omitted or unknown = the account\'s general thread.')
+})
+
 export const getHomeChatResponseMessagesItemActionsItemCountMax = 50;
 
 
@@ -1021,7 +1029,7 @@ export const sendHomeChatMessageBodyCourseIdMax = 200;
 export const SendHomeChatMessageBody = zod.object({
   "content": zod.string().min(1).max(sendHomeChatMessageBodyContentMax),
   "version": zod.number().int().min(sendHomeChatMessageBodyVersionMin).describe('Conversation version from the last GET/POST; 0 for a new conversation.'),
-  "courseId": zod.string().max(sendHomeChatMessageBodyCourseIdMax).optional().describe('The course or exam the student is focused on in the app (home screen selector); the coach assumes it when a message does not name one.')
+  "courseId": zod.string().max(sendHomeChatMessageBodyCourseIdMax).optional().describe('The course or exam the student is focused on: selects that course\'s thread (one per course; omitted or unknown = the general thread), and the coach assumes it when a message does not name one.')
 })
 
 export const sendHomeChatMessageResponseMessagesItemActionsItemCountMax = 50;
@@ -1077,6 +1085,14 @@ export const SendHomeChatMessageResponse = zod.object({
 /**
  * @summary Called when the app opens. Starts a new session in the chat (a check-in greeting with chips) when the last activity is older than the session gap; otherwise returns the chat unchanged.
  */
+export const openHomeChatBodyCourseIdMax = 200;
+
+
+
+export const OpenHomeChatBody = zod.object({
+  "courseId": zod.string().max(openHomeChatBodyCourseIdMax).optional().describe('The thread to open; omitted or unknown = the general thread.')
+})
+
 export const openHomeChatResponseMessagesItemActionsItemCountMax = 50;
 
 

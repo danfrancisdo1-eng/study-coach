@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 export type HomeChatRole = "user" | "assistant";
@@ -22,11 +23,16 @@ export type HomeChatMessage = {
 
 // One row per account: the chat-first home conversation (SPEC §7). Kept out of
 // study_states so a long conversation never pushes that record past its size cap.
+// One thread per course or exam (D-038); course_id null is the account's general thread.
 export const homeChatsTable = pgTable("home_chats", {
   id: text("id").primaryKey(),
   ownerId: text("owner_id").notNull(),
+  courseId: text("course_id"),
   messages: jsonb("messages").$type<HomeChatMessage[]>().notNull().default([]),
   version: integer("version").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [uniqueIndex("home_chats_owner_id_unique").on(table.ownerId)]);
+}, (table) => [
+  uniqueIndex("home_chats_owner_general_unique").on(table.ownerId).where(sql`${table.courseId} is null`),
+  uniqueIndex("home_chats_owner_course_unique").on(table.ownerId, table.courseId).where(sql`${table.courseId} is not null`),
+]);

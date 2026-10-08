@@ -6,7 +6,7 @@
 // Nothing is written when the AI fails or returns junk.
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request } from "express";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
@@ -56,8 +56,18 @@ function knownCourses(state: JsonObject): KnownCourse[] {
   });
 }
 
-async function loadChat(ownerId: string) {
-  const rows = await db.select().from(homeChatsTable).where(eq(homeChatsTable.ownerId, ownerId)).limit(1);
+/** The thread a request addresses (D-038): one per course the account has; anything else is the general thread. */
+function threadCourse(courses: { id: string }[], requested: unknown): string | null {
+  return typeof requested === "string" && courses.some((c) => c.id === requested) ? requested : null;
+}
+const threadWhere = (ownerId: string, courseId: string | null) =>
+  and(eq(homeChatsTable.ownerId, ownerId), courseId === null ? isNull(homeChatsTable.courseId) : eq(homeChatsTable.courseId, courseId));
+/** courseId from the query string (GET) or the body (open). */
+const chatCourseParam = (req: { query: Record<string, unknown>; body?: unknown }): unknown =>
+  typeof req.query.courseId === "string" ? req.query.courseId : isObject(req.body) ? req.body.courseId : undefined;
+
+async function loadChat(ownerId: string, courseId: string | null) {
+  const rows = await db.select().from(homeChatsTable).where(threadWhere(ownerId, courseId)).limit(1);
   return rows[0] ?? null;
 }
 
@@ -168,8 +178,8 @@ function lastCourseIdOf(messages: HomeChatMessage[]): string | null {
 // Called when the app opens: appends a session greeting when the student has been away.
 router.post("/study/chat/open", async (req, res): Promise<void> => {
   const ownerId = owner(req);
-  const row = await loadChat(ownerId);
   const stateRows = await db.select({ state: studyStatesTable.state }).from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
+  const row = await loadChat(ownerId, threadCourse(isObject(stateRows[0]?.state) ? knownCourses(stateRows[0]!.state as JsonObject) : [], chatCourseParam(req)));
   const courses = isObject(stateRows[0]?.state) ? knownCourses(stateRows[0]!.state as JsonObject) : [];
   const messages = row?.messages ?? [];
   const last = messages[messages.length - 1];
@@ -188,16 +198,16 @@ router.post("/study/chat/open", async (req, res): Promise<void> => {
   const next: HomeChatMessage[] = [...messages, { id: randomUUID(), role: "assistant" as const, content: greeting.content, at: new Date().toISOString(), actions: [], sessionStart: true, ...(greeting.suggestions.length ? { suggestions: greeting.suggestions } : {}) }].slice(-MAX_MESSAGES);
   const updated = await db.update(homeChatsTable)
     .set({ messages: next, version: row.version + 1, updatedAt: new Date() })
-    .where(and(eq(homeChatsTable.ownerId, ownerId), eq(homeChatsTable.version, row.version)))
+    .where(and(threadWhere(ownerId, row.courseId ?? null), eq(homeChatsTable.version, row.version)))
     .returning();
-  const saved = updated[0] ?? (await loadChat(ownerId)); // lost a race with another device: return whatever is current
+  const saved = updated[0] ?? (await loadChat(ownerId, row.courseId ?? null)); // lost a race with another device: return whatever is current
   res.json(await chatView(ownerId, courses, saved?.messages ?? messages, saved?.version ?? row.version));
 });
 
 router.get("/study/chat", async (req, res): Promise<void> => {
   const ownerId = owner(req);
-  const row = await loadChat(ownerId);
   const stateRows = await db.select({ state: studyStatesTable.state }).from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
+  const row = await loadChat(ownerId, threadCourse(isObject(stateRows[0]?.state) ? knownCourses(stateRows[0]!.state as JsonObject) : [], chatCourseParam(req)));
   const courses = isObject(stateRows[0]?.state) ? knownCourses(stateRows[0]!.state as JsonObject) : [];
   res.json(await chatView(ownerId, courses, row?.messages ?? [], row?.version ?? 0));
 });
@@ -318,7 +328,9 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     res.status(403).json({ error: "Persist explicit AI consent in study state (aiConsent: true) before using AI coaching." });
     return;
   }
-  const existing = await loadChat(ownerId);
+  // The thread is the focused course's (D-038); an unknown or missing courseId means the general thread.
+  const threadId = threadCourse(knownCourses(state), parsed.data.courseId);
+  const existing = await loadChat(ownerId, threadId);
   const version = existing?.version ?? 0;
   if (parsed.data.version !== version) {
     res.status(409).json({ error: "The conversation changed on another device. Reload and send again.", version });
@@ -457,13 +469,13 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   ].slice(-MAX_MESSAGES);
   let saved: { messages: HomeChatMessage[]; version: number } | undefined;
   if (!existing) {
-    const inserted = await db.insert(homeChatsTable).values({ id: randomUUID(), ownerId, messages: next, version: 1 })
-      .onConflictDoNothing({ target: homeChatsTable.ownerId }).returning();
+    const inserted = await db.insert(homeChatsTable).values({ id: randomUUID(), ownerId, courseId: threadId, messages: next, version: 1 })
+      .onConflictDoNothing().returning();
     saved = inserted[0];
   } else {
     const updated = await db.update(homeChatsTable)
       .set({ messages: next, version: version + 1, updatedAt: new Date() })
-      .where(and(eq(homeChatsTable.ownerId, ownerId), eq(homeChatsTable.version, version)))
+      .where(and(threadWhere(ownerId, threadId), eq(homeChatsTable.version, version)))
       .returning();
     saved = updated[0];
   }
@@ -472,7 +484,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     return;
   }
   // Raced with another device after the actions were applied: the course/session exist; the student reloads.
-  const current = await loadChat(ownerId);
+  const current = await loadChat(ownerId, threadId);
   res.status(409).json({ error: "The conversation changed on another device. Reload to see the latest.", version: current?.version ?? 0 });
 });
 

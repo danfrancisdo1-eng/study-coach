@@ -362,7 +362,9 @@ paths:
     get:
       operationId: getHomeChat
       tags: [study]
-      summary: The chat-first home conversation for the signed-in account (SPEC §7)
+      summary: The chat-first home conversation for the signed-in account (SPEC §7); one thread per course or exam
+      parameters:
+        - { name: courseId, in: query, required: false, schema: { type: string, maxLength: 200 }, description: "The course or exam whose thread to return; omitted or unknown = the account's general thread." }
       responses:
         "200":
           description: Conversation so far (empty for a new account)
@@ -394,6 +396,11 @@ paths:
       operationId: openHomeChat
       tags: [study]
       summary: Called when the app opens. Starts a new session in the chat (a check-in greeting with chips) when the last activity is older than the session gap; otherwise returns the chat unchanged.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HomeChatOpenInput" }
       responses:
         "200":
           description: Conversation, possibly with a new session greeting appended
@@ -723,7 +730,11 @@ components:
       properties:
         content: { type: string, minLength: 1, maxLength: 8000 }
         version: { type: integer, minimum: 0, description: "Conversation version from the last GET/POST; 0 for a new conversation." }
-        courseId: { type: string, maxLength: 200, description: "The course or exam the student is focused on in the app (home screen selector); the coach assumes it when a message does not name one." }
+        courseId: { type: string, maxLength: 200, description: "The course or exam the student is focused on: selects that course's thread (one per course; omitted or unknown = the general thread), and the coach assumes it when a message does not name one." }
+    HomeChatOpenInput:
+      type: object
+      properties:
+        courseId: { type: string, maxLength: 200, description: "The thread to open; omitted or unknown = the general thread." }
     HomeChatAction:
       type: object
       required: [type, courseId]

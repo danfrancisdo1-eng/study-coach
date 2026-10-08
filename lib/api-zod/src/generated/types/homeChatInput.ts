@@ -18,7 +18,7 @@ export interface HomeChatInput {
      */
   version: number;
   /**
-     * The course or exam the student is focused on in the app (home screen selector); the coach assumes it when a message does not name one.
+     * The course or exam the student is focused on: selects that course's thread (one per course; omitted or unknown = the general thread), and the coach assumes it when a message does not name one.
      * @maxLength 200
      */
   courseId?: string;

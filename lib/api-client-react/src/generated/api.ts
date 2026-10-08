@@ -25,9 +25,11 @@ import type {
   CourseDeletion,
   ExamGuide,
   FlashcardReviewInput,
+  GetHomeChatParams,
   HealthStatus,
   HomeChat,
   HomeChatInput,
+  HomeChatOpenInput,
   Lecture,
   LectureInput,
   LectureUpdate,
@@ -1745,20 +1747,27 @@ export const useDeleteLecture = <TError = ErrorType<void>,
       return useMutation(getDeleteLectureMutationOptions(options));
     }
 
-export const getGetHomeChatUrl = () => {
+export const getGetHomeChatUrl = (params?: GetHomeChatParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/study/chat`
+  return stringifiedParams.length > 0 ? `/api/study/chat?${stringifiedParams}` : `/api/study/chat`
 }
 
 /**
- * @summary The chat-first home conversation for the signed-in account (SPEC §7)
+ * @summary The chat-first home conversation for the signed-in account (SPEC §7); one thread per course or exam
  */
-export const getHomeChat = async ( options?: Parameters<typeof customFetch>[1]): Promise<HomeChat> => {
+export const getHomeChat = async (params?: GetHomeChatParams, options?: Parameters<typeof customFetch>[1]): Promise<HomeChat> => {
 
-  return customFetch<HomeChat>(getGetHomeChatUrl(),
+  return customFetch<HomeChat>(getGetHomeChatUrl(params),
   {
     ...options,
     method: 'GET'
@@ -1771,23 +1780,23 @@ export const getHomeChat = async ( options?: Parameters<typeof customFetch>[1]):
 
 
 
-export const getGetHomeChatQueryKey = () => {
+export const getGetHomeChatQueryKey = (params?: GetHomeChatParams,) => {
     return [
-    `/api/study/chat`
+    `/api/study/chat`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetHomeChatQueryOptions = <TData = Awaited<ReturnType<typeof getHomeChat>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHomeChat>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetHomeChatQueryOptions = <TData = Awaited<ReturnType<typeof getHomeChat>>, TError = ErrorType<unknown>>(params?: GetHomeChatParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHomeChat>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetHomeChatQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetHomeChatQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHomeChat>>> = ({ signal }) => getHomeChat({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHomeChat>>> = ({ signal }) => getHomeChat(params, { signal, ...requestOptions });
 
 
 
@@ -1801,15 +1810,15 @@ export type GetHomeChatQueryError = ErrorType<unknown>
 
 
 /**
- * @summary The chat-first home conversation for the signed-in account (SPEC §7)
+ * @summary The chat-first home conversation for the signed-in account (SPEC §7); one thread per course or exam
  */
 
 export function useGetHomeChat<TData = Awaited<ReturnType<typeof getHomeChat>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHomeChat>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: GetHomeChatParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHomeChat>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetHomeChatQueryOptions(options)
+  const queryOptions = getGetHomeChatQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1922,14 +1931,28 @@ export const getOpenHomeChatUrl = () => {
 /**
  * @summary Called when the app opens. Starts a new session in the chat (a check-in greeting with chips) when the last activity is older than the session gap; otherwise returns the chat unchanged.
  */
-export const openHomeChat = async ( options?: Parameters<typeof customFetch>[1]): Promise<HomeChat> => {
+export const openHomeChat = async (homeChatOpenInput?: HomeChatOpenInput, options?: Parameters<typeof customFetch>[1]): Promise<HomeChat> => {
 
-  return customFetch<HomeChat>(getOpenHomeChatUrl(),
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<HomeChat>(getOpenHomeChatUrl(),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(homeChatOpenInput)
   }
 );}
 
@@ -1940,8 +1963,8 @@ export const openHomeChat = async ( options?: Parameters<typeof customFetch>[1])
 export const getOpenHomeChatMutationKey = () => ['openHomeChat'] as const;
 
 export const getOpenHomeChatMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openHomeChat>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof openHomeChat>>, TError,void, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openHomeChat>>, TError,OpenHomeChatMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof openHomeChat>>, TError,OpenHomeChatMutationVariables, TContext> => {
 
 const mutationKey = getOpenHomeChatMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1953,10 +1976,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof openHomeChat>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof openHomeChat>>, OpenHomeChatMutationVariables> = (props) => {
+          const {data} = props ?? {};
 
-
-          return  openHomeChat(requestOptions)
+          return  openHomeChat(data,requestOptions)
         }
 
 
@@ -1967,19 +1990,19 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type OpenHomeChatMutationResult = NonNullable<Awaited<ReturnType<typeof openHomeChat>>>
-
+    export type OpenHomeChatMutationBody = BodyType<HomeChatOpenInput> | undefined
     export type OpenHomeChatMutationError = ErrorType<unknown>
-
+    export type OpenHomeChatMutationVariables = {data?: BodyType<HomeChatOpenInput>}
 
     /**
  * @summary Called when the app opens. Starts a new session in the chat (a check-in greeting with chips) when the last activity is older than the session gap; otherwise returns the chat unchanged.
  */
 export const useOpenHomeChat = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openHomeChat>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openHomeChat>>, TError,OpenHomeChatMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof openHomeChat>>,
         TError,
-        void,
+        OpenHomeChatMutationVariables,
         TContext
       > => {
       return useMutation(getOpenHomeChatMutationOptions(options));
