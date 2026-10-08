@@ -352,12 +352,70 @@ export interface CoachCase {
   } | null;
   /** The most recent flashcard deck from this chat. */
   deck?: { courseName: string; topic: string; done: number; total: number; finished: { again: number; againConcepts: string[] } | null } | null;
+  /** "Results so far" text for the selected course (D-042). */
+  results?: string;
   /** What a good reply must do, for the judge. */
   expectations: string[];
   maxWords: number;
 }
 
+const bioResults = `Sets and decks (3 total):
+- 2026-10-07 practice on Membranes and transport: 6/10 (60%); missed: Osmosis direction, Sodium-potassium pump, Active transport
+- 2026-10-05 practice on Cellular respiration: 9/10 (90%); missed: Krebs cycle location
+- 2026-10-03 flashcards on Membranes and transport: 7/8 (88%); missed: Osmosis direction
+Per concept (newest result first):
+Osmosis direction: ✗✗ (missed 2, right 0, last 2026-10-07)
+Sodium-potassium pump: ✗ (missed 1, right 0, last 2026-10-07)
+Active transport: ✗ (missed 1, right 0, last 2026-10-07)
+Krebs cycle location: ✗ (missed 1, right 0, last 2026-10-05)
+Glycolysis: ✓✓ (missed 0, right 2, last 2026-10-07)
+Facilitated diffusion: ✓✓ (missed 0, right 2, last 2026-10-07)`;
+const awsStrongResults = `Sets and decks (4 total):
+- 2026-10-08 exam on All topics: 19/20 (95%); missed: VPC endpoints
+- 2026-10-07 exam on Design Secure Architectures: 10/10 (100%); nothing missed
+- 2026-10-06 exam on Design Resilient Architectures: 9/10 (90%); missed: Multi-AZ RDS
+- 2026-10-05 practice on Design Cost-Optimized Architectures: 10/10 (100%); nothing missed
+Per concept (newest result first):
+VPC endpoints: ✗✓ (missed 1, right 1, last 2026-10-08)
+Multi-AZ RDS: ✓✗ (missed 1, right 1, last 2026-10-08)
+IAM roles: ✓✓✓ (missed 0, right 3, last 2026-10-08)
+S3 encryption: ✓✓ (missed 0, right 2, last 2026-10-08)`;
+
 export const coachCases: CoachCase[] = [
+  // D-042: "Results so far" drives weak spots, readiness and missed-scope sets.
+  {
+    name: "how am I doing: names the recently missed concepts from the results",
+    courses: [{ id: "bio", name: "BIOL 114", materials: 2, lectures: 0 }], firstVisit: false, focusCourseId: "bio", history: [],
+    message: "How am I doing in this course? What am I weak on?", results: bioResults,
+    expectedActions: [],
+    expectations: ["Names osmosis direction and the sodium-potassium pump / active transport as the weak spots (from the results, not invented)", "Refers to the recent scores (the 60% on membranes and/or the 90% on respiration); no invented numbers", "Offers a set on the weak concepts; stays short (no more than about five sentences)"],
+    maxWords: 110,
+  },
+  {
+    name: "am I ready: weak history gets an honest not-yet with the next step",
+    courses: [{ id: "bio", name: "BIOL 114", materials: 2, lectures: 0 }], firstVisit: false, focusCourseId: "bio", history: [],
+    message: "Am I ready for the exam?", results: bioResults,
+    expectedActions: [],
+    expectations: ["Says plainly that they are not ready yet on membranes (60%, osmosis direction missed twice)", "Names one concrete next step (a set on the missed concepts or a retest)", "No guilt, no fake urgency"],
+    maxWords: 110,
+  },
+  {
+    name: "am I ready: strong history gets a specific, encouraging close-or-ready",
+    courses: [{ id: "aws", name: "AWS Solutions Architect Associate", kind: "exam", materials: 0, lectures: 0, guideSections: [{ name: "Design Secure Architectures", weight: 30 }, { name: "Design Resilient Architectures", weight: 26 }, { name: "Design High-Performing Architectures", weight: 24 }, { name: "Design Cost-Optimized Architectures", weight: 20 }] }],
+    firstVisit: false, focusCourseId: "aws", history: [],
+    message: "Am I ready?", results: awsStrongResults,
+    expectedActions: [],
+    expectations: ["Says they are ready or close to it and does not say 'not ready'", "Refers to recent scores that appear in the results (any of 95%, 100%, 90%)", "Points out what is still worth one look: VPC endpoints (missed last time) and/or the section with no set yet (High-Performing)", "Encouraging, no guilt"],
+    maxWords: 110,
+  },
+  {
+    name: "test me on the ones I missed with no set in this chat: a missed-scope set from past results",
+    courses: [{ id: "bio", name: "BIOL 114", materials: 2, lectures: 0 }], firstVisit: false, focusCourseId: "bio", history: [],
+    message: "Test me on the ones I missed, practice, 10 questions", results: bioResults,
+    expectedActions: [{ type: "start_quiz", name: "BIOL 114", scope: "missed", kind: "practice" }],
+    expectations: ["Starts a practice set with scope missed (the app picks the concepts from past results)", "The reply says the set is coming and writes no questions itself (naming the concepts it will cover is fine)"],
+    maxWords: 60,
+  },
   {
     name: "first visit: greets and asks for the class, no actions", courses: [], firstVisit: true, history: [],
     message: "hi",

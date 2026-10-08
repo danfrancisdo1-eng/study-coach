@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import {
-  deleteCourse, getGetStudyStateQueryKey, getListLecturesQueryKey, getListStudySessionsQueryKey, useGetStudyState, useListLectures, useLookupExamGuide, usePutStudyState,
+  deleteCourse, getGetStudyStateQueryKey, getListLecturesQueryKey, getListStudySessionsQueryKey, useGetStudyState, useListLectures, useListStudySessions, useLookupExamGuide, usePutStudyState,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { ActionButton } from '@/components/ActionButton';
@@ -36,6 +36,7 @@ export default function CourseScreen() {
   const stateKey = [...getGetStudyStateQueryKey(), userId];
   const stateQuery = useGetStudyState({ query: { queryKey: stateKey, enabled: !!userId } });
   const lecturesQuery = useListLectures({ courseId }, { query: { queryKey: [...getListLecturesQueryKey({ courseId }), userId], enabled: !!userId && !!courseId } });
+  const sessionsQuery = useListStudySessions({ query: { queryKey: [...getListStudySessionsQueryKey(), userId], enabled: !!userId } });
   const putState = usePutStudyState();
   const lookupGuide = useLookupExamGuide();
   const [editing, setEditing] = useState(false);
@@ -151,6 +152,25 @@ export default function CourseScreen() {
             </View>
           ) : null}
 
+          {(() => {
+            // Progress (D-042): the last few graded sets and what was missed last time, from the session list.
+            const graded = (sessionsQuery.data?.sessions ?? []).filter((s) => s.courseId === courseId && (s.targetedScore ?? s.diagnosticScore) !== null && (s.targetedScore ?? s.diagnosticScore) !== undefined);
+            const latest = graded[0];
+            return (
+              <View style={styles.card} testID="panel-progress">
+                <Text style={styles.kicker}>PROGRESS · {graded.length} {graded.length === 1 ? 'SET' : 'SETS'}</Text>
+                {graded.slice(0, 5).map((s) => (
+                  <View key={s.id} style={styles.rowBetween}>
+                    <Text style={styles.body} numberOfLines={1}>{s.createdAt.slice(0, 10)} · {s.topic}</Text>
+                    <Text style={styles.scoreText}>{Math.round((s.targetedScore ?? s.diagnosticScore) as number)}%</Text>
+                  </View>
+                ))}
+                {latest?.missedConcepts?.length ? <Text style={styles.caption}>Missed last time: {latest.missedConcepts.slice(0, 6).join(', ')}</Text>
+                  : graded.length ? <Text style={styles.caption}>Nothing missed last time.</Text>
+                  : <Text style={styles.caption}>No graded set yet. Ask the coach for one, or "How am I doing?" any time.</Text>}
+              </View>
+            );
+          })()}
           <View style={styles.card} testID="panel-memory-sheet">
             <Text style={styles.kicker}>MEMORY SHEET · {memoryRows.length}</Text>
             {memoryRows.length ? memoryRows.map((row) => (
@@ -223,4 +243,5 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   lectureRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10 },
   errorText: { color: colors.destructive, fontSize: 13 },
+  scoreText: { color: colors.foreground, fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
 });

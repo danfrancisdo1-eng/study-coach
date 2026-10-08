@@ -612,6 +612,7 @@ components:
         status: { type: string, enum: [active, completed] }
         diagnosticScore: { type: ["number", "null"] }
         targetedScore: { type: ["number", "null"] }
+        missedConcepts: { type: array, items: { type: string }, description: "Concepts missed in the latest graded attempt (D-042)" }
     StudyWebsiteInput:
       type: object
       required: [url]

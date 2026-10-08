@@ -897,6 +897,9 @@ router.get("/study/sessions", async (req, res): Promise<void> => {
         createdAt: value.createdAt, status: value.status,
         diagnosticScore: value.scores.diagnostic?.percent ?? null,
         targetedScore: value.scores.targeted?.percent ?? null,
+        // D-042: concepts missed in the latest graded attempt (for the course screen's progress card).
+        missedConcepts: [...new Set(((value.attempts ?? []).filter((q) => q.grade).at(-1)?.questions ?? [])
+          .filter((q) => !q.invalid && !q.flag && q.answers.length && q.answers.at(-1)?.optionId !== q.correctOptionId).map((q) => q.concept))],
       };
     }),
   });

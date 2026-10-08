@@ -388,6 +388,7 @@ export default function CoachHome() {
                       { label: 'Show the topics', onPress: () => void sendText(`Show me the topics for ${focusCourse.name}`) },
                       { label: 'Quiz me on all topics', onPress: () => void sendText('Quiz me on all topics') },
                       { label: 'Flashcards', onPress: () => void sendText('Flashcards on the key terms') },
+                      { label: 'How am I doing?', onPress: () => void sendText('How am I doing in this course? What am I weak on?') },
                     ].map((chip) => (
                       <Pressable key={chip.label} accessibilityRole="button" accessibilityHint={chip.hint} disabled={busy} onPress={chip.onPress} style={[styles.suggestion, busy && styles.disabled]} testID="button-start-chip">
                         <Text style={styles.suggestionText}>{chip.label}</Text>

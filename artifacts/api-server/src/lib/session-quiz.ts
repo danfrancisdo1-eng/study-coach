@@ -111,15 +111,8 @@ function practiceFeedback(question: StoredQuestion): NonNullable<StoredQuestion[
   };
 }
 
-/** A reported question is excluded unless its re-check confirmed the key: a report cannot erase a miss. */
-export function excludedByReport(question: StoredQuestion): boolean {
-  return !!question.flag && question.flag.recheck?.verdict !== "key_holds";
-}
-
-export function countsInScore(question: StoredQuestion): boolean {
-  return !question.invalid && !excludedByReport(question) && question.options.length >= 4 && question.options.length <= 5 &&
-    question.options.some((option) => option.id === question.correctOptionId);
-}
+import { countsInScore, excludedByReport } from "./question-counts";
+export { countsInScore, excludedByReport };
 
 export type QuizScore = { correct: number; answered: number; excluded: number; invalidItems: number; unanswered: number; total: number; percent: number; gradedAt: string };
 
