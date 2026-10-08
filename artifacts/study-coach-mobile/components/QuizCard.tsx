@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
@@ -16,9 +16,10 @@ import { useColors } from '@/hooks/useColors';
  * "Looks wrong?" (D-034) reports a question: the server re-checks it with an independent
  * model and the verdict shows in place; a confirmed key still counts, a wrong or unclear
  * key takes the question out of the score.
- * Exam sets (D-037, Dan's design): numbered bubbles under the question (white outline =
- * unanswered, green = answered, red = marked for review) jump to any question; "Mark for
- * review" flags a question to come back to before Grade. Marks live on this phone per set.
+ * Exam sets (D-037, Dan's design): numbered bubbles, all visible at once, jump to any
+ * question. Fill = answered (green); outline = marked for review (red); so a marked but
+ * unanswered question is a white bubble with a red ring, and a marked answered one is green
+ * with a red ring. Marks live on this phone per set.
  */
 export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }: {
   sessionId: string;
@@ -169,20 +170,22 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
 
   const isExam = quiz.kind !== 'practice';
   const marked = questions.filter((q) => marks.has(q.id));
-  // Exam sets: numbered bubbles jump to any question; the colour says where it stands.
+  // Exam sets: numbered bubbles, all on screen (no slider), jump to any question. Fill = answered, ring = marked.
   const bubbles = isExam ? (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bubbles} testID="row-quiz-bubbles">
+    <View style={styles.bubbles} testID="row-quiz-bubbles">
       {questions.map((q, i) => {
-        const state = marks.has(q.id) ? 'marked' : q.answer ? 'answered' : 'open';
+        const answered = !!q.answer;
+        const marked = marks.has(q.id);
         const here = (currentId ?? questions.find((x) => !x.answer)?.id) === q.id;
+        const label = `Question ${i + 1}, ${answered ? 'answered' : 'not answered'}${marked ? ', marked for review' : ''}`;
         return (
-          <Pressable key={q.id} accessibilityRole="button" accessibilityLabel={`Question ${i + 1}, ${state === 'marked' ? 'marked for review' : state === 'answered' ? 'answered' : 'not answered'}`} accessibilityState={{ selected: here }}
-            onPress={() => setCurrentId(q.id)} style={[styles.bubble, state === 'answered' && styles.bubbleAnswered, state === 'marked' && styles.bubbleMarked, here && styles.bubbleHere]} testID={`button-quiz-bubble-${i}`}>
-            <Text style={[styles.bubbleText, state === 'answered' && styles.bubbleTextAnswered, state === 'marked' && styles.bubbleTextMarked]}>{i + 1}</Text>
+          <Pressable key={q.id} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: here }}
+            onPress={() => setCurrentId(q.id)} style={[styles.bubble, answered && styles.bubbleAnswered, marked && styles.bubbleMarked, here && styles.bubbleHere]} testID={`button-quiz-bubble-${i}`}>
+            <Text style={[styles.bubbleText, answered && styles.bubbleTextAnswered]}>{i + 1}</Text>
           </Pressable>
         );
       })}
-    </ScrollView>
+    </View>
   ) : null;
 
   const current: StudyQuizQuestionsItem | undefined = (isExam && currentId ? questions.find((q) => q.id === currentId) : undefined) ?? questions.find((q) => !q.answer);
@@ -268,14 +271,13 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   option: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 13, backgroundColor: colors.background, paddingHorizontal: 13, paddingVertical: 10 },
   optionChosen: { borderColor: colors.primary, borderWidth: 2, paddingHorizontal: 12, paddingVertical: 9 },
   optionLetterChosen: { backgroundColor: colors.primary, color: colors.primaryForeground },
-  bubbles: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
-  bubble: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: colors.border, backgroundColor: EXAM.open, alignItems: 'center', justifyContent: 'center' },
-  bubbleAnswered: { borderColor: EXAM.answered, backgroundColor: EXAM.answered },
-  bubbleMarked: { borderColor: EXAM.marked, backgroundColor: EXAM.marked },
-  bubbleHere: { transform: [{ scale: 1.12 }], borderColor: colors.foreground },
+  bubbles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 4 },
+  bubble: { width: 34, height: 34, borderRadius: 17, borderWidth: 2.5, borderColor: colors.border, backgroundColor: EXAM.open, alignItems: 'center', justifyContent: 'center' },
+  bubbleAnswered: { borderColor: EXAM.answered, backgroundColor: EXAM.answered }, // fill = answered
+  bubbleMarked: { borderColor: EXAM.marked }, // ring = marked, whether answered or not
+  bubbleHere: { transform: [{ scale: 1.18 }] },
   bubbleText: { color: colors.foreground, fontSize: 13, fontWeight: '700' },
   bubbleTextAnswered: { color: '#ffffff' },
-  bubbleTextMarked: { color: '#ffffff' },
   markButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
   markButtonOn: { borderColor: EXAM.marked },
   markText: { color: colors.foreground, fontSize: 14, fontWeight: '600' },
