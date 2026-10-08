@@ -740,10 +740,11 @@ components:
       type: object
       required: [type, courseId]
       properties:
-        type: { type: string, enum: [create_course, start_quiz, start_flashcards, update_memory_sheet, start_session, lookup_exam_guide] }
+        type: { type: string, enum: [create_course, start_quiz, start_flashcards, update_memory_sheet, start_session, lookup_exam_guide, web_search] }
         courseId: { type: string }
         found: { type: boolean, description: "lookup_exam_guide: an official guide was found (the course is now a certification exam)" }
         sections: { type: integer, description: "lookup_exam_guide: how many sections the guide has" }
+        query: { type: string, description: "web_search: what was searched for" }
         name: { type: string, description: "create_course: the new course's name" }
         courseKind: { type: string, enum: [course, exam], description: "create_course: a college course or a certification exam" }
         rows:

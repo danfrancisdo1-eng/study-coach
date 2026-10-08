@@ -2,7 +2,7 @@
 // a Claude judge only for things code can't check (answer-key correctness, tutoring quality).
 import Anthropic from "@anthropic-ai/sdk";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
-import type { CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase } from "./fixtures";
+import type { CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase, WebLookupCase } from "./fixtures";
 import { parseQuizCheck } from "../src/lib/quiz-check";
 import { parseFlagCheck } from "../src/lib/flag-check";
 import { hasPositionalOption } from "../src/lib/shuffle-options";
@@ -306,6 +306,23 @@ export function gradeFlagCheck(testCase: FlagCheckCase, text: string | null): Sc
   return { pass: notes.length === 0, score: notes.length ? 0 : 1, notes };
 }
 
+export async function gradeWebLookup(testCase: WebLookupCase, text: string | null): Promise<Score> {
+  const reply = text?.trim() ?? "";
+  if (!reply) return { pass: false, score: 0, notes: ["empty reply"] };
+  const notes: string[] = [];
+  const words = reply.split(/\s+/).length;
+  if (words > 260) notes.push(`too long: ${words} words`);
+  if (!/https?:\/\/\S+/.test(reply)) notes.push("no source URL");
+  const verdict = await judge<{ expectations: { met: boolean; reason: string }[] }>(
+    "You grade one web-search answer written for a student by a study app. Return exactly one verdict per expectation, in the same order. Check each strictly, from the answer text alone.",
+    { request: testCase.request, course: testCase.course, expectations: testCase.expectations, answer: reply },
+    { type: "object", additionalProperties: false, required: ["expectations"], properties: { expectations: { type: "array", items: { type: "object", additionalProperties: false, required: ["met", "reason"], properties: { met: { type: "boolean" }, reason: { type: "string" } } } } } },
+  );
+  const verdicts = testCase.expectations.map((_, i) => verdict.expectations[i] ?? { met: false, reason: "no verdict returned" });
+  for (const [i, e] of verdicts.entries()) if (!e.met) notes.push(`not met: ${testCase.expectations[i]} (${e.reason.slice(0, 140)})`);
+  return { pass: notes.length === 0, score: Math.max(0, 1 - notes.length / (testCase.expectations.length + 2)), notes };
+}
+
 export async function gradeMemorySheet(testCase: MemorySheetCase, text: string | null): Promise<Score> {
   let rows: { term?: string; trick?: string; whenYouSee?: string; think?: string }[];
   try {
@@ -366,7 +383,7 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   if (tooLong) notes.push(`too long: ${words} words > ${testCase.maxWords}`);
   const verdict = await judge<{ expectations: { met: boolean; reason: string }[] }>(
     "You grade one reply from the AI study coach on an app's home chat, for students age 13+. Return exactly one verdict per expectation, in the same order. Check each expectation strictly.",
-    { courses: testCase.courses, history: testCase.history, latestQuestionSet: testCase.quiz ?? null, latestDeck: testCase.deck ?? null, resultsSoFar: testCase.results ?? null, studentMessage: testCase.message, expectations: testCase.expectations, reply: parsed.reply, suggestions: parsed.suggestions, actionsTaken: parsed.actions },
+    { courses: testCase.courses, history: testCase.history, latestQuestionSet: testCase.quiz ?? null, latestDeck: testCase.deck ?? null, resultsSoFar: testCase.results ?? null, webFindings: testCase.webFindings ?? null, guideJustLookedUp: testCase.guideJustLookedUp ?? null, studentMessage: testCase.message, expectations: testCase.expectations, reply: parsed.reply, suggestions: parsed.suggestions, actionsTaken: parsed.actions },
     {
       type: "object", additionalProperties: false, required: ["expectations"],
       properties: { expectations: { type: "array", items: { type: "object", additionalProperties: false, required: ["met", "reason"], properties: { met: { type: "boolean" }, reason: { type: "string" } } } } },

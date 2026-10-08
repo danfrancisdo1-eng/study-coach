@@ -976,10 +976,11 @@ export const GetHomeChatResponse = zod.object({
   "content": zod.string(),
   "at": zod.coerce.date(),
   "actions": zod.array(zod.object({
-  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'update_memory_sheet', 'start_session', 'lookup_exam_guide']),
+  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'update_memory_sheet', 'start_session', 'lookup_exam_guide', 'web_search']),
   "courseId": zod.string(),
   "found": zod.boolean().optional().describe('lookup_exam_guide: an official guide was found (the course is now a certification exam)'),
   "sections": zod.number().int().optional().describe('lookup_exam_guide: how many sections the guide has'),
+  "query": zod.string().optional().describe('web_search: what was searched for'),
   "name": zod.string().optional().describe('create_course: the new course\'s name'),
   "courseKind": zod.enum(['course', 'exam']).optional().describe('create_course: a college course or a certification exam'),
   "rows": zod.array(zod.object({
@@ -1046,10 +1047,11 @@ export const SendHomeChatMessageResponse = zod.object({
   "content": zod.string(),
   "at": zod.coerce.date(),
   "actions": zod.array(zod.object({
-  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'update_memory_sheet', 'start_session', 'lookup_exam_guide']),
+  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'update_memory_sheet', 'start_session', 'lookup_exam_guide', 'web_search']),
   "courseId": zod.string(),
   "found": zod.boolean().optional().describe('lookup_exam_guide: an official guide was found (the course is now a certification exam)'),
   "sections": zod.number().int().optional().describe('lookup_exam_guide: how many sections the guide has'),
+  "query": zod.string().optional().describe('web_search: what was searched for'),
   "name": zod.string().optional().describe('create_course: the new course\'s name'),
   "courseKind": zod.enum(['course', 'exam']).optional().describe('create_course: a college course or a certification exam'),
   "rows": zod.array(zod.object({
@@ -1109,10 +1111,11 @@ export const OpenHomeChatResponse = zod.object({
   "content": zod.string(),
   "at": zod.coerce.date(),
   "actions": zod.array(zod.object({
-  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'update_memory_sheet', 'start_session', 'lookup_exam_guide']),
+  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'update_memory_sheet', 'start_session', 'lookup_exam_guide', 'web_search']),
   "courseId": zod.string(),
   "found": zod.boolean().optional().describe('lookup_exam_guide: an official guide was found (the course is now a certification exam)'),
   "sections": zod.number().int().optional().describe('lookup_exam_guide: how many sections the guide has'),
+  "query": zod.string().optional().describe('web_search: what was searched for'),
   "name": zod.string().optional().describe('create_course: the new course\'s name'),
   "courseKind": zod.enum(['course', 'exam']).optional().describe('create_course: a college course or a certification exam'),
   "rows": zod.array(zod.object({

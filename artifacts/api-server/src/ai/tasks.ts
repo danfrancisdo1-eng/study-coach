@@ -4,7 +4,7 @@
 //   AI_PROVIDER_<TASK>=openai|anthropic per-task override, e.g. AI_PROVIDER_TUTOR
 //   AI_MODEL_<TASK>=<model id>          per-task model override, e.g. AI_MODEL_TUTOR
 
-export type AiTask = "image_ocr" | "tutor" | "session_quiz" | "syllabus" | "classic_quiz" | "exam_plan" | "coach" | "flashcards" | "exam_guide" | "memory_sheet" | "quiz_check" | "flag_check";
+export type AiTask = "image_ocr" | "tutor" | "session_quiz" | "syllabus" | "classic_quiz" | "exam_plan" | "coach" | "flashcards" | "exam_guide" | "memory_sheet" | "quiz_check" | "flag_check" | "web_lookup";
 export type AiProvider = "openai" | "anthropic";
 export type Effort = "low" | "medium" | "high";
 
@@ -23,7 +23,7 @@ type ProviderDefaults = Omit<TaskConfig, "provider" | "json">;
 
 // JSON output tasks get a schema from ./schemas (TASK_SCHEMAS).
 const JSON_TASKS: Record<AiTask, boolean> = {
-  image_ocr: true, tutor: false, session_quiz: true, syllabus: true, classic_quiz: true, exam_plan: true, coach: true, flashcards: true, exam_guide: false, memory_sheet: true, quiz_check: true, flag_check: true,
+  image_ocr: true, tutor: false, session_quiz: true, syllabus: true, classic_quiz: true, exam_plan: true, coach: true, flashcards: true, exam_guide: false, memory_sheet: true, quiz_check: true, flag_check: true, web_lookup: false,
 };
 
 // Today's production settings.
@@ -40,6 +40,7 @@ const OPENAI: Record<AiTask, ProviderDefaults> = {
   memory_sheet: { model: "gpt-5.6-terra", maxTokens: 3000 },
   quiz_check: { model: "gpt-5.4-mini", maxTokens: 4000 },
   flag_check: { model: "gpt-5.6-terra", maxTokens: 2000 },
+  web_lookup: { model: "gpt-5.6-terra", maxTokens: 2000 }, // unused: the task needs web search, Anthropic only
 };
 
 // Starting points from docs/AUDIT.md section 5c; confirmed or changed by evals.
@@ -64,6 +65,8 @@ const ANTHROPIC: Record<AiTask, ProviderDefaults> = {
   // Re-check of a reported question (D-034): one question, answered cold by the strongest
   // model at high effort, the same standard as the answer-key audit (D-031).
   flag_check: { model: "claude-opus-5-5", maxTokens: 12000, effort: "high" },
+  // Web lookup on request (D-045): "search the internet for…" from the chat; plain text with sources.
+  web_lookup: { model: "claude-sonnet-5-5", maxTokens: 8000, effort: "low" },
 };
 
 function provider(value: string | undefined): AiProvider | undefined {

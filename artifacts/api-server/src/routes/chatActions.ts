@@ -5,7 +5,7 @@
 export type QuizScope = "all" | "missed";
 export type QuizKind = "practice" | "exam";
 export type CoachAction = {
-  type: "create_course" | "start_quiz" | "start_flashcards" | "update_memory_sheet" | "start_session" | "lookup_exam_guide";
+  type: "create_course" | "start_quiz" | "start_flashcards" | "update_memory_sheet" | "start_session" | "lookup_exam_guide" | "web_search";
   name: string;
   topic: string;
   count?: number;
@@ -46,7 +46,7 @@ export function parseCoachReply(text: string | null): CoachReply | null {
   for (const action of actions) {
     if (typeof action !== "object" || action === null) continue;
     const { type, name, topic, count, scope, kind, courseKind, examDate } = action as Record<string, unknown>;
-    if (type !== "create_course" && type !== "start_quiz" && type !== "start_flashcards" && type !== "update_memory_sheet" && type !== "start_session" && type !== "lookup_exam_guide") continue;
+    if (type !== "create_course" && type !== "start_quiz" && type !== "start_flashcards" && type !== "update_memory_sheet" && type !== "start_session" && type !== "lookup_exam_guide" && type !== "web_search") continue;
     kept.push({
       type,
       name: typeof name === "string" ? name : "",
@@ -79,6 +79,8 @@ export interface ActionPlan {
   creates: { name: string; kind: CourseKind; examDate?: string }[];
   /** D-044: look up the official exam guide of one course (a certification named as a course). */
   lookup: StartPlan | null;
+  /** D-045: search the web for the student (the query is the action's topic); no course needed. */
+  search: { query: string } | null;
   /** The one question set to start, if any. courseId is null when the course is created in this same reply. */
   quiz: QuizPlan | null;
   /** The one flashcard deck to start, if any (never together with a quiz; the first wins). */
@@ -110,7 +112,7 @@ function resolveStart(plan: ActionPlan, courses: KnownCourse[], action: CoachAct
 }
 
 export function planActions(courses: KnownCourse[], actions: CoachAction[]): ActionPlan {
-  const plan: ActionPlan = { creates: [], lookup: null, quiz: null, deck: null, sheet: null, start: null, notes: [] };
+  const plan: ActionPlan = { creates: [], lookup: null, search: null, quiz: null, deck: null, sheet: null, start: null, notes: [] };
   for (const action of actions) {
     if (action.type === "create_course") {
       const name = action.name.trim().replace(/\s+/g, " ");
@@ -147,6 +149,10 @@ export function planActions(courses: KnownCourse[], actions: CoachAction[]): Act
     } else if (action.type === "lookup_exam_guide" && plan.lookup === null) {
       const start = resolveStart(plan, courses, action);
       if (start) plan.lookup = start;
+    } else if (action.type === "web_search" && plan.search === null) {
+      const query = action.topic.trim().replace(/\s+/g, " ").slice(0, MAX_TOPIC);
+      if (query) plan.search = { query };
+      else plan.notes.push("web_search without a query");
     }
   }
   if (plan.quiz || plan.deck) plan.start = null; // a set or deck in the chat replaces the legacy hand-off
