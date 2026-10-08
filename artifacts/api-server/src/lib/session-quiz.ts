@@ -3,8 +3,8 @@
 // chat-first home (routes/chat.ts) can start question sets with the same code.
 import { randomUUID } from "node:crypto";
 import { complete } from "../ai";
-import * as sessionQuizPrompt from "../prompts/session-quiz.v6";
-import * as quizCheckPrompt from "../prompts/quiz-check.v1";
+import * as sessionQuizPrompt from "../prompts/session-quiz.v7";
+import * as quizCheckPrompt from "../prompts/quiz-check.v2";
 import { applyQuizCheck, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
 import { shuffleOptions } from "./shuffle-options";
 import * as flashcardsPrompt from "../prompts/flashcards.v2";
@@ -117,7 +117,7 @@ export function excludedByReport(question: StoredQuestion): boolean {
 }
 
 export function countsInScore(question: StoredQuestion): boolean {
-  return !question.invalid && !excludedByReport(question) && question.options.length === 4 &&
+  return !question.invalid && !excludedByReport(question) && question.options.length >= 4 && question.options.length <= 5 &&
     question.options.some((option) => option.id === question.correctOptionId);
 }
 
@@ -308,15 +308,15 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
   for (const value of proposed.slice(0, expectedCount)) {
     if (!jsonObject(value) || typeof value.prompt !== "string" || !value.prompt.trim() ||
       typeof value.concept !== "string" || !value.concept.trim() || typeof value.explanation !== "string" ||
-      !Array.isArray(value.options) || value.options.length !== 4 ||
+      !Array.isArray(value.options) || value.options.length < 4 || value.options.length > 5 || // 4, or 5 for real-exam formats (D-035)
       value.options.some((option) => typeof option !== "string" || !option.trim()) ||
-      !Number.isInteger(value.answerIndex) || (value.answerIndex as number) < 0 || (value.answerIndex as number) > 3) {
+      !Number.isInteger(value.answerIndex) || (value.answerIndex as number) < 0 || (value.answerIndex as number) >= value.options.length) {
       invalidItemCount += 1;
       continue;
     }
     const normalizedPrompt = value.prompt.trim().toLowerCase().replace(/\s+/g, " ");
     const normalizedOptions = (value.options as string[]).map((option) => option.trim().toLowerCase().replace(/\s+/g, " "));
-    if (usedPrompts.has(normalizedPrompt) || new Set(normalizedOptions).size !== 4) {
+    if (usedPrompts.has(normalizedPrompt) || new Set(normalizedOptions).size !== normalizedOptions.length) {
       invalidItemCount += 1;
       continue;
     }

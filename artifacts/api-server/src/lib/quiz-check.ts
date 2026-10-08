@@ -10,7 +10,7 @@ export function parseQuizCheck(parsed: unknown, count: number): Map<number, KeyC
     if (typeof item !== "object" || item === null) continue;
     const c = item as Record<string, unknown>;
     if (!Number.isInteger(c.index) || (c.index as number) < 0 || (c.index as number) >= count || typeof c.consistent !== "boolean") continue;
-    const idx = Number.isInteger(c.correctIndex) && (c.correctIndex as number) >= 0 && (c.correctIndex as number) <= 3 ? (c.correctIndex as number) : null;
+    const idx = Number.isInteger(c.correctIndex) && (c.correctIndex as number) >= 0 && (c.correctIndex as number) <= 4 ? (c.correctIndex as number) : null; // 4 or 5 options (D-035)
     out.set(c.index as number, { consistent: c.consistent, correctIndex: idx });
   }
   return out;

@@ -5,6 +5,7 @@ import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse
 import type { CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase } from "./fixtures";
 import { parseQuizCheck } from "../src/lib/quiz-check";
 import { parseFlagCheck } from "../src/lib/flag-check";
+import { hasPositionalOption } from "../src/lib/shuffle-options";
 import { parseExamGuideReply } from "../src/lib/exam-guide-parse";
 import { parseCoachReply } from "../src/routes/chatActions";
 
@@ -82,9 +83,11 @@ function structuralQuizNotes(questions: QuizQuestion[], expectedCount: number): 
   if (questions.length !== expectedCount) notes.push(`expected ${expectedCount} questions, got ${questions.length}`);
   const prompts = new Set<string>();
   questions.forEach((q, i) => {
-    if (q.options.length !== 4) notes.push(`q${i}: ${q.options.length} options`);
+    if (q.options.length < 4 || q.options.length > 5) notes.push(`q${i}: ${q.options.length} options`);
     if (new Set(q.options.map(normalize)).size !== q.options.length) notes.push(`q${i}: duplicate options`);
-    if (!Number.isInteger(q.answerIndex) || q.answerIndex < 0 || q.answerIndex > 3) notes.push(`q${i}: bad answerIndex`);
+    if (!Number.isInteger(q.answerIndex) || q.answerIndex < 0 || q.answerIndex >= q.options.length) notes.push(`q${i}: bad answerIndex`);
+    // D-035: a positional option ("All of the above", "Both A and C") must be the last one.
+    if (q.options.slice(0, -1).some((o) => hasPositionalOption([o]))) notes.push(`q${i}: positional option not last`);
     if (prompts.has(normalize(q.prompt))) notes.push(`q${i}: duplicate prompt`);
     prompts.add(normalize(q.prompt));
   });
