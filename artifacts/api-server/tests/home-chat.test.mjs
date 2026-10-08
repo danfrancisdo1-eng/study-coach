@@ -126,6 +126,8 @@ test('home chat: greet, create course, start session, isolation, failure safety'
 // grading, result context for the coach, and "missed topics" retests.
 // Each generated set gets fresh question texts (the server rejects prompts already used in the session).
 let quizBatch = 0;
+/** The option id with this text (options are shuffled since D-032, so position means nothing). */
+const pickText = (q, text) => q.options.find((o) => o.text === text).id;
 const quizReply = (count) => chatReply(JSON.stringify({
   questions: Array.from({ length: count }, (_, i) => ({
     prompt: `Set ${quizBatch} question ${i + 1}?`, options: [`A${i}`, `B${i}`, `C${i}`, `D${i}`], answerIndex: i % 4, concept: `concept-${i % 3}`, explanation: `Because ${i}.`,
@@ -174,7 +176,8 @@ test('home chat: practice and exam question sets', async (t) => {
   assert.equal(session.quiz.questions[0].feedback, undefined, 'no feedback before answering');
   assert.equal(session.quiz.questions[0].correctOptionId, undefined, 'correct answers never exposed');
   const q0 = session.quiz.questions[0];
-  session = (await call('PUT', `/study/sessions/${started.sessionId}/answers`, { questionId: q0.id, optionId: q0.options[1].id, assisted: false })).body;
+  // Options are shuffled (D-032), so answers are picked by text: the key for question i is the letter at i % 4.
+  session = (await call('PUT', `/study/sessions/${started.sessionId}/answers`, { questionId: q0.id, optionId: pickText(q0, 'B0'), assisted: false })).body;
   assert.equal(session.quiz.questions[0].feedback.correctOptionText, 'A0', 'practice: feedback right after answering');
   assert.equal(session.quiz.questions[0].feedback.selectedOptionText, 'B0');
   assert.equal(session.quiz.questions[1].feedback, undefined);
@@ -185,10 +188,10 @@ test('home chat: practice and exam question sets', async (t) => {
   chat = await call('POST', '/study/chat', { content: 'what is ATP?', version: 2 });
   assert.match(ai.requests.at(-1).body.messages[0].content, /in progress: 1 of 4 answered/);
   // Answer the rest (q1 right, q2 wrong, q3 right) and grade through the session route.
-  const answers = [[1, 1], [2, 0], [3, 3]];
+  const answers = [[1, 'B1'], [2, 'A2'], [3, 'D3']];
   for (const [i, pick] of answers) {
     const q = session.quiz.questions[i];
-    session = (await call('PUT', `/study/sessions/${started.sessionId}/answers`, { questionId: q.id, optionId: q.options[pick].id, assisted: false })).body;
+    session = (await call('PUT', `/study/sessions/${started.sessionId}/answers`, { questionId: q.id, optionId: pickText(q, pick), assisted: false })).body;
   }
   session = (await call('POST', `/study/sessions/${started.sessionId}/grade`)).body;
   assert.equal(session.quiz.grade.correct, 2);
@@ -380,9 +383,9 @@ test('home chat: memory sheet fills itself from a graded set; a set from the she
   let chat = await call('POST', '/study/chat', { content: 'practice', version: 0 });
   const started = chat.body.messages.at(-1).actions[0];
   let session = (await call('GET', `/study/sessions/${started.sessionId}`)).body;
-  for (const [i, pick] of [[0, 1], [1, 1], [2, 0], [3, 3]]) {
+  for (const [i, pick] of [[0, 'B0'], [1, 'B1'], [2, 'A2'], [3, 'D3']]) {
     const q = session.quiz.questions[i];
-    session = (await call('PUT', `/study/sessions/${started.sessionId}/answers`, { questionId: q.id, optionId: q.options[pick].id, assisted: false })).body;
+    session = (await call('PUT', `/study/sessions/${started.sessionId}/answers`, { questionId: q.id, optionId: pickText(q, pick), assisted: false })).body;
   }
   const graded = await call('POST', `/study/sessions/${started.sessionId}/grade`);
   assert.equal(graded.status, 200);

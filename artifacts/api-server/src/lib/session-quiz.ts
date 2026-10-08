@@ -6,6 +6,7 @@ import { complete } from "../ai";
 import * as sessionQuizPrompt from "../prompts/session-quiz.v6";
 import * as quizCheckPrompt from "../prompts/quiz-check.v1";
 import { applyQuizCheck, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
+import { shuffleOptions } from "./shuffle-options";
 import * as flashcardsPrompt from "../prompts/flashcards.v2";
 
 export type JsonObject = Record<string, unknown>;
@@ -284,7 +285,8 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
   // A failed check keeps the set as written (the writer is right far more often than not).
   const { kept, dropped } = await checkAnswerKeys(valid);
   invalidItemCount += dropped;
-  const questions: StoredQuestion[] = kept.map((q) => {
+  // Option order (D-032): shuffled after the check, so the key isn't usually in slot A or B.
+  const questions: StoredQuestion[] = kept.map((q) => shuffleOptions(q)).map((q) => {
     const options = q.options.map((text) => ({ id: randomUUID(), text }));
     return { id: randomUUID(), prompt: q.prompt, concept: q.concept, options, correctOptionId: options[q.answerIndex]!.id, explanation: q.explanation, ...(q.hook ? { hook: q.hook } : {}), answers: [] };
   });
