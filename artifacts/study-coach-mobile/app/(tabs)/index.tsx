@@ -162,14 +162,23 @@ export default function CoachHome() {
 
   // The list is inverted (newest message first in the data, drawn at the bottom), so it
   // opens at the newest message with no scroll arithmetic; scrollToEnd kept landing short.
-  // A new message lands with its top in view (viewPosition 1 in an inverted list), so a long
-  // reply with chips under it is read from the start, not from the chips (Dan, 2026-10-08).
+  // A new message lands at the bottom (offset 0); once its height is known, a reply taller
+  // than the viewport is scrolled so its top is in view, so a long reply with chips under it
+  // is read from the start (Dan, 2026-10-08). Measured, so it cannot overshoot: scrollToIndex
+  // with viewPosition on an inverted list jumped past the reply to the previous message.
   const newestFirst = useMemo(() => [...messages].reverse(), [messages]);
+  const viewportRef = useRef(0);
+  const positionedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!newestFirst.length) return;
-    try { listRef.current?.scrollToIndex({ index: 0, viewPosition: 1, animated: true }); }
-    catch { listRef.current?.scrollToOffset({ offset: 0, animated: true }); }
+    positionedRef.current = null;
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
   }, [messages.length]);
+  const placeNewest = (id: string, height: number) => {
+    if (positionedRef.current === id || id !== messages[messages.length - 1]?.id) return;
+    positionedRef.current = id;
+    const room = viewportRef.current - 24;
+    if (room > 0 && height > room) listRef.current?.scrollToOffset({ offset: height - room, animated: true });
+  };
 
   if (!isLoaded) return null;
   if (!isSignedIn) return <Redirect href="/(auth)/sign-in" />;
@@ -268,7 +277,7 @@ export default function CoachHome() {
   };
 
   const renderMessage = ({ item }: { item: HomeChatMessage }) => (
-    <View>
+    <View onLayout={(e) => placeNewest(item.id, e.nativeEvent.layout.height)}>
     {item.sessionStart ? <View style={styles.sessionDivider}><View style={styles.sessionLine} /><Text style={styles.sessionLabel}>NEW SESSION</Text><View style={styles.sessionLine} /></View> : null}
     <View style={[styles.turn, item.role === 'user' ? styles.userTurn : styles.coachTurn]} testID={`chat-turn-${item.role}`}>
       <Text style={styles.turnRole}>{item.role === 'user' ? 'YOU' : 'COACH'}</Text>
@@ -364,7 +373,7 @@ export default function CoachHome() {
           contentContainerStyle={styles.list}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
-          onScrollToIndexFailed={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
+          onLayout={(e) => { viewportRef.current = e.nativeEvent.layout.height; }}
           ListEmptyComponent={(
             // A fresh thread (D-040, Dan): the course is already chosen, so offer the first moves as
             // chips instead of asking which course. The general thread still asks.
