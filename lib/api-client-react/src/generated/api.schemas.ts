@@ -445,7 +445,15 @@ export interface HomeChatInput {
      */
   version: number;
   /**
-     * The course or exam the student is focused on in the app (home screen selector); the coach assumes it when a message does not name one.
+     * The course or exam the student is focused on: selects that course's thread (one per course; omitted or unknown = the general thread), and the coach assumes it when a message does not name one.
+     * @maxLength 200
+     */
+  courseId?: string;
+}
+
+export interface HomeChatOpenInput {
+  /**
+     * The thread to open; omitted or unknown = the general thread.
      * @maxLength 200
      */
   courseId?: string;
@@ -846,5 +854,13 @@ courseId?: string;
 
 export type ListLectures200 = {
   lectures: LectureSummary[];
+};
+
+export type GetHomeChatParams = {
+/**
+ * The course or exam whose thread to return; omitted or unknown = the account's general thread.
+ * @maxLength 200
+ */
+courseId?: string;
 };
 

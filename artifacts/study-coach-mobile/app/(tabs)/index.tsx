@@ -89,7 +89,10 @@ export default function CoachHome() {
   const [intakeBusy, setIntakeBusy] = useState(false);
 
   const stateQuery = useGetStudyState({ query: { queryKey: [...getGetStudyStateQueryKey(), userId], enabled: !!userId } });
-  const chatQuery = useGetHomeChat({ query: { queryKey: [...getGetHomeChatQueryKey(), userId], enabled: !!userId } });
+  // One thread per course (D-038): the chat follows the focused course; no focus = the general thread.
+  const chatParams = focusCourseId ? { courseId: focusCourseId } : undefined;
+  const chatKey = [...getGetHomeChatQueryKey(chatParams), userId];
+  const chatQuery = useGetHomeChat(chatParams, { query: { queryKey: chatKey, enabled: !!userId } });
   const putState = usePutStudyState();
   const send = useSendHomeChatMessage();
   const open = useOpenHomeChat();
@@ -113,11 +116,14 @@ export default function CoachHome() {
   openRef.current = open.mutateAsync;
   useEffect(() => {
     if (!userId || !consented) return;
-    const openSession = () => { openRef.current().then((result) => queryClient.setQueryData([...getGetHomeChatQueryKey(), userId], result)).catch(() => {}); };
+    const key = chatKey;
+    const openSession = () => { openRef.current({ data: chatParams ?? {} }).then((result) => queryClient.setQueryData(key, result)).catch(() => {}); };
     openSession();
     const sub = AppState.addEventListener('change', (state) => { if (state === 'active') openSession(); });
     return () => sub.remove();
-  }, [userId, consented]);
+  }, [userId, consented, focusCourseId]);
+  // Switching the focus switches the thread: the docked set/deck cards belong to the new thread.
+  useEffect(() => { setGradedSessionId(null); setFinishedDeckId(null); setStudyOpen(false); openedForRef.current = null; }, [focusCourseId]);
   const messages = chatQuery.data?.messages ?? [];
   const version = chatQuery.data?.version ?? 0;
   const busy = send.isPending || putState.isPending;
@@ -186,7 +192,7 @@ export default function CoachHome() {
     setError('');
     try {
       const result: HomeChat = await send.mutateAsync({ data: { content, version, ...(focusCourseId ? { courseId: focusCourseId } : {}) } });
-      queryClient.setQueryData([...getGetHomeChatQueryKey(), userId], result);
+      queryClient.setQueryData(chatKey, result);
       if (result.activeQuiz) { setGradedSessionId(null); setFinishedDeckId(null); } // a new set replaces the old cards
       if (result.activeDeck) { setFinishedDeckId(null); setGradedSessionId(null); }
       setDraft('');
@@ -202,7 +208,7 @@ export default function CoachHome() {
 
     } catch (problem) {
       const status = (problem as { status?: number }).status;
-      if (status === 409) await queryClient.invalidateQueries({ queryKey: [...getGetHomeChatQueryKey(), userId] });
+      if (status === 409) await queryClient.invalidateQueries({ queryKey: chatKey });
       setError(readableError(problem));
     }
   };
