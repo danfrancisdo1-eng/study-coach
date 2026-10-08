@@ -51,6 +51,7 @@ test('coach AI routes reject signed-out requests without calling the AI provider
       CLERK_PUBLISHABLE_KEY: `pk_test_${Buffer.from('example.clerk.accounts.dev$').toString('base64')}`,
       CLERK_SECRET_KEY: 'sk_test_dummy',
       DATABASE_URL: 'postgres://user:pass@127.0.0.1:1/unused',
+      SKIP_MIGRATIONS: '1', // no database here; the on-boot migrator (D-039) is skipped
       AI_INTEGRATIONS_OPENAI_BASE_URL: `http://127.0.0.1:${aiPort}`,
       AI_INTEGRATIONS_OPENAI_API_KEY: 'dummy',
     },

@@ -22,11 +22,15 @@ function freePort() {
 export async function startDatabase(t) {
   const db = await PGlite.create();
   const journal = JSON.parse(readFileSync(path.join(migrationsDir, 'meta', '_journal.json'), 'utf8'));
+  // Applied tags are recorded the way the server's on-boot migrator (lib/db/src/migrate.ts)
+  // records them, so a booted server finds nothing pending.
+  await db.exec('CREATE TABLE IF NOT EXISTS schema_migrations (tag text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())');
   for (const entry of journal.entries) {
     const sql = readFileSync(path.join(migrationsDir, `${entry.tag}.sql`), 'utf8');
     for (const statement of sql.split('--> statement-breakpoint')) {
       if (statement.trim()) await db.exec(statement);
     }
+    await db.query('INSERT INTO schema_migrations (tag) VALUES ($1) ON CONFLICT DO NOTHING', [entry.tag]);
   }
   const port = await freePort();
   const server = new PGLiteSocketServer({ db, port, host: '127.0.0.1', maxConnections: 10 });

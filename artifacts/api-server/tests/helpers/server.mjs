@@ -56,6 +56,8 @@ export async function startServer(t, aiPort, extraEnv = {}) {
       CLERK_SECRET_KEY: 'sk_test_dummy',
       CLERK_JWT_KEY: publicKey.export({ type: 'spki', format: 'pem' }),
       DATABASE_URL: 'postgres://user:pass@127.0.0.1:1/unused',
+      // No database in this test: the on-boot migrator (D-039) is skipped; tests that pass a real DATABASE_URL run it.
+      ...(extraEnv.DATABASE_URL ? {} : { SKIP_MIGRATIONS: '1' }),
       AI_INTEGRATIONS_OPENAI_BASE_URL: `http://127.0.0.1:${aiPort}`,
       AI_INTEGRATIONS_OPENAI_API_KEY: 'dummy',
       ...extraEnv,
