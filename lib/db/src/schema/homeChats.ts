@@ -7,7 +7,8 @@ export type HomeChatAction =
   | { type: "start_quiz"; sessionId: string; courseId: string; topic: string; kind: "practice" | "exam"; count: number }
   | { type: "start_flashcards"; sessionId: string; courseId: string; topic: string; count: number }
   | { type: "update_memory_sheet"; courseId: string; rows: { id: string; term: string; trick: string; whenYouSee: string; think: string }[] }
-  | { type: "start_session"; sessionId: string; courseId: string; topic: string };
+  | { type: "start_session"; sessionId: string; courseId: string; topic: string }
+  | { type: "lookup_exam_guide"; courseId: string; found: boolean; sections: number };
 export type HomeChatMessage = {
   id: string;
   role: HomeChatRole;

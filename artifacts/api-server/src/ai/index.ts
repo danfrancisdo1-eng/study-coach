@@ -23,6 +23,13 @@ export function complete(task: AiTask, input: AiInput): Promise<AiResult> {
   if (config.provider === "anthropic") {
     return anthropicCompletion({ ...config, ...input, jsonSchema: TASK_SCHEMAS[task] });
   }
-  if (input.webSearch) throw new Error(`Task ${task} needs web search, which is only available on the anthropic provider.`);
+  if (input.webSearch) {
+    // Tests only: the OpenAI-speaking stub answers a lookup without searching. Never set in production.
+    if (process.env.AI_ALLOW_SEARCHLESS_LOOKUP === "1") {
+      const { webSearch: _webSearch, ...rest } = input;
+      return chatCompletion({ ...config, ...rest });
+    }
+    throw new Error(`Task ${task} needs web search, which is only available on the anthropic provider.`);
+  }
   return chatCompletion({ ...config, ...input });
 }

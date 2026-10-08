@@ -63,7 +63,7 @@ export const coachSchema = object({
   actions: {
     type: "array",
     items: object({
-      type: { type: "string", enum: ["create_course", "start_quiz", "start_flashcards", "update_memory_sheet", "start_session"] },
+      type: { type: "string", enum: ["create_course", "start_quiz", "start_flashcards", "update_memory_sheet", "start_session", "lookup_exam_guide"] },
       // create_course: the course name. start_quiz / start_session: the course name or id, and a topic.
       name: string,
       topic: string,

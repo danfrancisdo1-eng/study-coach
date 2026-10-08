@@ -74,6 +74,14 @@ test('at most one session start per reply; the first wins', () => {
   assert.deepEqual(plan.start, { courseId: 'bio-1', topic: 'cells' });
 });
 
+test('lookup_exam_guide is kept and planned against an existing course (D-044)', () => {
+  const parsed = parseCoachReply(JSON.stringify({ reply: 'Looking up the official guide.', suggestions: [], actions: [{ type: 'lookup_exam_guide', name: 'Microsoft 103' }] }));
+  assert.deepEqual(parsed.actions, [{ type: 'lookup_exam_guide', name: 'Microsoft 103', topic: '' }]);
+  const plan = planActions([{ id: 'ms103', name: 'Microsoft 103' }], parsed.actions);
+  assert.deepEqual(plan.lookup, { courseId: 'ms103', topic: 'General review' });
+  assert.equal(planActions([{ id: 'bio', name: 'BIOL 114' }], parsed.actions).lookup, null, 'unknown course: skipped');
+});
+
 test('suggestions are bounded chips; missing suggestions is fine', () => {
   const parsed = parseCoachReply(JSON.stringify({ reply: 'Practice or exam?', suggestions: ['Practice', 'Exam', '  ', 'x'.repeat(100), 'a', 'b', 'c', 'd', 'e'], actions: [] }));
   assert.deepEqual(parsed.suggestions, ['Practice', 'Exam', 'x'.repeat(100), 'a', 'b', 'c'], 'blank dropped, capped at 6');

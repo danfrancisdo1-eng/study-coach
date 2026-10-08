@@ -10,7 +10,9 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v13";
+import * as coachPrompt from "../prompts/coach.v14";
+import { lookupExamGuide } from "../lib/exam-guide";
+import { saveExamGuide } from "../lib/exam-guide-state";
 import { eventsFrom, resultsHistoryText, weakConcepts } from "../lib/results-history";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { excludedByReport, generateFlashcards, generateSessionQuiz, sourceChunks, sourceTextOf, type Quiz, type Session } from "../lib/session-quiz";
@@ -343,7 +345,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const courses = knownCourses(state);
   const lectureRows = await db.select({ courseId: lecturesTable.courseId }).from(lecturesTable).where(eq(lecturesTable.ownerId, ownerId));
   const materials = list(state.materials);
-  const summary = courses.map((course) => {
+  const buildSummary = (courseList: KnownCourse[]) => courseList.map((course) => {
     const own = materials.filter((m): m is JsonObject => isObject(m) && m.courseId === course.id);
     const materialNames = own.map((m) => (typeof m.name === "string" ? m.name : "material"));
     const scope = own.find((m) => typeof m.name === "string" && SCOPE_MATERIAL.test(m.name) && typeof m.text === "string");
@@ -361,6 +363,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       ...(scope ? { scopeExcerpt: (scope.text as string).replace(/\s+/g, " ").slice(0, SCOPE_EXCERPT_CHARS) } : {}),
     };
   });
+  const summary = buildSummary(courses);
   const history = messages.slice(-HISTORY_TURNS).map((m) => ({ role: m.role, content: m.content }));
   // Results so far for this thread's course (D-042): past sets and decks as facts for the coach.
   const courseSessions = threadId
@@ -402,6 +405,43 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   for (const course of created) done.push({ type: "create_course", courseId: course.id, name: course.name, ...(course.kind === "exam" ? { courseKind: "exam" as const } : {}) });
   const resolveCourse = (start: { courseId: string | null; courseName?: string }) =>
     start.courseId ?? created.find((c) => c.name === start.courseName)?.id ?? null;
+  // D-044: the coach asked for the official exam guide of a course (a certification named as a
+  // course). Look it up now, save it (the course becomes an exam when found), then ask the
+  // coach again with the sections in hand, so this one reply carries the topic chips.
+  if (plan.lookup) {
+    const courseId = resolveCourse(plan.lookup);
+    const course = courseId ? [...courses, ...created].find((c) => c.id === courseId) : null;
+    if (course) {
+      let found = false;
+      let sections = 0;
+      try {
+        const guide = await lookupExamGuide(course.name);
+        if (guide) {
+          found = guide.found;
+          sections = guide.sections.length;
+          if (!await saveExamGuide(ownerId, course.id, guide, true)) {
+            res.status(409).json({ error: "Your courses changed on another device. Reload and send again.", version });
+            return;
+          }
+        }
+      } catch (error) {
+        req.log.error({ courseId: course.id, error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat exam guide lookup failed");
+      }
+      done.push({ type: "lookup_exam_guide", courseId: course.id, found, sections });
+      const refreshed = knownCourses(await latestStateFor(ownerId, state, created));
+      try {
+        const followUp = await complete("coach", {
+          system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: buildSummary(refreshed), firstVisit: false, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, guideJustLookedUp: { courseName: course.name, found, sections } }),
+          messages: [...history, { role: "user", content }],
+        });
+        const second = parseCoachReply(followUp.text);
+        // The follow-up turn only speaks: its reply and chips replace the "looking it up" line; its actions are not applied.
+        if (second) coach = { reply: second.reply, suggestions: second.suggestions, actions: [] };
+      } catch (error) {
+        req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat follow-up after exam guide lookup failed");
+      }
+    }
+  }
   // "The misses" only ever mean this course's latest set or deck (Dan, 2026-10-08: a Bio
   // card turned up in an AB731 deck). A set from another course is not a source here.
   const sameCourse = (session: Session | null, courseId: string): Session | null => {

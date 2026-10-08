@@ -3,6 +3,7 @@ import { and, eq, TransactionRollbackError } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable } from "@workspace/db";
 import { requireStudyAuth } from "./study";
 import { lookupExamGuide, type ExamGuide } from "../lib/exam-guide";
+import { saveExamGuide } from "../lib/exam-guide-state";
 
 const router: IRouter = Router();
 router.use("/study/courses", requireStudyAuth);
@@ -119,20 +120,9 @@ router.post("/study/courses/:courseId/exam-guide", async (req, res): Promise<voi
     res.status(502).json({ error: "Couldn't look up the exam guide just now. Try again in a moment." });
     return;
   }
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const latest = await db.select({ state: studyStatesTable.state, version: studyStatesTable.version })
-      .from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
-    const row = latest[0];
-    if (!row || !isObject(row.state)) break;
-    const nextState: JsonObject = { ...row.state, courses: list(row.state.courses).map((c) => (isObject(c) && c.id === courseId ? { ...c, examGuide: guide } : c)) };
-    const updated = await db.update(studyStatesTable)
-      .set({ state: nextState, version: row.version + 1, updatedAt: new Date() })
-      .where(and(eq(studyStatesTable.ownerId, ownerId), eq(studyStatesTable.version, row.version)))
-      .returning({ version: studyStatesTable.version });
-    if (updated[0]) {
-      res.json(guide);
-      return;
-    }
+  if (await saveExamGuide(ownerId, courseId, guide)) {
+    res.json(guide);
+    return;
   }
   res.status(409).json({ error: "Your courses changed on another device. Reload and try again." });
 });
