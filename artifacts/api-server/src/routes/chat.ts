@@ -10,7 +10,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v11";
+import * as coachPrompt from "../prompts/coach.v12";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { excludedByReport, generateFlashcards, generateSessionQuiz, sourceChunks, sourceTextOf, type Quiz, type Session } from "../lib/session-quiz";
 import { itemsFromSession, rowsFromState, sheetAsText, updateMemorySheet, type MemoryItem } from "../lib/memory-sheet";

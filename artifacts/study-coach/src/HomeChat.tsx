@@ -87,7 +87,7 @@ export default function HomeChat({ aiConsent, busy, courseId, onCoursesChanged, 
         {chat.error && <p className="ae-muted" role="alert">Couldn’t load your chat. <button type="button" className="ae-button ae-button--quiet" onClick={() => void chat.refetch()}>Try again</button></p>}
         {!chat.isLoading && !messages.length && (
           <article className="ae-turn ae-turn--coach"><span className="ae-turn-badge">AI</span>
-            <div className="ae-turn-content"><p>Hey. What class are we working on? You can also add notes, a syllabus, or photos with the materials panel, or record a lecture on your iPhone.</p></div>
+            <div className="ae-turn-content"><p>Hey. Which course or certification exam are we working on? You can also add notes, a syllabus, or photos with the materials panel, or record a lecture on your iPhone.</p></div>
           </article>
         )}
         {messages.map(turn => (
