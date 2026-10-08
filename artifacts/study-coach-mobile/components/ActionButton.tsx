@@ -35,7 +35,7 @@ export function ActionButton({ label, onPress, disabled, secondary, testID, icon
 }
 
 const styles = StyleSheet.create({
-  actionButton: { minHeight: 45, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderRadius: 13, paddingHorizontal: 15, paddingVertical: 11, alignSelf: 'flex-start' },
+  actionButton: { minHeight: 45, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderRadius: 12, paddingHorizontal: 15, paddingVertical: 11, alignSelf: 'flex-start' },
   secondaryAction: {},
   actionText: { fontSize: 14, fontWeight: '700' },
   disabled: { opacity: 0.48 },

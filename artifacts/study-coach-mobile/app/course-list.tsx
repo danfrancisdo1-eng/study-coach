@@ -132,26 +132,26 @@ export default function CourseListScreen() {
         <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
         <View style={styles.headerCopy}><Text style={styles.title}>Courses & exams</Text><Text style={styles.caption}>Tap one to make it the coach's focus</Text></View>
         <Pressable accessibilityRole="button" onPress={() => setAddOpen(true)} style={styles.addButton} testID="button-add-course">
-          <Feather name="plus" size={16} color={colors.primary} /><Text style={styles.addText}>Add</Text>
+          <Feather name="plus" size={16} color={colors.primaryText} /><Text style={styles.addText}>Add</Text>
         </Pressable>
       </View>
-      {stateQuery.isLoading ? <View style={styles.center}><ActivityIndicator color={colors.primary} /></View> : (
+      {stateQuery.isLoading ? <View style={styles.center}><ActivityIndicator color={colors.primaryText} /></View> : (
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
           {error && !addOpen ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
           <Pressable accessibilityRole="button" accessibilityState={{ selected: focusId === null }} onPress={() => select(null)} style={({ pressed }) => [styles.row, pressed && styles.pressed]} testID="row-all-courses">
-            <Feather name="layers" size={16} color={focusId === null ? colors.primary : colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text style={[styles.rowName, focusId === null && { color: colors.primary }]}>All courses</Text><Text style={styles.caption}>The coach asks which one when it matters</Text></View>
-            {focusId === null ? <Feather name="check" size={16} color={colors.primary} /> : null}
+            <Feather name="layers" size={16} color={focusId === null ? colors.primaryText : colors.mutedForeground} />
+            <View style={styles.rowCopy}><Text style={[styles.rowName, focusId === null && { color: colors.primaryText }]}>All courses</Text><Text style={styles.caption}>The coach asks which one when it matters</Text></View>
+            {focusId === null ? <Feather name="check" size={16} color={colors.primaryText} /> : null}
           </Pressable>
           {rows.map((row) => (
             <View key={row.id} style={[styles.row, row.id === focusId && styles.rowSelected]} testID={`row-course-${row.id}`}>
               <Pressable accessibilityRole="button" accessibilityLabel={`Coach on ${row.name}`} accessibilityState={{ selected: row.id === focusId }} onPress={() => select(row.id)} style={({ pressed }) => [styles.rowMain, pressed && styles.pressed]} testID={`button-focus-${row.id}`}>
-                <Feather name={row.kind === 'exam' ? 'award' : 'book'} size={16} color={row.id === focusId ? colors.primary : colors.mutedForeground} />
+                <Feather name={row.kind === 'exam' ? 'award' : 'book'} size={16} color={row.id === focusId ? colors.primaryText : colors.mutedForeground} />
                 <View style={styles.rowCopy}>
-                  <Text numberOfLines={1} style={[styles.rowName, row.id === focusId && { color: colors.primary }]}>{row.name}</Text>
+                  <Text numberOfLines={1} style={[styles.rowName, row.id === focusId && { color: colors.primaryText }]}>{row.name}</Text>
                   <Text numberOfLines={1} style={styles.caption}>{detail(row)}</Text>
                 </View>
-                {row.id === focusId ? <Feather name="check" size={16} color={colors.primary} /> : null}
+                {row.id === focusId ? <Feather name="check" size={16} color={colors.primaryText} /> : null}
               </Pressable>
               <Pressable accessibilityRole="button" accessibilityLabel={`Open ${row.name}`} onPress={() => router.push({ pathname: '/course/[courseId]', params: { courseId: row.id } })} style={styles.rowOpen} testID={`button-open-${row.id}`}>
                 <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
@@ -197,11 +197,11 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   caption: { color: colors.mutedForeground, fontSize: 12 },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
   addButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12 },
-  addText: { color: colors.primary, fontSize: 15, fontWeight: '700' },
+  addText: { color: colors.primaryText, fontSize: 15, fontWeight: '700' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   content: { paddingHorizontal: 16, paddingTop: 8, gap: 8 },
   row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
-  rowSelected: { borderColor: colors.primary },
+  rowSelected: { borderColor: colors.primary, borderWidth: 2 },
   rowMain: { flex: 1, minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingLeft: 12, paddingRight: 4 },
   rowOpen: { width: 44, minHeight: 56, alignItems: 'center', justifyContent: 'center', borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.border },
   rowCopy: { flex: 1, minWidth: 0 },

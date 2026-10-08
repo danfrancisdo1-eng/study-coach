@@ -236,7 +236,7 @@ export default function CourseLecturesScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your lectures</Text>
-          {lectures.isLoading ? <ActivityIndicator color={colors.primary} /> : null}
+          {lectures.isLoading ? <ActivityIndicator color={colors.primaryText} /> : null}
           {lectures.error ? (
             <View style={styles.notice} accessibilityRole="alert">
               <Text style={styles.body}>Couldn’t load your lectures.</Text>
@@ -315,7 +315,7 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     rowTitle: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
     input: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.background, color: colors.foreground, fontSize: 16, paddingHorizontal: 13 },
     textButton: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
-    link: { color: colors.primary, fontSize: 15, fontWeight: '600' },
+    link: { color: colors.primaryText, fontSize: 15, fontWeight: '600' },
     bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 18, paddingTop: 10, gap: 8, backgroundColor: colors.background, borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth },
     primaryButton: { minHeight: 54, borderRadius: 14, backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
     primaryText: { color: colors.primaryForeground, fontSize: 19, fontWeight: '700' }, // 19pt bold = large text; brand orange passes 3:1 only for large text

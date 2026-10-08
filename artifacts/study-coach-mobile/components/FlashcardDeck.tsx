@@ -38,7 +38,7 @@ export function FlashcardDeck({ sessionId, userId, onFinished, onError, onStepCh
   const step = !deck ? 'loading' : deck.completedAt ? 'finished' : `${current?.id ?? 'none'}:${flipped ? 'back' : 'front'}`;
   useEffect(() => { onStepChange?.(step); }, [step]);
 
-  if (sessionQuery.isLoading) return <View style={styles.card}><ActivityIndicator color={colors.primary} /><Text style={styles.muted}>Loading your cards…</Text></View>;
+  if (sessionQuery.isLoading) return <View style={styles.card}><ActivityIndicator color={colors.primaryText} /><Text style={styles.muted}>Loading your cards…</Text></View>;
   if (!session || !deck) {
     return <View style={styles.card}><Text style={styles.muted}>Couldn’t load this deck.</Text>
       <Pressable accessibilityRole="button" onPress={() => void sessionQuery.refetch()} style={styles.secondaryButton} testID="button-retry-deck"><Text style={styles.secondaryText}>Retry</Text></Pressable></View>;
@@ -48,7 +48,7 @@ export function FlashcardDeck({ sessionId, userId, onFinished, onError, onStepCh
     const again = deck.cards.filter((card) => card.results.includes('again'));
     return (
       <View style={styles.card} testID="panel-deck-finished">
-        <Text style={styles.kicker}>FLASHCARDS · {session.topic}</Text>
+        <Text style={styles.kicker}>Flashcards · {session.topic}</Text>
         <Text style={styles.score}>{total} / {total}</Text>
         <Text style={styles.body}>{again.length ? `${again.length} card${again.length === 1 ? '' : 's'} needed a second look.` : 'Every card on the first try.'}</Text>
         {again.map((card) => <Text key={card.id} style={styles.muted}>• {card.concept}</Text>)}
@@ -68,9 +68,9 @@ export function FlashcardDeck({ sessionId, userId, onFinished, onError, onStepCh
 
   return (
     <View style={styles.card} testID="panel-deck-card">
-      <Text style={styles.kicker}>FLASHCARDS · CARD {done + 1} OF {total}{current.results.length ? ' · AGAIN' : ''}</Text>
+      <Text style={styles.kicker}>Flashcards · Card {done + 1} of {total}{current.results.length ? ' · again' : ''}</Text>
       <Pressable accessibilityRole="button" accessibilityLabel={flipped ? 'Card back' : 'Tap to flip'} onPress={() => setFlipped((f) => !f)} style={[styles.face, flipped && styles.faceBack]} testID="button-flip-card">
-        <Text style={styles.faceLabel}>{flipped ? 'ANSWER' : 'TAP TO FLIP'}</Text>
+        <Text style={styles.faceLabel}>{flipped ? 'Answer' : 'Tap to flip'}</Text>
         <Text style={styles.faceText}>{flipped ? current.back : current.front}</Text>
       </Pressable>
       {flipped ? (
@@ -89,20 +89,20 @@ export function FlashcardDeck({ sessionId, userId, onFinished, onError, onStepCh
 
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 16, gap: 12 },
-  kicker: { color: colors.primary, fontSize: 10, letterSpacing: 1.3, fontWeight: '800' },
+  kicker: { color: colors.mutedForeground, fontSize: 12.5, lineHeight: 17, fontWeight: '600' },
   face: { minHeight: 150, borderRadius: 16, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, padding: 16, justifyContent: 'center', gap: 8 },
   faceBack: { backgroundColor: colors.accent },
-  faceLabel: { color: colors.mutedForeground, fontSize: 10, letterSpacing: 1.2, fontWeight: '800' },
+  faceLabel: { color: colors.mutedForeground, fontSize: 12, fontWeight: '600' },
   faceText: { color: colors.foreground, fontSize: 18, lineHeight: 26, fontWeight: '600' },
   row: { flexDirection: 'row', gap: 10 },
-  againButton: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 13, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
+  againButton: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
   againText: { color: colors.foreground, fontSize: 16, fontWeight: '700' },
-  gotButton: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 13, backgroundColor: colors.primary },
+  gotButton: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: colors.primary },
   gotText: { color: colors.primaryForeground, fontSize: 16, fontWeight: '700' },
   body: { color: colors.foreground, fontSize: 15, lineHeight: 22 },
   muted: { color: colors.mutedForeground, fontSize: 13, lineHeight: 19 },
   caption: { color: colors.mutedForeground, fontSize: 12 },
-  score: { color: colors.primary, fontSize: 40, fontWeight: '700', letterSpacing: -1 },
+  score: { color: colors.foreground, fontSize: 40, fontWeight: '700', letterSpacing: -1, fontVariant: ['tabular-nums'] },
   secondaryButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border },
   secondaryText: { color: colors.foreground, fontSize: 15, fontWeight: '600' },
   disabled: { opacity: 0.5 },

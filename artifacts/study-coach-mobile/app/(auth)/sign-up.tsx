@@ -64,7 +64,7 @@ export default function SignUpScreen() {
       testID="screen-sign-up"
     >
       <View style={[styles.brandMark, { backgroundColor: colors.primary }]}><Feather name="book-open" size={23} color={colors.primaryForeground} /></View>
-      <Text style={[styles.eyebrow, { color: colors.primary }]}>STUDY COACH</Text>
+      <Text style={[styles.eyebrow, { color: colors.primaryText }]}>Study Coach</Text>
       <Text style={[styles.title, { color: colors.foreground }]}>{verifying ? 'Check your email.' : 'Make room to learn.'}</Text>
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{verifying ? `We sent a verification code to ${emailAddress}.` : 'Create an account to keep courses and study sessions in sync.'}</Text>
       {verifying ? (
@@ -75,7 +75,7 @@ export default function SignUpScreen() {
             <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>{busy ? 'Verifying…' : 'Verify and create account'}</Text>
           </Pressable>
           <Pressable testID="button-resend-sign-up-code" onPress={() => void signUp.verifications.sendEmailCode()} style={styles.textButton}>
-            <Text style={[styles.link, { color: colors.primary }]}>Send a new code</Text>
+            <Text style={[styles.link, { color: colors.primaryText }]}>Send a new code</Text>
           </Pressable>
         </>
       ) : (
@@ -91,7 +91,7 @@ export default function SignUpScreen() {
           <Text style={[styles.caption, { color: colors.mutedForeground }]}>Use at least 8 characters. Email verification is required.</Text>
           <View style={styles.linkRow}>
             <Text style={[styles.body, { color: colors.mutedForeground }]}>Already have an account? </Text>
-            <Link href="/(auth)/sign-in" testID="link-sign-in"><Text style={[styles.link, { color: colors.primary }]}>Sign in</Text></Link>
+            <Link href="/(auth)/sign-in" testID="link-sign-in"><Text style={[styles.link, { color: colors.primaryText }]}>Sign in</Text></Link>
           </View>
         </>
       )}
@@ -105,12 +105,12 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   container: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 25, gap: 12 },
   brandMark: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 17, marginBottom: 8 },
-  eyebrow: { fontSize: 10, letterSpacing: 1.6, fontWeight: '800' },
+  eyebrow: { fontSize: 14, fontWeight: '600' },
   title: { fontSize: 34, lineHeight: 41, letterSpacing: -1.3, fontWeight: '700', marginTop: 1 },
   subtitle: { fontSize: 15, lineHeight: 22, marginBottom: 12 },
   label: { fontSize: 13, fontWeight: '700', marginTop: 6 },
   input: { minHeight: 50, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, fontSize: 15 },
-  button: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 13, marginTop: 7 },
+  button: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 12, marginTop: 7 },
   buttonText: { fontSize: 15, fontWeight: '700' },
   disabled: { opacity: 0.48 },
   textButton: { alignSelf: 'center', minHeight: 40, justifyContent: 'center', paddingHorizontal: 8 },

@@ -62,7 +62,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   const step = !quiz ? 'loading' : quiz.grade ? 'score' : reviewingId ? `feedback:${reviewingId}` : `question:${currentId ?? quiz.questions.find((q) => counts(q) && !q.answer)?.id ?? 'grade'}`;
   useEffect(() => { onStepChange?.(step); }, [step]);
 
-  if (sessionQuery.isLoading) return <View style={styles.card}><ActivityIndicator color={colors.primary} /><Text style={styles.muted}>Loading your questions…</Text></View>;
+  if (sessionQuery.isLoading) return <View style={styles.card}><ActivityIndicator color={colors.primaryText} /><Text style={styles.muted}>Loading your questions…</Text></View>;
   if (!session || !quiz) {
     return <View style={styles.card}><Text style={styles.muted}>Couldn’t load this set.</Text>
       <Pressable accessibilityRole="button" onPress={() => void sessionQuery.refetch()} style={styles.secondaryButton} testID="button-retry-quiz"><Text style={styles.secondaryText}>Retry</Text></Pressable></View>;
@@ -89,7 +89,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
 
   // The report link, or the verdict once the question was reported.
   const reportNote = (question: StudyQuizQuestionsItem) => {
-    if (reportingId === question.id) return <View style={styles.note} testID="status-recheck"><ActivityIndicator color={colors.primary} size="small" /><Text style={styles.noteText}>Checking the answer again…</Text></View>;
+    if (reportingId === question.id) return <View style={styles.note} testID="status-recheck"><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.noteText}>Checking the answer again…</Text></View>;
     const recheck = question.flag?.recheck;
     if (question.flag && !recheck) return <View style={styles.note} testID="note-recheck"><Feather name="flag" size={14} color={colors.mutedForeground} /><Text style={styles.noteText}>Reported. This question won’t count.</Text></View>;
     if (recheck) {
@@ -99,7 +99,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
         : 'This question is unclear, so it won’t count.';
       return (
         <View style={styles.note} testID={`note-recheck-${recheck.verdict}`}>
-          <Feather name={recheck.verdict === 'key_holds' ? 'check-circle' : 'alert-circle'} size={14} color={recheck.verdict === 'key_holds' ? colors.mutedForeground : colors.primary} />
+          <Feather name={recheck.verdict === 'key_holds' ? 'check-circle' : 'alert-circle'} size={14} color={recheck.verdict === 'key_holds' ? colors.mutedForeground : colors.primaryText} />
           <Text style={styles.noteText}><Text style={styles.noteStrong}>{headline}</Text> {recheck.explanation}</Text>
         </View>
       );
@@ -123,7 +123,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
     const misses = quiz.questions.filter((q) => q.feedback && q.feedback.selectedOptionId && (q.feedback.selectedOptionId !== q.feedback.correctOptionId || (q.flag && !counts(q))));
     return (
       <View style={styles.card} testID="panel-quiz-score">
-        <Text style={styles.kicker}>{kindLabel.toUpperCase()} · {session.topic}</Text>
+        <Text style={styles.kicker}>{kindLabel} · {session.topic}</Text>
         <Text style={styles.score}>{quiz.grade.correct} / {quiz.grade.answered}</Text>
         <Text style={styles.body}>{quiz.grade.percent}% on the questions you answered{quiz.grade.unanswered ? ` · ${quiz.grade.unanswered} skipped` : ''}.</Text>
         {misses.length ? <Text style={styles.cardTitle}>What you missed</Text> : <Text style={styles.cardTitle}>Nothing missed. Nice.</Text>}
@@ -133,7 +133,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
             <Text style={styles.wrong}>You chose: {q.feedback!.selectedOptionText}</Text>
             <Text style={styles.right}>Correct: {q.feedback!.correctOptionText}</Text>
             <Text style={styles.missExplain}>{q.feedback!.explanation}</Text>
-            {q.feedback!.hook ? <View style={styles.hook}><Feather name="zap" size={14} color={DARK.hookText} /><Text style={styles.hookText}>{q.feedback!.hook}</Text></View> : null}
+            {q.feedback!.hook ? <View style={styles.hook}><Feather name="zap" size={14} color={colors.hookText} /><Text style={styles.hookText}>{q.feedback!.hook}</Text></View> : null}
             {reportNote(q)}
           </View>
         ))}
@@ -147,17 +147,17 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
     const position = questions.indexOf(reviewing);
     return (
       <View style={styles.card} testID="panel-quiz-feedback">
-        <Text style={styles.kicker}>{kindLabel.toUpperCase()} · {position >= 0 ? `QUESTION ${position + 1} OF ${questions.length}` : 'REPORTED QUESTION'}</Text>
+        <Text style={styles.kicker}>{kindLabel} · {position >= 0 ? `Question ${position + 1} of ${questions.length}` : 'Reported question'}</Text>
         <View style={styles.miss}>
           <Text style={styles.missPrompt}>{reviewing.prompt}</Text>
           <View style={styles.verdict}>
-            <Feather name={correct ? 'check-circle' : 'x-circle'} size={18} color={correct ? DARK.right : DARK.wrong} />
-            <Text style={[styles.verdictText, { color: correct ? DARK.right : DARK.wrong }]}>{correct ? 'Correct' : 'Not quite'}</Text>
+            <Feather name={correct ? 'check-circle' : 'x-circle'} size={18} color={correct ? colors.correct : colors.wrong} />
+            <Text style={[styles.verdictText, { color: correct ? colors.correct : colors.wrong }]}>{correct ? 'Correct' : 'Not quite'}</Text>
           </View>
           {!correct ? <Text style={styles.wrong}>You chose: {reviewing.feedback.selectedOptionText}</Text> : null}
           <Text style={styles.right}>Correct: {reviewing.feedback.correctOptionText}</Text>
           <Text style={styles.missExplain}>{reviewing.feedback.explanation}</Text>
-          {!correct && reviewing.feedback.hook ? <View style={styles.hook}><Feather name="zap" size={14} color={DARK.hookText} /><Text style={styles.hookText}>{reviewing.feedback.hook}</Text></View> : null}
+          {!correct && reviewing.feedback.hook ? <View style={styles.hook}><Feather name="zap" size={14} color={colors.hookText} /><Text style={styles.hookText}>{reviewing.feedback.hook}</Text></View> : null}
           {reportNote(reviewing)}
         </View>
         {progress}
@@ -192,7 +192,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   if (!current) {
     return (
       <View style={styles.card} testID="panel-quiz-grade">
-        <Text style={styles.kicker}>{kindLabel.toUpperCase()} · {session.topic}</Text>
+        <Text style={styles.kicker}>{kindLabel} · {session.topic}</Text>
         <Text style={styles.cardTitle}>All {questions.length} answered.</Text>
         {bubbles}
         {marked.length ? <Text style={styles.muted}>{marked.length} marked for review. Tap a red bubble to go back to it, or grade now.</Text> : null}
@@ -226,7 +226,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   const chosen = isExam ? current.answer?.optionId ?? null : null;
   return (
     <View style={styles.card} testID="panel-quiz-question">
-      <Text style={styles.kicker}>{kindLabel.toUpperCase()} · QUESTION {questions.indexOf(current) + 1} OF {questions.length}</Text>
+      <Text style={styles.kicker}>{kindLabel} · Question {questions.indexOf(current) + 1} of {questions.length}</Text>
       {progress}
       {bubbles}
       <Text style={styles.prompt}>{current.prompt}</Text>
@@ -239,25 +239,20 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
       ))}
       {isExam ? (
         <Pressable accessibilityRole="button" accessibilityState={{ selected: marks.has(current.id) }} onPress={() => toggleMark(current.id)} style={[styles.markButton, marks.has(current.id) && styles.markButtonOn]} testID="button-quiz-mark">
-          <Feather name="flag" size={15} color={marks.has(current.id) ? EXAM.marked : colors.foreground} />
-          <Text style={[styles.markText, marks.has(current.id) && { color: EXAM.marked }]}>{marks.has(current.id) ? 'Marked for review' : 'Mark for review'}</Text>
+          <Feather name="flag" size={15} color={marks.has(current.id) ? colors.wrong : colors.foreground} />
+          <Text style={[styles.markText, marks.has(current.id) && { color: colors.wrong }]}>{marks.has(current.id) ? 'Marked for review' : 'Mark for review'}</Text>
         </Pressable>
       ) : null}
-      {busy ? <ActivityIndicator color={colors.primary} /> : null}
+      {busy ? <ActivityIndicator color={colors.primaryText} /> : null}
     </View>
   );
 }
 
-// Review bubbles are dark on purpose (Dan, 2026-10-06): black background, white text,
-// red for the student's wrong answer, green for the correct one. Fixed palette for now;
-// becomes theme tokens in the aesthetics pass.
-const DARK = { bg: '#101418', text: '#eef2f6', muted: '#aab6c3', wrong: '#ff6b61', right: '#4cd964', hookBg: '#1f2f4f', hookText: '#b9d0ff' };
-// Exam bubbles (D-037, Dan): white outline = unanswered, green = answered, red = marked for review.
-const EXAM = { answered: '#2f9e5b', marked: '#d6453a', open: '#ffffff' };
-
+// Review card: black with white text, red for the student's wrong answer, green for the
+// correct one, in both modes (Dan, 2026-10-06); theme tokens since D-043.
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 16, gap: 10 },
-  kicker: { color: colors.primary, fontSize: 10, letterSpacing: 1.3, fontWeight: '800' },
+  kicker: { color: colors.mutedForeground, fontSize: 12.5, lineHeight: 17, fontWeight: '600' },
   prompt: { color: colors.foreground, fontSize: 15, lineHeight: 22, fontWeight: '500' },
   body: { color: colors.foreground, fontSize: 15, lineHeight: 22 },
   muted: { color: colors.mutedForeground, fontSize: 13, lineHeight: 19 },
@@ -265,41 +260,41 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   progressTrack: { height: 5, borderRadius: 3, backgroundColor: colors.secondary, overflow: 'hidden' },
   progressFill: { height: 5, backgroundColor: colors.primary },
   progressText: { color: colors.mutedForeground, fontSize: 11 },
-  hook: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 10, borderRadius: 10, backgroundColor: DARK.hookBg },
-  hookText: { flex: 1, color: DARK.hookText, fontSize: 12.5, lineHeight: 18, fontWeight: '600' },
+  hook: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 10, borderRadius: 10, backgroundColor: colors.hookBg },
+  hookText: { flex: 1, color: colors.hookText, fontSize: 12.5, lineHeight: 18, fontWeight: '600' },
   cardTitle: { color: colors.foreground, fontSize: 17, lineHeight: 23, fontWeight: '700' },
-  option: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 13, backgroundColor: colors.background, paddingHorizontal: 13, paddingVertical: 10 },
+  option: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.background, paddingHorizontal: 13, paddingVertical: 10 },
   optionChosen: { borderColor: colors.primary, borderWidth: 2, paddingHorizontal: 12, paddingVertical: 9 },
   optionLetterChosen: { backgroundColor: colors.primary, color: colors.primaryForeground },
   // 28 pt + 6 pt gaps: ten per row on an iPhone, so twenty questions take two rows (Dan). hitSlop keeps the touch target at 44 pt.
   bubbles: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingVertical: 4 },
-  bubble: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.border, backgroundColor: EXAM.open, alignItems: 'center', justifyContent: 'center' },
-  bubbleAnswered: { borderColor: EXAM.answered, backgroundColor: EXAM.answered }, // fill = answered
-  bubbleMarked: { borderColor: EXAM.marked }, // ring = marked, whether answered or not
+  bubble: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.mutedForeground, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  bubbleAnswered: { borderColor: colors.correct, backgroundColor: colors.correct }, // fill = answered
+  bubbleMarked: { borderColor: colors.wrong }, // ring = marked, whether answered or not
   bubbleHere: { transform: [{ scale: 1.18 }] },
   bubbleText: { color: colors.foreground, fontSize: 12, fontWeight: '700' },
   bubbleTextAnswered: { color: '#ffffff' },
   markButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
-  markButtonOn: { borderColor: EXAM.marked },
+  markButtonOn: { borderColor: colors.wrong },
   markText: { color: colors.foreground, fontSize: 14, fontWeight: '600' },
   optionLetter: { width: 26, height: 26, borderRadius: 13, textAlign: 'center', lineHeight: 26, overflow: 'hidden', backgroundColor: colors.secondary, color: colors.foreground, fontWeight: '700', fontSize: 13 },
   optionText: { flex: 1, color: colors.foreground, fontSize: 14, lineHeight: 20 },
   verdict: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   verdictText: { fontSize: 16, fontWeight: '700' },
   // Review card type (Dan, 2026-10-08: "the fonts need to be smaller here"): one step down across the card.
-  wrong: { color: DARK.wrong, fontSize: 14, lineHeight: 19, fontWeight: '600' },
-  right: { color: DARK.right, fontSize: 14, lineHeight: 19, fontWeight: '700' },
-  miss: { gap: 7, padding: 13, borderRadius: 16, backgroundColor: DARK.bg },
-  missPrompt: { color: DARK.text, fontSize: 14.5, lineHeight: 20, fontWeight: '600' },
-  missExplain: { color: DARK.muted, fontSize: 13, lineHeight: 18.5 },
+  wrong: { color: colors.wrong, fontSize: 14, lineHeight: 19, fontWeight: '600' },
+  right: { color: colors.correct, fontSize: 14, lineHeight: 19, fontWeight: '700' },
+  miss: { gap: 7, padding: 13, borderRadius: 16, backgroundColor: colors.reviewBg },
+  missPrompt: { color: colors.reviewText, fontSize: 14.5, lineHeight: 20, fontWeight: '600' },
+  missExplain: { color: colors.reviewMuted, fontSize: 13, lineHeight: 18.5 },
   // Report link: small and away from the main button on purpose (UX_PRINCIPLES: destructive-ish actions are small and separated).
   reportLink: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', paddingRight: 12 },
-  reportLinkText: { color: DARK.muted, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
+  reportLinkText: { color: colors.reviewMuted, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
   note: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 10, borderRadius: 10, backgroundColor: colors.card },
   noteText: { flex: 1, color: colors.foreground, fontSize: 13, lineHeight: 19 },
   noteStrong: { fontWeight: '700' },
-  score: { color: colors.primary, fontSize: 40, fontWeight: '700', letterSpacing: -1 },
-  primaryButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: colors.primary, paddingHorizontal: 16 },
+  score: { color: colors.foreground, fontSize: 40, fontWeight: '700', letterSpacing: -1, fontVariant: ['tabular-nums'] },
+  primaryButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.primary, paddingHorizontal: 16 },
   primaryText: { color: colors.primaryForeground, fontSize: 16, fontWeight: '700' },
   secondaryButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border },
   secondaryText: { color: colors.foreground, fontSize: 15, fontWeight: '600' },

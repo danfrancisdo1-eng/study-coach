@@ -8,7 +8,7 @@ export default function Index() {
   const colors = useColors();
   if (!isLoaded) {
     return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-      <ActivityIndicator color={colors.primary} />
+      <ActivityIndicator color={colors.primaryText} />
     </View>;
   }
   return <Redirect href={isSignedIn ? '/(tabs)' : '/(auth)/sign-in'} />;
