@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, FlatList, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
-import { Redirect, router } from 'expo-router';
+import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import {
-  getGetHomeChatQueryKey, getGetStudyStateQueryKey, getListStudySessionsQueryKey, useGetHomeChat, useGetStudyState, useListStudySessions, useLookupExamGuide, useOpenHomeChat, usePutStudyState, useSendHomeChatMessage,
+  getGetHomeChatQueryKey, getGetStudyStateQueryKey, useGetHomeChat, useGetStudyState, useLookupExamGuide, useOpenHomeChat, usePutStudyState, useSendHomeChatMessage,
   type HomeChat, type HomeChatMessage,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
@@ -23,8 +23,9 @@ const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
 
 /**
  * Chat-first home (SPEC §7, D-016): the conversation is the app. The coach asks for the
- * course, creates it, and can open a study session; that session (and all course
- * management) still lives on the Courses tab for now (piece 1 of the build order).
+ * course, creates it, and runs sets and decks in the chat. The course list and Add live on
+ * their own page (D-036, app/course-list.tsx); here only the "Coach · <course>" line, which
+ * opens it, sits between the header and the chat so the chat keeps the screen.
  */
 
 const AI_NOTICE = 'Study Coach sends your messages, your course names, selected course materials and your quiz answers to Anthropic Claude (and OpenAI for lecture transcription) to coach you, generate practice and explain results. AI may make mistakes; review explanations. You can change this choice at any time. Nothing is sent to a family member or other recipient.';
@@ -57,8 +58,6 @@ function coursesFrom(state: unknown): HomeCourse[] {
 // Same hook chip palette as QuizCard (fixed for now; theme tokens in the aesthetics pass).
 const HOOK = { bg: '#1f2f4f', text: '#b9d0ff' };
 
-const newId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
-
 function materialsFrom(state: unknown, courseId: string): SavedMaterial[] {
   const materials = record(state).materials;
   return (Array.isArray(materials) ? materials : []).flatMap((item) => {
@@ -83,11 +82,6 @@ export default function CoachHome() {
   const [error, setError] = useState('');
   const [intakeCourseId, setIntakeCourseId] = useState<string | null>(null); // non-null while the + sheet is open
   const [focusCourseId, setFocusCourseId] = useState<string | null>(null); // the course/exam the coach assumes (home selector)
-  const [listOpen, setListOpen] = useState(true);
-  const [addOpen, setAddOpen] = useState(false);
-  const [addKind, setAddKind] = useState<'course' | 'exam'>('course');
-  const [addName, setAddName] = useState('');
-  const [addDate, setAddDate] = useState('');
   const [gradedSessionId, setGradedSessionId] = useState<string | null>(null); // keeps the score card visible after grading
   const [finishedDeckId, setFinishedDeckId] = useState<string | null>(null); // keeps the deck summary visible after finishing
   const [studyOpen, setStudyOpen] = useState(false); // the full-screen sheet for the active set / deck
@@ -99,7 +93,6 @@ export default function CoachHome() {
   const putState = usePutStudyState();
   const send = useSendHomeChatMessage();
   const open = useOpenHomeChat();
-  const sessionsQuery = useListStudySessions({ query: { queryKey: [...getListStudySessionsQueryKey(), userId], enabled: !!userId } });
   const lookupGuide = useLookupExamGuide();
   const [lookingUp, setLookingUp] = useState<string | null>(null); // course id whose exam guide is being fetched
   // After an exam is added, fetch its official guide (sections + weights) once; the row shows progress.
@@ -131,11 +124,12 @@ export default function CoachHome() {
   const courses = coursesFrom(stateQuery.data?.state);
   const intakeCourse = courses.find((course) => course.id === intakeCourseId) ?? null;
   const focusCourse = courses.find((course) => course.id === focusCourseId) ?? null;
-  // Remember the selected course per account; fall back to the most recently used one.
-  useEffect(() => {
+  // Remember the selected course per account (the course list page writes the same key, so
+  // it is re-read whenever this screen comes back into view); fall back to the most recent one.
+  useFocusEffect(useCallback(() => {
     if (!userId) return;
-    AsyncStorage.getItem(`study-coach-focus:${userId}`).then((saved) => { if (saved) setFocusCourseId(saved); }).catch(() => {});
-  }, [userId]);
+    AsyncStorage.getItem(`study-coach-focus:${userId}`).then((saved) => { setFocusCourseId(saved || null); }).catch(() => {});
+  }, [userId]));
   const selectCourse = (id: string | null) => {
     setFocusCourseId(id);
     if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, id ?? '').catch(() => {});
@@ -146,45 +140,8 @@ export default function CoachHome() {
       if (recent) setFocusCourseId(recent.id);
     }
   }, [courses.length, messages.length]);
-  // Last result per course, from the session list (newest first).
-  const lastResult = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const summary of sessionsQuery.data?.sessions ?? []) {
-      if (map.has(summary.courseId)) continue;
-      const score = summary.targetedScore ?? summary.diagnosticScore;
-      if (typeof score === 'number') map.set(summary.courseId, `last set ${Math.round(score)}%`);
-    }
-    return map;
-  }, [sessionsQuery.data]);
-  const materialCount = (courseId: string) => materialsFrom(stateQuery.data?.state, courseId).length;
-
-  const addCourse = async () => {
-    const name = addName.trim();
-    if (!name || busy) return;
-    if (addKind === 'exam' && addDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(addDate.trim())) { setError('Exam date must look like 2026-11-14.'); return; }
-    setError('');
-    try {
-      const previous = stateQuery.data;
-      const state = record(previous?.state);
-      const course = { id: newId(), name, kind: addKind, ...(addKind === 'exam' && addDate.trim() ? { examDate: addDate.trim() } : {}) };
-      const result = await putState.mutateAsync({ data: { state: { aiConsent: true, materials: [], ...state, courses: [...(Array.isArray(state.courses) ? state.courses : []), course] }, version: previous?.version ?? 0 } });
-      queryClient.setQueryData([...getGetStudyStateQueryKey(), userId], result);
-      setAddOpen(false); setAddName(''); setAddDate(''); setAddKind('course');
-      selectCourse(course.id);
-      if (course.kind === 'exam') void fetchGuide(course.id);
-    } catch (problem) {
-      if ((problem as { status?: number }).status === 409) await queryClient.invalidateQueries({ queryKey: [...getGetStudyStateQueryKey(), userId] });
-      setError(readableError(problem));
-    }
-  };
-
-  const pickFocus = () => {
-    if (!courses.length) { setAddOpen(true); return; }
-    Alert.alert('Which course or exam?', undefined, [
-      ...courses.slice(0, 8).map((course) => ({ text: course.name, onPress: () => selectCourse(course.id) })),
-      { text: 'Cancel', style: 'cancel' as const },
-    ]);
-  };
+  // The course list page (D-036): pick the coach's focus, open a course, add one.
+  const openCourses = () => router.push('/course-list');
   const activeQuiz = chatQuery.data?.activeQuiz ?? null;
   const activeDeck = chatQuery.data?.activeDeck ?? null;
   const quizSessionId = activeQuiz?.sessionId ?? gradedSessionId;
@@ -361,35 +318,12 @@ export default function CoachHome() {
       </View>
 
       {consented && !loading && !loadError ? (
-        <View style={styles.courseBlock} testID="panel-courses">
-          <View style={styles.courseHead}>
-            <Pressable accessibilityRole="button" accessibilityLabel={listOpen ? 'Collapse courses' : 'Expand courses'} onPress={() => setListOpen((v) => !v)} style={styles.courseHeadLeft} testID="button-toggle-courses">
-              <Text style={styles.kicker}>YOUR COURSES & EXAMS · {courses.length}</Text>
-              <Feather name={listOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
-            </Pressable>
-            <Pressable accessibilityRole="button" onPress={() => setAddOpen(true)} style={styles.addButton} testID="button-add-course">
-              <Feather name="plus" size={16} color={colors.primary} /><Text style={styles.addText}>Add</Text>
-            </Pressable>
-          </View>
-          {listOpen ? (courses.length ? courses.map((course) => (
-            <Pressable key={course.id} accessibilityRole="button" onPress={() => router.push({ pathname: '/course/[courseId]', params: { courseId: course.id } })}
-              style={({ pressed }) => [styles.courseRow, pressed && styles.pressed]} testID={`row-course-${course.id}`}>
-              <Feather name={course.kind === 'exam' ? 'award' : 'book'} size={16} color={course.id === focusCourseId ? colors.primary : colors.mutedForeground} />
-              <View style={styles.courseCopy}>
-                <Text numberOfLines={1} style={[styles.courseName, course.id === focusCourseId && { color: colors.primary }]}>{course.name}</Text>
-                <Text numberOfLines={1} style={styles.caption}>
-                  {course.kind === 'exam' ? `exam${course.examDate ? ` · ${course.examDate}` : ''}` : 'course'} · {materialCount(course.id)} material{materialCount(course.id) === 1 ? '' : 's'}{lastResult.get(course.id) ? ` · ${lastResult.get(course.id)}` : ''}{course.kind === 'exam' ? (lookingUp === course.id ? ' · looking up the exam guide…' : course.guide?.found ? ` · ${course.guide.sections} sections` : course.guide ? ' · no official guide found' : '') : ''}
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-            </Pressable>
-          )) : <Text style={styles.caption}>Add your first course or exam, or just tell the coach what you're studying.</Text>) : null}
-          <Pressable accessibilityRole="button" onPress={pickFocus} style={styles.focusBar} testID="button-focus-course">
-            <Text style={styles.kicker}>COACH</Text>
-            <Text numberOfLines={1} style={styles.focusText}>{focusCourse ? focusCourse.name : 'All courses'}</Text>
-            <Feather name="chevron-down" size={16} color={colors.foreground} />
-          </Pressable>
-        </View>
+        <Pressable accessibilityRole="button" accessibilityLabel="Courses and exams" accessibilityHint="Choose which course the coach works on, open a course, or add one" onPress={openCourses} style={({ pressed }) => [styles.focusBar, pressed && styles.pressed]} testID="button-focus-course">
+          <Text style={styles.kicker}>COACH</Text>
+          <Text numberOfLines={1} style={styles.focusText}>{focusCourse ? focusCourse.name : courses.length ? 'All courses' : 'Add a course or exam'}</Text>
+          <Text style={styles.focusCount}>{courses.length ? `${courses.length} ${courses.length === 1 ? 'course' : 'courses'}` : ''}</Text>
+          <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+        </Pressable>
       ) : null}
 
       {loading ? (
@@ -477,7 +411,7 @@ export default function CoachHome() {
         </View>
       </Modal>
       {consented && !loading && !loadError ? (
-        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10) + 58 }]}>
+        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
           {error ? <Text style={styles.errorText} testID="status-chat-error">{error}</Text> : null}
           <View style={styles.composerRow}>
             <Pressable accessibilityLabel="Add material or record a lecture" accessibilityRole="button" onPress={openPlus} style={styles.plusButton} testID="button-materials-plus">
@@ -495,30 +429,6 @@ export default function CoachHome() {
           </View>
         </View>
       ) : null}
-
-      <Modal visible={addOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setAddOpen(false)}>
-        <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: 20 }]}>
-          <View style={styles.header}>
-            <View style={styles.headerCopy}><Text style={styles.sheetTitle}>Add a course or exam</Text></View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setAddOpen(false)} style={styles.iconButton} testID="button-close-add"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
-          </View>
-          <View style={styles.sheetContent}>
-            <View style={styles.segment}>
-              {(['course', 'exam'] as const).map((kind) => (
-                <Pressable key={kind} accessibilityRole="button" accessibilityState={{ selected: addKind === kind }} onPress={() => setAddKind(kind)} style={[styles.segmentItem, addKind === kind && styles.segmentSelected]} testID={`button-kind-${kind}`}>
-                  <Text style={[styles.segmentText, addKind === kind && styles.segmentTextSelected]}>{kind === 'course' ? 'College course' : 'Certification exam'}</Text>
-                </Pressable>
-              ))}
-            </View>
-            <TextInput value={addName} onChangeText={setAddName} maxLength={120} placeholder={addKind === 'exam' ? 'e.g. AWS Solutions Architect Associate' : 'e.g. BIOL 114'} placeholderTextColor={colors.mutedForeground} style={styles.input} accessibilityLabel="Name" testID="input-add-name" autoFocus />
-            {addKind === 'exam' ? <TextInput value={addDate} onChangeText={setAddDate} placeholder="Exam date, e.g. 2026-11-14 (optional)" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-add-date" /> : null}
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-            <Pressable accessibilityRole="button" disabled={busy || !addName.trim()} onPress={() => void addCourse()} style={[styles.primaryButton, (busy || !addName.trim()) && styles.disabled]} testID="button-save-add">
-              <Text style={styles.primaryButtonText}>{addKind === 'exam' ? 'Add exam' : 'Add course'}</Text>
-            </Pressable>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
 
       <Modal visible={intakeCourse !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { if (!intakeBusy) setIntakeCourseId(null); }}>
         {intakeCourse ? (
@@ -633,8 +543,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   courseRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   courseCopy: { flex: 1, minWidth: 0 },
   courseName: { color: colors.foreground, fontSize: 15, fontWeight: '600' },
-  focusBar: { minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
-  focusText: { flex: 1, color: colors.foreground, fontSize: 14, fontWeight: '600' },
+  focusBar: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  focusText: { flex: 1, color: colors.foreground, fontSize: 16, fontWeight: '600' },
+  focusCount: { color: colors.mutedForeground, fontSize: 12 },
   segment: { flexDirection: 'row', borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
   segmentItem: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
   segmentSelected: { backgroundColor: colors.primary },
