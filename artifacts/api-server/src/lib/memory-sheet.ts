@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { db, studyStatesTable } from "@workspace/db";
 import { complete } from "../ai";
 import type { Session } from "./session-quiz";
-import * as memorySheetPrompt from "../prompts/memory-sheet.v1";
+import * as memorySheetPrompt from "../prompts/memory-sheet.v2";
 import { mergeRows, rowsFromState, type MemoryRow } from "./memory-sheet-merge";
 export { rowsFromState, sheetAsText, type MemoryRow } from "./memory-sheet-merge";
 
