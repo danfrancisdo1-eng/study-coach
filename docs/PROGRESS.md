@@ -28,6 +28,19 @@
 - Dark review bubbles + hook-style tricks + coach.v7 (no Courses tab wording) deployed `c3cf949`.
 - **Verified by Dan on iPhone (2026-10-06 night):** delete course works (he had mistyped the confirm word); added a certification exam (Microsoft AB731) with no material and got a good 20-question set; new review bubbles and tricks.
 
+## Session 6 — 2026-10-07 (evening)
+- Dan hit **NGROK_3200** opening the app on his iPhone: the Expo tunnel address was offline because no Expo server was running on the Mac (no node/expo process, nothing on 8081/8087). Restarted the preview in tunnel mode in the Claude terminal tab "Study Coach preview" (`node node_modules/expo/bin/cli start --tunnel --port 8087 --clear`); tunnel ready at `exp://iwinl1w-danfrancis-8087.exp.direct`. Rule of thumb: NGROK_3200 = start (or restart) the preview server; the phone then reopens the project from Expo Go.
+- Plugins: Dan checked what's available for the aesthetics pass. Anthropic's frontend-design skill and the SwiftUI plugin are already on the account; "Impeccable" isn't in the catalog. Engineering, GitHub and code-review plugins suggested for later.
+- **D-028:** aesthetics direction A approved for later; the queue (score trends → multi-select topics → aesthetics) is unchanged.
+- **D-029 (working rule):** see the AI fail first, fix by prompting at the right level, add structural code last. Dropped the shaky/solid tracker idea for the memory sheet; Dan tests "test me on the ones I missed" across days on the phone before anything is built.
+- **D-030, branch `feature/trick-kinds` (not merged, not deployed):** memory tricks few-shot by kind in coach.v11, session-quiz.v6, memory-sheet.v2, flashcards.v2, plus "a trick must be true" and the no-op for "save my misses". Verified here: typecheck; 70/70 tests; evals coach 27/27, session_quiz 6/6, flashcards 3/3, memory_sheet 2/2 on the final text. Needs Dan's OK to merge + push (push auto-deploys to Render).
+
+### Next
+- Dan tested D-026/D-027 on the iPhone: "it went as planned."
+- Dan: on the phone, "Test me on the ones I missed" after a set from an earlier day, and "Give me 20 on <topic>". Report what the coach did (D-029 step 1).
+- After merge: Dan checks that tricks after a set vary in kind and none are false.
+- Score trends + readiness call; multi-select topics; then the aesthetics pass (D-028).
+
 ## Session 5 — 2026-10-07
 - **Exam-guide lookup (D-024):** web search in the AI provider, `exam-guide.v1`, endpoint, auto-lookup after adding an exam (iPhone + web), course screen section with Refresh; coach.v8 + quiz v4 use the sections/weights. 63/63 tests; typecheck; evals exam_guide 4/4, coach 24/24, quiz 6/6; iOS bundle. Merged + pushed (auto-deploy).
 - Agreed queue (Dan, 2026-10-07): memory sheet → score trends & readiness → multi-select topics → then the aesthetics conversation ("the entire color palette has to go").
