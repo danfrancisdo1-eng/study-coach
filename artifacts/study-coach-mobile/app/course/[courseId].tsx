@@ -12,6 +12,7 @@ import { useColors } from '@/hooks/useColors';
 import { ActionButton } from '@/components/ActionButton';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
+import { CourseSkeleton } from '@/components/Skeleton';
 
 /**
  * One course or exam (SPEC §7 course list layer, D-023): rename, exam date, materials
@@ -114,7 +115,7 @@ export default function CourseScreen() {
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel="Edit name and date" onPress={() => { setName(typeof course?.name === 'string' ? course.name : ''); setExamDate(typeof course?.examDate === 'string' ? course.examDate : ''); setEditing(true); }} style={styles.iconButton} testID="button-edit-course"><Feather name="edit-2" size={20} color={colors.foreground} /></Pressable>
       </View>
-      {stateQuery.isLoading ? <View style={styles.center}><ActivityIndicator color={colors.primaryText} /></View> : !course ? (
+      {stateQuery.isLoading ? <CourseSkeleton /> : !course ? (
         <View style={styles.center}><Text style={styles.body}>This course isn’t in your account anymore.</Text></View>
       ) : (
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>

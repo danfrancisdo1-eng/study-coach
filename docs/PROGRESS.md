@@ -5,8 +5,10 @@
 ### Done
 - **D-047 one-time welcome, branch `claude/archived-chat-recovery-dmunmu`:** `components/Welcome.tsx` + `lib/welcome.ts` (show/dismiss rules, 6 unit tests), home screen shows it in the chat area with the composer dimmed, `welcomeSeenAt` in the study state, "See the welcome again" in Account, `/course-list?add=1` opens the Add sheet, adding a course keeps the existing consent state (was: silently set true), exam guide lookup deferred until after consent, one-line first message with three chips, "course or exam" wording on the + alert. Verified here: typecheck; tests; iOS bundle export. **Needs real-iPhone check:** see D-047.
 
+- **D-048 aesthetics pass, second commit on the same branch:** `components/GlassBar.tsx` (the Coach strip floats over the chat with native blur), `components/GlowRing.tsx` (gold ring around the message box while the coach writes), `components/Skeleton.tsx` (home, courses page, course screen). Reduce Motion respected. Verified here: typecheck; tests; iOS bundle export. **Needs real-iPhone check:** see D-048. Draft PR #1 holds both commits.
+
 ### In progress
-- Branch 2 of Dan's "go for both": the aesthetics pass (frosted glass strip over the chat, gold ring around the composer while the coach works, skeleton loaders on the home, courses and course screens; Reduce Motion respected).
+- Nothing. Both commits are on the PR, waiting for Dan's phone check.
 
 ### Next
 - Dan on the phone: the welcome flow on a throwaway account, "See the welcome again", Light and Dark.

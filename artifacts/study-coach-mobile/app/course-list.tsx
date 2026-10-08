@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ import {
 import { useColors } from '@/hooks/useColors';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { welcomeReplayKey } from '@/lib/welcome';
+import { CourseListSkeleton } from '@/components/Skeleton';
 
 /**
  * Courses & exams on their own page (D-036): the home screen keeps only the "Coach · <course>"
@@ -160,7 +161,7 @@ export default function CourseListScreen() {
           <Feather name="plus" size={16} color={colors.primaryText} /><Text style={styles.addText}>Add</Text>
         </Pressable>
       </View>
-      {stateQuery.isLoading ? <View style={styles.center}><ActivityIndicator color={colors.primaryText} /></View> : (
+      {stateQuery.isLoading ? <CourseListSkeleton /> : (
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
           {error && !addOpen ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
           <Pressable accessibilityRole="button" accessibilityState={{ selected: focusId === null }} onPress={() => select(null)} style={({ pressed }) => [styles.row, pressed && styles.pressed]} testID="row-all-courses">

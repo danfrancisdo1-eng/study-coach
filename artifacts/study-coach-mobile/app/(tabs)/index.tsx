@@ -20,6 +20,9 @@ import { FlashcardDeck } from '@/components/FlashcardDeck';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { Welcome } from '@/components/Welcome';
 import { shouldShowWelcome, welcomeReplayKey, withWelcomeSeen } from '@/lib/welcome';
+import { GlassBar } from '@/components/GlassBar';
+import { GlowRing } from '@/components/GlowRing';
+import { HomeSkeleton } from '@/components/Skeleton';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.'; // sent for the student after Grade so the coach can respond to the result
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
@@ -173,6 +176,7 @@ export default function CoachHome() {
   const newestFirst = useMemo(() => [...messages].reverse(), [messages]);
   const viewportRef = useRef(0);
   const positionedRef = useRef<string | null>(null);
+  const [stripHeight, setStripHeight] = useState(48); // the glass course strip overlaps the top of the chat (D-048)
   useEffect(() => {
     positionedRef.current = null;
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
@@ -180,7 +184,7 @@ export default function CoachHome() {
   const placeNewest = (id: string, height: number) => {
     if (positionedRef.current === id || id !== messages[messages.length - 1]?.id) return;
     positionedRef.current = id;
-    const room = viewportRef.current - 24;
+    const room = viewportRef.current - stripHeight - 24;
     if (room > 0 && height > room) listRef.current?.scrollToOffset({ offset: height - room, animated: true });
   };
 
@@ -391,17 +395,8 @@ export default function CoachHome() {
         </Pressable>
       </View>
 
-      {consented && !loading && !loadError && !showWelcome ? (
-        <Pressable accessibilityRole="button" accessibilityLabel="Courses and exams" accessibilityHint="Choose which course the coach works on, open a course, or add one" onPress={openCourses} style={({ pressed }) => [styles.focusBar, pressed && styles.pressed]} testID="button-focus-course">
-          <Text style={styles.kicker}>Coach</Text>
-          <Text numberOfLines={1} style={styles.focusText}>{focusCourse ? focusCourse.name : courses.length ? 'All courses' : 'Add a course or exam'}</Text>
-          <Text style={styles.focusCount}>{courses.length ? `${courses.length} ${courses.length === 1 ? 'course' : 'courses'}` : ''}</Text>
-          <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-        </Pressable>
-      ) : null}
-
       {loading ? (
-        <View style={styles.center}><ActivityIndicator color={colors.primaryText} /></View>
+        <HomeSkeleton />
       ) : showWelcome ? (
         <Welcome busy={welcomeBusy} onAddCourse={() => void dismissWelcome('add')} onExplore={() => void dismissWelcome('explore')} />
       ) : loadError ? (
@@ -426,13 +421,15 @@ export default function CoachHome() {
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
       ) : (
+        <View style={styles.chatArea}>
         <FlatList
           ref={listRef}
           data={newestFirst}
           inverted={newestFirst.length > 0}
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
-          contentContainerStyle={styles.list}
+          // Inverted lists flip their padding: the room under the glass strip is paddingBottom when inverted.
+          contentContainerStyle={[styles.list, newestFirst.length > 0 ? { paddingBottom: 12 + stripHeight } : { paddingTop: 12 + stripHeight }]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           onLayout={(e) => { viewportRef.current = e.nativeEvent.layout.height; }}
@@ -473,6 +470,16 @@ export default function CoachHome() {
           ListHeaderComponent={busy ? <View style={styles.busyRow}><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.caption}>{send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '') ? 'Coach is working… writing questions can take up to a minute.' : 'Coach is thinking…'}</Text></View> : null}
           testID="list-home-chat"
         />
+        {/* The one frosted panel (D-048): the "Coach · <course>" strip, which the chat scrolls under. */}
+        <GlassBar style={styles.focusGlass} onLayout={(e) => setStripHeight(Math.round(e.nativeEvent.layout.height))}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Courses and exams" accessibilityHint="Choose which course the coach works on, open a course, or add one" onPress={openCourses} style={({ pressed }) => [styles.focusBar, pressed && styles.pressed]} testID="button-focus-course">
+            <Text style={styles.kicker}>Coach</Text>
+            <Text numberOfLines={1} style={styles.focusText}>{focusCourse ? focusCourse.name : courses.length ? 'All courses' : 'Add a course or exam'}</Text>
+            <Text style={styles.focusCount}>{courses.length ? `${courses.length} ${courses.length === 1 ? 'course' : 'courses'}` : ''}</Text>
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+          </Pressable>
+        </GlassBar>
+        </View>
       )}
 
       {/* The active question set is docked above the composer, outside the chat scroll, so every
@@ -523,12 +530,15 @@ export default function CoachHome() {
             <Pressable accessibilityLabel="Add material or record a lecture" accessibilityRole="button" disabled={showWelcome} onPress={openPlus} style={styles.plusButton} testID="button-materials-plus">
               <Feather name="plus" size={22} color={colors.primaryForeground} />
             </Pressable>
+            {/* The gold ring spins only while the coach is writing a reply or a set (D-048). */}
+            <GlowRing active={send.isPending} radius={16} style={styles.inputRing}>
             <TextInput
               value={draft} onChangeText={setDraft} placeholder="Message your coach" placeholderTextColor={colors.mutedForeground}
               multiline maxLength={8000} style={[styles.input, { height: draft ? draftHeight : 44 }]} editable={!busy && !showWelcome} accessibilityLabel="Message your coach" testID="input-home-chat"
               onContentSizeChange={(e) => setDraftHeight(Math.min(140, Math.max(44, Math.ceil(e.nativeEvent.contentSize.height) + (Platform.OS === 'ios' ? 22 : 16))))}
               returnKeyType="send" blurOnSubmit submitBehavior="blurAndSubmit" onSubmitEditing={() => void sendMessage()}
             />
+            </GlowRing>
             <Pressable accessibilityLabel="Send" accessibilityRole="button" disabled={busy || !draft.trim()} onPress={() => void sendMessage()} style={[styles.sendButton, (busy || !draft.trim()) && styles.disabled]} testID="button-send-home-chat">
               <Feather name="send" size={18} color={colors.primaryForeground} />
             </Pressable>
@@ -629,7 +639,8 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   composerDimmed: { opacity: 0.35, pointerEvents: 'none' },
   composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   plusButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
-  input: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 16, backgroundColor: colors.card, color: colors.foreground, fontSize: 15, lineHeight: 20, paddingHorizontal: 13, paddingVertical: Platform.OS === 'ios' ? 11 : 8 },
+  inputRing: { flex: 1 },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.card, color: colors.foreground, fontSize: 15, lineHeight: 20, paddingHorizontal: 13, paddingVertical: Platform.OS === 'ios' ? 11 : 8 },
   sendButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   disabled: { opacity: 0.45 },
   consentWrap: { flex: 1, padding: 18, gap: 10 },
@@ -653,7 +664,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   courseRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   courseCopy: { flex: 1, minWidth: 0 },
   courseName: { color: colors.foreground, fontSize: 15, fontWeight: '600' },
-  focusBar: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  chatArea: { flex: 1 },
+  focusGlass: { position: 'absolute', top: 0, left: 0, right: 0 },
+  focusBar: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18 },
   focusText: { flex: 1, color: colors.foreground, fontSize: 17, fontWeight: '600' },
   focusCount: { color: colors.mutedForeground, fontSize: 12 },
   segment: { flexDirection: 'row', borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
