@@ -55,9 +55,6 @@ function coursesFrom(state: unknown): HomeCourse[] {
   });
 }
 
-// Same hook chip palette as QuizCard (fixed for now; theme tokens in the aesthetics pass).
-const HOOK = { bg: '#1f2f4f', text: '#b9d0ff' };
-
 function materialsFrom(state: unknown, courseId: string): SavedMaterial[] {
   const materials = record(state).materials;
   return (Array.isArray(materials) ? materials : []).flatMap((item) => {
@@ -262,7 +259,7 @@ export default function CoachHome() {
             const split = /^([^:]{2,40}):\s*(.*)$/.exec(rest!);
             return (
               <View key={i} style={styles.trickCard} testID="chat-trick">
-                <Feather name="zap" size={15} color={HOOK.text} />
+                <Feather name="zap" size={15} color={colors.hookText} />
                 <Text style={styles.trickText}>
                   {split ? <><Text style={styles.trickLabel}>{split[1]}: </Text>{split[2]}</> : rest}
                   <Text style={styles.trickNumber}>  {n}</Text>
@@ -278,9 +275,8 @@ export default function CoachHome() {
 
   const renderMessage = ({ item }: { item: HomeChatMessage }) => (
     <View onLayout={(e) => placeNewest(item.id, e.nativeEvent.layout.height)}>
-    {item.sessionStart ? <View style={styles.sessionDivider}><View style={styles.sessionLine} /><Text style={styles.sessionLabel}>NEW SESSION</Text><View style={styles.sessionLine} /></View> : null}
+    {item.sessionStart ? <View style={styles.sessionDivider}><View style={styles.sessionLine} /><Text style={styles.sessionLabel}>New session</Text><View style={styles.sessionLine} /></View> : null}
     <View style={[styles.turn, item.role === 'user' ? styles.userTurn : styles.coachTurn]} testID={`chat-turn-${item.role}`}>
-      <Text style={styles.turnRole}>{item.role === 'user' ? 'YOU' : 'COACH'}</Text>
       {item.role === 'assistant' ? renderCoachText(item.content) : <Text style={styles.body}>{item.content}</Text>}
       {item.id === lastMessage?.id && chips.length ? (
         <View style={styles.chipRow}>
@@ -293,12 +289,12 @@ export default function CoachHome() {
       ) : null}
       {item.actions?.map((action) => action.type === 'update_memory_sheet' ? (
         <View key={`sheet-${action.courseId}-${action.rows?.[0]?.id ?? ''}`} style={styles.actionChip} testID="card-memory-sheet">
-          <Feather name="bookmark" size={14} color={colors.primary} />
+          <Feather name="bookmark" size={14} color={colors.primaryText} />
           <Text style={styles.actionText}>Saved to your memory sheet</Text>
         </View>
       ) : (
         <View key={`${action.type}-${action.courseId}-${action.sessionId ?? ''}`} style={styles.actionChip}>
-          <Feather name={action.type === 'create_course' ? 'plus-circle' : action.type === 'start_quiz' ? 'edit-3' : action.type === 'start_flashcards' ? 'layers' : 'play-circle'} size={14} color={colors.primary} />
+          <Feather name={action.type === 'create_course' ? 'plus-circle' : action.type === 'start_quiz' ? 'edit-3' : action.type === 'start_flashcards' ? 'layers' : 'play-circle'} size={14} color={colors.primaryText} />
           <Text style={styles.actionText}>
             {action.type === 'create_course' ? `Added course: ${action.name ?? ''}`
               : action.type === 'start_quiz' ? `${action.kind === 'practice' ? 'Practice' : 'Exam'} set: ${action.count ?? ''} questions on ${action.topic ?? ''}`
@@ -334,7 +330,7 @@ export default function CoachHome() {
 
       {consented && !loading && !loadError ? (
         <Pressable accessibilityRole="button" accessibilityLabel="Courses and exams" accessibilityHint="Choose which course the coach works on, open a course, or add one" onPress={openCourses} style={({ pressed }) => [styles.focusBar, pressed && styles.pressed]} testID="button-focus-course">
-          <Text style={styles.kicker}>COACH</Text>
+          <Text style={styles.kicker}>Coach</Text>
           <Text numberOfLines={1} style={styles.focusText}>{focusCourse ? focusCourse.name : courses.length ? 'All courses' : 'Add a course or exam'}</Text>
           <Text style={styles.focusCount}>{courses.length ? `${courses.length} ${courses.length === 1 ? 'course' : 'courses'}` : ''}</Text>
           <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
@@ -342,7 +338,7 @@ export default function CoachHome() {
       ) : null}
 
       {loading ? (
-        <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>
+        <View style={styles.center}><ActivityIndicator color={colors.primaryText} /></View>
       ) : loadError ? (
         <View style={styles.errorCard}>
           <Text style={styles.errorTitle}>Couldn’t load your chat</Text>
@@ -354,7 +350,7 @@ export default function CoachHome() {
       ) : !consented ? (
         <View style={styles.consentWrap}>
           <View style={styles.consentCard} testID="panel-ai-consent">
-            <View style={styles.consentHeading}><Feather name="shield" size={19} color={colors.accentForeground} /><Text style={styles.cardTitle}>Your choice before AI</Text></View>
+            <View style={styles.consentHeading}><Feather name="shield" size={19} color={colors.primaryText} /><Text style={styles.cardTitle}>Your choice before AI</Text></View>
             <Text style={styles.body}>{AI_NOTICE}</Text>
             <Pressable accessibilityRole="button" disabled={busy} onPress={() => void giveConsent()} style={[styles.primaryButton, busy && styles.disabled]} testID="button-ai-consent">
               <Feather name="check" size={16} color={colors.primaryForeground} />
@@ -377,8 +373,7 @@ export default function CoachHome() {
           ListEmptyComponent={(
             // A fresh thread (D-040, Dan): the course is already chosen, so offer the first moves as
             // chips instead of asking which course. The general thread still asks.
-            <View style={styles.turn} testID="chat-empty">
-              <Text style={styles.turnRole}>COACH</Text>
+            <View style={[styles.turn, styles.coachTurn]} testID="chat-empty">
               {focusCourse ? (
                 <>
                   <Text style={styles.body}>{focusCourse.name} is set up. Where do you want to start?</Text>
@@ -401,7 +396,7 @@ export default function CoachHome() {
               )}
             </View>
           )}
-          ListHeaderComponent={busy ? <View style={styles.busyRow}><ActivityIndicator color={colors.primary} size="small" /><Text style={styles.caption}>{send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '') ? 'Coach is working… writing questions can take up to a minute.' : 'Coach is thinking…'}</Text></View> : null}
+          ListHeaderComponent={busy ? <View style={styles.busyRow}><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.caption}>{send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '') ? 'Coach is working… writing questions can take up to a minute.' : 'Coach is thinking…'}</Text></View> : null}
           testID="list-home-chat"
         />
       )}
@@ -520,26 +515,27 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingHorizontal: 18, paddingVertical: 12, gap: 12 },
-  turn: { padding: 13, borderRadius: 14, gap: 7, backgroundColor: colors.accent, alignSelf: 'stretch' },
-  userTurn: { backgroundColor: colors.secondary, alignSelf: 'flex-end', maxWidth: '92%' },
-  coachTurn: { backgroundColor: colors.accent, alignSelf: 'stretch' },
-  turnRole: { color: colors.primary, fontSize: 9, letterSpacing: 1, fontWeight: '800' },
+  // Transcript look (D-043): the coach's turns sit flush left with no tint; yours are bubbles on the right.
+  turn: { gap: 7, alignSelf: 'stretch' },
+  userTurn: { backgroundColor: colors.secondary, alignSelf: 'flex-end', maxWidth: '88%', paddingHorizontal: 13, paddingVertical: 10, borderRadius: 18, borderBottomRightRadius: 6 },
+  coachTurn: { alignSelf: 'stretch', paddingHorizontal: 2, paddingVertical: 4 },
+  turnRole: { color: colors.mutedForeground, fontSize: 12, fontWeight: '600' },
   coachBlocks: { gap: 8 },
-  trickCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, padding: 11, borderRadius: 14, backgroundColor: HOOK.bg },
-  trickText: { flex: 1, color: HOOK.text, fontSize: 13.5, lineHeight: 19.5 },
-  trickLabel: { fontWeight: '700', color: '#ffffff' },
-  trickNumber: { color: HOOK.text, fontSize: 11, opacity: 0.7 },
+  trickCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, padding: 11, borderRadius: 14, backgroundColor: colors.hookBg },
+  trickText: { flex: 1, color: colors.hookText, fontSize: 13.5, lineHeight: 19.5 },
+  trickLabel: { fontWeight: '700', color: colors.reviewText },
+  trickNumber: { color: colors.hookText, fontSize: 11, opacity: 0.7 },
   body: { color: colors.foreground, fontSize: 14.5, lineHeight: 21 },
   caption: { color: colors.mutedForeground, fontSize: 12 },
   actionChip: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   actionText: { flex: 1, color: colors.foreground, fontSize: 13, fontWeight: '600' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   openLink: { minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
-  openLinkText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
+  openLinkText: { color: colors.primaryText, fontSize: 14, fontWeight: '700' },
   busyRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 8 },
   sessionDivider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 6 },
   sessionLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
-  sessionLabel: { color: colors.mutedForeground, fontSize: 10, letterSpacing: 1.2, fontWeight: '800' },
+  sessionLabel: { color: colors.mutedForeground, fontSize: 12, fontWeight: '600' },
   quizDock: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
   studySheet: { flex: 1 },
   resumeBar: { marginHorizontal: 14, marginBottom: 6, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, borderRadius: 14, backgroundColor: colors.primary },
@@ -550,8 +546,8 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   hideScore: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   hideScoreText: { color: colors.mutedForeground, fontSize: 13, fontWeight: '600' },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
-  suggestion: { minHeight: 44, maxWidth: '100%', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 22, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
-  suggestionText: { color: colors.primary, fontSize: 13, lineHeight: 18, fontWeight: '700' },
+  suggestion: { minHeight: 44, maxWidth: '100%', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.chipBorder, backgroundColor: colors.chipBg, alignItems: 'center', justifyContent: 'center' },
+  suggestionText: { color: colors.primaryText, fontSize: 13.5, lineHeight: 18, fontWeight: '600' },
   composer: { paddingHorizontal: 14, paddingTop: 8, gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
   composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   plusButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
@@ -559,28 +555,28 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   sendButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   disabled: { opacity: 0.45 },
   consentWrap: { flex: 1, padding: 18, gap: 10 },
-  consentCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 20, padding: 20, gap: 12 },
+  consentCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 20, gap: 12 },
   consentHeading: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   cardTitle: { color: colors.foreground, fontSize: 17, fontWeight: '700' },
-  primaryButton: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: colors.primary, paddingHorizontal: 16 },
+  primaryButton: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: colors.primary, paddingHorizontal: 16 },
   primaryButtonText: { color: colors.primaryForeground, fontSize: 17, fontWeight: '700' },
   secondaryButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
   secondaryButtonText: { color: colors.foreground, fontSize: 15, fontWeight: '600' },
-  errorCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.destructive, padding: 15, borderRadius: 14, gap: 8, marginHorizontal: 18, marginTop: 13 },
+  errorCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.destructive, padding: 15, borderRadius: 16, gap: 8, marginHorizontal: 18, marginTop: 13 },
   errorTitle: { color: colors.destructive, fontSize: 15, fontWeight: '700' },
   errorText: { color: colors.destructive, fontSize: 13 },
   sheetTitle: { color: colors.foreground, fontSize: 20, fontWeight: '700' },
-  kicker: { color: colors.primary, fontSize: 10, letterSpacing: 1.3, fontWeight: '800' },
+  kicker: { color: colors.mutedForeground, fontSize: 12.5, lineHeight: 17, fontWeight: '600' },
   courseBlock: { paddingHorizontal: 14, paddingBottom: 6, gap: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   courseHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 36 },
   courseHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, flex: 1 },
   addButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10 },
-  addText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
+  addText: { color: colors.primaryText, fontSize: 14, fontWeight: '700' },
   courseRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   courseCopy: { flex: 1, minWidth: 0 },
   courseName: { color: colors.foreground, fontSize: 15, fontWeight: '600' },
   focusBar: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  focusText: { flex: 1, color: colors.foreground, fontSize: 16, fontWeight: '600' },
+  focusText: { flex: 1, color: colors.foreground, fontSize: 17, fontWeight: '600' },
   focusCount: { color: colors.mutedForeground, fontSize: 12 },
   segment: { flexDirection: 'row', borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
   segmentItem: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
@@ -590,7 +586,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   pressed: { opacity: 0.8 },
   sheetContent: { paddingHorizontal: 18, paddingTop: 10, gap: 15 },
   chips: { flexDirection: 'row', gap: 8, paddingBottom: 4 },
-  chip: { minHeight: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  chip: { minHeight: 44, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.foreground, fontSize: 14, fontWeight: '600' },
   chipTextSelected: { color: colors.primaryForeground },

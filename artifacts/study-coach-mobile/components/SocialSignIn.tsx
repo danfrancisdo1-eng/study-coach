@@ -90,7 +90,7 @@ export function SocialSignIn() {
 const styles = StyleSheet.create({
   container: { gap: 13, marginBottom: 8 },
   row: { flexDirection: 'row', gap: 12 },
-  button: { flex: 1, minHeight: 50, borderWidth: 1, borderRadius: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  button: { flex: 1, minHeight: 50, borderWidth: 1, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   buttonText: { fontSize: 15, fontWeight: '700' },
   disabled: { opacity: 0.55 },
   divider: { textAlign: 'center', fontSize: 13 },

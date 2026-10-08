@@ -254,7 +254,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
       {materialUpload ? <MaterialExtractionTask key={materialUpload.id} upload={materialUpload} onComplete={handleMaterialExtracted} onFailure={handleMaterialExtractionError} /> : null}
       {materialUploading ? (
         <View style={styles.extractionPreview} accessibilityRole="progressbar" accessibilityLabel="Extracting course material text" testID="status-material-extracting">
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={colors.primaryText} />
           <Text style={styles.cardTitle}>Extracting text</Text>
           <Text style={styles.muted}>The file is being processed transiently. It will not be saved to your course unless you review and choose Save.</Text>
           <ActionButton
@@ -314,7 +314,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   stack: { gap: 14 },
   extractionPreview: { padding: 14, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, gap: 10 },
-  kicker: { color: colors.primary, fontSize: 10, letterSpacing: 1.3, fontWeight: '800' },
+  kicker: { color: colors.mutedForeground, fontSize: 12.5, lineHeight: 17, fontWeight: '600' },
   cardTitle: { color: colors.foreground, fontSize: 17, lineHeight: 23, fontWeight: '700' },
   muted: { color: colors.mutedForeground, fontSize: 13, lineHeight: 19 },
   caption: { color: colors.mutedForeground, fontSize: 12, lineHeight: 18 },

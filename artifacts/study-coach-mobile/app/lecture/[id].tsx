@@ -161,7 +161,7 @@ export default function LectureScreen() {
         </View>
       </View>
 
-      {query.isLoading ? <ActivityIndicator style={styles.loading} color={colors.primary} /> : null}
+      {query.isLoading ? <ActivityIndicator style={styles.loading} color={colors.primaryText} /> : null}
       {query.error ? (
         <View style={[styles.notice, styles.margin]} accessibilityRole="alert">
           <Text style={styles.body}>Couldn’t load this lecture.</Text>
@@ -272,7 +272,7 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     timestamp: { color: colors.mutedForeground, fontSize: 12, fontVariant: ['tabular-nums'] },
     passageInput: { minHeight: 64, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.card, color: colors.foreground, fontSize: 15, lineHeight: 22, padding: 12, textAlignVertical: 'top' },
     textButton: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
-    link: { color: colors.primary, fontSize: 15, fontWeight: '600' },
+    link: { color: colors.primaryText, fontSize: 15, fontWeight: '600' },
     dangerZone: { marginTop: 18, gap: 2, borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10 },
     dangerLink: { color: colors.destructive, fontSize: 14 },
     bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 18, paddingTop: 10, backgroundColor: colors.background, borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth },

@@ -114,16 +114,16 @@ export default function CourseScreen() {
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel="Edit name and date" onPress={() => { setName(typeof course?.name === 'string' ? course.name : ''); setExamDate(typeof course?.examDate === 'string' ? course.examDate : ''); setEditing(true); }} style={styles.iconButton} testID="button-edit-course"><Feather name="edit-2" size={20} color={colors.foreground} /></Pressable>
       </View>
-      {stateQuery.isLoading ? <View style={styles.center}><ActivityIndicator color={colors.primary} /></View> : !course ? (
+      {stateQuery.isLoading ? <View style={styles.center}><ActivityIndicator color={colors.primaryText} /></View> : !course ? (
         <View style={styles.center}><Text style={styles.body}>This course isn’t in your account anymore.</Text></View>
       ) : (
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
           {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
           {editing ? (
             <View style={styles.card}>
-              <Text style={styles.kicker}>NAME</Text>
+              <Text style={styles.kicker}>Name</Text>
               <TextInput value={name} onChangeText={setName} maxLength={120} style={styles.input} accessibilityLabel="Course name" testID="input-course-name" />
-              {isExam ? <><Text style={styles.kicker}>EXAM DATE (YYYY-MM-DD)</Text>
+              {isExam ? <><Text style={styles.kicker}>Exam date (YYYY-MM-DD)</Text>
                 <TextInput value={examDate} onChangeText={setExamDate} placeholder="2026-11-14" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-exam-date" /></> : null}
               <View style={styles.row}>
                 <ActionButton label="Save" icon="check" onPress={() => void saveDetails()} disabled={busy || !name.trim()} testID="button-save-course" />
@@ -135,10 +135,10 @@ export default function CourseScreen() {
           {isExam ? (
             <View style={styles.card} testID="panel-exam-guide">
               <View style={styles.rowBetween}>
-                <Text style={styles.kicker}>OFFICIAL EXAM GUIDE</Text>
+                <Text style={styles.kicker}>Official exam guide</Text>
                 <ActionButton label={guide ? 'Refresh' : 'Look up'} icon="refresh-cw" secondary disabled={busy} onPress={() => void refreshGuide()} testID="button-refresh-guide" />
               </View>
-              {lookupGuide.isPending ? <View style={styles.row}><ActivityIndicator color={colors.primary} /><Text style={styles.caption}>Searching for the official guide…</Text></View> : null}
+              {lookupGuide.isPending ? <View style={styles.row}><ActivityIndicator color={colors.primaryText} /><Text style={styles.caption}>Searching for the official guide…</Text></View> : null}
               {guide?.found === true ? (
                 <>
                   {guideSections.map((s, i) => (
@@ -158,7 +158,7 @@ export default function CourseScreen() {
             const latest = graded[0];
             return (
               <View style={styles.card} testID="panel-progress">
-                <Text style={styles.kicker}>PROGRESS · {graded.length} {graded.length === 1 ? 'SET' : 'SETS'}</Text>
+                <Text style={styles.kicker}>Progress · {graded.length} {graded.length === 1 ? 'set' : 'sets'}</Text>
                 {graded.slice(0, 5).map((s) => (
                   <View key={s.id} style={styles.rowBetween}>
                     <Text style={styles.body} numberOfLines={1}>{s.createdAt.slice(0, 10)} · {s.topic}</Text>
@@ -172,7 +172,7 @@ export default function CourseScreen() {
             );
           })()}
           <View style={styles.card} testID="panel-memory-sheet">
-            <Text style={styles.kicker}>MEMORY SHEET · {memoryRows.length}</Text>
+            <Text style={styles.kicker}>Memory sheet · {memoryRows.length}</Text>
             {memoryRows.length ? memoryRows.map((row) => (
               <View key={String(row.id)} style={styles.sheetRow}>
                 <Text selectable style={styles.sheetTerm}>{String(row.term)}</Text>
@@ -183,7 +183,7 @@ export default function CourseScreen() {
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.kicker}>ADD MATERIAL</Text>
+            <Text style={styles.kicker}>Add material</Text>
             <MaterialIntake
               key={`${userId ?? ''}:${courseId}`}
               courseId={courseId!}
@@ -197,7 +197,7 @@ export default function CourseScreen() {
 
           <View style={styles.card}>
             <View style={styles.rowBetween}>
-              <Text style={styles.kicker}>LECTURES · {lectures.length}</Text>
+              <Text style={styles.kicker}>Lectures · {lectures.length}</Text>
               <ActionButton label="Record" icon="mic" secondary onPress={() => router.push({ pathname: '/lectures/[courseId]', params: { courseId: courseId!, courseName: typeof course.name === 'string' ? course.name : '' } })} testID="button-lectures" />
             </View>
             {lectures.slice(0, 5).map((lecture) => (
@@ -231,12 +231,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   caption: { color: colors.mutedForeground, fontSize: 12 },
   sheetRow: { gap: 3, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border },
   sheetTerm: { color: colors.foreground, fontSize: 14, fontWeight: '700' },
-  sheetTrick: { color: '#b9d0ff', backgroundColor: '#1f2f4f', borderRadius: 8, paddingVertical: 5, paddingHorizontal: 8, fontSize: 13, fontWeight: '600', alignSelf: 'flex-start' },
+  sheetTrick: { color: colors.hookText, backgroundColor: colors.hookBg, borderRadius: 8, paddingVertical: 5, paddingHorizontal: 8, fontSize: 13, fontWeight: '600', alignSelf: 'flex-start' },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   content: { paddingHorizontal: 16, paddingTop: 8, gap: 14 },
-  card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 16, gap: 12 },
-  kicker: { color: colors.primary, fontSize: 10, letterSpacing: 1.3, fontWeight: '800' },
+  card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, gap: 12 },
+  kicker: { color: colors.mutedForeground, fontSize: 12.5, lineHeight: 17, fontWeight: '600' },
   body: { flex: 1, color: colors.foreground, fontSize: 15, lineHeight: 22 },
   input: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.background, color: colors.foreground, fontSize: 15, paddingHorizontal: 13 },
   row: { flexDirection: 'row', gap: 10 },
