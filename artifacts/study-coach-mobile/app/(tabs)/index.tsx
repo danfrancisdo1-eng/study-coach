@@ -79,6 +79,7 @@ export default function CoachHome() {
   const quizScrollRef = useRef<ScrollView>(null);
   const { height: windowHeight } = useWindowDimensions();
   const [draft, setDraft] = useState('');
+  const [draftHeight, setDraftHeight] = useState(44); // measured from the text; the box shrinks back when the draft is cleared
   const [error, setError] = useState('');
   const [intakeCourseId, setIntakeCourseId] = useState<string | null>(null); // non-null while the + sheet is open
   const [focusCourseId, setFocusCourseId] = useState<string | null>(null); // the course/exam the coach assumes (home selector)
@@ -198,8 +199,14 @@ export default function CoachHome() {
 
   // The list is inverted (newest message first in the data, drawn at the bottom), so it
   // opens at the newest message with no scroll arithmetic; scrollToEnd kept landing short.
+  // A new message lands with its top in view (viewPosition 1 in an inverted list), so a long
+  // reply with chips under it is read from the start, not from the chips (Dan, 2026-10-08).
   const newestFirst = useMemo(() => [...messages].reverse(), [messages]);
-  useEffect(() => { listRef.current?.scrollToOffset({ offset: 0, animated: true }); }, [messages.length]);
+  useEffect(() => {
+    if (!newestFirst.length) return;
+    try { listRef.current?.scrollToIndex({ index: 0, viewPosition: 1, animated: true }); }
+    catch { listRef.current?.scrollToOffset({ offset: 0, animated: true }); }
+  }, [messages.length]);
 
   if (!isLoaded) return null;
   if (!isSignedIn) return <Redirect href="/(auth)/sign-in" />;
@@ -416,6 +423,8 @@ export default function CoachHome() {
           renderItem={renderMessage}
           contentContainerStyle={styles.list}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          onScrollToIndexFailed={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
           ListEmptyComponent={(
             <View style={styles.turn}>
               <Text style={styles.turnRole}>COACH</Text>
@@ -476,7 +485,8 @@ export default function CoachHome() {
             </Pressable>
             <TextInput
               value={draft} onChangeText={setDraft} placeholder="Message your coach" placeholderTextColor={colors.mutedForeground}
-              multiline maxLength={8000} style={styles.input} editable={!busy} accessibilityLabel="Message your coach" testID="input-home-chat"
+              multiline maxLength={8000} style={[styles.input, { height: draft ? draftHeight : 44 }]} editable={!busy} accessibilityLabel="Message your coach" testID="input-home-chat"
+              onContentSizeChange={(e) => setDraftHeight(Math.min(140, Math.max(44, Math.ceil(e.nativeEvent.contentSize.height) + (Platform.OS === 'ios' ? 22 : 16))))}
               returnKeyType="send" blurOnSubmit submitBehavior="blurAndSubmit" onSubmitEditing={() => void sendMessage()}
             />
             <Pressable accessibilityLabel="Send" accessibilityRole="button" disabled={busy || !draft.trim()} onPress={() => void sendMessage()} style={[styles.sendButton, (busy || !draft.trim()) && styles.disabled]} testID="button-send-home-chat">
@@ -594,12 +604,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   hideScore: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   hideScoreText: { color: colors.mutedForeground, fontSize: 13, fontWeight: '600' },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
-  suggestion: { minHeight: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
-  suggestionText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
+  suggestion: { minHeight: 44, maxWidth: '100%', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 22, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  suggestionText: { color: colors.primary, fontSize: 13, lineHeight: 18, fontWeight: '700' },
   composer: { paddingHorizontal: 14, paddingTop: 8, gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
   composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   plusButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
-  input: { flex: 1, minHeight: 44, maxHeight: 140, borderWidth: 1, borderColor: colors.border, borderRadius: 16, backgroundColor: colors.card, color: colors.foreground, fontSize: 15, lineHeight: 20, paddingHorizontal: 13, paddingVertical: Platform.OS === 'ios' ? 11 : 8 },
+  input: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 16, backgroundColor: colors.card, color: colors.foreground, fontSize: 15, lineHeight: 20, paddingHorizontal: 13, paddingVertical: Platform.OS === 'ios' ? 11 : 8 },
   sendButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   disabled: { opacity: 0.45 },
   consentWrap: { flex: 1, padding: 18, gap: 10 },
