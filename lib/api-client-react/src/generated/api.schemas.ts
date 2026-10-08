@@ -470,6 +470,7 @@ export const HomeChatActionType = {
   start_flashcards: 'start_flashcards',
   update_memory_sheet: 'update_memory_sheet',
   start_session: 'start_session',
+  lookup_exam_guide: 'lookup_exam_guide',
 } as const;
 
 /**
@@ -505,6 +506,10 @@ export const HomeChatActionKind = {
 export interface HomeChatAction {
   type: HomeChatActionType;
   courseId: string;
+  /** lookup_exam_guide: an official guide was found (the course is now a certification exam) */
+  found?: boolean;
+  /** lookup_exam_guide: how many sections the guide has */
+  sections?: number;
   /** create_course: the new course's name */
   name?: string;
   /** create_course: a college course or a certification exam */

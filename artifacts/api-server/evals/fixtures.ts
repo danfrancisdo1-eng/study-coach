@@ -342,7 +342,7 @@ export interface CoachCase {
   history: { role: "user" | "assistant"; content: string }[];
   message: string;
   /** Exact action list the coach must return (type + name; topic checked loosely; kind/scope when given). */
-  expectedActions: { type: "create_course" | "start_quiz" | "start_flashcards" | "update_memory_sheet" | "start_session"; name: string; kind?: "practice" | "exam"; scope?: "all" | "missed"; courseKind?: "course" | "exam"; examDate?: string; topic?: string }[];
+  expectedActions: { type: "create_course" | "start_quiz" | "start_flashcards" | "update_memory_sheet" | "start_session" | "lookup_exam_guide"; name: string; kind?: "practice" | "exam"; scope?: "all" | "missed"; courseKind?: "course" | "exam"; examDate?: string; topic?: string }[];
   /** Suggestion chips that must appear (case-insensitive, in any order), if any. */
   expectedSuggestions?: string[];
   /** The latest question set from this chat, as routes/chat.ts would describe it. */
@@ -354,6 +354,8 @@ export interface CoachCase {
   deck?: { courseName: string; topic: string; done: number; total: number; finished: { again: number; againConcepts: string[] } | null } | null;
   /** "Results so far" text for the selected course (D-042). */
   results?: string;
+  /** D-044: the server just looked up a guide for this course in this turn. */
+  guideJustLookedUp?: { courseName: string; found: boolean; sections: number };
   /** What a good reply must do, for the judge. */
   expectations: string[];
   maxWords: number;
@@ -382,6 +384,33 @@ IAM roles: ✓✓✓ (missed 0, right 3, last 2026-10-08)
 S3 encryption: ✓✓ (missed 0, right 2, last 2026-10-08)`;
 
 export const coachCases: CoachCase[] = [
+  // D-044: a certification named as a course; the thread stays on its own course.
+  {
+    name: "topics of a certification added as a course: looks up the official guide, stays off other courses",
+    courses: [{ id: "ms103", name: "Microsoft 103", materials: 0, lectures: 0 }, { id: "ab731", name: "Microsoft AB731", kind: "exam", materials: 0, lectures: 0, guideSections: [{ name: "Identify the business value of generative AI solutions", weight: 37.5 }, { name: "Identify benefits, capabilities, and opportunities for Microsoft 365 Copilot", weight: 37.5 }, { name: "Identify an implementation and adoption strategy", weight: 25 }] }],
+    firstVisit: false, focusCourseId: "ms103", history: [],
+    message: "Show me the topics on the exam and their weights",
+    expectedActions: [{ type: "lookup_exam_guide", name: "Microsoft 103" }],
+    expectations: ["Says briefly that it is looking up the official exam guide for Microsoft 103", "Does not mention Microsoft AB731, its sections, or offer anything about AB731", "Does not list topics from memory in this turn"],
+    maxWords: 60,
+  },
+  {
+    name: "after the lookup found the guide: the sections are the chips, this course only",
+    courses: [{ id: "ms103", name: "Microsoft 103", kind: "exam", materials: 0, lectures: 0, guideSections: [{ name: "Implement generative AI and agentic solutions", weight: 32 }, { name: "Plan and manage an Azure AI solution", weight: 27 }, { name: "Implement computer vision solutions", weight: 12 }, { name: "Implement text analysis solutions", weight: 12 }, { name: "Implement information extraction solutions", weight: 12 }] }, { id: "ab731", name: "Microsoft AB731", kind: "exam", materials: 0, lectures: 0, guideSections: [{ name: "Identify the business value of generative AI solutions", weight: 37.5 }, { name: "Identify benefits, capabilities, and opportunities for Microsoft 365 Copilot", weight: 37.5 }, { name: "Identify an implementation and adoption strategy", weight: 25 }] }],
+    firstVisit: false, focusCourseId: "ms103", history: [],
+    message: "Show me the topics on the exam and their weights", guideJustLookedUp: { courseName: "Microsoft 103", found: true, sections: 5 },
+    expectedActions: [], expectedSuggestions: ["All topics"],
+    expectations: ["Lists Microsoft 103's five sections with their weights (from the course list, not invented) and offers them as chips", "Does not mention Microsoft AB731 or its sections", "Short; asks which one to work on"],
+    maxWords: 140,
+  },
+  {
+    name: "a plain college course with no material: no lookup, offers the usual topics instead",
+    courses: [{ id: "bio", name: "BIOL 114", materials: 0, lectures: 0 }], firstVisit: false, focusCourseId: "bio", history: [],
+    message: "What topics are on the exam?",
+    expectedActions: [],
+    expectations: ["Does not claim to have an official guide; proposes the usual topics of an intro biology course and says they are from memory, or asks for the syllabus", "Lets the student pick a topic or start a set (topic chips count as asking which topic)"],
+    maxWords: 110,
+  },
   // D-042: "Results so far" drives weak spots, readiness and missed-scope sets.
   {
     name: "how am I doing: names the recently missed concepts from the results",
@@ -661,7 +690,7 @@ export const coachCases: CoachCase[] = [
     ] } },
     message: "Memory tricks for the misses",
     expectedActions: [],
-    expectations: ["Gives a memory trick of any kind (contrast, trigger, picture, story, word origin, rhyme, mnemonic) for the osmosis/hypotonic miss", "Gives one for active transport / sodium-potassium pump needing ATP, not the same kind of trick as the first", "Ends with a check that starts 'Your turn: explain it back to me' (never the words 'teach-back')"],
+    expectations: ["Gives a memory trick of any kind (contrast, trigger, picture, story, word origin, rhyme, mnemonic) for the osmosis/hypotonic miss", "Gives one for active transport / sodium-potassium pump needing ATP", "Ends with a check that starts 'Your turn: explain it back to me' (never the words 'teach-back')"],
     maxWords: 220,
   },
   {
