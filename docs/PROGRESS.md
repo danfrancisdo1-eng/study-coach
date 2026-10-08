@@ -41,6 +41,8 @@
 - Dan checks on the phone that tricks after a set vary in kind and none are false (coach.v11 live).
 - **D-031 answer-key audit, branch `feature/answer-key-audit`:** 200 questions from the live writer, solved cold by Opus 5.5 (high effort) and by OpenAI gpt-5.6-terra: 0 disagreements on both, 0 low-confidence answers, 0 fixes/drops by the check; 70 hand-reviewed by Claude Code, all correct. Finding: correct answer in slot D only 8/200. Merged + pushed `af098a1`.
 - **D-032 option shuffle, branch `fix/shuffle-options`:** options shuffled after the key check, positional options exempt; 3 unit tests; home-chat tests pick by text. 73/73; typecheck. Merged + pushed (auto-deploy).
+- **D-033 cross-course misses, branch `fix/missed-scope-course`:** a deck/retest "for the misses" only uses the latest set/deck of the same course. Regression test; 74/74; typecheck. Merged + pushed (auto-deploy).
+- Dan approved both: the flag button with an immediate re-check (next, branch `feature/flag-recheck`), then answer-E formats (branch `feature/answer-e`).
 - Open with Dan: answer-E formats (None/All of the above, "B and C"); the flag button design (student gets an immediate re-check; the developer gets a log).
 - Score trends + readiness call; multi-select topics; then the aesthetics pass (D-028).
 

@@ -379,9 +379,18 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   for (const course of created) done.push({ type: "create_course", courseId: course.id, name: course.name, ...(course.kind === "exam" ? { courseKind: "exam" as const } : {}) });
   const resolveCourse = (start: { courseId: string | null; courseName?: string }) =>
     start.courseId ?? created.find((c) => c.name === start.courseName)?.id ?? null;
+  // "The misses" only ever mean this course's latest set or deck (Dan, 2026-10-08: a Bio
+  // card turned up in an AB731 deck). A set from another course is not a source here.
+  const sameCourse = (session: Session | null, courseId: string): Session | null => {
+    if (session && session.courseId !== courseId) {
+      req.log.info({ sessionId: session.id, sessionCourseId: session.courseId, courseId }, "Home chat: latest set/deck is for another course; not used as the misses");
+      return null;
+    }
+    return session;
+  };
   if (plan.sheet) {
     const courseId = resolveCourse(plan.sheet);
-    const items = memoryItems(plan.sheet, lastQuizSession, lastDeckSession);
+    const items = courseId ? memoryItems(plan.sheet, sameCourse(lastQuizSession, courseId), sameCourse(lastDeckSession, courseId)) : [];
     if (courseId && items.length) {
       try {
         const courseName = [...courses, ...created].find((c) => c.id === courseId)?.name ?? courseId;
@@ -407,7 +416,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
         // "All topics" on an exam with an official guide: spread the set by the guide's weights.
         const guideSections = courses.find((c) => c.id === courseId)?.guideSections;
         const allTopics = /^all topics/i.test(plan.quiz.topic);
-        const session = await startQuiz(ownerId, latestState, { ...plan.quiz, courseId }, lastQuizSession, allTopics ? guideSections : undefined);
+        const session = await startQuiz(ownerId, latestState, { ...plan.quiz, courseId }, sameCourse(lastQuizSession, courseId), allTopics ? guideSections : undefined);
         if (!session) throw new Error("No valid questions were generated");
         done.push({ type: "start_quiz", sessionId: session.id, courseId, topic: plan.quiz.topic, kind: plan.quiz.kind, count: session.quiz!.questions.length });
       } catch (error) {
@@ -422,7 +431,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     if (courseId) {
       try {
         const latestState = await latestStateFor(ownerId, state, created);
-        const session = await startDeck(ownerId, latestState, { ...plan.deck, courseId }, lastQuizSession);
+        const session = await startDeck(ownerId, latestState, { ...plan.deck, courseId }, sameCourse(lastQuizSession, courseId));
         if (!session) throw new Error("No valid cards were generated");
         done.push({ type: "start_flashcards", sessionId: session.id, courseId, topic: plan.deck.topic, count: session.flashcards!.cards.length });
       } catch (error) {
