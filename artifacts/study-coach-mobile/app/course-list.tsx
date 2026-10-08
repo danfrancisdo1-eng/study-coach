@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Redirect, router } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
@@ -12,6 +12,7 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
+import { welcomeReplayKey } from '@/lib/welcome';
 
 /**
  * Courses & exams on their own page (D-036): the home screen keeps only the "Coach · <course>"
@@ -63,7 +64,8 @@ export default function CourseListScreen() {
   const [deleteWord, setDeleteWord] = useState('');
   const [focusId, setFocusId] = useState<string | null>(null);
   const [lookingUp, setLookingUp] = useState<string | null>(null);
-  const [addOpen, setAddOpen] = useState(false);
+  const { add } = useLocalSearchParams<{ add?: string }>(); // the welcome's "Add a course or exam" lands here with the sheet open (D-047)
+  const [addOpen, setAddOpen] = useState(add === '1');
   const [addKind, setAddKind] = useState<'course' | 'exam'>('course');
   const [addName, setAddName] = useState('');
   const [addDate, setAddDate] = useState('');
@@ -112,12 +114,14 @@ export default function CourseListScreen() {
       const previous = stateQuery.data;
       const state = record(previous?.state);
       const course = { id: newId(), name, kind: addKind, ...(addKind === 'exam' && addDate.trim() ? { examDate: addDate.trim() } : {}) };
-      const result = await putState.mutateAsync({ data: { state: { aiConsent: true, materials: [], ...state, courses: [...(Array.isArray(state.courses) ? state.courses : []), course] }, version: previous?.version ?? 0 } });
+      // Adding a course never grants AI consent by itself (D-047): the consent card stays the one place that does.
+      const result = await putState.mutateAsync({ data: { state: { aiConsent: false, materials: [], ...state, courses: [...(Array.isArray(state.courses) ? state.courses : []), course] }, version: previous?.version ?? 0 } });
       queryClient.setQueryData(stateKey, result);
       setAddOpen(false); setAddName(''); setAddDate(''); setAddKind('course');
       setFocusId(course.id);
       if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, course.id).catch(() => {});
-      if (course.kind === 'exam') void fetchGuide(course.id);
+      // The guide lookup is an AI call: before consent it is refused, so the home screen runs it right after the card.
+      if (course.kind === 'exam' && state.aiConsent === true) void fetchGuide(course.id);
     } catch (problem) {
       if ((problem as { status?: number }).status === 409) await queryClient.invalidateQueries({ queryKey: stateKey });
       setError(readable(problem));
@@ -188,6 +192,10 @@ export default function CourseListScreen() {
               <Feather name="external-link" size={16} color={colors.mutedForeground} />
             </Pressable>
           ) : null}
+          <Pressable accessibilityRole="button" onPress={() => { if (userId) AsyncStorage.setItem(welcomeReplayKey(userId), '1').catch(() => {}); router.back(); }} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-replay-welcome">
+            <Feather name="compass" size={16} color={colors.mutedForeground} />
+            <View style={styles.rowCopy}><Text style={styles.rowName}>See the welcome again</Text><Text style={styles.caption}>The three steps: course, material, coach</Text></View>
+          </Pressable>
           <Pressable accessibilityRole="button" onPress={() => { setError(''); setDeleteWord(''); setDeleteOpen(true); }} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-delete-account">
             <Feather name="trash-2" size={16} color={colors.destructive} />
             <View style={styles.rowCopy}><Text style={[styles.rowName, { color: colors.destructive }]}>Delete my account</Text><Text style={styles.caption}>Removes your courses, sets, chats and sign-in. Cannot be undone.</Text></View>

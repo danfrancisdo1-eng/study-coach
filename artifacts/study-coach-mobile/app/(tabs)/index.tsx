@@ -18,6 +18,8 @@ import { defaultIntakeCourse, type IntakeCourse } from '@/lib/intake-course';
 import { QuizCard } from '@/components/QuizCard';
 import { FlashcardDeck } from '@/components/FlashcardDeck';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
+import { Welcome } from '@/components/Welcome';
+import { shouldShowWelcome, welcomeReplayKey, withWelcomeSeen } from '@/lib/welcome';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.'; // sent for the student after Grade so the coach can respond to the result
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
@@ -85,6 +87,8 @@ export default function CoachHome() {
   const [studyOpen, setStudyOpen] = useState(false); // the full-screen sheet for the active set / deck
   const openedForRef = useRef<string | null>(null);
   const [intakeBusy, setIntakeBusy] = useState(false);
+  const [replayWelcome, setReplayWelcome] = useState(false); // "See the welcome again" on the courses page
+  const [welcomeBusy, setWelcomeBusy] = useState(false);
 
   const stateQuery = useGetStudyState({ query: { queryKey: [...getGetStudyStateQueryKey(), userId], enabled: !!userId } });
   // One thread per course (D-038): the chat follows the focused course; no focus = the general thread.
@@ -134,6 +138,7 @@ export default function CoachHome() {
   useFocusEffect(useCallback(() => {
     if (!userId) return;
     AsyncStorage.getItem(`study-coach-focus:${userId}`).then((saved) => { setFocusCourseId(saved || null); }).catch(() => {});
+    AsyncStorage.getItem(welcomeReplayKey(userId)).then((flag) => { setReplayWelcome(flag === '1'); }).catch(() => {});
   }, [userId]));
   const selectCourse = (id: string | null) => {
     setFocusCourseId(id);
@@ -191,9 +196,34 @@ export default function CoachHome() {
       const ageConfirmedAt = typeof state.ageConfirmedAt === 'string' ? state.ageConfirmedAt : new Date().toISOString();
       const result = await putState.mutateAsync({ data: { state: { ...state, aiConsent: true, ageConfirmedAt }, version: previous?.version ?? 0 } });
       queryClient.setQueryData([...getGetStudyStateQueryKey(), userId], result);
+      // An exam added before consent (welcome → Add) could not look up its guide yet; do it now.
+      for (const course of coursesFrom(result.state)) if (course.kind === 'exam' && !course.guide) void fetchGuide(course.id);
     } catch (problem) {
       setError(readableError(problem));
     }
+  };
+
+  // The welcome (D-047) is dismissed by either choice; the account remembers it (`welcomeSeenAt`),
+  // then "Add a course or exam" opens the courses page with the Add sheet already up.
+  const dismissWelcome = async (next: 'add' | 'explore') => {
+    if (welcomeBusy) return;
+    setWelcomeBusy(true);
+    setError('');
+    try {
+      const previous = stateQuery.data;
+      if (!(typeof record(previous?.state).welcomeSeenAt === 'string')) {
+        const result = await putState.mutateAsync({ data: { state: withWelcomeSeen(previous?.state), version: previous?.version ?? 0 } });
+        queryClient.setQueryData([...getGetStudyStateQueryKey(), userId], result);
+      }
+    } catch (problem) {
+      // Not saved (offline, or the state changed on another device): the welcome simply shows again next time.
+      if ((problem as { status?: number }).status === 409) await queryClient.invalidateQueries({ queryKey: [...getGetStudyStateQueryKey(), userId] });
+    } finally {
+      setWelcomeBusy(false);
+    }
+    setReplayWelcome(false);
+    if (userId) AsyncStorage.removeItem(welcomeReplayKey(userId)).catch(() => {});
+    if (next === 'add') router.push({ pathname: '/course-list', params: { add: '1' } });
   };
 
   // Report a coach reply (D-046): long-press → reason → the server marks the message and logs it for review.
@@ -250,7 +280,7 @@ export default function CoachHome() {
   const openPlus = () => {
     const course = focusCourse ?? defaultIntakeCourse(courses, messages);
     if (!course) {
-      Alert.alert('Which class?', 'Tell your coach which class you’re taking first, and it will set the course up for you.');
+      Alert.alert('Which course or exam?', 'Add a course or certification exam first, or tell your coach which one you are working on, and it will set it up for you.');
       return;
     }
     setIntakeCourseId(course.id);
@@ -346,6 +376,7 @@ export default function CoachHome() {
 
   const loading = stateQuery.isLoading || chatQuery.isLoading;
   const loadError = stateQuery.error ?? chatQuery.error;
+  const showWelcome = !loading && !loadError && shouldShowWelcome(stateQuery.data?.state, replayWelcome);
 
   return (
     <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: insets.top }]}>
@@ -360,7 +391,7 @@ export default function CoachHome() {
         </Pressable>
       </View>
 
-      {consented && !loading && !loadError ? (
+      {consented && !loading && !loadError && !showWelcome ? (
         <Pressable accessibilityRole="button" accessibilityLabel="Courses and exams" accessibilityHint="Choose which course the coach works on, open a course, or add one" onPress={openCourses} style={({ pressed }) => [styles.focusBar, pressed && styles.pressed]} testID="button-focus-course">
           <Text style={styles.kicker}>Coach</Text>
           <Text numberOfLines={1} style={styles.focusText}>{focusCourse ? focusCourse.name : courses.length ? 'All courses' : 'Add a course or exam'}</Text>
@@ -371,6 +402,8 @@ export default function CoachHome() {
 
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={colors.primaryText} /></View>
+      ) : showWelcome ? (
+        <Welcome busy={welcomeBusy} onAddCourse={() => void dismissWelcome('add')} onExplore={() => void dismissWelcome('explore')} />
       ) : loadError ? (
         <View style={styles.errorCard}>
           <Text style={styles.errorTitle}>Couldn’t load your chat</Text>
@@ -409,14 +442,13 @@ export default function CoachHome() {
             <View style={[styles.turn, styles.coachTurn]} testID="chat-empty">
               {focusCourse ? (
                 <>
-                  <Text style={styles.body}>{focusCourse.name} is set up. Where do you want to start?</Text>
+                  {/* The long how-to lives on the welcome now (D-047); the first thread message stays to one line. */}
+                  <Text style={styles.body}>{focusCourse.name} is set. Add notes or a lecture with +, or ask for a practice set.</Text>
                   <View style={styles.chipRow}>
                     {[
                       { label: 'Add material', hint: 'syllabus, notes, photos, a lecture', onPress: openPlus },
+                      { label: 'Practice set', onPress: () => void sendText('Give me a practice set on the main topics') },
                       { label: 'Show the topics', onPress: () => void sendText(`Show me the topics for ${focusCourse.name}`) },
-                      { label: 'Quiz me on all topics', onPress: () => void sendText('Quiz me on all topics') },
-                      { label: 'Flashcards', onPress: () => void sendText('Flashcards on the key terms') },
-                      { label: 'How am I doing?', onPress: () => void sendText('How am I doing in this course? What am I weak on?') },
                     ].map((chip) => (
                       <Pressable key={chip.label} accessibilityRole="button" accessibilityHint={chip.hint} disabled={busy} onPress={chip.onPress} style={[styles.suggestion, busy && styles.disabled]} testID="button-start-chip">
                         <Text style={styles.suggestionText}>{chip.label}</Text>
@@ -425,7 +457,16 @@ export default function CoachHome() {
                   </View>
                 </>
               ) : (
-                <Text style={styles.body}>Hey. Which course or certification exam are we working on? You can also add notes, a syllabus, photos, or record a lecture with the + button.</Text>
+                <>
+                  <Text style={styles.body}>Hey. Which course or certification exam are we working on?</Text>
+                  {!courses.length ? (
+                    <View style={styles.chipRow}>
+                      <Pressable accessibilityRole="button" disabled={busy} onPress={() => router.push({ pathname: '/course-list', params: { add: '1' } })} style={[styles.suggestion, busy && styles.disabled]} testID="button-start-chip">
+                        <Text style={styles.suggestionText}>Add a course or exam</Text>
+                      </Pressable>
+                    </View>
+                  ) : null}
+                </>
               )}
             </View>
           )}
@@ -474,16 +515,17 @@ export default function CoachHome() {
         </ScrollView>
         </View>
       </Modal>
-      {consented && !loading && !loadError ? (
-        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+      {(consented || showWelcome) && !loading && !loadError ? (
+        // During the welcome the composer stays in place but dimmed and inert (Dan: the first tap is the course, not a message into an empty thread).
+        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10) }, showWelcome && styles.composerDimmed]} accessibilityElementsHidden={showWelcome} importantForAccessibility={showWelcome ? 'no-hide-descendants' : 'auto'}>
           {error ? <Text style={styles.errorText} testID="status-chat-error">{error}</Text> : null}
           <View style={styles.composerRow}>
-            <Pressable accessibilityLabel="Add material or record a lecture" accessibilityRole="button" onPress={openPlus} style={styles.plusButton} testID="button-materials-plus">
+            <Pressable accessibilityLabel="Add material or record a lecture" accessibilityRole="button" disabled={showWelcome} onPress={openPlus} style={styles.plusButton} testID="button-materials-plus">
               <Feather name="plus" size={22} color={colors.primaryForeground} />
             </Pressable>
             <TextInput
               value={draft} onChangeText={setDraft} placeholder="Message your coach" placeholderTextColor={colors.mutedForeground}
-              multiline maxLength={8000} style={[styles.input, { height: draft ? draftHeight : 44 }]} editable={!busy} accessibilityLabel="Message your coach" testID="input-home-chat"
+              multiline maxLength={8000} style={[styles.input, { height: draft ? draftHeight : 44 }]} editable={!busy && !showWelcome} accessibilityLabel="Message your coach" testID="input-home-chat"
               onContentSizeChange={(e) => setDraftHeight(Math.min(140, Math.max(44, Math.ceil(e.nativeEvent.contentSize.height) + (Platform.OS === 'ios' ? 22 : 16))))}
               returnKeyType="send" blurOnSubmit submitBehavior="blurAndSubmit" onSubmitEditing={() => void sendMessage()}
             />
@@ -584,6 +626,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   suggestion: { minHeight: 44, maxWidth: '100%', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.chipBorder, backgroundColor: colors.chipBg, alignItems: 'center', justifyContent: 'center' },
   suggestionText: { color: colors.primaryText, fontSize: 13.5, lineHeight: 18, fontWeight: '600' },
   composer: { paddingHorizontal: 14, paddingTop: 8, gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
+  composerDimmed: { opacity: 0.35, pointerEvents: 'none' },
   composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   plusButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   input: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 16, backgroundColor: colors.card, color: colors.foreground, fontSize: 15, lineHeight: 20, paddingHorizontal: 13, paddingVertical: Platform.OS === 'ios' ? 11 : 8 },

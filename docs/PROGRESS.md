@@ -1,5 +1,20 @@
 # Progress
 
+## Session 7 — 2026-10-08 (night, cloud session; the Mac's Remote Control session was archived by a host exit at 21:56 UTC)
+
+### Done
+- **D-047 one-time welcome, branch `claude/archived-chat-recovery-dmunmu`:** `components/Welcome.tsx` + `lib/welcome.ts` (show/dismiss rules, 6 unit tests), home screen shows it in the chat area with the composer dimmed, `welcomeSeenAt` in the study state, "See the welcome again" in Account, `/course-list?add=1` opens the Add sheet, adding a course keeps the existing consent state (was: silently set true), exam guide lookup deferred until after consent, one-line first message with three chips, "course or exam" wording on the + alert. Verified here: typecheck; tests; iOS bundle export. **Needs real-iPhone check:** see D-047.
+
+### In progress
+- Branch 2 of Dan's "go for both": the aesthetics pass (frosted glass strip over the chat, gold ring around the composer while the coach works, skeleton loaders on the home, courses and course screens; Reduce Motion respected).
+
+### Next
+- Dan on the phone: the welcome flow on a throwaway account, "See the welcome again", Light and Dark.
+- Then: free tier + Apple IAP decisions (Phase 3), the informal Expo Go beta, TestFlight prep.
+
+### Blockers
+- No Mac in this session: no Expo tunnel, so nothing new can be seen on the phone until the Mac's preview is running again. Dan's 7-day usage limit on the Mac session resets 2026-10-10 02:00 UTC.
+
 ## Session 3 — 2026-10-05
 
 ### Done (branch `feature/chat-first-home`, not merged, not deployed)
