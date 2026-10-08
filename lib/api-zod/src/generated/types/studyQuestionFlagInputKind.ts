@@ -6,10 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * wrong_answer: the learner says the keyed answer is wrong; ambiguous: the question is unclear; invalid: legacy
+ */
 export type StudyQuestionFlagInputKind = typeof StudyQuestionFlagInputKind[keyof typeof StudyQuestionFlagInputKind];
 
 
 export const StudyQuestionFlagInputKind = {
   invalid: 'invalid',
   ambiguous: 'ambiguous',
+  wrong_answer: 'wrong_answer',
 } as const;

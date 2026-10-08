@@ -24,8 +24,10 @@ import * as tutorPrompt from "../prompts/tutor.v3";
 import { readPublicPage } from "../lib/public-page";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { rememberMisses } from "../lib/memory-sheet";
+import { parseFlagCheck } from "../lib/flag-check";
+import * as flagCheckPrompt from "../prompts/flag-check.v1";
 import {
-  generateSessionQuiz, jsonObject, safeSession, sourceChunks, sourceTextOf,
+  generateSessionQuiz, jsonObject, safeSession, scoreQuiz, excludedByReport, sourceChunks, sourceTextOf,
   type JsonObject, type Quiz, type Session, type SourceStatus, type StoredQuestion, type StoredQuestionFlag, type StudyQuestionFlagKind,
 } from "../lib/session-quiz";
 
@@ -1196,19 +1198,13 @@ router.post("/study/sessions/:id/flashcards/:cardId/review", async (req, res): P
 router.put("/study/sessions/:id/questions/:questionId/flag", async (req, res): Promise<void> => {
   const parsed = FlagStudyQuestionBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Provide a flag kind of invalid or ambiguous and an optional reason of at most 500 characters." });
+    res.status(400).json({ error: "Provide a flag kind of wrong_answer, ambiguous or invalid and an optional reason of at most 500 characters." });
     return;
   }
   const session = await requireSession(req, res);
   if (!session) return;
   if (!session.quiz) {
     res.status(409).json({ error: "Generate a quiz before reporting a question." });
-    return;
-  }
-  if (session.quiz.grade) {
-    res.status(409).json({
-      error: "Question reports are only accepted before grading. Graded scores and review history cannot be safely recomputed.",
-    });
     return;
   }
   const questionId = Array.isArray(req.params.questionId) ? req.params.questionId[0] : req.params.questionId;
@@ -1229,25 +1225,55 @@ router.put("/study/sessions/:id/questions/:questionId/flag", async (req, res): P
     res.json(safeSession(session));
     return;
   }
-  question.flag = {
-    kind,
-    ...(reason ? { reason } : {}),
-    reportedAt: new Date().toISOString(),
-  };
+  question.flag = { kind, ...(reason ? { reason } : {}), reportedAt: new Date().toISOString() };
+
+  // Re-check (D-034): an independent model answers the question cold (no key, no explanation);
+  // parseFlagCheck compares its choice with the key. A failed check leaves a plain report,
+  // which excludes the question as before.
+  try {
+    const response = await complete("flag_check", {
+      system: flagCheckPrompt.systemPrompt(),
+      messages: [{ role: "user", content: JSON.stringify({ prompt: question.prompt, options: question.options.map((option) => option.text) }) }],
+      timeoutMs: 90_000,
+    });
+    const recheck = parseFlagCheck(response.text, question);
+    if (recheck) question.flag.recheck = recheck;
+    else req.log.warn({ sessionId: session.id, questionId }, "Question report: re-check reply unusable");
+  } catch (error) {
+    req.log.error({ sessionId: session.id, questionId, error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Question report: re-check failed");
+  }
+  const studentPick = question.answers.at(-1)?.optionId;
+  // The developer's review log: every report with the question, the key and the verdict.
+  req.log.info({
+    sessionId: session.id, questionId, courseId: session.courseId, topic: session.topic, kind, reason: reason ?? null,
+    prompt: question.prompt, options: question.options.map((option) => option.text),
+    key: question.options.find((option) => option.id === question.correctOptionId)?.text ?? null,
+    studentPick: question.options.find((option) => option.id === studentPick)?.text ?? null,
+    explanation: question.explanation,
+    verdict: question.flag.recheck?.verdict ?? "unchecked",
+    checkerAnswer: question.flag.recheck?.correctOptionText ?? null,
+  }, "Question reported: re-check verdict");
+
+  if (session.quiz.grade) {
+    // The report changed what counts: recompute the graded score (same gradedAt) and drop this
+    // session's review items for a question that no longer counts.
+    const gradedAt = typeof session.quiz.grade.gradedAt === "string" ? new Date(session.quiz.grade.gradedAt) : new Date();
+    const { score } = scoreQuiz(session.quiz, Number.isNaN(gradedAt.getTime()) ? new Date() : gradedAt);
+    session.quiz.grade = score;
+    if (session.quiz.mode === "diagnostic") session.scores.diagnostic = score;
+    else session.scores.targeted = score;
+    if (excludedByReport(question)) {
+      session.reviewSchedule = session.reviewSchedule.filter((entry) => !String((entry as { reviewKey?: unknown }).reviewKey ?? "").endsWith(`:${question.id}`));
+    }
+  }
   if (!await saveSession(session, owner(req))) {
     const current = await getSession(session.id, owner(req));
-    if (current?.quiz?.grade) {
-      res.status(409).json({
-        error: "Question reports are only accepted before grading. Graded scores and review history cannot be safely recomputed.",
-      });
-      return;
-    }
     const currentQuestion = current?.quiz?.questions.find((candidate) => candidate.id === questionId);
     if (current && currentQuestion && matchesFlag(currentQuestion.flag)) {
       res.json(safeSession(current));
       return;
     }
-    res.status(409).json({ error: "Session changed on another device. Reload the quiz and retry the question report." });
+    res.status(409).json({ error: "Session changed on another device. Reload the quiz and retry the report." });
     return;
   }
   res.json(safeSession(session));
@@ -1269,27 +1295,7 @@ router.post("/study/sessions/:id/grade", async (req, res): Promise<void> => {
     return;
   }
   const now = new Date();
-  const learnerReportedCount = session.quiz.questions.filter((question) => question.flag).length;
-  const excludedQuestionCount = session.quiz.questions.filter((question) => question.invalid || question.flag).length;
-  const invalidItems = session.quiz.invalidItemCount + excludedQuestionCount;
-  const valid = session.quiz.questions.filter((question) =>
-    !question.invalid && !question.flag && question.options.length === 4 &&
-    question.options.some((option) => option.id === question.correctOptionId));
-  const answered = valid.filter((question) => {
-    const answer = question.answers.at(-1);
-    return answer && question.options.some((option) => option.id === answer.optionId);
-  });
-  const correct = answered.filter((question) => question.answers.at(-1)?.optionId === question.correctOptionId);
-  const score = {
-    correct: correct.length,
-    answered: answered.length,
-    excluded: invalidItems + valid.length - answered.length,
-    invalidItems,
-    unanswered: valid.length - answered.length,
-    total: valid.length + invalidItems,
-    percent: answered.length ? Math.round((correct.length / answered.length) * 100) : 0,
-    gradedAt: now.toISOString(),
-  };
+  const { score, valid, answered, correct, learnerReportedCount } = scoreQuiz(session.quiz, now);
   for (const question of valid) {
     const answer = question.answers.at(-1);
     const selectedOption = answer ? question.options.find((option) => option.id === answer.optionId) : undefined;
@@ -1345,7 +1351,7 @@ router.post("/study/sessions/:id/grade", async (req, res): Promise<void> => {
     : session.quiz.mode === "diagnostic" && score.invalidItems === 0 && skipped === 0
       ? "continue to the next topic or scheduled review"
       : "review any excluded or unanswered questions, then choose the next topic";
-  session.reportText = `Course: ${session.courseId}. Topic: ${session.topic}. Diagnostic score: ${formatScore(session.scores.diagnostic)}. Targeted retest score: ${formatScore(session.scores.targeted)}. Latest ${session.quiz.mode === "diagnostic" ? "diagnostic" : "targeted retest"} score: ${formatScore(score)}. Score denominator includes answered valid questions only; ${skipped} unanswered and ${score.invalidItems} invalid or ambiguous item(s) excluded, including ${learnerReportedCount} learner report(s). Automated AI checks do not guarantee factual correctness. Question reports are accepted before grading; graded scores and review history are not safely recomputed afterward. Missed concepts: ${missedConcepts.join(", ") || "none among answered valid questions"}. Remediation status: ${remediationStatus}. Next step: ${nextStep}.`;
+  session.reportText = `Course: ${session.courseId}. Topic: ${session.topic}. Diagnostic score: ${formatScore(session.scores.diagnostic)}. Targeted retest score: ${formatScore(session.scores.targeted)}. Latest ${session.quiz.mode === "diagnostic" ? "diagnostic" : "targeted retest"} score: ${formatScore(score)}. Score denominator includes answered valid questions only; ${skipped} unanswered and ${score.invalidItems} invalid or ambiguous item(s) excluded, including ${learnerReportedCount} learner report(s). Automated AI checks do not guarantee factual correctness. Reported questions are re-checked by an independent model: a confirmed key still counts; a wrong or unclear key is excluded and the score recomputed. Missed concepts: ${missedConcepts.join(", ") || "none among answered valid questions"}. Remediation status: ${remediationStatus}. Next step: ${nextStep}.`;
   session.status = "completed";
   if (!await saveSession(session, owner(req))) {
     const current = await getSession(session.id, owner(req));

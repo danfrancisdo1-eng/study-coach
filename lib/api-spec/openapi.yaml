@@ -489,8 +489,8 @@ paths:
     put:
       operationId: flagStudyQuestion
       tags: [study]
-      summary: Report a question as invalid or ambiguous before grading
-      description: Idempotently records the learner's flag and optional reason for the authenticated account's current quiz. Flags must be submitted before grading; post-grade changes return 409 because prior scores and review history are not safely recomputed. Flagged questions are excluded from the score and review scheduling. AI checks do not guarantee factual validity.
+      summary: Report a question (wrong answer or unclear) and re-check its key
+      description: Records the learner's report, then an independent model answers the question cold (without the key) and the verdict is stored on the question's flag. A question whose key is confirmed still counts; one whose key is wrong or unclear is excluded from the score, and a graded score is recomputed. Accepted before or after grading. Idempotent for the same kind and reason.
       requestBody:
         required: true
         content:
@@ -505,7 +505,7 @@ paths:
         "400": { description: Invalid flag or question identifier }
         "401": { description: Authentication required }
         "404": { description: Session or question not found }
-        "409": { description: "No quiz, quiz already graded, or concurrent session update" }
+        "409": { description: "No quiz, or concurrent session update" }
   /study/sessions/{id}/flashcards/{cardId}/review:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
@@ -872,15 +872,29 @@ components:
       type: object
       required: [kind]
       properties:
-        kind: { type: string, enum: [invalid, ambiguous] }
+        kind: { type: string, enum: [invalid, ambiguous, wrong_answer], description: "wrong_answer: the learner says the keyed answer is wrong; ambiguous: the question is unclear; invalid: legacy" }
         reason: { type: string, minLength: 1, maxLength: 500 }
     StudyQuestionFlag:
       type: object
       required: [kind, reason, reportedAt]
       properties:
-        kind: { type: string, enum: [invalid, ambiguous] }
+        kind: { type: string, enum: [invalid, ambiguous, wrong_answer] }
         reason: { type: ["string", "null"], maxLength: 500 }
         reportedAt: { type: string, format: date-time }
+        recheck:
+          description: Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).
+          oneOf:
+            - $ref: "#/components/schemas/StudyQuestionRecheck"
+            - { type: "null" }
+    StudyQuestionRecheck:
+      type: object
+      required: [verdict, explanation, checkedAt]
+      properties:
+        verdict: { type: string, enum: [key_holds, key_wrong, unclear], description: "key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts" }
+        correctOptionId: { type: string, format: uuid, description: "The checker's answer when the key was wrong" }
+        correctOptionText: { type: string }
+        explanation: { type: string, description: "Two or three plain sentences for the learner" }
+        checkedAt: { type: string, format: date-time }
     StudyQuestionFeedback:
       type: object
       required: [selectedOptionId, selectedOptionText, correctOptionId, correctOptionText, explanation, concept, assisted]

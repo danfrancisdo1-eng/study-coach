@@ -404,9 +404,16 @@ export const CreateStudySessionResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(createStudySessionResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -460,9 +467,16 @@ export const CreateStudySessionResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(createStudySessionResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -628,9 +642,16 @@ export const GetStudySessionResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(getStudySessionResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -684,9 +705,16 @@ export const GetStudySessionResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(getStudySessionResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -1175,9 +1203,16 @@ export const CheckInStudySessionResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(checkInStudySessionResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -1231,9 +1266,16 @@ export const CheckInStudySessionResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(checkInStudySessionResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -1380,9 +1422,16 @@ export const SendStudyMessageResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(sendStudyMessageResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -1436,9 +1485,16 @@ export const SendStudyMessageResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(sendStudyMessageResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -1581,9 +1637,16 @@ export const GenerateStudyQuizResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(generateStudyQuizResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -1637,9 +1700,16 @@ export const GenerateStudyQuizResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(generateStudyQuizResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -1783,9 +1853,16 @@ export const SaveStudyAnswerResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(saveStudyAnswerResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -1839,9 +1916,16 @@ export const SaveStudyAnswerResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(saveStudyAnswerResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -1908,8 +1992,8 @@ export const SaveStudyAnswerResponse = zod.object({
 
 
 /**
- * Idempotently records the learner's flag and optional reason for the authenticated account's current quiz. Flags must be submitted before grading; post-grade changes return 409 because prior scores and review history are not safely recomputed. Flagged questions are excluded from the score and review scheduling. AI checks do not guarantee factual validity.
- * @summary Report a question as invalid or ambiguous before grading
+ * Records the learner's report, then an independent model answers the question cold (without the key) and the verdict is stored on the question's flag. A question whose key is confirmed still counts; one whose key is wrong or unclear is excluded from the score, and a graded score is recomputed. Accepted before or after grading. Idempotent for the same kind and reason.
+ * @summary Report a question (wrong answer or unclear) and re-check its key
  */
 export const FlagStudyQuestionParams = zod.object({
   "id": zod.coerce.string().uuid(),
@@ -1921,7 +2005,7 @@ export const flagStudyQuestionBodyReasonMax = 500;
 
 
 export const FlagStudyQuestionBody = zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']).describe('wrong_answer: the learner says the keyed answer is wrong; ambiguous: the question is unclear; invalid: legacy'),
   "reason": zod.string().min(1).max(flagStudyQuestionBodyReasonMax).optional()
 })
 
@@ -1990,9 +2074,16 @@ export const FlagStudyQuestionResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(flagStudyQuestionResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -2046,9 +2137,16 @@ export const FlagStudyQuestionResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(flagStudyQuestionResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -2191,9 +2289,16 @@ export const ReviewFlashcardResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(reviewFlashcardResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -2247,9 +2352,16 @@ export const ReviewFlashcardResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(reviewFlashcardResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -2387,9 +2499,16 @@ export const GradeStudyQuizResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(gradeStudyQuizResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),
@@ -2443,9 +2562,16 @@ export const GradeStudyQuizResponse = zod.object({
   "text": zod.string()
 })),
   "flag": zod.union([zod.object({
-  "kind": zod.enum(['invalid', 'ambiguous']),
+  "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(gradeStudyQuizResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
-  "reportedAt": zod.coerce.date()
+  "reportedAt": zod.coerce.date(),
+  "recheck": zod.union([zod.object({
+  "verdict": zod.enum(['key_holds', 'key_wrong', 'unclear']).describe('key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts'),
+  "correctOptionId": zod.string().uuid().optional().describe('The checker\'s answer when the key was wrong'),
+  "correctOptionText": zod.string().optional(),
+  "explanation": zod.string().describe('Two or three plain sentences for the learner'),
+  "checkedAt": zod.coerce.date()
+}),zod.null()]).optional().describe('Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded).')
 }),zod.null()]),
   "answer": zod.union([zod.object({
   "optionId": zod.string().uuid(),

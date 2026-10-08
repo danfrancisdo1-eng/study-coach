@@ -255,7 +255,31 @@ export type StudyQuestionFlagKind = typeof StudyQuestionFlagKind[keyof typeof St
 export const StudyQuestionFlagKind = {
   invalid: 'invalid',
   ambiguous: 'ambiguous',
+  wrong_answer: 'wrong_answer',
 } as const;
+
+/**
+ * key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts
+ */
+export type StudyQuestionRecheckVerdict = typeof StudyQuestionRecheckVerdict[keyof typeof StudyQuestionRecheckVerdict];
+
+
+export const StudyQuestionRecheckVerdict = {
+  key_holds: 'key_holds',
+  key_wrong: 'key_wrong',
+  unclear: 'unclear',
+} as const;
+
+export interface StudyQuestionRecheck {
+  /** key_holds: the key is confirmed and the question still counts; key_wrong: the checker picked another option, the question no longer counts; unclear: two options are defensible, the question no longer counts */
+  verdict: StudyQuestionRecheckVerdict;
+  /** The checker's answer when the key was wrong */
+  correctOptionId?: string;
+  correctOptionText?: string;
+  /** Two or three plain sentences for the learner */
+  explanation: string;
+  checkedAt: string;
+}
 
 export interface StudyQuestionFlag {
   kind: StudyQuestionFlagKind;
@@ -265,6 +289,8 @@ export interface StudyQuestionFlag {
      */
   reason: string | null;
   reportedAt: string;
+  /** Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded). */
+  recheck?: StudyQuestionRecheck | null;
 }
 
 export interface StudyQuestionFeedback {
@@ -572,15 +598,20 @@ export interface StudyAnswerInput {
   assisted: boolean;
 }
 
+/**
+ * wrong_answer: the learner says the keyed answer is wrong; ambiguous: the question is unclear; invalid: legacy
+ */
 export type StudyQuestionFlagInputKind = typeof StudyQuestionFlagInputKind[keyof typeof StudyQuestionFlagInputKind];
 
 
 export const StudyQuestionFlagInputKind = {
   invalid: 'invalid',
   ambiguous: 'ambiguous',
+  wrong_answer: 'wrong_answer',
 } as const;
 
 export interface StudyQuestionFlagInput {
+  /** wrong_answer: the learner says the keyed answer is wrong; ambiguous: the question is unclear; invalid: legacy */
   kind: StudyQuestionFlagInputKind;
   /**
      * @minLength 1

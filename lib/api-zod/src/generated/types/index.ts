@@ -66,6 +66,8 @@ export * from './studyQuestionFlag';
 export * from './studyQuestionFlagInput';
 export * from './studyQuestionFlagInputKind';
 export * from './studyQuestionFlagKind';
+export * from './studyQuestionRecheck';
+export * from './studyQuestionRecheckVerdict';
 export * from './studyQuiz';
 export * from './studyQuizGenerationError';
 export * from './studyQuizInput';

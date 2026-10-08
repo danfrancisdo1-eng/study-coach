@@ -12,7 +12,7 @@ import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
 import * as coachPrompt from "../prompts/coach.v11";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
-import { generateFlashcards, generateSessionQuiz, sourceChunks, sourceTextOf, type Quiz, type Session } from "../lib/session-quiz";
+import { excludedByReport, generateFlashcards, generateSessionQuiz, sourceChunks, sourceTextOf, type Quiz, type Session } from "../lib/session-quiz";
 import { itemsFromSession, rowsFromState, sheetAsText, updateMemorySheet, type MemoryItem } from "../lib/memory-sheet";
 import { parseCoachReply, planActions, type DeckPlan, type KnownCourse, type QuizPlan, type SheetPlan } from "./chatActions";
 import { requireStudyAuth } from "./study";
@@ -106,7 +106,7 @@ function quizContext(courses: KnownCourse[], action: Extract<HomeChatAction, { t
   const quiz = session?.quiz;
   if (!session || !quiz) return null;
   const courseName = courses.find((c) => c.id === session.courseId)?.name ?? session.courseId;
-  const valid = quiz.questions.filter((q) => !q.invalid && !q.flag);
+  const valid = quiz.questions.filter((q) => !q.invalid && !excludedByReport(q));
   const answered = valid.filter((q) => q.answers.length > 0);
   const base = { courseName, topic: session.topic, kind: action.kind, answered: answered.length, total: valid.length };
   if (!quiz.grade) return { ...base, graded: null };

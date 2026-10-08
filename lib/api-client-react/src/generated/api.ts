@@ -2353,8 +2353,8 @@ export const getFlagStudyQuestionUrl = (id: string,
 }
 
 /**
- * Idempotently records the learner's flag and optional reason for the authenticated account's current quiz. Flags must be submitted before grading; post-grade changes return 409 because prior scores and review history are not safely recomputed. Flagged questions are excluded from the score and review scheduling. AI checks do not guarantee factual validity.
- * @summary Report a question as invalid or ambiguous before grading
+ * Records the learner's report, then an independent model answers the question cold (without the key) and the verdict is stored on the question's flag. A question whose key is confirmed still counts; one whose key is wrong or unclear is excluded from the score, and a graded score is recomputed. Accepted before or after grading. Idempotent for the same kind and reason.
+ * @summary Report a question (wrong answer or unclear) and re-check its key
  */
 export const flagStudyQuestion = async (id: string,
     questionId: string,
@@ -2422,7 +2422,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type FlagStudyQuestionMutationVariables = {id: string;questionId: string;data: BodyType<StudyQuestionFlagInput>}
 
     /**
- * @summary Report a question as invalid or ambiguous before grading
+ * @summary Report a question (wrong answer or unclear) and re-check its key
  */
 export const useFlagStudyQuestion = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof flagStudyQuestion>>, TError,FlagStudyQuestionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
