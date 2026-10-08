@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -15,6 +16,9 @@ import { useColors } from '@/hooks/useColors';
  * "Looks wrong?" (D-034) reports a question: the server re-checks it with an independent
  * model and the verdict shows in place; a confirmed key still counts, a wrong or unclear
  * key takes the question out of the score.
+ * Exam sets (D-037, Dan's design): numbered bubbles under the question (white outline =
+ * unanswered, green = answered, red = marked for review) jump to any question; "Mark for
+ * review" flags a question to come back to before Grade. Marks live on this phone per set.
  */
 export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }: {
   sessionId: string;
@@ -35,12 +39,26 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   const flag = useFlagStudyQuestion();
   const [reviewingId, setReviewingId] = useState<string | null>(null); // practice: the question whose feedback is on screen
   const [reportingId, setReportingId] = useState<string | null>(null); // the question whose re-check is running
+  const [currentId, setCurrentId] = useState<string | null>(null); // exam: the question on screen (null = first unanswered)
+  const [marks, setMarks] = useState<Set<string>>(new Set()); // exam: questions marked for review (kept per set on this phone)
+  const marksKey = `study-coach-marks:${sessionId}`;
+  useEffect(() => {
+    AsyncStorage.getItem(marksKey).then((saved) => { if (saved) setMarks(new Set(JSON.parse(saved) as string[])); }).catch(() => {});
+  }, [marksKey]);
+  const toggleMark = (id: string) => {
+    setMarks((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      AsyncStorage.setItem(marksKey, JSON.stringify([...next])).catch(() => {});
+      return next;
+    });
+  };
   const session = sessionQuery.data;
   const quiz = session?.quiz ?? null;
   const busy = saveAnswer.isPending || grade.isPending;
   // A reported question stays out of the set unless the re-check confirmed its key.
   const counts = (q: StudyQuizQuestionsItem) => !q.flag || q.flag.recheck?.verdict === 'key_holds';
-  const step = !quiz ? 'loading' : quiz.grade ? 'score' : reviewingId ? `feedback:${reviewingId}` : `question:${quiz.questions.find((q) => counts(q) && !q.answer)?.id ?? 'grade'}`;
+  const step = !quiz ? 'loading' : quiz.grade ? 'score' : reviewingId ? `feedback:${reviewingId}` : `question:${currentId ?? quiz.questions.find((q) => counts(q) && !q.answer)?.id ?? 'grade'}`;
   useEffect(() => { onStepChange?.(step); }, [step]);
 
   if (sessionQuery.isLoading) return <View style={styles.card}><ActivityIndicator color={colors.primary} /><Text style={styles.muted}>Loading your questions…</Text></View>;
@@ -149,12 +167,32 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
     );
   }
 
-  const current: StudyQuizQuestionsItem | undefined = questions.find((q) => !q.answer);
+  const isExam = quiz.kind !== 'practice';
+  const marked = questions.filter((q) => marks.has(q.id));
+  // Exam sets: numbered bubbles jump to any question; the colour says where it stands.
+  const bubbles = isExam ? (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bubbles} testID="row-quiz-bubbles">
+      {questions.map((q, i) => {
+        const state = marks.has(q.id) ? 'marked' : q.answer ? 'answered' : 'open';
+        const here = (currentId ?? questions.find((x) => !x.answer)?.id) === q.id;
+        return (
+          <Pressable key={q.id} accessibilityRole="button" accessibilityLabel={`Question ${i + 1}, ${state === 'marked' ? 'marked for review' : state === 'answered' ? 'answered' : 'not answered'}`} accessibilityState={{ selected: here }}
+            onPress={() => setCurrentId(q.id)} style={[styles.bubble, state === 'answered' && styles.bubbleAnswered, state === 'marked' && styles.bubbleMarked, here && styles.bubbleHere]} testID={`button-quiz-bubble-${i}`}>
+            <Text style={[styles.bubbleText, state === 'answered' && styles.bubbleTextAnswered, state === 'marked' && styles.bubbleTextMarked]}>{i + 1}</Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  ) : null;
+
+  const current: StudyQuizQuestionsItem | undefined = (isExam && currentId ? questions.find((q) => q.id === currentId) : undefined) ?? questions.find((q) => !q.answer);
   if (!current) {
     return (
       <View style={styles.card} testID="panel-quiz-grade">
         <Text style={styles.kicker}>{kindLabel.toUpperCase()} · {session.topic}</Text>
         <Text style={styles.cardTitle}>All {questions.length} answered.</Text>
+        {bubbles}
+        {marked.length ? <Text style={styles.muted}>{marked.length} marked for review. Tap a red bubble to go back to it, or grade now.</Text> : null}
         <Pressable accessibilityRole="button" disabled={busy} onPress={async () => {
           try {
             const graded = await grade.mutateAsync({ id: sessionId });
@@ -173,22 +211,35 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
     try {
       const updated = await saveAnswer.mutateAsync({ id: sessionId, data: { questionId: current.id, optionId, assisted: false } });
       queryClient.setQueryData(key, updated);
-      if (quiz.kind === 'practice') setReviewingId(current.id);
+      if (quiz.kind === 'practice') { setReviewingId(current.id); return; }
+      // Exam: move on to the next unanswered question after this one (wrapping), else the "all answered" panel.
+      const list = (updated.quiz?.questions ?? []).filter(counts);
+      const at = list.findIndex((q) => q.id === current.id);
+      const next = [...list.slice(at + 1), ...list.slice(0, at)].find((q) => !q.answer);
+      setCurrentId(next?.id ?? null);
     } catch (problem) { onError(problem); }
   };
 
+  const chosen = isExam ? current.answer?.optionId ?? null : null;
   return (
     <View style={styles.card} testID="panel-quiz-question">
       <Text style={styles.kicker}>{kindLabel.toUpperCase()} · QUESTION {questions.indexOf(current) + 1} OF {questions.length}</Text>
       {progress}
+      {bubbles}
       <Text style={styles.prompt}>{current.prompt}</Text>
       {current.options.map((option, i) => (
-        <Pressable key={option.id} accessibilityRole="button" disabled={busy} onPress={() => void choose(option.id)}
-          style={({ pressed }) => [styles.option, pressed && styles.pressed, busy && styles.disabled]} testID={`button-quiz-option-${i}`}>
-          <Text style={styles.optionLetter}>{'ABCDE'[i]}</Text>
+        <Pressable key={option.id} accessibilityRole="button" accessibilityState={{ selected: chosen === option.id }} disabled={busy} onPress={() => void choose(option.id)}
+          style={({ pressed }) => [styles.option, chosen === option.id && styles.optionChosen, pressed && styles.pressed, busy && styles.disabled]} testID={`button-quiz-option-${i}`}>
+          <Text style={[styles.optionLetter, chosen === option.id && styles.optionLetterChosen]}>{'ABCDE'[i]}</Text>
           <Text style={styles.optionText}>{option.text}</Text>
         </Pressable>
       ))}
+      {isExam ? (
+        <Pressable accessibilityRole="button" accessibilityState={{ selected: marks.has(current.id) }} onPress={() => toggleMark(current.id)} style={[styles.markButton, marks.has(current.id) && styles.markButtonOn]} testID="button-quiz-mark">
+          <Feather name="flag" size={15} color={marks.has(current.id) ? EXAM.marked : colors.foreground} />
+          <Text style={[styles.markText, marks.has(current.id) && { color: EXAM.marked }]}>{marks.has(current.id) ? 'Marked for review' : 'Mark for review'}</Text>
+        </Pressable>
+      ) : null}
       {busy ? <ActivityIndicator color={colors.primary} /> : null}
     </View>
   );
@@ -198,6 +249,8 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
 // red for the student's wrong answer, green for the correct one. Fixed palette for now;
 // becomes theme tokens in the aesthetics pass.
 const DARK = { bg: '#101418', text: '#eef2f6', muted: '#aab6c3', wrong: '#ff6b61', right: '#4cd964', hookBg: '#1f2f4f', hookText: '#b9d0ff' };
+// Exam bubbles (D-037, Dan): white outline = unanswered, green = answered, red = marked for review.
+const EXAM = { answered: '#2f9e5b', marked: '#d6453a', open: '#ffffff' };
 
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 16, gap: 10 },
@@ -213,6 +266,19 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   hookText: { flex: 1, color: DARK.hookText, fontSize: 13, lineHeight: 19, fontWeight: '600' },
   cardTitle: { color: colors.foreground, fontSize: 17, lineHeight: 23, fontWeight: '700' },
   option: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 13, backgroundColor: colors.background, paddingHorizontal: 13, paddingVertical: 10 },
+  optionChosen: { borderColor: colors.primary, borderWidth: 2, paddingHorizontal: 12, paddingVertical: 9 },
+  optionLetterChosen: { backgroundColor: colors.primary, color: colors.primaryForeground },
+  bubbles: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
+  bubble: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: colors.border, backgroundColor: EXAM.open, alignItems: 'center', justifyContent: 'center' },
+  bubbleAnswered: { borderColor: EXAM.answered, backgroundColor: EXAM.answered },
+  bubbleMarked: { borderColor: EXAM.marked, backgroundColor: EXAM.marked },
+  bubbleHere: { transform: [{ scale: 1.12 }], borderColor: colors.foreground },
+  bubbleText: { color: colors.foreground, fontSize: 13, fontWeight: '700' },
+  bubbleTextAnswered: { color: '#ffffff' },
+  bubbleTextMarked: { color: '#ffffff' },
+  markButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
+  markButtonOn: { borderColor: EXAM.marked },
+  markText: { color: colors.foreground, fontSize: 14, fontWeight: '600' },
   optionLetter: { width: 26, height: 26, borderRadius: 13, textAlign: 'center', lineHeight: 26, overflow: 'hidden', backgroundColor: colors.secondary, color: colors.foreground, fontWeight: '700', fontSize: 13 },
   optionText: { flex: 1, color: colors.foreground, fontSize: 14.5, lineHeight: 21 },
   verdict: { flexDirection: 'row', alignItems: 'center', gap: 8 },
