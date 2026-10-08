@@ -276,6 +276,68 @@ test('home chat: session greeting on open', async (t) => {
   assert.deepEqual((await call('user_empty', 'POST', '/study/chat/open')).body.messages, []);
 });
 
+// "The misses" belong to a course (Dan, 2026-10-08: a Bio card turned up in an AB731 deck).
+// A deck or retest "for the misses" on another course ignores the earlier set.
+test('home chat: misses from another course are not used for a deck or a retest', async (t) => {
+  buildServer();
+  const database = await startDatabase(t);
+  let coach = { reply: 'Set coming.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 4, kind: 'practice', scope: 'all' }] };
+  let quizBatch = 0;
+  const ai = await startAiStub(t, (request) => {
+    const system = request.body.messages[0].content;
+    if (system.startsWith('Create exactly') && system.includes('flashcards')) return deckReply(3);
+    if (system.startsWith('Create exactly')) { quizBatch += 1; return quizReply(4); }
+    if (system.startsWith('You check the answer key')) return chatReply(JSON.stringify({ checks: [] }));
+    return chatReply(JSON.stringify(coach));
+  });
+  const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url });
+  await seedAccount(database.db, 'user_x', { aiConsent: true, courses: [{ id: 'bio', name: 'BIOL 114' }, { id: 'ab731', name: 'AB731', kind: 'exam' }], materials: [] });
+  const call = async (method, path, body) => {
+    const res = await fetch(`${base}/api${path}`, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${signToken('user_x')}` }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const text = await res.text();
+    return { status: res.status, body: text ? JSON.parse(text) : null };
+  };
+  const lastRequest = (startsWith) => ai.requests.filter((r) => r.body.messages[0].content.startsWith(startsWith)).at(-1).body;
+
+  // A graded Bio set with two misses (q0, q2).
+  let chat = await call('POST', '/study/chat', { content: 'practice', version: 0 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  const bioSet = chat.body.messages.at(-1).actions[0];
+  let session = (await call('GET', `/study/sessions/${bioSet.sessionId}`)).body;
+  for (const [i, pick] of [[0, 'B0'], [1, 'B1'], [2, 'A2'], [3, 'D3']]) {
+    const q = session.quiz.questions[i];
+    session = (await call('PUT', `/study/sessions/${bioSet.sessionId}/answers`, { questionId: q.id, optionId: pickText(q, pick), assisted: false })).body;
+  }
+  assert.equal((await call('POST', `/study/sessions/${bioSet.sessionId}/grade`)).body.quiz.grade.correct, 2);
+
+  // Same course: the misses drive the deck.
+  coach = { reply: 'Cards for the misses.', suggestions: [], actions: [{ type: 'start_flashcards', name: 'BIOL 114', topic: 'cells', count: 3, scope: 'missed' }] };
+  chat = await call('POST', '/study/chat', { content: 'Flashcards for the misses', version: 1 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  assert.equal(chat.body.activeDeck.courseId, 'bio');
+  assert.match(lastRequest('Create exactly').messages[0].content, /Build the deck around these missed items[\s\S]*concept-0[\s\S]*concept-2/);
+
+  // Another course: the Bio misses are not a source; the deck is a plain topic deck on AB731.
+  coach = { reply: 'Cards.', suggestions: [], actions: [{ type: 'start_flashcards', name: 'AB731', topic: 'Azure identity', count: 3, scope: 'missed' }] };
+  chat = await call('POST', '/study/chat', { content: 'Flashcards for the misses', version: 2 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  assert.equal(chat.body.activeDeck.courseId, 'ab731');
+  const deckPrompt = lastRequest('Create exactly').messages[0].content;
+  assert.doesNotMatch(deckPrompt, /missed items|concept-0|concept-2/);
+  assert.match(deckPrompt, /key terms, definitions, mechanisms and contrasts/);
+
+  // Another course, retest "on the missed topics": a fresh diagnostic set on AB731, no Bio concepts.
+  coach = { reply: 'Set.', suggestions: [], actions: [{ type: 'start_quiz', name: 'AB731', topic: 'Azure identity', count: 4, kind: 'practice', scope: 'missed' }] };
+  chat = await call('POST', '/study/chat', { content: 'Another set on the missed topics', version: 3 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  const abSet = chat.body.messages.at(-1).actions[0];
+  assert.equal(abSet.courseId, 'ab731');
+  assert.match(lastRequest('Create exactly').messages[0].content, /Specifically test missed concepts: the topic's concepts/);
+  session = (await call('GET', `/study/sessions/${abSet.sessionId}`)).body;
+  assert.equal(session.quiz.mode, 'diagnostic');
+  assert.equal(session.quiz.questions.length, 4, 'no earlier-set questions carried over');
+});
+
 // Flashcards in the chat (D-021): a deck is a study session; got/again per card; finishing
 // the deck schedules review items; the coach sees the deck's progress and result.
 const deckReply = (count) => chatReply(JSON.stringify({
