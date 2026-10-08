@@ -318,7 +318,8 @@ export const ListStudySessionsResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "status": zod.enum(['active', 'completed']),
   "diagnosticScore": zod.number().nullish(),
-  "targetedScore": zod.number().nullish()
+  "targetedScore": zod.number().nullish(),
+  "missedConcepts": zod.array(zod.string()).optional().describe('Concepts missed in the latest graded attempt (D-042)')
 }))
 })
 

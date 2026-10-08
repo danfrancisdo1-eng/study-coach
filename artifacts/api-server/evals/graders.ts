@@ -366,7 +366,7 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   if (tooLong) notes.push(`too long: ${words} words > ${testCase.maxWords}`);
   const verdict = await judge<{ expectations: { met: boolean; reason: string }[] }>(
     "You grade one reply from the AI study coach on an app's home chat, for students age 13+. Return exactly one verdict per expectation, in the same order. Check each expectation strictly.",
-    { courses: testCase.courses, history: testCase.history, latestQuestionSet: testCase.quiz ?? null, latestDeck: testCase.deck ?? null, studentMessage: testCase.message, expectations: testCase.expectations, reply: parsed.reply, suggestions: parsed.suggestions, actionsTaken: parsed.actions },
+    { courses: testCase.courses, history: testCase.history, latestQuestionSet: testCase.quiz ?? null, latestDeck: testCase.deck ?? null, resultsSoFar: testCase.results ?? null, studentMessage: testCase.message, expectations: testCase.expectations, reply: parsed.reply, suggestions: parsed.suggestions, actionsTaken: parsed.actions },
     {
       type: "object", additionalProperties: false, required: ["expectations"],
       properties: { expectations: { type: "array", items: { type: "object", additionalProperties: false, required: ["met", "reason"], properties: { met: { type: "boolean" }, reason: { type: "string" } } } } },

@@ -95,6 +95,8 @@ export interface StudySessionSummary {
   diagnosticScore?: number | null;
   /** @nullable */
   targetedScore?: number | null;
+  /** Concepts missed in the latest graded attempt (D-042) */
+  missedConcepts?: string[];
 }
 
 export interface StudyWebsiteInput {

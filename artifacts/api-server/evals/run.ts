@@ -17,7 +17,7 @@ import * as tutorPrompt from "../src/prompts/tutor.v3";
 import * as sessionQuizPrompt from "../src/prompts/session-quiz.v8";
 import * as quizCheckPrompt from "../src/prompts/quiz-check.v2";
 import * as imageOcrPrompt from "../src/prompts/image-ocr.v1";
-import * as coachPrompt from "../src/prompts/coach.v12";
+import * as coachPrompt from "../src/prompts/coach.v13";
 import * as flashcardsPrompt from "../src/prompts/flashcards.v2";
 import * as examGuidePrompt from "../src/prompts/exam-guide.v1";
 import * as memorySheetPrompt from "../src/prompts/memory-sheet.v2";
@@ -119,7 +119,7 @@ async function main() {
     if (tasks.includes("coach")) for (const c of coachCases) jobs.push({
       task: "coach", name: c.name,
       run: () => complete("coach", {
-        system: coachPrompt.systemPrompt({ today, courses: c.courses, firstVisit: c.firstVisit, quiz: c.quiz ?? null, deck: c.deck ?? null, focusCourseId: c.focusCourseId ?? null }),
+        system: coachPrompt.systemPrompt({ today, courses: c.courses, firstVisit: c.firstVisit, quiz: c.quiz ?? null, deck: c.deck ?? null, focusCourseId: c.focusCourseId ?? null, results: c.results ?? null }),
         messages: [...c.history, { role: "user", content: c.message }],
       }),
       grade: (text) => gradeCoach(c, text),

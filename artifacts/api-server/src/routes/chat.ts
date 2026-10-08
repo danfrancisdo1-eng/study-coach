@@ -6,11 +6,12 @@
 // Nothing is written when the AI fails or returns junk.
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request } from "express";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v12";
+import * as coachPrompt from "../prompts/coach.v13";
+import { eventsFrom, resultsHistoryText, weakConcepts } from "../lib/results-history";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { excludedByReport, generateFlashcards, generateSessionQuiz, sourceChunks, sourceTextOf, type Quiz, type Session } from "../lib/session-quiz";
 import { itemsFromSession, rowsFromState, sheetAsText, updateMemorySheet, type MemoryItem } from "../lib/memory-sheet";
@@ -263,14 +264,16 @@ async function sourcesFor(ownerId: string, state: JsonObject, courseId: string, 
   return sourceChunks(state, courseId, topic, [...await reviewedLectureMaterials(ownerId, courseId), ...sheet]);
 }
 
-async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { courseId: string }, previous: Session | null, sectionWeights?: { name: string; weight: number | null }[]): Promise<Session | null> {
+async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { courseId: string }, previous: Session | null, sectionWeights?: { name: string; weight: number | null }[], pastWeak: string[] = []): Promise<Session | null> {
   const session = newSession(plan.courseId, plan.topic, true);
   const { chunks, status } = await sourcesFor(ownerId, state, plan.courseId, plan.topic);
   const previousQuiz = previous?.quiz;
   const originalPrompts = previousQuiz ? previousQuiz.questions.map((q) => q.prompt) : [];
-  const missed = plan.scope === "missed" && previousQuiz?.grade
+  const latestMissed = plan.scope === "missed" && previousQuiz?.grade
     ? [...new Set(previousQuiz.questions.filter((q) => q.answers.length && q.answers.at(-1)?.optionId !== q.correctOptionId).map((q) => q.concept))]
     : [];
+  // "The ones I missed" with no graded set in this chat: the course's past results (D-042).
+  const missed = latestMissed.length ? latestMissed : plan.scope === "missed" ? pastWeak : [];
   const quiz: Quiz | null = await generateSessionQuiz({
     courseId: plan.courseId, topic: plan.topic, kind: plan.kind,
     mode: missed.length ? "targeted" : "diagnostic",
@@ -359,6 +362,14 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     };
   });
   const history = messages.slice(-HISTORY_TURNS).map((m) => ({ role: m.role, content: m.content }));
+  // Results so far for this thread's course (D-042): past sets and decks as facts for the coach.
+  const courseSessions = threadId
+    ? (await db.select({ session: studySessionsTable.session }).from(studySessionsTable)
+        .where(and(eq(studySessionsTable.ownerId, ownerId), eq(studySessionsTable.courseId, threadId)))
+        .orderBy(desc(studySessionsTable.createdAt)).limit(40)).map((r) => r.session as Session)
+    : [];
+  const courseEvents = eventsFrom(courseSessions);
+  const results = resultsHistoryText(courseEvents);
   const lastQuizAction = latestQuizAction(messages);
   const lastQuizSession = lastQuizAction ? await loadSession(ownerId, lastQuizAction.sessionId) : null;
   const quiz = lastQuizAction ? quizContext(courses, lastQuizAction, lastQuizSession) : null;
@@ -369,7 +380,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   let coach;
   try {
     const response = await complete("coach", {
-      system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null }),
+      system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null }),
       messages: [...history, { role: "user", content }],
     });
     coach = parseCoachReply(response.text);
@@ -428,7 +439,10 @@ router.post("/study/chat", async (req, res): Promise<void> => {
         // "All topics" on an exam with an official guide: spread the set by the guide's weights.
         const guideSections = courses.find((c) => c.id === courseId)?.guideSections;
         const allTopics = /^all topics/i.test(plan.quiz.topic);
-        const session = await startQuiz(ownerId, latestState, { ...plan.quiz, courseId }, sameCourse(lastQuizSession, courseId), allTopics ? guideSections : undefined);
+        // Past results for a missed-scope set with no graded set in this chat (same course only).
+        const pastWeak = courseId === threadId ? weakConcepts(courseEvents) : weakConcepts(eventsFrom((await db.select({ session: studySessionsTable.session }).from(studySessionsTable)
+          .where(and(eq(studySessionsTable.ownerId, ownerId), eq(studySessionsTable.courseId, courseId))).orderBy(desc(studySessionsTable.createdAt)).limit(40)).map((r) => r.session as Session)));
+        const session = await startQuiz(ownerId, latestState, { ...plan.quiz, courseId }, sameCourse(lastQuizSession, courseId), allTopics ? guideSections : undefined, pastWeak);
         if (!session) throw new Error("No valid questions were generated");
         done.push({ type: "start_quiz", sessionId: session.id, courseId, topic: plan.quiz.topic, kind: plan.quiz.kind, count: session.quiz!.questions.length });
       } catch (error) {
