@@ -20,7 +20,7 @@ export type KnownCourse = { id: string; name: string; code?: string; kind?: Cour
 
 export const MAX_REPLY_CHARS = 4000;
 export const MAX_SUGGESTIONS = 6; // up to 5 topics + "All topics"
-export const MAX_SUGGESTION_CHARS = 60;
+export const MAX_SUGGESTION_CHARS = 120; // exam-guide section names with their weight ("Identify benefits, capabilities, and opportunities for Microsoft 365 Copilot · 33%") must fit
 export const DEFAULT_QUIZ_COUNT = 10;
 export const MAX_QUIZ_COUNT = 50;
 export const DEFAULT_DECK_COUNT = 10;
