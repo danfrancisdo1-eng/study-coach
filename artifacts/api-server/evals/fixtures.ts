@@ -101,6 +101,8 @@ export const classicQuizCases: ClassicQuizCase[] = [
 
 export interface SessionQuizCase {
   sectionWeights?: { name: string; weight: number | null }[];
+  /** D-041: the set must contain at least one real-exam-format question (fifth option or a positional option). */
+  requireFormats?: boolean;
   name: string;
   topic: string;
   sources: Source[];
@@ -120,7 +122,7 @@ export const sessionQuizCases: SessionQuizCase[] = [
   { name: "outline only: real subject questions, none about the document", topic: "Membranes and transport", sources: bioOutline, expectedCount: 8, originalPrompts: [], weakConcepts: [] },
   { name: "outline only, general review across the exam's topics", topic: "General review", sources: bioOutline, expectedCount: 8, originalPrompts: [], weakConcepts: [] },
   // D-035: real-exam formats on request: a fifth option / "All of the above" / "Both A and C", last and at most two per set.
-  { name: "real-exam formats: a fifth option, all of the above, both A and C", topic: "Membranes and transport, in the style of a real exam with some 'All of the above' and 'Both A and C' questions", sources: membranes, expectedCount: 8, originalPrompts: [], weakConcepts: [] },
+  { name: "real-exam formats: a fifth option, all of the above, both A and C", topic: "Membranes and transport", sources: membranes, expectedCount: 8, originalPrompts: [], weakConcepts: [], requireFormats: true },
   // D-024: a certification "All topics" set is spread by the guide's weights, scenario-style.
   { name: "certification set weighted by the exam guide", topic: "All topics: Design Secure Architectures, Design Resilient Architectures, Design High-Performing Architectures, Design Cost-Optimized Architectures", sources: [], expectedCount: 10, originalPrompts: [], weakConcepts: [],
     sectionWeights: [{ name: "Design Secure Architectures", weight: 30 }, { name: "Design Resilient Architectures", weight: 26 }, { name: "Design High-Performing Architectures", weight: 24 }, { name: "Design Cost-Optimized Architectures", weight: 20 }] },

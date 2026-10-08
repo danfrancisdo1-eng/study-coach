@@ -119,7 +119,7 @@ export async function gradeClassicQuiz(input: { topic: string; count: number; so
   return { pass: notes.every((n) => n.includes("judged wrong")) && score >= 0.9, score, notes };
 }
 
-export async function gradeSessionQuiz(input: { topic: string; sources: Source[]; expectedCount: number; originalPrompts: string[] }, text: string | null): Promise<Score> {
+export async function gradeSessionQuiz(input: { topic: string; sources: Source[]; expectedCount: number; originalPrompts: string[]; requireFormats?: boolean }, text: string | null): Promise<Score> {
   let questions: QuizQuestion[];
   try {
     const raw = parseJson(text) as { questions?: unknown };
@@ -129,6 +129,10 @@ export async function gradeSessionQuiz(input: { topic: string; sources: Source[]
     return { pass: false, score: 0, notes: [`invalid output: ${(error as Error).message.slice(0, 200)}`] };
   }
   const notes = structuralQuizNotes(questions, input.expectedCount);
+  // D-041: every set of six or more carries one or two real-exam-format questions.
+  const formatted = questions.filter((q) => q.options.length === 5 || hasPositionalOption(q.options)).length;
+  if (input.requireFormats && formatted === 0) notes.push("no real-exam-format question (fifth option / All of the above / Both A and C)");
+  if (formatted > 2) notes.push(`${formatted} real-exam-format questions, at most two allowed`);
   const used = new Set(input.originalPrompts.map(normalize));
   questions.forEach((q, i) => { if (used.has(normalize(q.prompt))) notes.push(`q${i}: repeats an original prompt`); });
   const verdict = await judgeQuestions(input.topic, input.sources, questions);
