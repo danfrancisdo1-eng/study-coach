@@ -5,6 +5,8 @@ import studyRouter from "./study";
 import lecturesRouter from "./lectures";
 import coursesRouter from "./courses";
 import chatRouter from "./chat";
+import accountRouter from "./account";
+import privacyRouter from "./privacy";
 
 export { requireStudyAuth } from "./study";
 
@@ -16,5 +18,7 @@ router.use(studyRouter);
 router.use(lecturesRouter);
 router.use(coursesRouter);
 router.use(chatRouter);
+router.use(accountRouter);
+router.use(privacyRouter);
 
 export default router;

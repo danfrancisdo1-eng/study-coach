@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import {
-  getGetHomeChatQueryKey, getGetStudyStateQueryKey, useGetHomeChat, useGetStudyState, useLookupExamGuide, useOpenHomeChat, usePutStudyState, useSendHomeChatMessage,
+  getGetHomeChatQueryKey, getGetStudyStateQueryKey, useGetHomeChat, useGetStudyState, useLookupExamGuide, useOpenHomeChat, usePutStudyState, useReportHomeChatMessage, useSendHomeChatMessage,
   type HomeChat, type HomeChatMessage,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
@@ -17,6 +17,7 @@ import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake'
 import { defaultIntakeCourse, type IntakeCourse } from '@/lib/intake-course';
 import { QuizCard } from '@/components/QuizCard';
 import { FlashcardDeck } from '@/components/FlashcardDeck';
+import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.'; // sent for the student after Grade so the coach can respond to the result
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
@@ -28,7 +29,7 @@ const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
  * opens it, sits between the header and the chat so the chat keeps the screen.
  */
 
-const AI_NOTICE = 'Study Coach sends your messages, your course names, selected course materials and your quiz answers to Anthropic Claude (and OpenAI for lecture transcription) to coach you, generate practice and explain results. AI may make mistakes; review explanations. You can change this choice at any time. Nothing is sent to a family member or other recipient.';
+const AI_NOTICE = 'Study Coach sends your messages, your course names, selected course materials and your quiz answers to Anthropic Claude (and OpenAI for lecture transcription) to coach you, generate practice and explain results. AI may make mistakes; review explanations. You can change this choice at any time. Nothing is sent to a family member or other recipient. Press and hold any coach reply to report it.';
 
 function readableError(problem: unknown): string {
   if (problem && typeof problem === 'object') {
@@ -93,6 +94,7 @@ export default function CoachHome() {
   const putState = usePutStudyState();
   const send = useSendHomeChatMessage();
   const open = useOpenHomeChat();
+  const report = useReportHomeChatMessage();
   const lookupGuide = useLookupExamGuide();
   const [lookingUp, setLookingUp] = useState<string | null>(null); // course id whose exam guide is being fetched
   // After an exam is added, fetch its official guide (sections + weights) once; the row shows progress.
@@ -184,12 +186,34 @@ export default function CoachHome() {
     setError('');
     try {
       const previous = stateQuery.data;
-      const state = { aiConsent: true, courses: [], materials: [], ...(previous?.state ?? {}) };
-      const result = await putState.mutateAsync({ data: { state: { ...state, aiConsent: true }, version: previous?.version ?? 0 } });
+      const state: Record<string, unknown> = { aiConsent: true, courses: [], materials: [], ...(previous?.state ?? {}) };
+      // The 13+ attestation happened at sign-up (checkbox) or sign-in (SSO line); record when the account first passed it (D-046).
+      const ageConfirmedAt = typeof state.ageConfirmedAt === 'string' ? state.ageConfirmedAt : new Date().toISOString();
+      const result = await putState.mutateAsync({ data: { state: { ...state, aiConsent: true, ageConfirmedAt }, version: previous?.version ?? 0 } });
       queryClient.setQueryData([...getGetStudyStateQueryKey(), userId], result);
     } catch (problem) {
       setError(readableError(problem));
     }
+  };
+
+  // Report a coach reply (D-046): long-press → reason → the server marks the message and logs it for review.
+  const reportMessage = (item: HomeChatMessage) => {
+    if (item.role !== 'assistant' || item.reported) return;
+    const file = async (reason: 'wrong' | 'harmful' | 'other') => {
+      try {
+        await report.mutateAsync({ data: { messageId: item.id, reason, ...(focusCourseId ? { courseId: focusCourseId } : {}) } });
+        await queryClient.invalidateQueries({ queryKey: chatKey });
+        Alert.alert('Thanks', 'The reply is flagged for review.');
+      } catch (problem) {
+        Alert.alert('Could not send the report', readableError(problem));
+      }
+    };
+    Alert.alert('Report this reply', 'What is wrong with it?', [
+      { text: 'It is wrong', onPress: () => void file('wrong') },
+      { text: 'It is harmful or inappropriate', onPress: () => void file('harmful') },
+      { text: 'Something else', onPress: () => void file('other') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const sendText = async (text: string) => {
@@ -281,8 +305,9 @@ export default function CoachHome() {
   const renderMessage = ({ item }: { item: HomeChatMessage }) => (
     <View onLayout={(e) => placeNewest(item.id, e.nativeEvent.layout.height)}>
     {item.sessionStart ? <View style={styles.sessionDivider}><View style={styles.sessionLine} /><Text style={styles.sessionLabel}>New session</Text><View style={styles.sessionLine} /></View> : null}
-    <View style={[styles.turn, item.role === 'user' ? styles.userTurn : styles.coachTurn]} testID={`chat-turn-${item.role}`}>
+    <Pressable onLongPress={item.role === 'assistant' ? () => reportMessage(item) : undefined} delayLongPress={450} accessibilityHint={item.role === 'assistant' ? 'Press and hold to report this reply' : undefined} style={[styles.turn, item.role === 'user' ? styles.userTurn : styles.coachTurn]} testID={`chat-turn-${item.role}`}>
       {item.role === 'assistant' ? renderCoachText(item.content) : <Text style={styles.body}>{item.content}</Text>}
+      {item.reported ? <View style={styles.reportedRow} testID="chat-reported"><Feather name="flag" size={12} color={colors.mutedForeground} /><Text style={styles.caption}>Reported for review</Text></View> : null}
       {item.id === lastMessage?.id && chips.length ? (
         <View style={styles.chipRow}>
           {chips.map((chip) => (
@@ -315,7 +340,7 @@ export default function CoachHome() {
           ) : null}
         </View>
       ))}
-    </View>
+    </Pressable>
     </View>
   );
 
@@ -359,6 +384,7 @@ export default function CoachHome() {
           <View style={styles.consentCard} testID="panel-ai-consent">
             <View style={styles.consentHeading}><Feather name="shield" size={19} color={colors.primaryText} /><Text style={styles.cardTitle}>Your choice before AI</Text></View>
             <Text style={styles.body}>{AI_NOTICE}</Text>
+            {PRIVACY_URL ? <Text style={[styles.body, styles.link]} accessibilityRole="link" onPress={openPrivacy} testID="link-privacy">Read the privacy policy</Text> : null}
             <Pressable accessibilityRole="button" disabled={busy} onPress={() => void giveConsent()} style={[styles.primaryButton, busy && styles.disabled]} testID="button-ai-consent">
               <Feather name="check" size={16} color={colors.primaryForeground} />
               <Text style={styles.primaryButtonText}>I understand and consent</Text>
@@ -535,6 +561,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   body: { color: colors.foreground, fontSize: 14.5, lineHeight: 21 },
   link: { color: colors.primaryText, textDecorationLine: 'underline' },
   caption: { color: colors.mutedForeground, fontSize: 12 },
+  reportedRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
   actionChip: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   actionText: { flex: 1, color: colors.foreground, fontSize: 13, fontWeight: '600' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },

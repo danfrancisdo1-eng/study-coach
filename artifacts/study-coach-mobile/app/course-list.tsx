@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Redirect, router } from 'expo-router';
-import { useAuth } from '@clerk/expo';
+import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import {
-  getGetStudyStateQueryKey, getListStudySessionsQueryKey, useGetStudyState, useListStudySessions, useLookupExamGuide, usePutStudyState,
+  getGetStudyStateQueryKey, getListStudySessionsQueryKey, useDeleteAccount, useGetStudyState, useListStudySessions, useLookupExamGuide, usePutStudyState,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 
 /**
  * Courses & exams on their own page (D-036): the home screen keeps only the "Coach · <course>"
@@ -47,6 +48,7 @@ function rowsFrom(state: unknown): Row[] {
 
 export default function CourseListScreen() {
   const { isLoaded, isSignedIn, userId } = useAuth();
+  const { signOut } = useClerk();
   const colors = useColors();
   const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
@@ -56,6 +58,9 @@ export default function CourseListScreen() {
   const sessionsQuery = useListStudySessions({ query: { queryKey: [...getListStudySessionsQueryKey(), userId], enabled: !!userId } });
   const putState = usePutStudyState();
   const lookupGuide = useLookupExamGuide();
+  const deleteAccount = useDeleteAccount();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteWord, setDeleteWord] = useState('');
   const [focusId, setFocusId] = useState<string | null>(null);
   const [lookingUp, setLookingUp] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -119,6 +124,22 @@ export default function CourseListScreen() {
     }
   };
 
+  // Account deletion (D-046): everything on the server and the sign-in identity, after typing DELETE.
+  const removeAccount = async () => {
+    if (deleteWord.trim() !== 'DELETE' || deleteAccount.isPending) return;
+    setError('');
+    try {
+      const result = await deleteAccount.mutateAsync();
+      setDeleteOpen(false);
+      if (userId) AsyncStorage.removeItem(`study-coach-focus:${userId}`).catch(() => {});
+      queryClient.clear();
+      if (!result.identityDeleted) Alert.alert('Your data is deleted', 'Your sign-in could not be removed automatically. Contact support and it will be finished by hand.');
+      await signOut();
+    } catch (problem) {
+      setError(readable(problem));
+    }
+  };
+
   const detail = (row: Row) => [
     row.kind === 'exam' ? `exam${row.examDate ? ` · ${row.examDate}` : ''}` : 'course',
     `${row.materials} material${row.materials === 1 ? '' : 's'}`,
@@ -159,8 +180,38 @@ export default function CourseListScreen() {
             </View>
           ))}
           {!rows.length ? <Text style={styles.empty}>No courses yet. Add one here, or just tell the coach what you're studying.</Text> : null}
+          <Text style={styles.sectionTitle}>Account</Text>
+          {PRIVACY_URL ? (
+            <Pressable accessibilityRole="link" onPress={openPrivacy} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="link-privacy">
+              <Feather name="shield" size={16} color={colors.mutedForeground} />
+              <View style={styles.rowCopy}><Text style={styles.rowName}>Privacy policy</Text><Text style={styles.caption}>What is collected, where it goes, how to delete it</Text></View>
+              <Feather name="external-link" size={16} color={colors.mutedForeground} />
+            </Pressable>
+          ) : null}
+          <Pressable accessibilityRole="button" onPress={() => { setError(''); setDeleteWord(''); setDeleteOpen(true); }} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-delete-account">
+            <Feather name="trash-2" size={16} color={colors.destructive} />
+            <View style={styles.rowCopy}><Text style={[styles.rowName, { color: colors.destructive }]}>Delete my account</Text><Text style={styles.caption}>Removes your courses, sets, chats and sign-in. Cannot be undone.</Text></View>
+          </Pressable>
         </ScrollView>
       )}
+
+      <Modal visible={deleteOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setDeleteOpen(false)}>
+        <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: 20 }]}>
+          <View style={styles.header}>
+            <View style={styles.headerCopy}><Text style={styles.title}>Delete my account</Text></View>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setDeleteOpen(false)} style={styles.iconButton} testID="button-close-delete"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
+          </View>
+          <View style={styles.sheetContent}>
+            <Text style={styles.empty}>This deletes your courses and exams, uploaded materials, practice sets, flashcards, memory sheet, conversations and lecture transcripts from our servers, and your sign-in. Lecture recordings stay on this phone until you delete the app. This cannot be undone.</Text>
+            <Text style={styles.caption}>Type DELETE to confirm</Text>
+            <TextInput value={deleteWord} onChangeText={setDeleteWord} autoCapitalize="characters" autoCorrect={false} placeholder="DELETE" placeholderTextColor={colors.mutedForeground} style={styles.input} accessibilityLabel="Type DELETE to confirm" testID="input-delete-word" autoFocus />
+            {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
+            <Pressable accessibilityRole="button" disabled={deleteWord.trim() !== 'DELETE' || deleteAccount.isPending} onPress={() => void removeAccount()} style={[styles.primaryButton, { backgroundColor: colors.destructive }, (deleteWord.trim() !== 'DELETE' || deleteAccount.isPending) && styles.disabled]} testID="button-confirm-delete">
+              <Text style={[styles.primaryButtonText, { color: '#ffffff' }]}>{deleteAccount.isPending ? 'Deleting…' : 'Delete everything'}</Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       <Modal visible={addOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setAddOpen(false)}>
         <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: 20 }]}>
@@ -207,6 +258,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   rowCopy: { flex: 1, minWidth: 0 },
   rowName: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
   empty: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20, paddingVertical: 12 },
+  sectionTitle: { color: colors.mutedForeground, fontSize: 13, fontWeight: '700', marginTop: 18, marginBottom: 2 },
   errorText: { color: colors.destructive, fontSize: 13 },
   sheetContent: { paddingHorizontal: 18, paddingTop: 10, gap: 15 },
   segment: { flexDirection: 'row', borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },

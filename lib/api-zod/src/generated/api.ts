@@ -185,6 +185,40 @@ export const PutStudyStateResponse = zod.object({
 
 
 /**
+ * Removes the account's study state (courses, materials, memory sheet, review schedule), study sessions, chat threads and lecture transcripts in one transaction, then deletes the sign-in identity. Lecture audio lives only on the device. Not reversible.
+ * @summary Delete the signed-in account and everything saved for it
+ */
+export const DeleteAccountResponse = zod.object({
+  "deleted": zod.boolean(),
+  "identityDeleted": zod.boolean().describe('False when the data is gone but the sign-in identity could not be removed; the student should contact support')
+})
+
+
+/**
+ * @summary Report a coach reply (wrong, harmful or other)
+ */
+export const reportHomeChatMessageBodyCourseIdMax = 200;
+
+export const reportHomeChatMessageBodyMessageIdMax = 200;
+
+export const reportHomeChatMessageBodyNoteMax = 500;
+
+
+
+export const ReportHomeChatMessageBody = zod.object({
+  "courseId": zod.string().max(reportHomeChatMessageBodyCourseIdMax).optional().describe('The thread the message is in; omitted = the general thread'),
+  "messageId": zod.string().max(reportHomeChatMessageBodyMessageIdMax),
+  "reason": zod.enum(['wrong', 'harmful', 'other']),
+  "note": zod.string().max(reportHomeChatMessageBodyNoteMax).optional()
+})
+
+export const ReportHomeChatMessageResponse = zod.object({
+  "reported": zod.boolean(),
+  "version": zod.number().int()
+})
+
+
+/**
  * Requires persisted state.aiConsent=true. Only the exam's name is sent to the AI provider's web search. Replaces any previously saved guide.
  * @summary Look up the official exam guide (sections and weights) for a certification exam with web search and save it on the exam
  */
@@ -997,7 +1031,12 @@ export const GetHomeChatResponse = zod.object({
   "count": zod.number().int().min(1).max(getHomeChatResponseMessagesItemActionsItemCountMax).optional().describe('start_quiz: questions in the set; start_flashcards: cards in the deck')
 })).optional(),
   "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message'),
-  "sessionStart": zod.boolean().optional().describe('True for the app-written greeting that opens a new study session (clients draw a divider above it)')
+  "sessionStart": zod.boolean().optional().describe('True for the app-written greeting that opens a new study session (clients draw a divider above it)'),
+  "reported": zod.object({
+  "reason": zod.enum(['wrong', 'harmful', 'other']),
+  "note": zod.string().optional(),
+  "at": zod.coerce.date()
+}).optional().describe('The student reported this coach reply (D-046)')
 })),
   "version": zod.number().int(),
   "activeQuiz": zod.union([zod.object({
@@ -1068,7 +1107,12 @@ export const SendHomeChatMessageResponse = zod.object({
   "count": zod.number().int().min(1).max(sendHomeChatMessageResponseMessagesItemActionsItemCountMax).optional().describe('start_quiz: questions in the set; start_flashcards: cards in the deck')
 })).optional(),
   "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message'),
-  "sessionStart": zod.boolean().optional().describe('True for the app-written greeting that opens a new study session (clients draw a divider above it)')
+  "sessionStart": zod.boolean().optional().describe('True for the app-written greeting that opens a new study session (clients draw a divider above it)'),
+  "reported": zod.object({
+  "reason": zod.enum(['wrong', 'harmful', 'other']),
+  "note": zod.string().optional(),
+  "at": zod.coerce.date()
+}).optional().describe('The student reported this coach reply (D-046)')
 })),
   "version": zod.number().int(),
   "activeQuiz": zod.union([zod.object({
@@ -1132,7 +1176,12 @@ export const OpenHomeChatResponse = zod.object({
   "count": zod.number().int().min(1).max(openHomeChatResponseMessagesItemActionsItemCountMax).optional().describe('start_quiz: questions in the set; start_flashcards: cards in the deck')
 })).optional(),
   "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message'),
-  "sessionStart": zod.boolean().optional().describe('True for the app-written greeting that opens a new study session (clients draw a divider above it)')
+  "sessionStart": zod.boolean().optional().describe('True for the app-written greeting that opens a new study session (clients draw a divider above it)'),
+  "reported": zod.object({
+  "reason": zod.enum(['wrong', 'harmful', 'other']),
+  "note": zod.string().optional(),
+  "at": zod.coerce.date()
+}).optional().describe('The student reported this coach reply (D-046)')
 })),
   "version": zod.number().int(),
   "activeQuiz": zod.union([zod.object({

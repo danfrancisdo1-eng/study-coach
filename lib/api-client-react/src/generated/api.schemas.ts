@@ -453,6 +453,28 @@ export interface HomeChatInput {
   courseId?: string;
 }
 
+export type HomeChatReportInputReason = typeof HomeChatReportInputReason[keyof typeof HomeChatReportInputReason];
+
+
+export const HomeChatReportInputReason = {
+  wrong: 'wrong',
+  harmful: 'harmful',
+  other: 'other',
+} as const;
+
+export interface HomeChatReportInput {
+  /**
+     * The thread the message is in; omitted = the general thread
+     * @maxLength 200
+     */
+  courseId?: string;
+  /** @maxLength 200 */
+  messageId: string;
+  reason: HomeChatReportInputReason;
+  /** @maxLength 500 */
+  note?: string;
+}
+
 export interface HomeChatOpenInput {
   /**
      * The thread to open; omitted or unknown = the general thread.
@@ -573,6 +595,24 @@ export const HomeChatMessageRole = {
   assistant: 'assistant',
 } as const;
 
+export type HomeChatMessageReportedReason = typeof HomeChatMessageReportedReason[keyof typeof HomeChatMessageReportedReason];
+
+
+export const HomeChatMessageReportedReason = {
+  wrong: 'wrong',
+  harmful: 'harmful',
+  other: 'other',
+} as const;
+
+/**
+ * The student reported this coach reply (D-046)
+ */
+export type HomeChatMessageReported = {
+  reason: HomeChatMessageReportedReason;
+  note?: string;
+  at: string;
+};
+
 export interface HomeChatMessage {
   id: string;
   role: HomeChatMessageRole;
@@ -583,6 +623,8 @@ export interface HomeChatMessage {
   suggestions?: string[];
   /** True for the app-written greeting that opens a new study session (clients draw a divider above it) */
   sessionStart?: boolean;
+  /** The student reported this coach reply (D-046) */
+  reported?: HomeChatMessageReported;
 }
 
 export interface HomeChat {
@@ -850,6 +892,17 @@ export interface PlanResult {
 export interface HealthStatus {
   status: string;
 }
+
+export type DeleteAccount200 = {
+  deleted: boolean;
+  /** False when the data is gone but the sign-in identity could not be removed; the student should contact support */
+  identityDeleted: boolean;
+};
+
+export type ReportHomeChatMessage200 = {
+  reported: boolean;
+  version: number;
+};
 
 export type ListStudySessions200 = {
   sessions: StudySessionSummary[];

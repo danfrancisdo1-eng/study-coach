@@ -131,6 +131,43 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/StudyStateEnvelope" }
         "409": { description: Version mismatch }
+  /study/account:
+    delete:
+      operationId: deleteAccount
+      tags: [study]
+      summary: Delete the signed-in account and everything saved for it
+      description: Removes the account's study state (courses, materials, memory sheet, review schedule), study sessions, chat threads and lecture transcripts in one transaction, then deletes the sign-in identity. Lecture audio lives only on the device. Not reversible.
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deleted, identityDeleted]
+                properties:
+                  deleted: { type: boolean }
+                  identityDeleted: { type: boolean, description: "False when the data is gone but the sign-in identity could not be removed; the student should contact support" }
+        "401": { description: Authentication required }
+  /study/chat/report:
+    post:
+      operationId: reportHomeChatMessage
+      tags: [study]
+      summary: Report a coach reply (wrong, harmful or other)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HomeChatReportInput" }
+      responses:
+        "200":
+          description: Recorded
+          content:
+            application/json:
+              schema: { type: object, required: [reported, version], properties: { reported: { type: boolean }, version: { type: integer } } }
+        "400": { description: Invalid reason or message id }
+        "404": { description: Message not found in this conversation }
+        "409": { description: Conversation changed on another device }
   /study/courses/{courseId}/exam-guide:
     parameters:
       - { name: courseId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
@@ -732,6 +769,14 @@ components:
         content: { type: string, minLength: 1, maxLength: 8000 }
         version: { type: integer, minimum: 0, description: "Conversation version from the last GET/POST; 0 for a new conversation." }
         courseId: { type: string, maxLength: 200, description: "The course or exam the student is focused on: selects that course's thread (one per course; omitted or unknown = the general thread), and the coach assumes it when a message does not name one." }
+    HomeChatReportInput:
+      type: object
+      required: [messageId, reason]
+      properties:
+        courseId: { type: string, maxLength: 200, description: "The thread the message is in; omitted = the general thread" }
+        messageId: { type: string, maxLength: 200 }
+        reason: { type: string, enum: [wrong, harmful, other] }
+        note: { type: string, maxLength: 500 }
     HomeChatOpenInput:
       type: object
       properties:
@@ -796,6 +841,14 @@ components:
         actions: { type: array, items: { $ref: "#/components/schemas/HomeChatAction" } }
         suggestions: { type: array, items: { type: string }, description: "Tap-to-reply chips under an assistant message" }
         sessionStart: { type: boolean, description: "True for the app-written greeting that opens a new study session (clients draw a divider above it)" }
+        reported:
+          description: The student reported this coach reply (D-046)
+          type: object
+          required: [reason, at]
+          properties:
+            reason: { type: string, enum: [wrong, harmful, other] }
+            note: { type: string }
+            at: { type: string, format: date-time }
     HomeChat:
       type: object
       required: [messages, version]
