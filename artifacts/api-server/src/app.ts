@@ -3,6 +3,7 @@ import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import router, { requireStudyAuth } from "./routes";
+import privacyRouter from "./routes/privacy";
 import { logger } from "./lib/logger";
 import {
   CLERK_PROXY_PATH,
@@ -110,5 +111,7 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+// The privacy policy is a public page, so it also answers at the root (the URL the app links to and App Store Connect asks for).
+app.use(privacyRouter);
 
 export default app;

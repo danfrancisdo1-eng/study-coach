@@ -53,6 +53,7 @@ test('DELETE /study/account removes one account, keeps the others; /privacy is p
   // A second call is a no-op, not an error.
   assert.deepEqual((await a('DELETE', '/study/account')).body, { deleted: true, identityDeleted: false, sessions: 0, chats: 0, lectures: 0, states: 0 });
 
+  assert.equal((await fetch(`${base}/privacy`)).status, 200, 'the root path the app links to');
   const privacy = await fetch(`${base}/api/privacy`);
   assert.equal(privacy.status, 200);
   assert.match(privacy.headers.get('content-type') ?? '', /text\/html/);
