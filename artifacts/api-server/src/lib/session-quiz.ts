@@ -3,7 +3,7 @@
 // chat-first home (routes/chat.ts) can start question sets with the same code.
 import { randomUUID } from "node:crypto";
 import { complete } from "../ai";
-import * as sessionQuizPrompt from "../prompts/session-quiz.v7";
+import * as sessionQuizPrompt from "../prompts/session-quiz.v8";
 import * as quizCheckPrompt from "../prompts/quiz-check.v2";
 import { applyQuizCheck, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
 import { shuffleOptions } from "./shuffle-options";

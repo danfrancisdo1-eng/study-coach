@@ -366,9 +366,29 @@ export default function CoachHome() {
           keyboardDismissMode="interactive"
           onScrollToIndexFailed={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
           ListEmptyComponent={(
-            <View style={styles.turn}>
+            // A fresh thread (D-040, Dan): the course is already chosen, so offer the first moves as
+            // chips instead of asking which course. The general thread still asks.
+            <View style={styles.turn} testID="chat-empty">
               <Text style={styles.turnRole}>COACH</Text>
-              <Text style={styles.body}>Hey. What class are we working on? You can also add notes, a syllabus, photos, or record a lecture with the + button.</Text>
+              {focusCourse ? (
+                <>
+                  <Text style={styles.body}>{focusCourse.name} is set up. Where do you want to start?</Text>
+                  <View style={styles.chipRow}>
+                    {[
+                      { label: 'Add material', hint: 'syllabus, notes, photos, a lecture', onPress: openPlus },
+                      { label: 'Show the topics', onPress: () => void sendText(`Show me the topics for ${focusCourse.name}`) },
+                      { label: 'Quiz me on all topics', onPress: () => void sendText('Quiz me on all topics') },
+                      { label: 'Flashcards', onPress: () => void sendText('Flashcards on the key terms') },
+                    ].map((chip) => (
+                      <Pressable key={chip.label} accessibilityRole="button" accessibilityHint={chip.hint} disabled={busy} onPress={chip.onPress} style={[styles.suggestion, busy && styles.disabled]} testID="button-start-chip">
+                        <Text style={styles.suggestionText}>{chip.label}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </>
+              ) : (
+                <Text style={styles.body}>Hey. Which course or certification exam are we working on? You can also add notes, a syllabus, photos, or record a lecture with the + button.</Text>
+              )}
             </View>
           )}
           ListHeaderComponent={busy ? <View style={styles.busyRow}><ActivityIndicator color={colors.primary} size="small" /><Text style={styles.caption}>{send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '') ? 'Coach is working… writing questions can take up to a minute.' : 'Coach is thinking…'}</Text></View> : null}
