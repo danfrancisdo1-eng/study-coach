@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, FlatList, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, AppState, FlatList, Keyboard, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
@@ -246,6 +246,11 @@ export default function CoachHome() {
     }
   };
 
+  // Links in a coach reply open in the browser (D-045 web-search answers carry their sources).
+  const URL_PATTERN = /(https?:\/\/[^\s<>()"']+[^\s<>()"'.,;:!?])/g;
+  const withLinks = (text: string) => text.split(URL_PATTERN).map((part, i) => URL_PATTERN.test(part) && i % 2 === 1
+    ? <Text key={i} style={styles.link} accessibilityRole="link" onPress={() => { Linking.openURL(part).catch(() => {}); }} testID="chat-link">{part}</Text>
+    : part);
   // Coach replies: blank line between paragraphs; "1. Label: trick" lines become their own
   // hook chips (same ⚡ style as the question hooks; Dan: tricks ran together as one paragraph).
   const renderCoachText = (content: string) => {
@@ -267,7 +272,7 @@ export default function CoachHome() {
               </View>
             );
           }
-          return <Text key={i} style={styles.body}>{line}</Text>;
+          return <Text key={i} style={styles.body}>{withLinks(line)}</Text>;
         })}
       </View>
     );
@@ -528,6 +533,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   trickLabel: { fontWeight: '700', color: colors.reviewText },
   trickNumber: { color: colors.hookText, fontSize: 11, opacity: 0.7 },
   body: { color: colors.foreground, fontSize: 14.5, lineHeight: 21 },
+  link: { color: colors.primaryText, textDecorationLine: 'underline' },
   caption: { color: colors.mutedForeground, fontSize: 12 },
   actionChip: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   actionText: { flex: 1, color: colors.foreground, fontSize: 13, fontWeight: '600' },
