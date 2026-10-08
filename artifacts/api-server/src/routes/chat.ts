@@ -208,6 +208,41 @@ router.post("/study/chat/open", async (req, res): Promise<void> => {
   res.json(await chatView(ownerId, courses, saved?.messages ?? messages, saved?.version ?? row.version));
 });
 
+// Report a coach reply (D-046, App Store "report a bad AI response"): the message is marked
+// in its thread and the report is logged with the text, so the developer can review it.
+router.post("/study/chat/report", async (req, res): Promise<void> => {
+  const ownerId = owner(req);
+  const body = isObject(req.body) ? req.body : {};
+  const reason = body.reason;
+  const messageId = body.messageId;
+  if ((reason !== "wrong" && reason !== "harmful" && reason !== "other") || typeof messageId !== "string" || !messageId.trim()) {
+    res.status(400).json({ error: "Provide a messageId and a reason of wrong, harmful or other, with an optional note of at most 500 characters." });
+    return;
+  }
+  const note = typeof body.note === "string" && body.note.trim() ? body.note.trim().slice(0, 500) : undefined;
+  const stateRows = await db.select({ state: studyStatesTable.state }).from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
+  const courses = isObject(stateRows[0]?.state) ? knownCourses(stateRows[0]!.state as JsonObject) : [];
+  const threadId = threadCourse(courses, body.courseId);
+  const row = await loadChat(ownerId, threadId);
+  const message = row?.messages.find((m) => m.id === messageId && m.role === "assistant");
+  if (!row || !message) {
+    res.status(404).json({ error: "Message not found in this conversation." });
+    return;
+  }
+  const reported: NonNullable<HomeChatMessage["reported"]> = { reason, ...(note ? { note } : {}), at: new Date().toISOString() };
+  const next = row.messages.map((m) => (m.id === messageId ? { ...m, reported } : m));
+  const updated = await db.update(homeChatsTable)
+    .set({ messages: next, version: row.version + 1, updatedAt: new Date() })
+    .where(and(threadWhere(ownerId, threadId), eq(homeChatsTable.version, row.version)))
+    .returning({ version: homeChatsTable.version });
+  if (!updated[0]) {
+    res.status(409).json({ error: "The conversation changed on another device. Reload and try again." });
+    return;
+  }
+  req.log.info({ ownerId, courseId: threadId, messageId, reason, note: note ?? null, content: message.content.slice(0, 2000), actions: message.actions ?? [] }, "Coach reply reported");
+  res.json({ reported: true, version: updated[0].version });
+});
+
 router.get("/study/chat", async (req, res): Promise<void> => {
   const ownerId = owner(req);
   const stateRows = await db.select({ state: studyStatesTable.state }).from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1);

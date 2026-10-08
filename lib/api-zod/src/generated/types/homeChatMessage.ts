@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { HomeChatAction } from './homeChatAction';
+import type { HomeChatMessageReported } from './homeChatMessageReported';
 import type { HomeChatMessageRole } from './homeChatMessageRole';
 
 export interface HomeChatMessage {
@@ -18,4 +19,6 @@ export interface HomeChatMessage {
   suggestions?: string[];
   /** True for the app-written greeting that opens a new study session (clients draw a divider above it) */
   sessionStart?: boolean;
+  /** The student reported this coach reply (D-046) */
+  reported?: HomeChatMessageReported;
 }

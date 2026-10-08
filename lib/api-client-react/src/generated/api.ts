@@ -23,6 +23,7 @@ import type {
   AnalyzeInput,
   AnalyzeResult,
   CourseDeletion,
+  DeleteAccount200,
   ExamGuide,
   FlashcardReviewInput,
   GetHomeChatParams,
@@ -30,6 +31,7 @@ import type {
   HomeChat,
   HomeChatInput,
   HomeChatOpenInput,
+  HomeChatReportInput,
   Lecture,
   LectureInput,
   LectureUpdate,
@@ -40,6 +42,7 @@ import type {
   PlanResult,
   QuizInput,
   QuizResult,
+  ReportHomeChatMessage200,
   StudyAnswerInput,
   StudyCheckIn,
   StudyMaterialExtraction,
@@ -676,6 +679,169 @@ export const usePutStudyState = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getPutStudyStateMutationOptions(options));
+    }
+
+export const getDeleteAccountUrl = () => {
+
+
+
+
+  return `/api/study/account`
+}
+
+/**
+ * Removes the account's study state (courses, materials, memory sheet, review schedule), study sessions, chat threads and lecture transcripts in one transaction, then deletes the sign-in identity. Lecture audio lives only on the device. Not reversible.
+ * @summary Delete the signed-in account and everything saved for it
+ */
+export const deleteAccount = async ( options?: Parameters<typeof customFetch>[1]): Promise<DeleteAccount200> => {
+
+  return customFetch<DeleteAccount200>(getDeleteAccountUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteAccountMutationKey = () => ['deleteAccount'] as const;
+
+export const getDeleteAccountMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAccount>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAccount>>, TError,void, TContext> => {
+
+const mutationKey = getDeleteAccountMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAccount>>, void> = () => {
+
+
+          return  deleteAccount(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAccountMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAccount>>>
+
+    export type DeleteAccountMutationError = ErrorType<void>
+
+
+    /**
+ * @summary Delete the signed-in account and everything saved for it
+ */
+export const useDeleteAccount = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAccount>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAccount>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDeleteAccountMutationOptions(options));
+    }
+
+export const getReportHomeChatMessageUrl = () => {
+
+
+
+
+  return `/api/study/chat/report`
+}
+
+/**
+ * @summary Report a coach reply (wrong, harmful or other)
+ */
+export const reportHomeChatMessage = async (homeChatReportInput: HomeChatReportInput, options?: Parameters<typeof customFetch>[1]): Promise<ReportHomeChatMessage200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ReportHomeChatMessage200>(getReportHomeChatMessageUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(homeChatReportInput)
+  }
+);}
+
+
+
+
+
+export const getReportHomeChatMessageMutationKey = () => ['reportHomeChatMessage'] as const;
+
+export const getReportHomeChatMessageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportHomeChatMessage>>, TError,ReportHomeChatMessageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportHomeChatMessage>>, TError,ReportHomeChatMessageMutationVariables, TContext> => {
+
+const mutationKey = getReportHomeChatMessageMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportHomeChatMessage>>, ReportHomeChatMessageMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  reportHomeChatMessage(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportHomeChatMessageMutationResult = NonNullable<Awaited<ReturnType<typeof reportHomeChatMessage>>>
+    export type ReportHomeChatMessageMutationBody = BodyType<HomeChatReportInput>
+    export type ReportHomeChatMessageMutationError = ErrorType<void>
+    export type ReportHomeChatMessageMutationVariables = {data: BodyType<HomeChatReportInput>}
+
+    /**
+ * @summary Report a coach reply (wrong, harmful or other)
+ */
+export const useReportHomeChatMessage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportHomeChatMessage>>, TError,ReportHomeChatMessageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reportHomeChatMessage>>,
+        TError,
+        ReportHomeChatMessageMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReportHomeChatMessageMutationOptions(options));
     }
 
 export const getLookupExamGuideUrl = (courseId: string,) => {

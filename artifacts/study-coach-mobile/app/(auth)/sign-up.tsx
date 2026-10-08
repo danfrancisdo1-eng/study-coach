@@ -7,6 +7,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { useColors } from '@/hooks/useColors';
 import { Feather } from '@expo/vector-icons';
 import { SocialSignIn } from '@/components/SocialSignIn';
+import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 
 export default function SignUpScreen() {
   const colors = useColors();
@@ -18,6 +19,7 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [message, setMessage] = useState('');
+  const [ageOk, setAgeOk] = useState(false); // App Store readiness (D-046): 13+ attestation before any account is created
   const busy = fetchStatus === 'fetching';
   const error = message || errors.fields.emailAddress?.message || errors.fields.password?.message || errors.fields.code?.message || '';
   const verifying = signUp.status === 'missing_requirements' &&
@@ -80,12 +82,20 @@ export default function SignUpScreen() {
         </>
       ) : (
         <>
-          <SocialSignIn />
+          <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: ageOk }} accessibilityLabel="I am 13 or older" onPress={() => setAgeOk((v) => !v)} style={styles.checkRow} testID="checkbox-age">
+            <Feather name={ageOk ? 'check-square' : 'square'} size={22} color={ageOk ? colors.primaryText : colors.mutedForeground} />
+            <Text style={[styles.checkText, { color: colors.foreground }]}>I'm 13 or older.</Text>
+          </Pressable>
+          <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+            Study Coach is for people 13 and older. By creating an account you agree to the{' '}
+            {PRIVACY_URL ? <Text style={[styles.link, styles.captionLink, { color: colors.primaryText }]} accessibilityRole="link" onPress={openPrivacy} testID="link-privacy">privacy policy</Text> : 'privacy policy'}.
+          </Text>
+          <SocialSignIn disabled={!ageOk} />
           <Text style={[styles.label, { color: colors.foreground }]}>Email address</Text>
           <TextInput testID="input-sign-up-email" value={emailAddress} onChangeText={setEmailAddress} keyboardType="email-address" autoCapitalize="none" autoComplete="email" style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} placeholder="you@example.com" placeholderTextColor={colors.mutedForeground} />
           <Text style={[styles.label, { color: colors.foreground }]}>Password</Text>
           <TextInput testID="input-sign-up-password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} placeholder="Create a password" placeholderTextColor={colors.mutedForeground} />
-          <Pressable testID="button-sign-up-submit" accessibilityRole="button" disabled={busy || !emailAddress.trim() || password.length < 8} onPress={() => void submit()} style={[styles.button, { backgroundColor: colors.primary }, (busy || !emailAddress.trim() || password.length < 8) && styles.disabled]}>
+          <Pressable testID="button-sign-up-submit" accessibilityRole="button" disabled={busy || !ageOk || !emailAddress.trim() || password.length < 8} onPress={() => void submit()} style={[styles.button, { backgroundColor: colors.primary }, (busy || !ageOk || !emailAddress.trim() || password.length < 8) && styles.disabled]}>
             <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>{busy ? 'Creating account…' : 'Create account'}</Text>
           </Pressable>
           <Text style={[styles.caption, { color: colors.mutedForeground }]}>Use at least 8 characters. Email verification is required.</Text>
@@ -118,5 +128,8 @@ const styles = StyleSheet.create({
   body: { fontSize: 14 },
   link: { fontSize: 14, fontWeight: '700' },
   caption: { fontSize: 12, lineHeight: 18 },
+  captionLink: { fontSize: 12 },
+  checkRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 2 },
+  checkText: { fontSize: 15, fontWeight: '600' },
   error: { fontSize: 13, lineHeight: 19, marginTop: 7 },
 });

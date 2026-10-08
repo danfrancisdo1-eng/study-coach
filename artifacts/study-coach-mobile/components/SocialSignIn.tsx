@@ -11,7 +11,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 type Provider = 'apple' | 'google';
 
-export function SocialSignIn() {
+export function SocialSignIn({ disabled = false }: { disabled?: boolean }) {
   const colors = useColors();
   const router = useRouter();
   const { startSSOFlow } = useSSO();
@@ -70,9 +70,9 @@ export function SocialSignIn() {
             testID={`button-${provider}-sign-in`}
             accessibilityRole="button"
             accessibilityLabel={`Continue with ${provider === 'apple' ? 'Apple' : 'Google'}`}
-            disabled={working !== null}
+            disabled={working !== null || disabled}
             onPress={() => void start(provider)}
-            style={[styles.button, { backgroundColor: colors.card, borderColor: colors.border }, working !== null && styles.disabled]}
+            style={[styles.button, { backgroundColor: colors.card, borderColor: colors.border }, (working !== null || disabled) && styles.disabled]}
           >
             <Ionicons name={provider === 'apple' ? 'logo-apple' : 'logo-google'} size={20} color={colors.foreground} />
             <Text style={[styles.buttonText, { color: colors.foreground }]}>

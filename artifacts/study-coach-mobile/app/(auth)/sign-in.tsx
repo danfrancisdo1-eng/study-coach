@@ -7,6 +7,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { useColors } from '@/hooks/useColors';
 import { Feather } from '@expo/vector-icons';
 import { SocialSignIn } from '@/components/SocialSignIn';
+import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 
 export default function SignInScreen() {
   const colors = useColors();
@@ -95,6 +96,10 @@ export default function SignInScreen() {
         </>
       ) : (
         <>
+          <Text style={[styles.caption, { color: colors.mutedForeground }]}>
+            By continuing you confirm you're 13 or older and agree to the{' '}
+            {PRIVACY_URL ? <Text style={[styles.link, styles.captionLink, { color: colors.primaryText }]} accessibilityRole="link" onPress={openPrivacy} testID="link-privacy">privacy policy</Text> : 'privacy policy'}.
+          </Text>
           <SocialSignIn />
           <Text style={[styles.label, { color: colors.foreground }]}>Email address</Text>
           <TextInput testID="input-sign-in-email" value={emailAddress} onChangeText={setEmailAddress} keyboardType="email-address" autoCapitalize="none" autoComplete="email" style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} placeholder="you@example.com" placeholderTextColor={colors.mutedForeground} />
@@ -130,5 +135,7 @@ const styles = StyleSheet.create({
   linkRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 13, flexWrap: 'wrap' },
   body: { fontSize: 14 },
   link: { fontSize: 14, fontWeight: '700' },
+  caption: { fontSize: 12, lineHeight: 18 },
+  captionLink: { fontSize: 12 },
   error: { fontSize: 13, lineHeight: 19, marginTop: 7 },
 });

@@ -11,6 +11,8 @@ export type HomeChatAction =
   | { type: "lookup_exam_guide"; courseId: string; found: boolean; sections: number }
   | { type: "web_search"; courseId: string; query: string; found: boolean };
 export type HomeChatMessage = {
+  /** D-046: the student reported this coach reply. */
+  reported?: { reason: "wrong" | "harmful" | "other"; note?: string; at: string };
   id: string;
   role: HomeChatRole;
   content: string;

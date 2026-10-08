@@ -177,17 +177,17 @@ Recommendation: **Render or Railway + Neon (or the host's Postgres)**, Dockerfil
 Per the preflight skill, items code can't establish are marked "owner to confirm". Apple guideline references should be re-checked against the current App Review Guidelines before submission. I didn't fetch them live in this session.
 
 ### Blockers
-1. **No in-app account deletion** (and no server endpoint that deletes `study_states` / `study_sessions` + the Clerk user). Guideline 5.1.1(v).
+1. ~~**No in-app account deletion**~~ Done 2026-10-08 (D-046): Courses & exams → Account → Delete my account; `DELETE /study/account` removes all four tables' rows and the Clerk user. Guideline 5.1.1(v).
 2. **No native build path:** `app.json` has no `ios.bundleIdentifier`, no `buildNumber`, no `eas.json`. No iOS build has been produced. Name is "Study Coach for iPhone" (consider "Study Coach").
 3. **Backend and auth are test environments:** Replit dev domain (`*.reed.replit.dev`) and Clerk `pk_test_` (development instance). Reviewers need a stable production backend.
-4. **No privacy policy URL, no App Privacy label answers, no docs/PRIVACY_DATA.md.**
+4. ~~**No privacy policy URL, no App Privacy label answers, no docs/PRIVACY_DATA.md.**~~ Done 2026-10-08 (D-046): `/privacy` served by the API (draft wording, contact email still a placeholder); `docs/PRIVACY_DATA.md` with draft App Privacy answers.
 5. **Third-party AI disclosure:** the consent text says content goes "to AI" but doesn't name the provider. Apple requires clear disclosure + permission before personal data goes to third-party AI (5.1.2(i)). Name the provider accurately after migration.
 6. **Sign in with Apple completion unconfirmed** on a real iPhone (task-11). Must work if Google is offered (4.8).
 7. **Unauthenticated AI endpoints** (`/coach/analyze|quiz|plan`). Not a store rule, but a production blocker (cost abuse).
 
 ### Must-fix
-8. **Age 13+ eligibility check** before account creation (none in mobile; the web shows only a text line). Plus the age-rating questionnaire and teen-privacy review for launch countries.
-9. **Report a bad AI response:** only quiz questions can be reported, and only before grading. Tutoring replies and extracted text have no report path.
+8. ~~**Age 13+ eligibility check**~~ Done 2026-10-08 (D-046) on the iPhone app: checkbox on sign-up gating Create account and Apple/Google; attestation line on sign-in; `ageConfirmedAt` recorded. Still open: the age-rating questionnaire and teen-privacy review for launch countries; the web app.
+9. ~~**Report a bad AI response**~~ Done 2026-10-08 (D-046): press and hold any coach reply → wrong / harmful / other, stored on the message and logged. (Questions: "Looks wrong?" re-check, D-034.) Extracted text still has no report path.
 10. **In-app purchase + Restore Purchases.** Required if premium launches with v1 (Phase 3). No outside payment links.
 11. **Privacy manifest / required-reason APIs:** confirm Expo SDK 57 generates `PrivacyInfo.xcprivacy` with correct entries for all native modules.
 12. **Reviewer access:** sign-in is Google/Apple only. Plan reviewer notes and a working path; consider a demo account with seeded course data.
@@ -225,11 +225,11 @@ Per the preflight skill, items code can't establish are marked "owner to confirm
 
 **Phase 2: public-version generalization**
 - Remove six preloaded courses / "Dad" wording → optional guardian sharing, explicit per-report sharing. M
-- Age 13+ eligibility gate before sign-up. S–M
-- Account deletion (in-app button → server deletes DB rows + Clerk user). M
+- ~~Age 13+ eligibility gate before sign-up.~~ Done (D-046).
+- ~~Account deletion (in-app button → server deletes DB rows + Clerk user).~~ Done (D-046).
 - Extracted course details as drafts with Approve/Edit/Delete. M
-- Report-an-AI-response on tutoring replies. S
-- Privacy policy + PRIVACY_DATA.md. M (plus your legal review)
+- ~~Report-an-AI-response on tutoring replies.~~ Done (D-046).
+- ~~Privacy policy + PRIVACY_DATA.md.~~ Done (D-046); legal review of the wording still yours.
 
 **Phase 2b: iPhone lecture recording (added after D-002, needed for launch)**
 - Native recording with screen locked (background audio), mic permission, local audio storage, resumable upload of long files. L
