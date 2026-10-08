@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  getGetStudySessionQueryKey, useGetStudySession, useGradeStudyQuiz, useSaveStudyAnswer,
-  type StudySession, type StudyQuizQuestionsItem,
+  getGetStudySessionQueryKey, useFlagStudyQuestion, useGetStudySession, useGradeStudyQuiz, useSaveStudyAnswer,
+  type StudyQuestionFlagInputKind, type StudySession, type StudyQuizQuestionsItem,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 
@@ -12,6 +12,9 @@ import { useColors } from '@/hooks/useColors';
  * One question at a time inside the chat (SPEC §6 steps 4–5). Practice sets show the
  * correct answer and why right after each tap; exam sets only after Grade. Answers are
  * saved on the server as they are tapped, so leaving and coming back resumes.
+ * "Looks wrong?" (D-034) reports a question: the server re-checks it with an independent
+ * model and the verdict shows in place; a confirmed key still counts, a wrong or unclear
+ * key takes the question out of the score.
  */
 export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }: {
   sessionId: string;
@@ -29,11 +32,15 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   const sessionQuery = useGetStudySession(sessionId, { query: { queryKey: key, enabled: !!userId } });
   const saveAnswer = useSaveStudyAnswer();
   const grade = useGradeStudyQuiz();
+  const flag = useFlagStudyQuestion();
   const [reviewingId, setReviewingId] = useState<string | null>(null); // practice: the question whose feedback is on screen
+  const [reportingId, setReportingId] = useState<string | null>(null); // the question whose re-check is running
   const session = sessionQuery.data;
   const quiz = session?.quiz ?? null;
   const busy = saveAnswer.isPending || grade.isPending;
-  const step = !quiz ? 'loading' : quiz.grade ? 'score' : reviewingId ? `feedback:${reviewingId}` : `question:${quiz.questions.find((q) => !q.flag && !q.answer)?.id ?? 'grade'}`;
+  // A reported question stays out of the set unless the re-check confirmed its key.
+  const counts = (q: StudyQuizQuestionsItem) => !q.flag || q.flag.recheck?.verdict === 'key_holds';
+  const step = !quiz ? 'loading' : quiz.grade ? 'score' : reviewingId ? `feedback:${reviewingId}` : `question:${quiz.questions.find((q) => counts(q) && !q.answer)?.id ?? 'grade'}`;
   useEffect(() => { onStepChange?.(step); }, [step]);
 
   if (sessionQuery.isLoading) return <View style={styles.card}><ActivityIndicator color={colors.primary} /><Text style={styles.muted}>Loading your questions…</Text></View>;
@@ -42,9 +49,49 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
       <Pressable accessibilityRole="button" onPress={() => void sessionQuery.refetch()} style={styles.secondaryButton} testID="button-retry-quiz"><Text style={styles.secondaryText}>Retry</Text></Pressable></View>;
   }
 
-  const questions = quiz.questions.filter((q) => !q.flag);
+  const questions = quiz.questions.filter(counts);
   const answered = questions.filter((q) => q.answer);
   const kindLabel = quiz.kind === 'practice' ? 'Practice' : 'Exam';
+
+  const report = (question: StudyQuizQuestionsItem) => {
+    const send = async (kind: StudyQuestionFlagInputKind) => {
+      setReportingId(question.id);
+      try {
+        const updated = await flag.mutateAsync({ id: sessionId, questionId: question.id, data: { kind } });
+        queryClient.setQueryData(key, updated);
+      } catch (problem) { onError(problem); } finally { setReportingId(null); }
+    };
+    Alert.alert('Something wrong with this question?', 'The coach will check it again right away.', [
+      { text: 'The answer is wrong', onPress: () => void send('wrong_answer') },
+      { text: 'The question is unclear', onPress: () => void send('ambiguous') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  // The report link, or the verdict once the question was reported.
+  const reportNote = (question: StudyQuizQuestionsItem) => {
+    if (reportingId === question.id) return <View style={styles.note} testID="status-recheck"><ActivityIndicator color={colors.primary} size="small" /><Text style={styles.noteText}>Checking the answer again…</Text></View>;
+    const recheck = question.flag?.recheck;
+    if (question.flag && !recheck) return <View style={styles.note} testID="note-recheck"><Feather name="flag" size={14} color={colors.mutedForeground} /><Text style={styles.noteText}>Reported. This question won’t count.</Text></View>;
+    if (recheck) {
+      const youWereRight = recheck.verdict === 'key_wrong' && !!question.answer && recheck.correctOptionId === question.answer.optionId;
+      const headline = recheck.verdict === 'key_holds' ? 'Checked again: the answer key holds.'
+        : recheck.verdict === 'key_wrong' ? (youWereRight ? `You’re right. The correct answer is ${recheck.correctOptionText ?? ''}. This question won’t count against you.` : `The answer key was wrong: the correct answer is ${recheck.correctOptionText ?? ''}. This question won’t count.`)
+        : 'This question is unclear, so it won’t count.';
+      return (
+        <View style={styles.note} testID={`note-recheck-${recheck.verdict}`}>
+          <Feather name={recheck.verdict === 'key_holds' ? 'check-circle' : 'alert-circle'} size={14} color={recheck.verdict === 'key_holds' ? colors.mutedForeground : colors.primary} />
+          <Text style={styles.noteText}><Text style={styles.noteStrong}>{headline}</Text> {recheck.explanation}</Text>
+        </View>
+      );
+    }
+    return (
+      <Pressable accessibilityRole="button" accessibilityLabel="Report this question" disabled={!!reportingId} onPress={() => report(question)} style={styles.reportLink} testID={`button-report-${question.id}`}>
+        <Text style={styles.reportLinkText}>Looks wrong?</Text>
+      </Pressable>
+    );
+  };
+
   const progress = (
     <View style={styles.progress} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: questions.length, now: answered.length }}>
       <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${questions.length ? Math.round((answered.length / questions.length) * 100) : 0}%` }]} /></View>
@@ -53,7 +100,8 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   );
 
   if (quiz.grade) {
-    const misses = questions.filter((q) => q.feedback && q.feedback.selectedOptionId && q.feedback.selectedOptionId !== q.feedback.correctOptionId);
+    // Misses, plus reported questions (with their verdict) so the student sees what happened to them.
+    const misses = quiz.questions.filter((q) => q.feedback && q.feedback.selectedOptionId && (q.feedback.selectedOptionId !== q.feedback.correctOptionId || (q.flag && !counts(q))));
     return (
       <View style={styles.card} testID="panel-quiz-score">
         <Text style={styles.kicker}>{kindLabel.toUpperCase()} · {session.topic}</Text>
@@ -67,18 +115,20 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
             <Text style={styles.right}>Correct: {q.feedback!.correctOptionText}</Text>
             <Text style={styles.missExplain}>{q.feedback!.explanation}</Text>
             {q.feedback!.hook ? <View style={styles.hook}><Feather name="zap" size={14} color={DARK.hookText} /><Text style={styles.hookText}>{q.feedback!.hook}</Text></View> : null}
+            {reportNote(q)}
           </View>
         ))}
       </View>
     );
   }
 
-  const reviewing = reviewingId ? questions.find((q) => q.id === reviewingId) : undefined;
+  const reviewing = reviewingId ? quiz.questions.find((q) => q.id === reviewingId) : undefined;
   if (reviewing?.feedback) {
     const correct = reviewing.feedback.selectedOptionId === reviewing.feedback.correctOptionId;
+    const position = questions.indexOf(reviewing);
     return (
       <View style={styles.card} testID="panel-quiz-feedback">
-        <Text style={styles.kicker}>{kindLabel.toUpperCase()} · QUESTION {questions.indexOf(reviewing) + 1} OF {questions.length}</Text>
+        <Text style={styles.kicker}>{kindLabel.toUpperCase()} · {position >= 0 ? `QUESTION ${position + 1} OF ${questions.length}` : 'REPORTED QUESTION'}</Text>
         <View style={styles.miss}>
           <Text style={styles.missPrompt}>{reviewing.prompt}</Text>
           <View style={styles.verdict}>
@@ -89,6 +139,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
           <Text style={styles.right}>Correct: {reviewing.feedback.correctOptionText}</Text>
           <Text style={styles.missExplain}>{reviewing.feedback.explanation}</Text>
           {!correct && reviewing.feedback.hook ? <View style={styles.hook}><Feather name="zap" size={14} color={DARK.hookText} /><Text style={styles.hookText}>{reviewing.feedback.hook}</Text></View> : null}
+          {reportNote(reviewing)}
         </View>
         {progress}
         <Pressable accessibilityRole="button" onPress={() => setReviewingId(null)} style={styles.primaryButton} testID="button-quiz-next">
@@ -134,7 +185,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
       {current.options.map((option, i) => (
         <Pressable key={option.id} accessibilityRole="button" disabled={busy} onPress={() => void choose(option.id)}
           style={({ pressed }) => [styles.option, pressed && styles.pressed, busy && styles.disabled]} testID={`button-quiz-option-${i}`}>
-          <Text style={styles.optionLetter}>{'ABCD'[i]}</Text>
+          <Text style={styles.optionLetter}>{'ABCDE'[i]}</Text>
           <Text style={styles.optionText}>{option.text}</Text>
         </Pressable>
       ))}
@@ -171,6 +222,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   miss: { gap: 8, padding: 14, borderRadius: 16, backgroundColor: DARK.bg },
   missPrompt: { color: DARK.text, fontSize: 16, lineHeight: 23, fontWeight: '600' },
   missExplain: { color: DARK.muted, fontSize: 14, lineHeight: 20 },
+  // Report link: small and away from the main button on purpose (UX_PRINCIPLES: destructive-ish actions are small and separated).
+  reportLink: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', paddingRight: 12 },
+  reportLinkText: { color: DARK.muted, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
+  note: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 10, borderRadius: 10, backgroundColor: colors.card },
+  noteText: { flex: 1, color: colors.foreground, fontSize: 13, lineHeight: 19 },
+  noteStrong: { fontWeight: '700' },
   score: { color: colors.primary, fontSize: 40, fontWeight: '700', letterSpacing: -1 },
   primaryButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: colors.primary, paddingHorizontal: 16 },
   primaryText: { color: colors.primaryForeground, fontSize: 16, fontWeight: '700' },

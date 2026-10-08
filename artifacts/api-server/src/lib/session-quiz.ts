@@ -23,11 +23,20 @@ export type SourceStatus = {
   sources: Array<{ label: string; kind: "source" | "supplemental" | "inferred" }>;
 };
 export type PublicOption = { id: string; text: string };
-export type StudyQuestionFlagKind = "invalid" | "ambiguous";
+export type StudyQuestionFlagKind = "invalid" | "ambiguous" | "wrong_answer";
+/** Re-check of a reported question (D-034): an independent model answered it cold. */
+export type StoredQuestionRecheck = {
+  verdict: "key_holds" | "key_wrong" | "unclear";
+  correctOptionId?: string;
+  correctOptionText?: string;
+  explanation: string;
+  checkedAt: string;
+};
 export type StoredQuestionFlag = {
   kind: StudyQuestionFlagKind;
   reason?: string;
   reportedAt: string;
+  recheck?: StoredQuestionRecheck;
 };
 export type StoredQuestion = {
   id: string;
@@ -102,12 +111,48 @@ function practiceFeedback(question: StoredQuestion): NonNullable<StoredQuestion[
   };
 }
 
+/** A reported question is excluded unless its re-check confirmed the key: a report cannot erase a miss. */
+export function excludedByReport(question: StoredQuestion): boolean {
+  return !!question.flag && question.flag.recheck?.verdict !== "key_holds";
+}
+
+export function countsInScore(question: StoredQuestion): boolean {
+  return !question.invalid && !excludedByReport(question) && question.options.length === 4 &&
+    question.options.some((option) => option.id === question.correctOptionId);
+}
+
+export type QuizScore = { correct: number; answered: number; excluded: number; invalidItems: number; unanswered: number; total: number; percent: number; gradedAt: string };
+
+/** The score of a set as it stands: used at grading and again when a report changes what counts. */
+export function scoreQuiz(quiz: Quiz, now: Date): { score: QuizScore; valid: StoredQuestion[]; answered: StoredQuestion[]; correct: StoredQuestion[]; learnerReportedCount: number } {
+  const learnerReportedCount = quiz.questions.filter((question) => question.flag).length;
+  const excludedQuestionCount = quiz.questions.filter((question) => question.invalid || excludedByReport(question)).length;
+  const invalidItems = quiz.invalidItemCount + excludedQuestionCount;
+  const valid = quiz.questions.filter(countsInScore);
+  const answered = valid.filter((question) => {
+    const answer = question.answers.at(-1);
+    return answer && question.options.some((option) => option.id === answer.optionId);
+  });
+  const correct = answered.filter((question) => question.answers.at(-1)?.optionId === question.correctOptionId);
+  const score: QuizScore = {
+    correct: correct.length,
+    answered: answered.length,
+    excluded: invalidItems + valid.length - answered.length,
+    invalidItems,
+    unanswered: valid.length - answered.length,
+    total: valid.length + invalidItems,
+    percent: answered.length ? Math.round((correct.length / answered.length) * 100) : 0,
+    gradedAt: now.toISOString(),
+  };
+  return { score, valid, answered, correct, learnerReportedCount };
+}
+
 export function safeSession(session: Session): Record<string, unknown> {
   const publicQuiz = (value: Quiz): Record<string, unknown> => ({
     mode: value.mode,
     ...(value.kind ? { kind: value.kind } : {}),
     expectedCount: value.expectedCount,
-    invalidItemCount: value.invalidItemCount + value.questions.filter((question) => question.invalid || question.flag).length,
+    invalidItemCount: value.invalidItemCount + value.questions.filter((question) => question.invalid || excludedByReport(question)).length,
     qualityNotice: QUESTION_QUALITY_NOTICE,
     sourceStatus: value.sourceStatus,
     questions: value.questions.map((question) => ({

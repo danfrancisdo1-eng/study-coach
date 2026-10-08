@@ -12,4 +12,5 @@ export type StudyQuestionFlagKind = typeof StudyQuestionFlagKind[keyof typeof St
 export const StudyQuestionFlagKind = {
   invalid: 'invalid',
   ambiguous: 'ambiguous',
+  wrong_answer: 'wrong_answer',
 } as const;

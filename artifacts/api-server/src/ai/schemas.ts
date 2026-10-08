@@ -52,6 +52,8 @@ export const sessionQuizSchema = object({
 
 export const imageOcrSchema = object({ text: string });
 
+export const flagCheckSchema = object({ choice: { type: "integer" }, confidence: { type: "string", enum: ["high", "medium", "low"] }, explanation: string });
+
 // Chat-first home coach (SPEC §7): a short reply plus zero or more actions. Every
 // action is re-validated and owner-scoped by routes/chat.ts before it is applied.
 export const coachSchema = object({
@@ -90,6 +92,7 @@ export const quizCheckSchema = object({
 
 export const TASK_SCHEMAS: Partial<Record<AiTask, JsonSchema>> = {
   quiz_check: quizCheckSchema,
+  flag_check: flagCheckSchema,
   coach: coachSchema,
   memory_sheet: memorySheetSchema,
   flashcards: flashcardsSchema,

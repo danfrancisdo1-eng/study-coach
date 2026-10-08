@@ -23,7 +23,7 @@ export type MaterialExtraction = {
 };
 export type SessionQuestion = {
   id: string; prompt: string; options: string[]; source?: string;
-  flag?: { kind: 'invalid' | 'ambiguous'; reason: string | null; reportedAt: string } | null;
+  flag?: { kind: 'invalid' | 'ambiguous' | 'wrong_answer'; reason: string | null; reportedAt: string; recheck?: unknown } | null;
 };
 export type QuestionFeedback = {
   questionId: string;

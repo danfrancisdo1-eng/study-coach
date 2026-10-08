@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { StudyQuestionFlagKind } from './studyQuestionFlagKind';
+import type { StudyQuestionRecheck } from './studyQuestionRecheck';
 
 export interface StudyQuestionFlag {
   kind: StudyQuestionFlagKind;
@@ -15,4 +16,6 @@ export interface StudyQuestionFlag {
      */
   reason: string | null;
   reportedAt: Date;
+  /** Independent re-check of the keyed answer, run when the question was reported. Absent when the check could not run (the question is then excluded). */
+  recheck?: StudyQuestionRecheck | null;
 }

@@ -2,8 +2,9 @@
 // a Claude judge only for things code can't check (answer-key correctness, tutoring quality).
 import Anthropic from "@anthropic-ai/sdk";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
-import type { CoachCase, ExamGuideCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase } from "./fixtures";
+import type { CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase } from "./fixtures";
 import { parseQuizCheck } from "../src/lib/quiz-check";
+import { parseFlagCheck } from "../src/lib/flag-check";
 import { parseExamGuideReply } from "../src/lib/exam-guide-parse";
 import { parseCoachReply } from "../src/routes/chatActions";
 
@@ -285,6 +286,17 @@ export function gradeQuizCheck(testCase: QuizCheckCase, text: string | null): Sc
   });
   const score = 1 - notes.length / testCase.expected.length;
   return { pass: notes.length === 0, score: Math.max(0, score), notes };
+}
+
+export function gradeFlagCheck(testCase: FlagCheckCase, text: string | null): Score {
+  const question = { options: testCase.options.map((t, i) => ({ id: String(i), text: t })), correctOptionId: String(testCase.keyIndex) };
+  const verdict = parseFlagCheck(text, question);
+  if (!verdict) return { pass: false, score: 0, notes: [`invalid output: ${(text ?? "").slice(0, 120)}`] };
+  const notes: string[] = [];
+  if (verdict.verdict !== testCase.expectVerdict) notes.push(`verdict ${verdict.verdict}, wanted ${testCase.expectVerdict}: ${verdict.explanation.slice(0, 140)}`);
+  if (testCase.expectVerdict === "key_wrong" && testCase.expectChoice !== undefined && verdict.correctOptionId !== String(testCase.expectChoice)) notes.push(`checker chose ${verdict.correctOptionText ?? "?"}, wanted ${testCase.options[testCase.expectChoice]}`);
+  if (verdict.explanation.split(/\s+/).length > 90) notes.push(`explanation too long: ${verdict.explanation.split(/\s+/).length} words`);
+  return { pass: notes.length === 0, score: notes.length ? 0 : 1, notes };
 }
 
 export async function gradeMemorySheet(testCase: MemorySheetCase, text: string | null): Promise<Score> {

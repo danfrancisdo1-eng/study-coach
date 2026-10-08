@@ -8,6 +8,7 @@
 import type { StudyQuestionFlagInputKind } from './studyQuestionFlagInputKind';
 
 export interface StudyQuestionFlagInput {
+  /** wrong_answer: the learner says the keyed answer is wrong; ambiguous: the question is unclear; invalid: legacy */
   kind: StudyQuestionFlagInputKind;
   /**
      * @minLength 1
