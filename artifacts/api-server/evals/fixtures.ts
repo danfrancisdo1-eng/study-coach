@@ -581,7 +581,7 @@ export const coachCases: CoachCase[] = [
     ] } },
     message: "Memory tricks for the misses",
     expectedActions: [],
-    expectations: ["Gives a mnemonic, association or word trick for the osmosis/hypotonic miss", "Gives one for active transport / sodium-potassium pump needing ATP", "Ends with a check that starts 'Your turn: explain it back to me' (never the words 'teach-back')"],
+    expectations: ["Gives a memory trick of any kind (contrast, trigger, picture, story, word origin, rhyme, mnemonic) for the osmosis/hypotonic miss", "Gives one for active transport / sodium-potassium pump needing ATP, not the same kind of trick as the first", "Ends with a check that starts 'Your turn: explain it back to me' (never the words 'teach-back')"],
     maxWords: 220,
   },
   {
