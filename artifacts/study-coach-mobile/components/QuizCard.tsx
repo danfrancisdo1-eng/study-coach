@@ -180,7 +180,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
         const label = `Question ${i + 1}, ${answered ? 'answered' : 'not answered'}${marked ? ', marked for review' : ''}`;
         return (
           <Pressable key={q.id} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: here }}
-            onPress={() => setCurrentId(q.id)} style={[styles.bubble, answered && styles.bubbleAnswered, marked && styles.bubbleMarked, here && styles.bubbleHere]} testID={`button-quiz-bubble-${i}`}>
+            hitSlop={8} onPress={() => setCurrentId(q.id)} style={[styles.bubble, answered && styles.bubbleAnswered, marked && styles.bubbleMarked, here && styles.bubbleHere]} testID={`button-quiz-bubble-${i}`}>
             <Text style={[styles.bubbleText, answered && styles.bubbleTextAnswered]}>{i + 1}</Text>
           </Pressable>
         );
@@ -271,12 +271,13 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   option: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 13, backgroundColor: colors.background, paddingHorizontal: 13, paddingVertical: 10 },
   optionChosen: { borderColor: colors.primary, borderWidth: 2, paddingHorizontal: 12, paddingVertical: 9 },
   optionLetterChosen: { backgroundColor: colors.primary, color: colors.primaryForeground },
-  bubbles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 4 },
-  bubble: { width: 34, height: 34, borderRadius: 17, borderWidth: 2.5, borderColor: colors.border, backgroundColor: EXAM.open, alignItems: 'center', justifyContent: 'center' },
+  // 28 pt + 6 pt gaps: ten per row on an iPhone, so twenty questions take two rows (Dan). hitSlop keeps the touch target at 44 pt.
+  bubbles: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingVertical: 4 },
+  bubble: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.border, backgroundColor: EXAM.open, alignItems: 'center', justifyContent: 'center' },
   bubbleAnswered: { borderColor: EXAM.answered, backgroundColor: EXAM.answered }, // fill = answered
   bubbleMarked: { borderColor: EXAM.marked }, // ring = marked, whether answered or not
   bubbleHere: { transform: [{ scale: 1.18 }] },
-  bubbleText: { color: colors.foreground, fontSize: 13, fontWeight: '700' },
+  bubbleText: { color: colors.foreground, fontSize: 12, fontWeight: '700' },
   bubbleTextAnswered: { color: '#ffffff' },
   markButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
   markButtonOn: { borderColor: EXAM.marked },
