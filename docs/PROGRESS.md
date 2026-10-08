@@ -33,12 +33,13 @@
 - Plugins: Dan checked what's available for the aesthetics pass. Anthropic's frontend-design skill and the SwiftUI plugin are already on the account; "Impeccable" isn't in the catalog. Engineering, GitHub and code-review plugins suggested for later.
 - **D-028:** aesthetics direction A approved for later; the queue (score trends → multi-select topics → aesthetics) is unchanged.
 - **D-029 (working rule):** see the AI fail first, fix by prompting at the right level, add structural code last. Dropped the shaky/solid tracker idea for the memory sheet; Dan tests "test me on the ones I missed" across days on the phone before anything is built.
-- **D-030, branch `feature/trick-kinds` (not merged, not deployed):** memory tricks few-shot by kind in coach.v11, session-quiz.v6, memory-sheet.v2, flashcards.v2, plus "a trick must be true" and the no-op for "save my misses". Verified here: typecheck; 70/70 tests; evals coach 27/27, session_quiz 6/6, flashcards 3/3, memory_sheet 2/2 on the final text. Needs Dan's OK to merge + push (push auto-deploys to Render).
+- **D-030, branch `feature/trick-kinds`, merged + pushed `d6513f9` (Render auto-deploy; healthz OK):** memory tricks few-shot by kind in coach.v11, session-quiz.v6, memory-sheet.v2, flashcards.v2, plus "a trick must be true" and the no-op for "save my misses". Verified here: typecheck; 70/70 tests; evals coach 27/27, session_quiz 6/6, flashcards 3/3, memory_sheet 2/2 on the final text.
 
 ### Next
 - Dan tested D-026/D-027 on the iPhone: "it went as planned."
 - Dan: on the phone, "Test me on the ones I missed" after a set from an earlier day, and "Give me 20 on <topic>". Report what the coach did (D-029 step 1).
-- After merge: Dan checks that tricks after a set vary in kind and none are false.
+- Dan checks on the phone that tricks after a set vary in kind and none are false (coach.v11 live).
+- **D-031 answer-key audit, branch `feature/answer-key-audit`:** 200 questions from the live writer, solved cold by Opus 5.5 (high effort) and by OpenAI gpt-5.6-terra: 0 disagreements on both, 0 low-confidence answers, 0 fixes/drops by the check; 70 hand-reviewed by Claude Code, all correct. Finding: correct answer in slot D only 8/200. Decision for Dan: shuffle options in code (recommended) or leave. Then: the flag button becomes "this answer looks wrong" with a coach re-check.
 - Score trends + readiness call; multi-select topics; then the aesthetics pass (D-028).
 
 ## Session 5 — 2026-10-07
