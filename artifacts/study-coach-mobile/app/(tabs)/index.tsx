@@ -294,10 +294,11 @@ export default function CoachHome() {
         </View>
       ) : (
         <View key={`${action.type}-${action.courseId}-${action.sessionId ?? ''}`} style={styles.actionChip}>
-          <Feather name={action.type === 'create_course' ? 'plus-circle' : action.type === 'start_quiz' ? 'edit-3' : action.type === 'start_flashcards' ? 'layers' : action.type === 'lookup_exam_guide' ? 'search' : 'play-circle'} size={14} color={colors.primaryText} />
+          <Feather name={action.type === 'create_course' ? 'plus-circle' : action.type === 'start_quiz' ? 'edit-3' : action.type === 'start_flashcards' ? 'layers' : action.type === 'lookup_exam_guide' || action.type === 'web_search' ? 'search' : 'play-circle'} size={14} color={colors.primaryText} />
           <Text style={styles.actionText}>
             {action.type === 'create_course' ? `Added course: ${action.name ?? ''}`
               : action.type === 'lookup_exam_guide' ? (action.found ? `Found the official exam guide: ${action.sections ?? 0} sections` : 'No official exam guide found')
+              : action.type === 'web_search' ? (action.found ? `Searched the web: ${action.query ?? ''}` : `Web search found nothing reliable: ${action.query ?? ''}`)
               : action.type === 'start_quiz' ? `${action.kind === 'practice' ? 'Practice' : 'Exam'} set: ${action.count ?? ''} questions on ${action.topic ?? ''}`
               : action.type === 'start_flashcards' ? `Flashcards: ${action.count ?? ''} cards on ${action.topic ?? ''}`
               : `Started a session: ${action.topic ?? ''}`}

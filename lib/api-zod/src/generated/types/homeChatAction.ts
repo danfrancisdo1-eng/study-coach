@@ -17,6 +17,8 @@ export interface HomeChatAction {
   found?: boolean;
   /** lookup_exam_guide: how many sections the guide has */
   sections?: number;
+  /** web_search: what was searched for */
+  query?: string;
   /** create_course: the new course's name */
   name?: string;
   /** create_course: a college course or a certification exam */

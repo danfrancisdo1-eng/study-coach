@@ -342,7 +342,7 @@ export interface CoachCase {
   history: { role: "user" | "assistant"; content: string }[];
   message: string;
   /** Exact action list the coach must return (type + name; topic checked loosely; kind/scope when given). */
-  expectedActions: { type: "create_course" | "start_quiz" | "start_flashcards" | "update_memory_sheet" | "start_session" | "lookup_exam_guide"; name: string; kind?: "practice" | "exam"; scope?: "all" | "missed"; courseKind?: "course" | "exam"; examDate?: string; topic?: string }[];
+  expectedActions: { type: "create_course" | "start_quiz" | "start_flashcards" | "update_memory_sheet" | "start_session" | "lookup_exam_guide" | "web_search"; name: string; kind?: "practice" | "exam"; scope?: "all" | "missed"; courseKind?: "course" | "exam"; examDate?: string; topic?: string }[];
   /** Suggestion chips that must appear (case-insensitive, in any order), if any. */
   expectedSuggestions?: string[];
   /** The latest question set from this chat, as routes/chat.ts would describe it. */
@@ -356,6 +356,8 @@ export interface CoachCase {
   results?: string;
   /** D-044: the server just looked up a guide for this course in this turn. */
   guideJustLookedUp?: { courseName: string; found: boolean; sections: number };
+  /** D-045: the server just searched the web for the student in this turn. */
+  webFindings?: { query: string; text: string };
   /** What a good reply must do, for the judge. */
   expectations: string[];
   maxWords: number;
@@ -383,7 +385,35 @@ Multi-AZ RDS: ✓✗ (missed 1, right 1, last 2026-10-08)
 IAM roles: ✓✓✓ (missed 0, right 3, last 2026-10-08)
 S3 encryption: ✓✓ (missed 0, right 2, last 2026-10-08)`;
 
+/** Web lookup on request (web-lookup.v1, D-045): real web search; graded by shape (sources, length) and a judge. */
+export interface WebLookupCase { name: string; request: string; course: string | null; expectations: string[] }
+export const webLookupCases: WebLookupCase[] = [
+  { name: "sample questions for a certification: names official/reputable sources with links", request: "Search the internet for sample questions on the AB731 exam", course: "Microsoft AB731",
+    expectations: ["Names at least one official or reputable place that publishes practice/sample questions for the exam (e.g. Microsoft Learn practice assessment)", "Gives two or three example question stems in its own words, not a copied question bank", "Does not present real exam content as if it had it"] },
+  { name: "a current fact: the date of this year's exam version or a registration price", request: "How much does the AWS Solutions Architect Associate exam cost right now?", course: "AWS Solutions Architect Associate",
+    expectations: ["States a price in USD with the exam name", "Says where the figure comes from, with a link, and says so if AWS's own certification page could not be opened"] },
+];
+
 export const coachCases: CoachCase[] = [
+  // D-045: "search the internet" is a web_search action, never "I can't".
+  {
+    name: "search the internet for sample questions: web_search with a query, no refusal",
+    courses: [{ id: "ab731", name: "Microsoft AB731", kind: "exam", materials: 0, lectures: 0, guideSections: [{ name: "Identify the business value of generative AI solutions", weight: 37.5 }, { name: "Identify benefits, capabilities, and opportunities for Microsoft 365 Copilot", weight: 37.5 }, { name: "Identify an implementation and adoption strategy", weight: 25 }] }],
+    firstVisit: false, focusCourseId: "ab731", history: [],
+    message: "Search the internet for sample questions on the AB731 exam",
+    expectedActions: [{ type: "web_search", name: "Microsoft AB731", topic: "AB731" }],
+    expectations: ["Says briefly that it is searching the web for that", "Does not say it cannot search the internet"],
+    maxWords: 50,
+  },
+  {
+    name: "after the web search: the reply uses the findings, labels them as from the web, and includes the links",
+    courses: [{ id: "ab731", name: "Microsoft AB731", kind: "exam", materials: 0, lectures: 0 }], firstVisit: false, focusCourseId: "ab731", history: [],
+    message: "Search the internet for sample questions on the AB731 exam",
+    webFindings: { query: "Microsoft AB731 exam sample questions practice assessment", text: "Microsoft Learn offers a free practice assessment for AB-731 with sample questions in the real format. Example stems: 'A company wants Copilot to answer only from its own policy documents; which technique applies?' and 'Which licence includes Microsoft 365 Copilot for an enterprise user?'\nSources:\nhttps://learn.microsoft.com/credentials/certifications/exams/ab-731/practice/assessment\nhttps://learn.microsoft.com/credentials/certifications/microsoft-365-copilot-business-user/" },
+    expectedActions: [],
+    expectations: ["Says the information comes from the web / a search", "Mentions the Microsoft Learn practice assessment and includes at least one of the URLs as plain text", "Offers a next step (a set in that format, or a chip)"],
+    maxWords: 160,
+  },
   // D-044: a certification named as a course; the thread stays on its own course.
   {
     name: "topics of a certification added as a course: looks up the official guide, stays off other courses",

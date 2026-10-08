@@ -10,7 +10,8 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v14";
+import * as coachPrompt from "../prompts/coach.v15";
+import * as webLookupPrompt from "../prompts/web-lookup.v1";
 import { lookupExamGuide } from "../lib/exam-guide";
 import { saveExamGuide } from "../lib/exam-guide-state";
 import { eventsFrom, resultsHistoryText, weakConcepts } from "../lib/results-history";
@@ -408,6 +409,33 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   // D-044: the coach asked for the official exam guide of a course (a certification named as a
   // course). Look it up now, save it (the course becomes an exam when found), then ask the
   // coach again with the sections in hand, so this one reply carries the topic chips.
+  // D-045: the coach asked the app to search the web for the student. Search, record it, then ask
+  // the coach again with the findings so the one reply the student sees carries them with sources.
+  if (plan.search) {
+    let text = "";
+    try {
+      const found = await complete("web_lookup", {
+        system: webLookupPrompt.systemPrompt(new Date().toISOString().slice(0, 10)),
+        messages: [{ role: "user", content: JSON.stringify({ request: plan.search.query, course: threadId ? courses.find((c) => c.id === threadId)?.name ?? null : null }) }],
+        webSearch: { maxUses: 5 },
+        timeoutMs: 120_000,
+      });
+      text = (found.text ?? "").trim().slice(0, 4000);
+    } catch (error) {
+      req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat web search failed");
+    }
+    done.push({ type: "web_search", courseId: threadId ?? "general", query: plan.search.query, found: text.length > 0 });
+    try {
+      const followUp = await complete("coach", {
+        system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: summary, firstVisit: false, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, webFindings: { query: plan.search.query, text: text || "Nothing reliable was found." } }),
+        messages: [...history, { role: "user", content }],
+      });
+      const second = parseCoachReply(followUp.text);
+      if (second) coach = { reply: second.reply, suggestions: second.suggestions, actions: [] };
+    } catch (error) {
+      req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat follow-up after web search failed");
+    }
+  }
   if (plan.lookup) {
     const courseId = resolveCourse(plan.lookup);
     const course = courseId ? [...courses, ...created].find((c) => c.id === courseId) : null;

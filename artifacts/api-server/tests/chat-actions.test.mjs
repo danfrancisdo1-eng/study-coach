@@ -82,6 +82,13 @@ test('lookup_exam_guide is kept and planned against an existing course (D-044)',
   assert.equal(planActions([{ id: 'bio', name: 'BIOL 114' }], parsed.actions).lookup, null, 'unknown course: skipped');
 });
 
+test('web_search is kept with its query; an empty query is skipped (D-045)', () => {
+  const parsed = parseCoachReply(JSON.stringify({ reply: 'Searching.', suggestions: [], actions: [{ type: 'web_search', name: 'Microsoft AB731', topic: '  AB731 sample  questions ' }] }));
+  assert.deepEqual(planActions([{ id: 'ab731', name: 'Microsoft AB731' }], parsed.actions).search, { query: 'AB731 sample questions' });
+  const empty = parseCoachReply(JSON.stringify({ reply: 'x', suggestions: [], actions: [{ type: 'web_search', name: '', topic: '' }] }));
+  assert.equal(planActions([], empty.actions).search, null);
+});
+
 test('suggestions are bounded chips; missing suggestions is fine', () => {
   const parsed = parseCoachReply(JSON.stringify({ reply: 'Practice or exam?', suggestions: ['Practice', 'Exam', '  ', 'x'.repeat(100), 'a', 'b', 'c', 'd', 'e'], actions: [] }));
   assert.deepEqual(parsed.suggestions, ['Practice', 'Exam', 'x'.repeat(100), 'a', 'b', 'c'], 'blank dropped, capped at 6');

@@ -16,4 +16,5 @@ export const HomeChatActionType = {
   update_memory_sheet: 'update_memory_sheet',
   start_session: 'start_session',
   lookup_exam_guide: 'lookup_exam_guide',
+  web_search: 'web_search',
 } as const;
