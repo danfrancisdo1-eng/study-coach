@@ -1,5 +1,45 @@
 # Study Coach — handoff for the next Claude Code session
 
+## Handoff 2026-10-09 (read this section first; the 2026-10-04 handoff below is older and partly stale)
+
+**Read in this order:** this section, CLAUDE.md, docs/PROGRESS.md (Session 7 at the top), docs/DECISIONS.md D-046 to D-050.
+
+### Where the work is
+- Branch `claude/archived-chat-recovery-dmunmu`, draft PR #1 on GitHub (`danfrancisdo1-eng/study-coach`), four commits, base `main` at `f9c3a43`. Nothing from it is merged or deployed. Dan has not approved a merge.
+- `main` (deployed on Render, auto-deploy on push) has everything through D-046: results history, dark/light look, exam-guide lookup from chat, web search, tappable links, 13+ checkbox, account deletion, report a reply, privacy page.
+
+### What the PR contains
+1. **D-048 aesthetics:** `components/GlassBar.tsx` (the "Coach · course" strip floats over the chat with native blur), `components/GlowRing.tsx` (gold ring around the message box while the coach writes), `components/Skeleton.tsx` (loading shapes on home, courses page, course screen). Reduce Motion respected.
+2. **D-049/D-050 first-launch tour:** `app/onboarding.tsx`, `components/onboarding/*`, `lib/onboarding.ts`. Five pages before sign-in, once per phone (AsyncStorage key `study-coach-onboarding-seen`), skippable after page 1, replayable from sign-in ("See the tour"). One hero and one title per page, no subheadings, no "welcome" wording, no brand name repeated (Dan, 2026-10-09). Tone: professional, for certification candidates as much as students.
+3. **Consent fix (from D-047):** adding a course from the courses page no longer writes `aiConsent: true`; an exam added before consent gets its guide lookup right after the consent card. The first message of a fresh course thread is one line with three chips; the general thread with no courses offers an "Add a course or exam" chip that opens the courses page with the Add sheet up (`/course-list?add=1`).
+4. **Removed on Dan's instruction (D-050):** the in-chat welcome screen (D-047), its "See the welcome again" row and `welcomeSeenAt`. "No welcome screen or anything of the sort."
+
+### What Dan still has to check on the phone
+- The tour, all five pages, Light and Dark, Skip, "See the tour" from sign-in, Reduce Motion on. The stagger timing has never been seen by anyone; tune it by eye with Dan.
+- The glass strip over a busy chat (text contrast), the gold ring during "quiz me", the skeletons on a slow connection.
+- Then: merge PR #1 only with Dan's OK; Render deploys `main` on push.
+
+### How Dan runs the phone preview now (Windows PC "the beast", set up 2026-10-09)
+- Clone at `C:\Users\drdan\study-coach`, on the PR branch. Node 24 and pnpm 12 installed. Install with `pnpm install --ignore-scripts` in PowerShell (the repo's preinstall script needs a Unix shell).
+- `artifacts/study-coach-mobile/.env.local` holds `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` (copied from the Render service's Environment tab) and `EXPO_PUBLIC_DOMAIN=study-coach-api-pskt.onrender.com`.
+- `@expo/ngrok-bin-win32-x64@2.3.41` was added locally (not committed) because `pnpm-workspace.yaml` strips the Windows tunnel binary. Do not commit lockfile churn from a different pnpm version.
+- Expo CLI is logged in as `danfrancis` (Dan set a password on 2026-10-09; the account had none). Tunnel mode requires both Expo Go and the CLI signed in to the same account.
+- Start: `cd artifacts\study-coach-mobile` then `npx expo start --tunnel --port 8087`, in its own PowerShell window, never inside a Claude session. After a `git pull` in a second window the app reloads itself.
+- The Mac preview died on 2026-10-08 at 21:56 UTC when the Claude Code process on the Mac exited (`host_exit`), which also archived the "Study Coach build" chat. A Remote Control session and anything started inside it die together. Dan's 7-day usage limit on the Mac session resets 2026-10-10 02:00 UTC.
+
+### Working with Dan (learned this session)
+- He reads chat, not .md files. Plain language, short concrete steps, one command block at a time, say which folder to run it from.
+- He is on PowerShell, not Git Bash. He tends to paste file contents as commands; give Notepad for file edits.
+- He wants the product to look professional, not aimed at kids. Less copy, never a subheading under a title. He approved a three-step in-chat welcome, then saw it next to Gauth's onboarding and removed it entirely. Show, do not narrate.
+- Never paste a credential into chat; he did once (an Expo token, since told to revoke). Say where a value lives instead.
+
+### Open decisions
+- Free tier + Apple in-app purchase (D-003 open items: price, subscription vs one-time, caps).
+- Informal Expo Go beta first, then TestFlight (needs a development build and App Store Connect agreements on the Mac).
+- Whether to publish the app bundle to Expo's servers (EAS Update) so the phone never depends on a live computer. Not set up; needs an Expo access token added to the cloud environment's secrets, never pasted.
+
+---
+
 Prepared 2026-10-04 at the end of session 1 (Claude Code). **Read this first**, then CLAUDE.md, docs/PROGRESS.md and the newest entries in docs/DECISIONS.md. The previous Codex handoff (2026-10-03) is kept at the bottom for history.
 
 ## Who and how

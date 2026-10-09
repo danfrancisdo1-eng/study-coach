@@ -15,9 +15,9 @@ import { ReadinessHero } from '@/components/onboarding/ReadinessHero';
 import { MaterialHero } from '@/components/onboarding/MaterialHero';
 
 /**
- * The first-launch tour (D-049): five pages before sign-in, one hero each, built from the
- * app's own components rather than illustrations, and staged the way a finished product
- * does it: the hero enters first, then the title and line, with one button. Runs once per
+ * The first-launch tour (D-049, trimmed in D-050): five pages before sign-in, one hero and one
+ * title each, built from the app's own components rather than illustrations; the hero enters
+ * first, then the title, with one button and nothing else to read. Runs once per
  * phone (AsyncStorage), skippable after the agreement page, replayable from sign-in with
  * `?replay=1`. Pages crossfade; the heroes' entering animations follow Reduce Motion.
  */
@@ -37,10 +37,9 @@ export default function OnboardingScreen() {
   };
   const next = () => { if (last) finish(); else setPage(page + 1); };
 
-  const hero = current.key === 'welcome' ? (
-    <Animated.View entering={ZoomIn.delay(120).springify().damping(15)} style={styles.brandWrap} testID="hero-welcome">
+  const hero = current.key === 'intro' ? (
+    <Animated.View entering={ZoomIn.delay(120).springify().damping(15)} style={styles.brandWrap} testID="hero-intro">
       <View style={[styles.brandMark, { backgroundColor: colors.primary }]}><Feather name="book-open" size={38} color={colors.primaryForeground} /></View>
-      <Text style={styles.brandName}>Study Coach</Text>
     </Animated.View>
   ) : current.key === 'exam' ? <QuestionHero />
     : current.key === 'memory' ? <MemoryHero />
@@ -59,7 +58,6 @@ export default function OnboardingScreen() {
         <Animated.View key={current.key} entering={FadeIn.duration(260)} exiting={FadeOut.duration(160)} style={styles.page}>
           <View style={styles.heroArea}>{hero}</View>
           <Animated.Text entering={FadeInUp.delay(220).duration(420)} style={styles.title} accessibilityRole="header">{current.title}</Animated.Text>
-          <Animated.Text entering={FadeInUp.delay(340).duration(420)} style={styles.line}>{current.line}</Animated.Text>
         </Animated.View>
       </View>
       <View style={styles.dots} accessibilityLabel={`Page ${page + 1} of ${ONBOARDING_PAGES.length}`}>
@@ -90,9 +88,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   heroArea: { flex: 1, justifyContent: 'center', paddingBottom: 12 },
   brandWrap: { alignItems: 'center', gap: 14 },
   brandMark: { width: 84, height: 84, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  brandName: { color: colors.foreground, fontSize: 20, fontWeight: '600', letterSpacing: 0.2 },
   title: { color: colors.foreground, fontSize: 27, lineHeight: 33, letterSpacing: -0.5, fontWeight: '700' },
-  line: { color: colors.mutedForeground, fontSize: 15.5, lineHeight: 22 },
   dots: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingVertical: 14 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.border },
   dotActive: { width: 18, backgroundColor: colors.primary },

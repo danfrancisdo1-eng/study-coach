@@ -4,7 +4,7 @@ import { ONBOARDING_PAGES, ONBOARDING_SEEN_KEY, hasSeenOnboarding } from './onbo
 
 test('the tour is five pages in the order of the pitch, each key once', () => {
   assert.equal(ONBOARDING_PAGES.length, 5);
-  assert.deepEqual(ONBOARDING_PAGES.map((p) => p.key), ['welcome', 'exam', 'memory', 'readiness', 'material']);
+  assert.deepEqual(ONBOARDING_PAGES.map((p) => p.key), ['intro', 'exam', 'memory', 'readiness', 'material']);
 });
 
 test('the first page is the agreement and the last one leads into sign-up', () => {
@@ -13,11 +13,11 @@ test('the first page is the agreement and the last one leads into sign-up', () =
   for (const page of ONBOARDING_PAGES.slice(1, -1)) assert.equal(page.button, 'Continue');
 });
 
-test('every page has a short title and one line of copy', () => {
+test('every page has one short title and nothing else to read', () => {
   for (const page of ONBOARDING_PAGES) {
-    assert.ok(page.title.length > 0 && page.title.length <= 32, page.title);
-    assert.ok(page.line.length > 0 && page.line.length <= 160, page.line);
-    assert.ok(!/[\u{1F300}-\u{1FAFF}]/u.test(page.title + page.line), 'no emoji');
+    assert.ok(page.title.length > 0 && page.title.length <= 48, page.title);
+    assert.equal(Object.keys(page).sort().join(','), 'button,key,title');
+    assert.ok(!/welcome/i.test(page.title), 'no welcome wording');
   }
 });
 

@@ -12,7 +12,6 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
-import { welcomeReplayKey } from '@/lib/welcome';
 import { CourseListSkeleton } from '@/components/Skeleton';
 
 /**
@@ -65,7 +64,7 @@ export default function CourseListScreen() {
   const [deleteWord, setDeleteWord] = useState('');
   const [focusId, setFocusId] = useState<string | null>(null);
   const [lookingUp, setLookingUp] = useState<string | null>(null);
-  const { add } = useLocalSearchParams<{ add?: string }>(); // the welcome's "Add a course or exam" lands here with the sheet open (D-047)
+  const { add } = useLocalSearchParams<{ add?: string }>(); // the home's "Add a course or exam" chip lands here with the sheet open
   const [addOpen, setAddOpen] = useState(add === '1');
   const [addKind, setAddKind] = useState<'course' | 'exam'>('course');
   const [addName, setAddName] = useState('');
@@ -193,10 +192,6 @@ export default function CourseListScreen() {
               <Feather name="external-link" size={16} color={colors.mutedForeground} />
             </Pressable>
           ) : null}
-          <Pressable accessibilityRole="button" onPress={() => { if (userId) AsyncStorage.setItem(welcomeReplayKey(userId), '1').catch(() => {}); router.back(); }} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-replay-welcome">
-            <Feather name="compass" size={16} color={colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text style={styles.rowName}>See the welcome again</Text><Text style={styles.caption}>The three steps: course, material, coach</Text></View>
-          </Pressable>
           <Pressable accessibilityRole="button" onPress={() => { setError(''); setDeleteWord(''); setDeleteOpen(true); }} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-delete-account">
             <Feather name="trash-2" size={16} color={colors.destructive} />
             <View style={styles.rowCopy}><Text style={[styles.rowName, { color: colors.destructive }]}>Delete my account</Text><Text style={styles.caption}>Removes your courses, sets, chats and sign-in. Cannot be undone.</Text></View>

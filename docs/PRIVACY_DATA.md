@@ -12,7 +12,6 @@ for the App Store "App Privacy" answers. Keep all three in step. Last reviewed 2
 | Email, name (if given), sign-in method | Clerk (not our database) | sign-in | no | account deletion (Clerk user removed) |
 | 13+ attestation time (`ageConfirmedAt`) | `study_states.state` | eligibility record | no | account deletion |
 | AI consent (`aiConsent`) | `study_states.state` | gate before any AI call | no | account deletion |
-| Welcome dismissed time (`welcomeSeenAt`) | `study_states.state` | shows the one-time welcome once per account, not per device | no | account deletion |
 | Courses and exams (names, dates, kind) | `study_states.state` | the student's study plan | yes (names) | delete course / account deletion |
 | Uploaded material text (notes, syllabi, photos' extracted text, imported web pages) | `study_states.state.materials` | source for sets, cards, coaching | yes (selected material) | delete course / account deletion |
 | Official exam guide (sections, weights) looked up on the web | `study_states.state` (per exam) | targets the set to the real exam | yes | delete course / account deletion |
