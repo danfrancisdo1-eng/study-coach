@@ -2,8 +2,8 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
-## 2026-10-09 — D-050: The tour is one hero and one title per page; no "welcome" wording anywhere
-- Dan, after seeing the tour: "remove the study coach double", "get rid of all the extra subheading, completely unnecessary", "no welcome screen or anything of the sort". Meaning, confirmed by Dan: the tour's first page loses the "Welcome to Study Coach" title and the repeated brand name, keeping the brand mark, the tagline "A tutor that has already read your material." as its only title, the agreement line and "Agree and continue"; every other page is hero + title + button, no line of copy under the title. The in-chat welcome (D-047, Dan's own mock) stays. Claude Code first removed it by mistake and restored it in the next commit.
+## 2026-10-09 — D-050: The tour is one hero and one title per page
+- Dan, after seeing the tour: "remove the study coach double", "get rid of all the extra subheading, completely unnecessary". Meaning, confirmed by Dan after two wrong readings: the tour's first page keeps its title "Welcome to Study Coach" and the brand mark but loses the brand name repeated under the mark; every page loses the line of copy under its title, so each is hero + title + button. The in-chat welcome (D-047, Dan's own mock) stays; it never showed on Dan's phone because his account has courses, and it shows by itself only on an account with none ("See the welcome again" replays it). Claude Code removed the welcome and the "Welcome to Study Coach" title by mistake in two commits and restored both.
 - Verified here: typecheck; unit tests; iOS bundle export. Needs real-iPhone check: the tour as it now reads. Decided by Dan.
 
 ## 2026-10-09 — D-049: First-launch tour before sign-in, aimed at professionals as much as students
