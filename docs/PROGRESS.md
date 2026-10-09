@@ -7,8 +7,12 @@
 
 - **D-048 aesthetics pass, second commit on the same branch:** `components/GlassBar.tsx` (the Coach strip floats over the chat with native blur), `components/GlowRing.tsx` (gold ring around the message box while the coach writes), `components/Skeleton.tsx` (home, courses page, course screen). Reduce Motion respected. Verified here: typecheck; tests; iOS bundle export. **Needs real-iPhone check:** see D-048. Draft PR #1 holds both commits.
 
+- Dan got the preview running from his Windows PC (pnpm, Node 24, `.env.local` with the publishable key from Render, `@expo/ngrok-bin-win32-x64` added locally for the tunnel, Expo CLI logged in as `danfrancis` after a password reset; the Expo account was created without a password). Rule of thumb for Windows: install in PowerShell with `pnpm install --ignore-scripts`; run the preview in its own window, never inside a Claude session.
+- Welcome revised to Dan's mock (shorter copy, icons, gold bar, one screen).
+- **D-049 first-launch tour, third commit on the PR:** `app/onboarding.tsx` + `components/onboarding/*` + `lib/onboarding.ts` (4 unit tests), root redirect, "See the tour" on sign-in. Professional tone per Dan. Verified here: typecheck; tests; iOS bundle export. **Needs real-iPhone check:** see D-049.
+
 ### In progress
-- Nothing. Both commits are on the PR, waiting for Dan's phone check.
+- Nothing. Three commits are on PR #1, waiting for Dan's phone check of the tour's timing.
 
 ### Next
 - Dan on the phone: the welcome flow on a throwaway account, "See the welcome again", Light and Dark.

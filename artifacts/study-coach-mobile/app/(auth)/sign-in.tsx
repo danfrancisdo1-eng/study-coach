@@ -112,6 +112,7 @@ export default function SignInScreen() {
             <Text style={[styles.body, { color: colors.mutedForeground }]}>New to Study Coach? </Text>
             <Link href="/(auth)/sign-up" testID="link-sign-up"><Text style={[styles.link, { color: colors.primaryText }]}>Create account</Text></Link>
           </View>
+          <Link href="/onboarding?replay=1" style={styles.textButton} testID="link-tour"><Text style={[styles.body, { color: colors.mutedForeground }]}>See the tour</Text></Link>
         </>
       )}
       {error ? <Text accessibilityRole="alert" testID="status-auth-error" style={[styles.error, { color: colors.destructive }]}>{error}</Text> : null}
