@@ -11,8 +11,8 @@
 ### What the PR contains
 1. **D-048 aesthetics:** `components/GlassBar.tsx` (the "Coach · course" strip floats over the chat with native blur), `components/GlowRing.tsx` (gold ring around the message box while the coach writes), `components/Skeleton.tsx` (loading shapes on home, courses page, course screen). Reduce Motion respected.
 2. **D-049/D-050 first-launch tour:** `app/onboarding.tsx`, `components/onboarding/*`, `lib/onboarding.ts`. Five pages before sign-in, once per phone (AsyncStorage key `study-coach-onboarding-seen`), skippable after page 1, replayable from sign-in ("See the tour"). One hero and one title per page, no subheadings, no "welcome" wording, no brand name repeated (Dan, 2026-10-09). Tone: professional, for certification candidates as much as students.
-3. **Consent fix (from D-047):** adding a course from the courses page no longer writes `aiConsent: true`; an exam added before consent gets its guide lookup right after the consent card. The first message of a fresh course thread is one line with three chips; the general thread with no courses offers an "Add a course or exam" chip that opens the courses page with the Add sheet up (`/course-list?add=1`).
-4. **Removed on Dan's instruction (D-050):** the in-chat welcome screen (D-047), its "See the welcome again" row and `welcomeSeenAt`. "No welcome screen or anything of the sort."
+3. **D-047 in-chat welcome, built to Dan's own mock:** `components/Welcome.tsx`, `lib/welcome.ts`. Three short step cards (gold bar, icon, title, one line), a boundary line, the gold "Add a course or exam" button, "I'll explore first"; one screen, no scrolling. Shown in the chat area once per account when it has no courses and never dismissed (`welcomeSeenAt` in the study state); the composer under it is dimmed. Courses & exams → Account → "See the welcome again" replays it. Dan approved this; do not remove it (a commit on 2026-10-09 did so by misreading him and was reverted).
+4. **Consent fix (from D-047):** adding a course from the courses page no longer writes `aiConsent: true`; an exam added before consent gets its guide lookup right after the consent card. The first message of a fresh course thread is one line with three chips; the general thread with no courses offers an "Add a course or exam" chip that opens the courses page with the Add sheet up (`/course-list?add=1`).
 
 ### What Dan still has to check on the phone
 - The tour, all five pages, Light and Dark, Skip, "See the tour" from sign-in, Reduce Motion on. The stagger timing has never been seen by anyone; tune it by eye with Dan.
@@ -30,7 +30,7 @@
 ### Working with Dan (learned this session)
 - He reads chat, not .md files. Plain language, short concrete steps, one command block at a time, say which folder to run it from.
 - He is on PowerShell, not Git Bash. He tends to paste file contents as commands; give Notepad for file edits.
-- He wants the product to look professional, not aimed at kids. Less copy, never a subheading under a title. He approved a three-step in-chat welcome, then saw it next to Gauth's onboarding and removed it entirely. Show, do not narrate.
+- He wants the product to look professional, not aimed at kids. Less copy, never a subheading under a title, never the word "welcome" as a heading. When he says "no welcome screen" about the tour he means that wording, not his in-chat welcome. Ask one short question when an instruction could mean two things; a wrong guess cost a revert on 2026-10-09.
 - Never paste a credential into chat; he did once (an Expo token, since told to revoke). Say where a value lives instead.
 
 ### Open decisions

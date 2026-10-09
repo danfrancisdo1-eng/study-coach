@@ -18,6 +18,8 @@ import { defaultIntakeCourse, type IntakeCourse } from '@/lib/intake-course';
 import { QuizCard } from '@/components/QuizCard';
 import { FlashcardDeck } from '@/components/FlashcardDeck';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
+import { Welcome } from '@/components/Welcome';
+import { shouldShowWelcome, welcomeReplayKey, withWelcomeSeen } from '@/lib/welcome';
 import { GlassBar } from '@/components/GlassBar';
 import { GlowRing } from '@/components/GlowRing';
 import { HomeSkeleton } from '@/components/Skeleton';
@@ -88,6 +90,8 @@ export default function CoachHome() {
   const [studyOpen, setStudyOpen] = useState(false); // the full-screen sheet for the active set / deck
   const openedForRef = useRef<string | null>(null);
   const [intakeBusy, setIntakeBusy] = useState(false);
+  const [replayWelcome, setReplayWelcome] = useState(false); // "See the welcome again" on the courses page
+  const [welcomeBusy, setWelcomeBusy] = useState(false);
 
   const stateQuery = useGetStudyState({ query: { queryKey: [...getGetStudyStateQueryKey(), userId], enabled: !!userId } });
   // One thread per course (D-038): the chat follows the focused course; no focus = the general thread.
@@ -137,6 +141,7 @@ export default function CoachHome() {
   useFocusEffect(useCallback(() => {
     if (!userId) return;
     AsyncStorage.getItem(`study-coach-focus:${userId}`).then((saved) => { setFocusCourseId(saved || null); }).catch(() => {});
+    AsyncStorage.getItem(welcomeReplayKey(userId)).then((flag) => { setReplayWelcome(flag === '1'); }).catch(() => {});
   }, [userId]));
   const selectCourse = (id: string | null) => {
     setFocusCourseId(id);
@@ -195,11 +200,34 @@ export default function CoachHome() {
       const ageConfirmedAt = typeof state.ageConfirmedAt === 'string' ? state.ageConfirmedAt : new Date().toISOString();
       const result = await putState.mutateAsync({ data: { state: { ...state, aiConsent: true, ageConfirmedAt }, version: previous?.version ?? 0 } });
       queryClient.setQueryData([...getGetStudyStateQueryKey(), userId], result);
-      // An exam added before consent could not look up its guide yet; do it now.
+      // An exam added before consent (welcome → Add) could not look up its guide yet; do it now.
       for (const course of coursesFrom(result.state)) if (course.kind === 'exam' && !course.guide) void fetchGuide(course.id);
     } catch (problem) {
       setError(readableError(problem));
     }
+  };
+
+  // The welcome (D-047) is dismissed by either choice; the account remembers it (`welcomeSeenAt`),
+  // then "Add a course or exam" opens the courses page with the Add sheet already up.
+  const dismissWelcome = async (next: 'add' | 'explore') => {
+    if (welcomeBusy) return;
+    setWelcomeBusy(true);
+    setError('');
+    try {
+      const previous = stateQuery.data;
+      if (!(typeof record(previous?.state).welcomeSeenAt === 'string')) {
+        const result = await putState.mutateAsync({ data: { state: withWelcomeSeen(previous?.state), version: previous?.version ?? 0 } });
+        queryClient.setQueryData([...getGetStudyStateQueryKey(), userId], result);
+      }
+    } catch (problem) {
+      // Not saved (offline, or the state changed on another device): the welcome simply shows again next time.
+      if ((problem as { status?: number }).status === 409) await queryClient.invalidateQueries({ queryKey: [...getGetStudyStateQueryKey(), userId] });
+    } finally {
+      setWelcomeBusy(false);
+    }
+    setReplayWelcome(false);
+    if (userId) AsyncStorage.removeItem(welcomeReplayKey(userId)).catch(() => {});
+    if (next === 'add') router.push({ pathname: '/course-list', params: { add: '1' } });
   };
 
   // Report a coach reply (D-046): long-press → reason → the server marks the message and logs it for review.
@@ -352,6 +380,7 @@ export default function CoachHome() {
 
   const loading = stateQuery.isLoading || chatQuery.isLoading;
   const loadError = stateQuery.error ?? chatQuery.error;
+  const showWelcome = !loading && !loadError && shouldShowWelcome(stateQuery.data?.state, replayWelcome);
 
   return (
     <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: insets.top }]}>
@@ -368,6 +397,8 @@ export default function CoachHome() {
 
       {loading ? (
         <HomeSkeleton />
+      ) : showWelcome ? (
+        <Welcome busy={welcomeBusy} onAddCourse={() => void dismissWelcome('add')} onExplore={() => void dismissWelcome('explore')} />
       ) : loadError ? (
         <View style={styles.errorCard}>
           <Text style={styles.errorTitle}>Couldn’t load your chat</Text>
@@ -408,6 +439,7 @@ export default function CoachHome() {
             <View style={[styles.turn, styles.coachTurn]} testID="chat-empty">
               {focusCourse ? (
                 <>
+                  {/* The long how-to lives on the welcome now (D-047); the first thread message stays to one line. */}
                   <Text style={styles.body}>{focusCourse.name} is set. Add notes or a lecture with +, or ask for a practice set.</Text>
                   <View style={styles.chipRow}>
                     {[
@@ -490,18 +522,19 @@ export default function CoachHome() {
         </ScrollView>
         </View>
       </Modal>
-      {consented && !loading && !loadError ? (
-        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+      {(consented || showWelcome) && !loading && !loadError ? (
+        // During the welcome the composer stays in place but dimmed and inert (Dan: the first tap is the course, not a message into an empty thread).
+        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10) }, showWelcome && styles.composerDimmed]} accessibilityElementsHidden={showWelcome} importantForAccessibility={showWelcome ? 'no-hide-descendants' : 'auto'}>
           {error ? <Text style={styles.errorText} testID="status-chat-error">{error}</Text> : null}
           <View style={styles.composerRow}>
-            <Pressable accessibilityLabel="Add material or record a lecture" accessibilityRole="button" onPress={openPlus} style={styles.plusButton} testID="button-materials-plus">
+            <Pressable accessibilityLabel="Add material or record a lecture" accessibilityRole="button" disabled={showWelcome} onPress={openPlus} style={styles.plusButton} testID="button-materials-plus">
               <Feather name="plus" size={22} color={colors.primaryForeground} />
             </Pressable>
             {/* The gold ring spins only while the coach is writing a reply or a set (D-048). */}
             <GlowRing active={send.isPending} radius={16} style={styles.inputRing}>
             <TextInput
               value={draft} onChangeText={setDraft} placeholder="Message your coach" placeholderTextColor={colors.mutedForeground}
-              multiline maxLength={8000} style={[styles.input, { height: draft ? draftHeight : 44 }]} editable={!busy} accessibilityLabel="Message your coach" testID="input-home-chat"
+              multiline maxLength={8000} style={[styles.input, { height: draft ? draftHeight : 44 }]} editable={!busy && !showWelcome} accessibilityLabel="Message your coach" testID="input-home-chat"
               onContentSizeChange={(e) => setDraftHeight(Math.min(140, Math.max(44, Math.ceil(e.nativeEvent.contentSize.height) + (Platform.OS === 'ios' ? 22 : 16))))}
               returnKeyType="send" blurOnSubmit submitBehavior="blurAndSubmit" onSubmitEditing={() => void sendMessage()}
             />
@@ -603,6 +636,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   suggestion: { minHeight: 44, maxWidth: '100%', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.chipBorder, backgroundColor: colors.chipBg, alignItems: 'center', justifyContent: 'center' },
   suggestionText: { color: colors.primaryText, fontSize: 13.5, lineHeight: 18, fontWeight: '600' },
   composer: { paddingHorizontal: 14, paddingTop: 8, gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
+  composerDimmed: { opacity: 0.35, pointerEvents: 'none' },
   composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   plusButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   inputRing: { flex: 1 },

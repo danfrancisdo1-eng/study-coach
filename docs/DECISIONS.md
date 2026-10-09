@@ -2,10 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
-## 2026-10-09 — D-050: No welcome screen; the tour is one hero and one title per page
-- Dan, after seeing the tour next to the in-chat welcome: "remove the study coach double", "get rid of all the extra subheading, completely unnecessary", "no welcome screen or anything of the sort". So: the in-chat welcome (D-047, `components/Welcome.tsx`, `lib/welcome.ts`, `welcomeSeenAt`, "See the welcome again") is removed; the tour's first page loses the "Welcome to Study Coach" title and the repeated brand name and keeps the brand mark, the tagline "A tutor that has already read your material." as its only title, the agreement line and "Agree and continue"; every other page is hero + title + button, no line of copy under the title.
-- Kept from D-047: adding a course never grants AI consent by itself; the deferred guide lookup; the one-line first message of a fresh course thread with three chips; the "Add a course or exam" chip on the empty general thread.
-- Verified here: typecheck; unit tests (24, the four welcome tests gone); iOS bundle export. Needs real-iPhone check: the tour as it now reads. Decided by Dan.
+## 2026-10-09 — D-050: The tour is one hero and one title per page; no "welcome" wording anywhere
+- Dan, after seeing the tour: "remove the study coach double", "get rid of all the extra subheading, completely unnecessary", "no welcome screen or anything of the sort". Meaning, confirmed by Dan: the tour's first page loses the "Welcome to Study Coach" title and the repeated brand name, keeping the brand mark, the tagline "A tutor that has already read your material." as its only title, the agreement line and "Agree and continue"; every other page is hero + title + button, no line of copy under the title. The in-chat welcome (D-047, Dan's own mock) stays. Claude Code first removed it by mistake and restored it in the next commit.
+- Verified here: typecheck; unit tests; iOS bundle export. Needs real-iPhone check: the tour as it now reads. Decided by Dan.
 
 ## 2026-10-09 — D-049: First-launch tour before sign-in, aimed at professionals as much as students
 - Dan (from the phone, 2026-10-09, with Gauth's onboarding as the reference, screenshots + screen recording): "We look like an amateur." The reference's strengths are structural, not cosmetic: one hero per page built from the product itself, staged motion (hero first, then title and line, one button), a sequence before sign-in. Dan's second note: the references are aimed at kids; Study Coach should look as professional as possible, for certification candidates as much as students. So: no mascots, no confetti, no pastel, restrained motion, copy in the voice of someone studying for AWS, PMP or a board exam.

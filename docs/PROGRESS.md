@@ -11,7 +11,7 @@
 - Welcome revised to Dan's mock (shorter copy, icons, gold bar, one screen).
 - **D-049 first-launch tour, third commit on the PR:** `app/onboarding.tsx` + `components/onboarding/*` + `lib/onboarding.ts` (4 unit tests), root redirect, "See the tour" on sign-in. Professional tone per Dan. Verified here: typecheck; tests; iOS bundle export. **Needs real-iPhone check:** see D-049.
 
-- **D-050, fourth commit on the PR:** the in-chat welcome is gone on Dan's instruction; the tour is hero + title + button per page, no subheadings, no "welcome" wording, no repeated brand name. docs/HANDOFF.md has a 2026-10-09 section at the top for the next thread.
+- **D-050 on the PR:** the tour is hero + title + button per page, no subheadings, no "welcome" wording, no repeated brand name. The in-chat welcome (Dan's mock) stays; one commit removed it by mistake and the next restored it. docs/HANDOFF.md has a 2026-10-09 section at the top for the next thread.
 
 ### In progress
 - Nothing. Four commits are on PR #1, waiting for Dan's phone check of the tour.
