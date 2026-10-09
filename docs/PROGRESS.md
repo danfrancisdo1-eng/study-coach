@@ -13,8 +13,10 @@
 
 - **D-050 on the PR:** the tour is hero + title + button per page, no subheadings, no brand name repeated under the mark; page 1 keeps "Welcome to Study Coach". The in-chat welcome (Dan's mock) stays; it only shows by itself on an account with no courses. Two over-reaches (welcome removed, tour title removed) were reverted the same night. docs/HANDOFF.md has a 2026-10-09 section at the top for the next thread.
 
+- **Dan verified the welcome on his iPhone** (2026-10-09, served from the PC at `a20b5a4`): "That front page is fixed."
+
 ### In progress
-- Nothing. Four commits are on PR #1, waiting for Dan's phone check of the tour.
+- Nothing. Seven commits are on PR #1; the tour and the aesthetics pass still wait for Dan's phone check.
 
 ### Next
 - Dan on the phone: the welcome flow on a throwaway account, "See the welcome again", Light and Dark.

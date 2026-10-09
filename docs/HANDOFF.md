@@ -14,6 +14,9 @@
 3. **D-047 in-chat welcome, built to Dan's own mock:** `components/Welcome.tsx`, `lib/welcome.ts`. Three short step cards (gold bar, icon, title, one line), a boundary line, the gold "Add a course or exam" button, "I'll explore first"; one screen, no scrolling. Shown in the chat area once per account when it has no courses and never dismissed (`welcomeSeenAt` in the study state); the composer under it is dimmed. Courses & exams → Account → "See the welcome again" replays it. Dan approved this; do not remove it (a commit on 2026-10-09 did so by misreading him and was reverted).
 4. **Consent fix (from D-047):** adding a course from the courses page no longer writes `aiConsent: true`; an exam added before consent gets its guide lookup right after the consent card. The first message of a fresh course thread is one line with three chips; the general thread with no courses offers an "Add a course or exam" chip that opens the courses page with the Add sheet up (`/course-list?add=1`).
 
+### Verified by Dan on his iPhone (2026-10-09, from the Windows PC preview at `a20b5a4`)
+- The in-chat welcome built to his mock: "That front page is fixed." The earlier complaints were about a stale checkout on the PC; once it was reset to GitHub and Expo restarted with `--clear`, the right screen appeared.
+
 ### What Dan still has to check on the phone
 - The tour, all five pages, Light and Dark, Skip, "See the tour" from sign-in, Reduce Motion on. The stagger timing has never been seen by anyone; tune it by eye with Dan.
 - The glass strip over a busy chat (text contrast), the gold ring during "quiz me", the skeletons on a slow connection.
