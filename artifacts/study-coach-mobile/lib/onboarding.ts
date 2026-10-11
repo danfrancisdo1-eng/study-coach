@@ -1,6 +1,7 @@
 /**
- * The first-launch tour (D-049, trimmed in D-050): five pages before sign-in, once per phone,
- * replayable from the sign-in screen. One hero and one title per page, nothing else (no
+ * The tour (D-049, trimmed in D-050, D-054): five pages before every sign-in (Dan: "not just
+ * once per phone"), replayable from the sign-in screen and from Account. The seen key is still
+ * written but no longer gates anything. One hero and one title per page, nothing else (no
  * subheadings, and the brand name is not repeated under the mark on the first page). The copy
  * lives here so it is testable and so the screen stays layout.
  */

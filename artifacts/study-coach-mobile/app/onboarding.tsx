@@ -18,8 +18,8 @@ import { MaterialHero } from '@/components/onboarding/MaterialHero';
  * The first-launch tour (D-049, trimmed in D-050): five pages before sign-in, one hero and one
  * title each, built from the app's own components rather than illustrations; the hero enters
  * first, then the title, with one button and nothing else to read. Runs once per
- * phone (AsyncStorage), skippable after the agreement page, replayable from sign-in with
- * `?replay=1`. Pages crossfade; the heroes' entering animations follow Reduce Motion.
+ * sign-in (D-054: every new login, not once per phone), skippable after the agreement page,
+ * replayable from sign-in or Account with `?replay=1`. Pages crossfade; the heroes' entering animations follow Reduce Motion.
  */
 export default function OnboardingScreen() {
   const colors = useColors();
@@ -30,11 +30,15 @@ export default function OnboardingScreen() {
   const current = ONBOARDING_PAGES[page]!;
   const last = page === ONBOARDING_PAGES.length - 1;
 
-  const finish = () => {
+  // The tour plays before every sign-in (D-054). Get started lands on sign-up; Skip, on sign-in
+  // (someone skipping already has an account); a replay from inside the app just goes back.
+  const leave = (to: '/(auth)/sign-up' | '/(auth)/sign-in') => {
     AsyncStorage.setItem(ONBOARDING_SEEN_KEY, '1').catch(() => {});
     if (replay === '1' && router.canGoBack()) router.back();
-    else router.replace('/(auth)/sign-up');
+    else router.replace(to);
   };
+  const finish = () => leave('/(auth)/sign-up');
+  const skip = () => leave('/(auth)/sign-in');
   const next = () => { if (last) finish(); else setPage(page + 1); };
 
   const hero = current.key === 'intro' ? (
@@ -51,7 +55,7 @@ export default function OnboardingScreen() {
       <LinearGradient colors={[colors.accent, colors.background, colors.background]} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
       <View style={styles.topBar}>
         {page > 0 && !last ? (
-          <Pressable accessibilityRole="button" onPress={finish} style={styles.skip} testID="button-onboarding-skip"><Text style={styles.skipText}>Skip</Text></Pressable>
+          <Pressable accessibilityRole="button" onPress={skip} style={styles.skip} testID="button-onboarding-skip"><Text style={styles.skipText}>Skip</Text></Pressable>
         ) : null}
       </View>
       <View style={styles.pages}>
