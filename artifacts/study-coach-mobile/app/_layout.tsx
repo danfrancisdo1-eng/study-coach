@@ -61,13 +61,14 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   // System font (SF Pro) for the app's chrome (D-043). The question cards use Source Sans 3 and
-  // Fraunces (D-053, constants/type.ts); the faces ship in the bundle and load before the splash
-  // goes, and a load error still opens the app on the system font.
-  const [fontsReady, fontError] = useFonts({ SourceSans3_400Regular, SourceSans3_600SemiBold, SourceSans3_700Bold, Fraunces_600SemiBold });
+  // Fraunces (D-053, constants/type.ts); the faces ship in the bundle and load in the background.
+  // Nothing waits on them: the app opens at once and the splash goes on mount (2026-10-11, after
+  // the app sat on a loading screen on Dan's phone). A card drawn before they land uses the
+  // system font for that first frame, which is harmless; a load error changes nothing.
+  useFonts({ SourceSans3_400Regular, SourceSans3_600SemiBold, SourceSans3_700Bold, Fraunces_600SemiBold });
   useEffect(() => {
-    if (fontsReady || fontError) SplashScreen.hideAsync();
-  }, [fontsReady, fontError]);
-  if (!fontsReady && !fontError) return null;
+    SplashScreen.hideAsync();
+  }, []);
 
   return (
     <SafeAreaProvider>
