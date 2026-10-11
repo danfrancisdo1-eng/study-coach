@@ -9,8 +9,8 @@ test('a new account (no state, or no courses and never dismissed) sees the welco
   assert.equal(shouldShowWelcome({ aiConsent: true, courses: [] }), true);
 });
 
-test('dismissing it once hides it on every device', () => {
-  assert.equal(shouldShowWelcome({ aiConsent: false, courses: [], welcomeSeenAt: '2026-10-08T22:00:00.000Z' }), false);
+test('dismissing it does not hide it while the account still has no course (D-055)', () => {
+  assert.equal(shouldShowWelcome({ aiConsent: false, courses: [], welcomeSeenAt: '2026-10-08T22:00:00.000Z' }), true);
   assert.equal(shouldShowWelcome({ aiConsent: true, courses: [{ id: 'bio', name: 'Biology' }], welcomeSeenAt: '2026-10-08T22:00:00.000Z' }), false);
 });
 

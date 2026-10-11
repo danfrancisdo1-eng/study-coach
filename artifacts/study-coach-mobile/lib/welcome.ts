@@ -1,17 +1,17 @@
 /**
- * The one-time welcome (D-047): shown on the coach screen once per account, before the
- * student has anything, and dismissed into either the Add sheet or the empty coach screen.
- * Dismissal is recorded in the study state (`welcomeSeenAt`), so a second phone never shows
- * it again; "See the welcome again" on the courses page sets a per-device replay flag.
+ * The welcome (D-047, D-055): shown on the coach screen whenever the account has no course or
+ * exam yet (every launch until one is added), and dismissed into either the Add sheet or the
+ * empty coach screen. Once a course exists it never shows by itself; "See the welcome again"
+ * on the courses page sets a per-device replay flag. `welcomeSeenAt` is still recorded in the
+ * study state (when it was first dismissed) but no longer hides it.
  */
 type StateRecord = Record<string, unknown>;
 const record = (value: unknown): StateRecord => (value && typeof value === 'object' ? value as StateRecord : {});
 
-/** True when the welcome should be on screen: a replay was asked for, or the account has never dismissed it and has no courses yet. */
+/** True when the welcome should be on screen: a replay was asked for, or the account has no course or exam yet (D-055). */
 export function shouldShowWelcome(state: unknown, replay = false): boolean {
   if (replay) return true;
   const s = record(state);
-  if (typeof s.welcomeSeenAt === 'string' && s.welcomeSeenAt) return false;
   return !(Array.isArray(s.courses) && s.courses.length > 0);
 }
 

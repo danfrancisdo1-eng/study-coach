@@ -11,8 +11,10 @@
 - **`de55e96`:** the card ignores the phone's Text Size (Dan's screenshots showed a uniform 1.25× scale; the Grok reference is a web page). Not yet seen on the phone: his checkout had not pulled when he stopped.
 - **Dan saw the live card on the phone** (question 1 in the chat, Source Sans 3) at 23:45 on 2026-10-11.
 
+- **02:00–02:30 on 2026-10-12, Dan back at the Mac on `82c2b2d`:** the loading-screen cause found (the font gate, removed), "See the tour again" in Account, the tour before every sign-in (D-054), the welcome rebuilt to Dan's stage-1 spec and shown until a course exists (D-055).
+
 ### In progress
-- Nothing on the branch. Session ended with Dan frustrated about the size; docs/HANDOFF.md top section says exactly what to do first next time.
+- Dan's three-stage agenda (D-055 entry lists it): next the returning-user home = course list (D-056), then stage 2 (buttons after adding a course), then stage 3 (course screen actions, topic history, recommendations).
 
 ### Next
 - First: get the Mac onto `de55e96` (one command, see HANDOFF) and have Dan look at one question. Then "match it" for the feedback styling if he confirms.
