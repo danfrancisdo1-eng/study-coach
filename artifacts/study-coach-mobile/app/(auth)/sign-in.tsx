@@ -24,7 +24,7 @@ export default function SignInScreen() {
 
   const finishSignIn = async () => {
     await signIn.finalize();
-    router.replace('/(tabs)');
+    router.replace('/');
   };
 
   const submit = async () => {
@@ -64,7 +64,7 @@ export default function SignInScreen() {
   };
 
   if (isSignedIn) {
-    return <Redirect href="/(tabs)" />;
+    return <Redirect href="/" />;
   }
 
   const needsEmailCode = signIn.status === 'needs_client_trust';

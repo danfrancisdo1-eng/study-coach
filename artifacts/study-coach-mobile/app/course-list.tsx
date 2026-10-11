@@ -78,7 +78,7 @@ export default function CourseListScreen() {
   }, [userId]);
 
   if (!isLoaded) return null;
-  if (!isSignedIn) return <Redirect href="/(auth)/sign-in" />;
+  if (!isSignedIn) return <Redirect href="/" />;
 
   const rows = rowsFrom(stateQuery.data?.state);
   const busy = putState.isPending;
@@ -90,10 +90,13 @@ export default function CourseListScreen() {
     if (typeof score === 'number') lastResult.set(summary.courseId, `last set ${Math.round(score)}%`);
   }
 
+  // The list is the home for a returning account (D-056): with the coach screen underneath, go back to it; as the root, open it.
+  const atRoot = !router.canGoBack();
+  const toCoach = () => { if (router.canGoBack()) router.back(); else router.push('/(tabs)'); };
   const select = (id: string | null) => {
     setFocusId(id);
     if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, id ?? '').catch(() => {});
-    router.back();
+    toCoach();
   };
 
   // After an exam is added, fetch its official guide once; the row shows progress meanwhile.
@@ -155,8 +158,12 @@ export default function CourseListScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="screen-course-list">
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
-        <View style={styles.headerCopy}><Text style={styles.title}>Courses & exams</Text><Text style={styles.caption}>Tap one to make it the coach's focus</Text></View>
+        {atRoot ? (
+          <Pressable accessibilityRole="button" accessibilityLabel="Talk to your coach" onPress={toCoach} style={styles.iconButton} testID="button-coach"><Feather name="message-circle" size={22} color={colors.primaryText} /></Pressable>
+        ) : (
+          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
+        )}
+        <View style={styles.headerCopy}><Text style={styles.title}>Courses & exams</Text><Text style={styles.caption}>{atRoot ? 'Tap one to study it with the coach' : "Tap one to make it the coach's focus"}</Text></View>
         <Pressable accessibilityRole="button" onPress={() => setAddOpen(true)} style={styles.addButton} testID="button-add-course">
           <Feather name="plus" size={16} color={colors.primaryText} /><Text style={styles.addText}>Add</Text>
         </Pressable>
@@ -193,7 +200,7 @@ export default function CourseListScreen() {
               <Feather name="external-link" size={16} color={colors.mutedForeground} />
             </Pressable>
           ) : null}
-          <Pressable accessibilityRole="button" onPress={() => { if (!userId) return; AsyncStorage.setItem(welcomeReplayKey(userId), '1').catch(() => {}).finally(() => router.back()); }} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-replay-welcome">
+          <Pressable accessibilityRole="button" onPress={() => { if (!userId) return; AsyncStorage.setItem(welcomeReplayKey(userId), '1').catch(() => {}).finally(toCoach); }} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-replay-welcome">
             <Feather name="compass" size={16} color={colors.mutedForeground} />
             <View style={styles.rowCopy}><Text style={styles.rowName}>See the welcome again</Text><Text style={styles.caption}>The three steps: course, material, coach</Text></View>
           </Pressable>
@@ -201,6 +208,10 @@ export default function CourseListScreen() {
           <Pressable accessibilityRole="button" onPress={() => router.push('/onboarding?replay=1')} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-replay-tour">
             <Feather name="play-circle" size={16} color={colors.mutedForeground} />
             <View style={styles.rowCopy}><Text style={styles.rowName}>See the tour again</Text><Text style={styles.caption}>The five pages from the first launch</Text></View>
+          </Pressable>
+          <Pressable accessibilityRole="button" onPress={() => void signOut()} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-sign-out">
+            <Feather name="log-out" size={16} color={colors.mutedForeground} />
+            <View style={styles.rowCopy}><Text style={styles.rowName}>Sign out</Text><Text style={styles.caption}>The next sign-in starts with the tour</Text></View>
           </Pressable>
           <Pressable accessibilityRole="button" onPress={() => { setError(''); setDeleteWord(''); setDeleteOpen(true); }} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-delete-account">
             <Feather name="trash-2" size={16} color={colors.destructive} />

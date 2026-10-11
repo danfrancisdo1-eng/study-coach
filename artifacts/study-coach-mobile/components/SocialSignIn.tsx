@@ -42,7 +42,7 @@ export function SocialSignIn({ disabled = false }: { disabled?: boolean }) {
               setError('Your account needs another step before sign-in can finish. Please use email sign-in or contact support.');
               return;
             }
-            router.replace('/(tabs)');
+            router.replace('/');
           },
         });
       } else if (result.authSessionResult?.type === 'cancel' || result.authSessionResult?.type === 'dismiss') {

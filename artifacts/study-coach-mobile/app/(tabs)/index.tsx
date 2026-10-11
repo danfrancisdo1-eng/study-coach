@@ -156,7 +156,8 @@ export default function CoachHome() {
     }
   }, [courses.length, messages.length]);
   // The course list page (D-036): pick the coach's focus, open a course, add one.
-  const openCourses = () => router.push('/course-list');
+  // The list is the home for a returning account (D-056): when it is underneath, go back to it; otherwise open it.
+  const openCourses = () => { if (router.canGoBack()) router.back(); else router.push('/course-list'); };
   const activeQuiz = chatQuery.data?.activeQuiz ?? null;
   const activeDeck = chatQuery.data?.activeDeck ?? null;
   // A practice set lives in the thread as a card under the coach message that started it
@@ -202,7 +203,7 @@ export default function CoachHome() {
   };
 
   if (!isLoaded) return null;
-  if (!isSignedIn) return <Redirect href="/(auth)/sign-in" />;
+  if (!isSignedIn) return <Redirect href="/" />;
 
   const giveConsent = async () => {
     setError('');

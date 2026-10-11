@@ -13,8 +13,10 @@
 
 - **02:00–02:30 on 2026-10-12, Dan back at the Mac on `82c2b2d`:** the loading-screen cause found (the font gate, removed), "See the tour again" in Account, the tour before every sign-in (D-054), the welcome rebuilt to Dan's stage-1 spec and shown until a course exists (D-055).
 
+- **D-056 home = course list for a returning account** (`lib/home.ts`, entry route, Coach button and Sign out on the list). Verified here: typecheck; 37/37 tests; iOS bundle export.
+
 ### In progress
-- Dan's three-stage agenda (D-055 entry lists it): next the returning-user home = course list (D-056), then stage 2 (buttons after adding a course), then stage 3 (course screen actions, topic history, recommendations).
+- Dan's three-stage agenda: next stage 2 (three buttons after adding a course: Add material, Add another course, Return to course list), then stage 3 (course screen actions incl. Flashcards and Hooks with a topic picker, topic history with misses, coach recommendations).
 
 ### Next
 - First: get the Mac onto `de55e96` (one command, see HANDOFF) and have Dan look at one question. Then "match it" for the feedback styling if he confirms.
