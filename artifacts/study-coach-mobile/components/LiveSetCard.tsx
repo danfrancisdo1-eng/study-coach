@@ -67,8 +67,8 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
   if (!session || !quiz) {
     return (
       <View style={styles.card} testID="card-live-set-error">
-        <Text style={styles.muted}>Couldn’t load this set.</Text>
-        <Pressable accessibilityRole="button" onPress={() => void sessionQuery.refetch()} style={styles.secondaryButton} testID="button-retry-live-set"><Text style={styles.secondaryText}>Retry</Text></Pressable>
+        <CardText style={styles.muted}>Couldn’t load this set.</CardText>
+        <Pressable accessibilityRole="button" onPress={() => void sessionQuery.refetch()} style={styles.secondaryButton} testID="button-retry-live-set"><CardText style={styles.secondaryText}>Retry</CardText></Pressable>
       </View>
     );
   }
@@ -98,9 +98,9 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
 
   // The report link, or the verdict once the question was reported.
   const reportNote = (question: StudyQuizQuestionsItem) => {
-    if (reportingId === question.id) return <View style={styles.note} testID="status-recheck"><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.noteText}>Checking the answer again…</Text></View>;
+    if (reportingId === question.id) return <View style={styles.note} testID="status-recheck"><ActivityIndicator color={colors.primaryText} size="small" /><CardText style={styles.noteText}>Checking the answer again…</CardText></View>;
     const recheck = question.flag?.recheck;
-    if (question.flag && !recheck) return <View style={styles.note} testID="note-recheck"><Feather name="flag" size={14} color={colors.mutedForeground} /><Text style={styles.noteText}>Reported. This question won’t count.</Text></View>;
+    if (question.flag && !recheck) return <View style={styles.note} testID="note-recheck"><Feather name="flag" size={14} color={colors.mutedForeground} /><CardText style={styles.noteText}>Reported. This question won’t count.</CardText></View>;
     if (recheck) {
       const youWereRight = recheck.verdict === 'key_wrong' && !!question.answer && recheck.correctOptionId === question.answer.optionId;
       const headline = recheck.verdict === 'key_holds' ? 'Checked again: the answer key holds.'
@@ -109,13 +109,13 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
       return (
         <View style={styles.note} testID={`note-recheck-${recheck.verdict}`}>
           <Feather name={recheck.verdict === 'key_holds' ? 'check-circle' : 'alert-circle'} size={14} color={recheck.verdict === 'key_holds' ? colors.mutedForeground : colors.primaryText} />
-          <Text style={styles.noteText}><Text style={styles.noteStrong}>{headline}</Text> {recheck.explanation}</Text>
+          <CardText style={styles.noteText}><CardText style={styles.noteStrong}>{headline}</CardText> {recheck.explanation}</CardText>
         </View>
       );
     }
     return (
       <Pressable accessibilityRole="button" accessibilityLabel="Report this question" disabled={!!reportingId} onPress={() => report(question)} style={styles.reportLink} testID={`button-report-${question.id}`}>
-        <Text style={styles.reportLinkText}>Looks wrong?</Text>
+        <CardText style={styles.reportLinkText}>Looks wrong?</CardText>
       </Pressable>
     );
   };
@@ -125,8 +125,8 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
     const feedback = question.feedback ?? null;
     return (
       <View style={styles.question}>
-        <Text style={styles.kicker}>Question {position + 1} of {total}{question.concept ? ` · ${question.concept}` : ''}</Text>
-        <Text style={styles.prompt}>{question.prompt}</Text>
+        <CardText style={styles.kicker}>Question {position + 1} of {total}{question.concept ? ` · ${question.concept}` : ''}</CardText>
+        <CardText style={styles.prompt}>{question.prompt}</CardText>
         {question.options.map((option, i) => {
           const chosen = feedback ? feedback.selectedOptionId === option.id : false;
           const correct = feedback ? feedback.correctOptionId === option.id : false;
@@ -136,8 +136,8 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
               onPress={() => void choose(question, option.id)}
               style={({ pressed }) => [styles.option, mark === 'correct' && styles.optionCorrect, mark === 'wrong' && styles.optionWrong, pressed && answerable && styles.pressed, busy && answerable && styles.disabled]}
               testID={`button-live-option-${i}`}>
-              <Text style={[styles.optionLetter, mark === 'correct' && styles.optionLetterCorrect, mark === 'wrong' && styles.optionLetterWrong]}>{'ABCDE'[i]}</Text>
-              <Text style={[styles.optionText, mark && styles.optionTextMarked]}>{option.text}</Text>
+              <CardText style={[styles.optionLetter, mark === 'correct' && styles.optionLetterCorrect, mark === 'wrong' && styles.optionLetterWrong]}>{'ABCDE'[i]}</CardText>
+              <CardText style={[styles.optionText, mark && styles.optionTextMarked]}>{option.text}</CardText>
               {mark ? <Feather name={mark === 'correct' ? 'check' : 'x'} size={18} color={mark === 'correct' ? colors.correct : colors.wrong} /> : null}
             </Pressable>
           );
@@ -155,10 +155,10 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
       <View style={styles.feedback}>
         <View style={styles.verdict}>
           <Feather name={correct ? 'check-circle' : 'x-circle'} size={20} color={correct ? colors.correct : colors.wrong} />
-          <Text style={[styles.verdictText, { color: correct ? colors.correct : colors.wrong }]}>{correct ? 'Correct' : 'Not quite'}</Text>
+          <CardText style={[styles.verdictText, { color: correct ? colors.correct : colors.wrong }]}>{correct ? 'Correct' : 'Not quite'}</CardText>
         </View>
-        <Text style={styles.body}>{feedback.explanation}</Text>
-        {feedback.hook ? <View style={styles.hook}><Feather name="zap" size={15} color={colors.hookText} /><Text style={styles.hookText}>{feedback.hook}</Text></View> : null}
+        <CardText style={styles.body}>{feedback.explanation}</CardText>
+        {feedback.hook ? <View style={styles.hook}><Feather name="zap" size={15} color={colors.hookText} /><CardText style={styles.hookText}>{feedback.hook}</CardText></View> : null}
         {reportNote(question)}
       </View>
     );
@@ -193,9 +193,9 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
           <Animated.View key={q.id} entering={FadeIn.duration(220)} layout={LinearTransition.duration(220)}>
             <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`Question ${position + 1}, ${result === 'correct' ? 'correct' : result === 'wrong' ? 'missed' : 'answered'}: ${q.concept}`}
               onPress={() => setExpandedId(open ? null : q.id)} style={({ pressed }) => [styles.row, pressed && styles.pressed]} testID={`row-live-${position}`}>
-              <Text style={styles.rowNumber}>{position + 1}</Text>
+              <CardText style={styles.rowNumber}>{position + 1}</CardText>
               <Feather name={result === 'correct' ? 'check-circle' : result === 'wrong' ? 'x-circle' : 'circle'} size={16} color={result === 'correct' ? colors.correct : result === 'wrong' ? colors.wrong : colors.mutedForeground} />
-              <Text numberOfLines={open ? undefined : 1} style={styles.rowText}>{q.concept || q.prompt}</Text>
+              <CardText numberOfLines={open ? undefined : 1} style={styles.rowText}>{q.concept || q.prompt}</CardText>
               <Feather name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
             </Pressable>
             {open ? <View style={styles.rowOpen}>{questionBlock(q, position, false)}{feedbackBlock(q)}</View> : null}
@@ -211,14 +211,14 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
     const tallies = conceptTallies(quiz.questions.filter(counts));
     live = (
       <Animated.View entering={FadeInUp.duration(320)} style={styles.live} onLayout={liveLayout(step)} testID="panel-live-score">
-        <Text style={styles.score}><Text style={styles.scoreBig}>{quiz.grade.correct}</Text><Text style={styles.scoreOf}>/{quiz.grade.answered}</Text></Text>
-        <Text style={styles.body}>{scoreLine(percent)}</Text>
-        <Text style={styles.small}>{percent}% on the questions you answered{quiz.grade.unanswered ? ` · ${quiz.grade.unanswered} skipped` : ''}.</Text>
+        <CardText style={styles.score}><CardText style={styles.scoreBig}>{quiz.grade.correct}</CardText><CardText style={styles.scoreOf}>/{quiz.grade.answered}</CardText></CardText>
+        <CardText style={styles.body}>{scoreLine(percent)}</CardText>
+        <CardText style={styles.small}>{percent}% on the questions you answered{quiz.grade.unanswered ? ` · ${quiz.grade.unanswered} skipped` : ''}.</CardText>
         {tallies.length > 1 ? (
           <View style={styles.tallies} testID="panel-live-tallies">
             {tallies.map((t) => (
               <View key={t.concept} style={styles.tally} accessible accessibilityLabel={`${t.concept}: ${t.correct} of ${t.total}`}>
-                <View style={styles.tallyHead}><Text numberOfLines={1} style={styles.tallyName}>{t.concept}</Text><Text style={styles.tallyCount}>{t.correct}/{t.total}</Text></View>
+                <View style={styles.tallyHead}><CardText numberOfLines={1} style={styles.tallyName}>{t.concept}</CardText><CardText style={styles.tallyCount}>{t.correct}/{t.total}</CardText></View>
                 <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${Math.round((t.correct / t.total) * 100)}%` }, t.correct < t.total && styles.progressFillPartial]} /></View>
               </View>
             ))}
@@ -236,7 +236,7 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
         {questionBlock(reviewing, position, false)}
         <Animated.View entering={FadeInUp.duration(280)}>{feedbackBlock(reviewing)}</Animated.View>
         <Pressable accessibilityRole="button" disabled={busy} onPress={() => { if (last) void gradeSet(); else setReviewingId(null); }} style={[styles.primaryButton, busy && styles.disabled]} testID="button-live-next">
-          {busy ? <ActivityIndicator color={colors.primaryForeground} /> : <><Text style={styles.primaryText}>{last ? 'See the score' : 'Next question'}</Text><Feather name="arrow-right" size={18} color={colors.primaryForeground} /></>}
+          {busy ? <ActivityIndicator color={colors.primaryForeground} /> : <><CardText style={styles.primaryText}>{last ? 'See the score' : 'Next question'}</CardText><Feather name="arrow-right" size={18} color={colors.primaryForeground} /></>}
         </Pressable>
       </View>
     );
@@ -256,9 +256,9 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
   } else {
     live = (
       <View style={styles.live} onLayout={liveLayout(step)} testID="panel-live-grade">
-        <Text style={styles.heading}>All {questions.length} answered.</Text>
+        <CardText style={styles.heading}>All {questions.length} answered.</CardText>
         <Pressable accessibilityRole="button" disabled={busy} onPress={() => void gradeSet()} style={[styles.primaryButton, busy && styles.disabled]} testID="button-live-grade">
-          {busy ? <ActivityIndicator color={colors.primaryForeground} /> : <><Text style={styles.primaryText}>Grade</Text><Feather name="arrow-right" size={18} color={colors.primaryForeground} /></>}
+          {busy ? <ActivityIndicator color={colors.primaryForeground} /> : <><CardText style={styles.primaryText}>Grade</CardText><Feather name="arrow-right" size={18} color={colors.primaryForeground} /></>}
         </Pressable>
       </View>
     );
@@ -267,8 +267,8 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
   return (
     <Animated.View layout={LinearTransition.duration(220)} style={styles.card} testID="card-live-set">
       <View style={styles.head}>
-        <Text style={styles.kicker}>Practice · {session.topic}</Text>
-        {!quiz.grade ? <Text style={styles.headCount} accessibilityLabel={`${answered.length} of ${total} answered`}>{answered.length}/{total}</Text> : null}
+        <CardText style={styles.kicker}>Practice · {session.topic}</CardText>
+        {!quiz.grade ? <CardText style={styles.headCount} accessibilityLabel={`${answered.length} of ${total} answered`}>{answered.length}/{total}</CardText> : null}
       </View>
       {!quiz.grade ? (
         <View style={styles.progressTrack} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: total, now: answered.length }}>
@@ -279,6 +279,15 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
       {live}
     </Animated.View>
   );
+}
+
+/**
+ * Text on the card at the reference sizes exactly: the phone's Text Size setting is not applied
+ * (Dan, 2026-10-11: the card read a step larger than the Grok reference on the same phone; the
+ * reference is a web page, which ignores that setting). The rest of the app still scales.
+ */
+function CardText(props: React.ComponentProps<typeof Text>) {
+  return <Text maxFontSizeMultiplier={1} {...props} />;
 }
 
 /** Gray shapes in the shape of a question (kicker, two lines of prompt, four options) with one caption. */
@@ -293,7 +302,7 @@ function QuestionSkeleton({ caption }: { caption: string }) {
         <Bone width="70%" height={18} />
         {[0, 1, 2, 3].map((i) => <Bone key={i} height={52} radius={14} style={i === 0 ? styles.skeletonFirstOption : undefined} />)}
       </SkeletonGroup>
-      <View style={styles.note}><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.noteText}>{caption}</Text></View>
+      <View style={styles.note}><ActivityIndicator color={colors.primaryText} size="small" /><CardText style={styles.noteText}>{caption}</CardText></View>
     </View>
   );
 }
