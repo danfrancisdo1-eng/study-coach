@@ -34,7 +34,8 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   const styles = createStyles(colors);
   const queryClient = useQueryClient();
   const key = [...getGetStudySessionQueryKey(sessionId), userId];
-  const sessionQuery = useGetStudySession(sessionId, { query: { queryKey: key, enabled: !!userId } });
+  // A two-part set (D-052) is polled while the rest of it is still being written.
+  const sessionQuery = useGetStudySession(sessionId, { query: { queryKey: key, enabled: !!userId, refetchInterval: (query) => (query.state.data?.quiz?.status === 'writing' ? 1500 : false) } });
   const saveAnswer = useSaveStudyAnswer();
   const grade = useGradeStudyQuiz();
   const flag = useFlagStudyQuestion();
@@ -71,6 +72,9 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   const questions = quiz.questions.filter(counts);
   const answered = questions.filter((q) => q.answer);
   const kindLabel = quiz.kind === 'practice' ? 'Practice' : 'Exam';
+  const writing = quiz.status === 'writing';
+  // While the rest is on its way, the set's size is what it will be, so "Question 2 of 10" stays true.
+  const total = writing ? Math.max(quiz.expectedCount, questions.length) : questions.length;
 
   const report = (question: StudyQuizQuestionsItem) => {
     const send = async (kind: StudyQuestionFlagInputKind) => {
@@ -112,9 +116,9 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   };
 
   const progress = (
-    <View style={styles.progress} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: questions.length, now: answered.length }}>
-      <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${questions.length ? Math.round((answered.length / questions.length) * 100) : 0}%` }]} /></View>
-      <Text style={styles.progressText}>{answered.length} of {questions.length} answered</Text>
+    <View style={styles.progress} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: total, now: answered.length }}>
+      <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${total ? Math.round((answered.length / total) * 100) : 0}%` }]} /></View>
+      <Text style={styles.progressText}>{answered.length} of {total} answered</Text>
     </View>
   );
 
@@ -147,7 +151,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
     const position = questions.indexOf(reviewing);
     return (
       <View style={styles.card} testID="panel-quiz-feedback">
-        <Text style={styles.kicker}>{kindLabel} · {position >= 0 ? `Question ${position + 1} of ${questions.length}` : 'Reported question'}</Text>
+        <Text style={styles.kicker}>{kindLabel} · {position >= 0 ? `Question ${position + 1} of ${total}` : 'Reported question'}</Text>
         <View style={styles.miss}>
           <Text style={styles.missPrompt}>{reviewing.prompt}</Text>
           <View style={styles.verdict}>
@@ -162,7 +166,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
         </View>
         {progress}
         <Pressable accessibilityRole="button" onPress={() => setReviewingId(null)} style={styles.primaryButton} testID="button-quiz-next">
-          <Text style={styles.primaryText}>{answered.length >= questions.length ? 'See the score' : 'Next question'}</Text>
+          <Text style={styles.primaryText}>{answered.length >= questions.length && !writing ? 'See the score' : 'Next question'}</Text>
         </Pressable>
       </View>
     );
@@ -189,6 +193,17 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   ) : null;
 
   const current: StudyQuizQuestionsItem | undefined = (isExam && currentId ? questions.find((q) => q.id === currentId) : undefined) ?? questions.find((q) => !q.answer);
+  if (!current && writing) {
+    // The first part is answered and the rest has not landed yet: the card waits (polling above), no Grade yet.
+    return (
+      <View style={styles.card} testID="panel-quiz-writing">
+        <Text style={styles.kicker}>{kindLabel} · {session.topic}</Text>
+        {progress}
+        {bubbles}
+        <View style={styles.note}><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.noteText}>Writing question {answered.length + 1}…</Text></View>
+      </View>
+    );
+  }
   if (!current) {
     return (
       <View style={styles.card} testID="panel-quiz-grade">
@@ -226,7 +241,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   const chosen = isExam ? current.answer?.optionId ?? null : null;
   return (
     <View style={styles.card} testID="panel-quiz-question">
-      <Text style={styles.kicker}>{kindLabel} · Question {questions.indexOf(current) + 1} of {questions.length}</Text>
+      <Text style={styles.kicker}>{kindLabel} · Question {questions.indexOf(current) + 1} of {total}</Text>
       {progress}
       {bubbles}
       <Text style={styles.prompt}>{current.prompt}</Text>

@@ -8,6 +8,7 @@
 import type { StudyQuizKind } from './studyQuizKind';
 import type { StudyQuizMode } from './studyQuizMode';
 import type { StudyQuizQuestionsItem } from './studyQuizQuestionsItem';
+import type { StudyQuizStatus } from './studyQuizStatus';
 import type { StudyScore } from './studyScore';
 import type { StudySourceStatus } from './studySourceStatus';
 
@@ -15,6 +16,8 @@ export interface StudyQuiz {
   mode: StudyQuizMode;
   /** Chat-first sets only. Practice: feedback appears on each answered question before grading. */
   kind?: StudyQuizKind;
+  /** Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready. */
+  status: StudyQuizStatus;
   /** @minimum 1 */
   expectedCount: number;
   /** @minimum 0 */

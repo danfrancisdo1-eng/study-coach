@@ -1,5 +1,21 @@
 # Progress
 
+## Session 8 — 2026-10-11 (Dan at the Mac; preview served from the Mac on this branch)
+
+### Done
+- **Mac preview on the branch:** Node installed on the Mac, pnpm installed with `sudo npm install -g pnpm`, the repo is at `/Users/mini_home/Downloads/study-coach-project` (the web app folder inside it is also named `study-coach`, so `cd` by the full path), Expo CLI logged in as `danfrancis`, `npx expo start --clear` in `artifacts/study-coach-mobile`, same Wi-Fi. Dan saw the welcome (approved mock, unchanged) and the gold ring ("a very faint gold light circling the message box").
+- **D-052 two-part sets (commit 1 of 2 for D-051):** the first three questions come back with the coach's reply, the rest are written in the background and appended; `status: writing | ready` on the set and on `activeQuiz`; answers taken while writing, grading waits; the phone's set sheet polls and shows "Writing question N…". Verified here: typecheck; 109/109 tests (new: two-part end-to-end + status unit tests); iOS bundle export. **Needs real-iPhone check:** a set of ten from the chat, first card in seconds.
+
+### In progress
+- **D-051 commit 2, the live card in the chat:** practice sets as one card at the bottom of the thread (writing skeleton, question, answer in place, verdict + memory trick, answered questions collapse to one line, score at the end); exam sets keep the full-screen sheet. Fonts: Dan wants the crisp, smaller, professional look of his cream-and-teal screenshots (source app unknown); Claude Code proposed Source Serif for headings and the score, Source Sans for the rest, at the screenshot's sizes (question 20, options 17, headings 28 serif, score 44 serif, kicker 13 uppercase). Adding the two font packages needs Dan's OK.
+
+### Next
+- Dan's phone checks still open: the tour ("See the tour" under "Create account" on the sign-in screen), the frosted strip (Dan: "I didn't see any frosted glass"), skeletons, Light mode, Reduce Motion.
+- Waiting on Dan: merge PR #1 (deploys the server to Render) so the D-051 work gets its own PR; the exam-guide fix (near-match suggestion, no invented domains for an unknown code; evals need the keys on the Mac).
+
+### Blockers
+- None.
+
 ## Session 7 — 2026-10-08 (night, cloud session; the Mac's Remote Control session was archived by a host exit at 21:56 UTC)
 
 ### Done

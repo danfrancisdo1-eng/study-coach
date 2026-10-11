@@ -168,7 +168,7 @@ test('home chat: practice and exam question sets', async (t) => {
   assert.equal(started.type, 'start_quiz');
   assert.equal(started.kind, 'practice');
   assert.equal(started.count, 4);
-  assert.deepEqual(chat.body.activeQuiz, { sessionId: started.sessionId, courseId: 'bio', topic: 'cells', kind: 'practice', answered: 0, total: 4 });
+  assert.deepEqual(chat.body.activeQuiz, { sessionId: started.sessionId, courseId: 'bio', topic: 'cells', kind: 'practice', status: 'ready', answered: 0, total: 4 });
   let session = (await call('GET', `/study/sessions/${started.sessionId}`)).body;
   assert.equal(session.checkIn.skipped, true);
   assert.equal(session.quiz.kind, 'practice');
@@ -556,4 +556,125 @@ test('home chat: answer-key check fixes a wrong key and drops an unclear questio
   chat = await call('POST', '/study/chat', { content: 'another', version: 1 });
   assert.equal(chat.status, 200, JSON.stringify(chat.body));
   assert.equal(chat.body.messages.at(-1).actions[0].count, 4);
+});
+
+// Two-part sets (D-052): six or more questions come as the first three with the reply and the
+// rest after it. The first part can be answered while the rest is written; grading waits;
+// a failed second part leaves the set as its first part.
+test('home chat: a set of six or more arrives in two parts', async (t) => {
+  buildServer();
+  const database = await startDatabase(t);
+  let coach = { reply: 'Set coming.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 8, kind: 'practice', scope: 'all' }] };
+  let written = 0; // questions handed out so far, so every part has fresh prompts
+  let writerCalls = 0; // writer calls for the current set (reset before each request)
+  let holdSecondPart = null; // a promise the stub waits on before answering the second "Create exactly"
+  let failSecondPart = false;
+  const partReply = (n) => chatReply(JSON.stringify({
+    questions: Array.from({ length: n }, (_, i) => { const k = written + i; return { prompt: `Big set question ${k + 1}?`, options: [`A${k}`, `B${k}`, `C${k}`, `D${k}`], answerIndex: k % 4, concept: `concept-${k % 3}`, explanation: `Because ${k}.` }; }),
+  }));
+  const ai = await startAiStub(t, async (request) => {
+    const system = request.body.messages[0].content;
+    const asked = /^Create exactly (\d+)/.exec(system);
+    if (asked) {
+      const n = Number(asked[1]);
+      writerCalls += 1;
+      const second = writerCalls > 1;
+      if (second && holdSecondPart) await holdSecondPart;
+      if (second && failSecondPart) return { status: 500, body: { error: { message: 'down' } } };
+      const reply = partReply(n);
+      written += n;
+      return reply;
+    }
+    if (system.startsWith('Check')) return chatReply(JSON.stringify({ verdicts: [] }));
+    return chatReply(JSON.stringify(coach));
+  });
+  const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url });
+  await seedAccount(database.db, 'user_big', { aiConsent: true, courses: [{ id: 'bio', name: 'BIOL 114' }], materials: [] });
+  const call = async (method, path, body) => {
+    const res = await fetch(`${base}/api${path}`, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${signToken('user_big')}` }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const text = await res.text();
+    return { status: res.status, body: text ? JSON.parse(text) : null };
+  };
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const untilReady = async (id) => {
+    for (let i = 0; i < 200; i += 1) {
+      const session = (await call('GET', `/study/sessions/${id}`)).body;
+      if (session.quiz.status === 'ready') return session;
+      await sleep(50);
+    }
+    throw new Error('the set never became ready');
+  };
+
+  // The reply comes back with the first three questions; the set says it is still being written.
+  let release;
+  holdSecondPart = new Promise((r) => { release = r; });
+  let chat = await call('POST', '/study/chat', { content: 'practice, 8 questions', version: 0 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  const started = chat.body.messages.at(-1).actions[0];
+  assert.equal(started.count, 8, 'the action announces the whole set');
+  assert.deepEqual(chat.body.activeQuiz, { sessionId: started.sessionId, courseId: 'bio', topic: 'cells', kind: 'practice', status: 'writing', answered: 0, total: 8 });
+  let session = (await call('GET', `/study/sessions/${started.sessionId}`)).body;
+  assert.equal(session.quiz.status, 'writing');
+  assert.equal(session.quiz.expectedCount, 8);
+  assert.equal(session.quiz.questions.length, 3);
+  // The first part can be answered while the rest is written; grading cannot.
+  const q0 = session.quiz.questions[0];
+  session = (await call('PUT', `/study/sessions/${started.sessionId}/answers`, { questionId: q0.id, optionId: pickText(q0, 'A0'), assisted: false })).body;
+  assert.equal(session.quiz.questions[0].feedback.correctOptionText, 'A0');
+  const graded = await call('POST', `/study/sessions/${started.sessionId}/grade`);
+  assert.equal(graded.status, 409);
+  assert.match(graded.body.error, /still writing/);
+  chat = await call('GET', '/study/chat');
+  assert.equal(chat.body.activeQuiz.status, 'writing');
+  assert.equal(chat.body.activeQuiz.answered, 1);
+  assert.equal(chat.body.activeQuiz.total, 8);
+  // The rest lands: the answer given meanwhile is kept, the prompts are all different, the second writer was told the first part's prompts.
+  release();
+  session = await untilReady(started.sessionId);
+  assert.equal(session.quiz.questions.length, 8);
+  assert.equal(new Set(session.quiz.questions.map((q) => q.prompt)).size, 8);
+  assert.equal(session.quiz.questions[0].answer.optionId, pickText(q0, 'A0'));
+  assert.equal(session.quiz.invalidItemCount, 0);
+  const writers = ai.requests.filter((r) => /^Create exactly/.test(r.body.messages[0].content)).map((r) => r.body.messages[0].content);
+  assert.equal(writers.length, 2);
+  assert.match(writers[0], /^Create exactly 3 /);
+  assert.match(writers[1], /^Create exactly 5 /);
+  assert.match(writers[1], /unlike these original prompts: Big set question 1\? \| Big set question 2\? \| Big set question 3\?/);
+  chat = await call('GET', '/study/chat');
+  assert.equal(chat.body.activeQuiz.status, 'ready');
+  assert.equal(chat.body.activeQuiz.total, 8);
+  // Now it grades.
+  for (const q of session.quiz.questions.slice(1)) {
+    session = (await call('PUT', `/study/sessions/${started.sessionId}/answers`, { questionId: q.id, optionId: q.options[0].id, assisted: false })).body;
+  }
+  session = (await call('POST', `/study/sessions/${started.sessionId}/grade`)).body;
+  assert.equal(session.quiz.grade.answered, 8);
+  assert.equal(session.quiz.status, 'ready');
+
+  // A set under six is written in one go, as before.
+  writerCalls = 0;
+  coach = { reply: 'Short set.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 5, kind: 'practice', scope: 'all' }] };
+  chat = await call('POST', '/study/chat', { content: 'five questions', version: 1 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  const short = chat.body.messages.at(-1).actions[0];
+  assert.equal(chat.body.activeQuiz.status, 'ready');
+  session = (await call('GET', `/study/sessions/${short.sessionId}`)).body;
+  assert.equal(session.quiz.status, 'ready');
+  assert.equal(session.quiz.questions.length, 5);
+  assert.equal(ai.requests.filter((r) => /^Create exactly/.test(r.body.messages[0].content)).length, 3, 'one writer call for the short set');
+  for (const q of session.quiz.questions) await call('PUT', `/study/sessions/${short.sessionId}/answers`, { questionId: q.id, optionId: q.options[0].id, assisted: false });
+  await call('POST', `/study/sessions/${short.sessionId}/grade`);
+
+  // The second part fails: the set is ready as its first part, the missing questions counted as invalid.
+  writerCalls = 0;
+  failSecondPart = true;
+  holdSecondPart = null;
+  coach = { reply: 'Set coming.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 7, kind: 'exam', scope: 'all' }] };
+  chat = await call('POST', '/study/chat', { content: 'seven questions, exam', version: 2 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  const partial = chat.body.messages.at(-1).actions[0];
+  session = await untilReady(partial.sessionId);
+  assert.equal(session.quiz.questions.length, 3);
+  assert.equal(session.quiz.invalidItemCount, 4);
+  assert.equal((await call('GET', '/study/chat')).body.activeQuiz.total, 3, 'ready: the size is what landed');
 });

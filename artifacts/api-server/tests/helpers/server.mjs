@@ -20,16 +20,16 @@ function listen(server) {
 
 // Records every request sent to the AI provider. By default answers HTTP 500, so routes
 // fail after their AI call (SDK retries are recorded too). Pass respond(request) to
-// return {status, body} instead.
+// return {status, body} instead; it may return a promise, to hold a reply back for a while.
 export async function startAiStub(t, respond) {
   const requests = [];
   const server = http.createServer((req, res) => {
     let body = '';
     req.on('data', (chunk) => { body += chunk; });
-    req.on('end', () => {
+    req.on('end', async () => {
       const request = { path: req.url, headers: req.headers, body: body ? JSON.parse(body) : null };
       requests.push(request);
-      const reply = respond ? respond(request) : { status: 500, body: { error: { message: 'stub' } } };
+      const reply = respond ? await respond(request) : { status: 500, body: { error: { message: 'stub' } } };
       res.writeHead(reply.status, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(reply.body));
     });

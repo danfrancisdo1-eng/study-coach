@@ -467,7 +467,7 @@ export default function CoachHome() {
               )}
             </View>
           )}
-          ListHeaderComponent={busy ? <View style={styles.busyRow}><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.caption}>{send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '') ? 'Coach is working… writing questions can take up to a minute.' : 'Coach is thinking…'}</Text></View> : null}
+          ListHeaderComponent={busy ? <View style={styles.busyRow}><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.caption}>{send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '') ? 'Coach is writing the first questions…' : 'Coach is thinking…'}</Text></View> : null}
           testID="list-home-chat"
         />
         {/* The one frosted panel (D-048): the "Coach · <course>" strip, which the chat scrolls under. */}

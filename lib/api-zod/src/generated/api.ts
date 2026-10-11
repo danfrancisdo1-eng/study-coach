@@ -416,6 +416,7 @@ export const CreateStudySessionResponse = zod.object({
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(createStudySessionResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -479,6 +480,7 @@ export const CreateStudySessionResponse = zod.object({
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(createStudySessionResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -654,6 +656,7 @@ export const GetStudySessionResponse = zod.object({
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(getStudySessionResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -717,6 +720,7 @@ export const GetStudySessionResponse = zod.object({
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(getStudySessionResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1044,8 +1048,9 @@ export const GetHomeChatResponse = zod.object({
   "courseId": zod.string(),
   "topic": zod.string(),
   "kind": zod.enum(['practice', 'exam']),
+  "status": zod.enum(['writing', 'ready']).describe('writing: the first questions are in the session and the rest are still being written (poll the session); ready: every question is in'),
   "answered": zod.number().int(),
-  "total": zod.number().int()
+  "total": zod.number().int().describe('The questions the set will have (expectedCount while writing)')
 }).describe('The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.'),zod.null()]).optional(),
   "activeDeck": zod.union([zod.object({
   "sessionId": zod.string().uuid(),
@@ -1120,8 +1125,9 @@ export const SendHomeChatMessageResponse = zod.object({
   "courseId": zod.string(),
   "topic": zod.string(),
   "kind": zod.enum(['practice', 'exam']),
+  "status": zod.enum(['writing', 'ready']).describe('writing: the first questions are in the session and the rest are still being written (poll the session); ready: every question is in'),
   "answered": zod.number().int(),
-  "total": zod.number().int()
+  "total": zod.number().int().describe('The questions the set will have (expectedCount while writing)')
 }).describe('The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.'),zod.null()]).optional(),
   "activeDeck": zod.union([zod.object({
   "sessionId": zod.string().uuid(),
@@ -1189,8 +1195,9 @@ export const OpenHomeChatResponse = zod.object({
   "courseId": zod.string(),
   "topic": zod.string(),
   "kind": zod.enum(['practice', 'exam']),
+  "status": zod.enum(['writing', 'ready']).describe('writing: the first questions are in the session and the rest are still being written (poll the session); ready: every question is in'),
   "answered": zod.number().int(),
-  "total": zod.number().int()
+  "total": zod.number().int().describe('The questions the set will have (expectedCount while writing)')
 }).describe('The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.'),zod.null()]).optional(),
   "activeDeck": zod.union([zod.object({
   "sessionId": zod.string().uuid(),
@@ -1255,6 +1262,7 @@ export const CheckInStudySessionResponse = zod.object({
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(checkInStudySessionResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1318,6 +1326,7 @@ export const CheckInStudySessionResponse = zod.object({
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(checkInStudySessionResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1474,6 +1483,7 @@ export const SendStudyMessageResponse = zod.object({
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(sendStudyMessageResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1537,6 +1547,7 @@ export const SendStudyMessageResponse = zod.object({
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(sendStudyMessageResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1689,6 +1700,7 @@ export const GenerateStudyQuizResponse = zod.object({
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(generateStudyQuizResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1752,6 +1764,7 @@ export const GenerateStudyQuizResponse = zod.object({
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(generateStudyQuizResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1905,6 +1918,7 @@ export const SaveStudyAnswerResponse = zod.object({
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(saveStudyAnswerResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -1968,6 +1982,7 @@ export const SaveStudyAnswerResponse = zod.object({
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(saveStudyAnswerResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -2126,6 +2141,7 @@ export const FlagStudyQuestionResponse = zod.object({
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(flagStudyQuestionResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -2189,6 +2205,7 @@ export const FlagStudyQuestionResponse = zod.object({
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(flagStudyQuestionResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -2341,6 +2358,7 @@ export const ReviewFlashcardResponse = zod.object({
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(reviewFlashcardResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -2404,6 +2422,7 @@ export const ReviewFlashcardResponse = zod.object({
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(reviewFlashcardResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -2551,6 +2570,7 @@ export const GradeStudyQuizResponse = zod.object({
   "quiz": zod.union([zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(gradeStudyQuizResponseQuizOneInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),
@@ -2614,6 +2634,7 @@ export const GradeStudyQuizResponse = zod.object({
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
   "kind": zod.enum(['practice', 'exam']).optional().describe('Chat-first sets only. Practice: feedback appears on each answered question before grading.'),
+  "status": zod.enum(['writing', 'ready']).describe('Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.'),
   "expectedCount": zod.number().int().min(1),
   "invalidItemCount": zod.number().int().min(gradeStudyQuizResponseAttemptsItemInvalidItemCountMin),
   "qualityNotice": zod.string().describe('Transparent notice that automated AI checks do not guarantee factual correctness and learners can report invalid or ambiguous questions before grading.'),

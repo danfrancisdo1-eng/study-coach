@@ -16,10 +16,11 @@ import { lookupExamGuide } from "../lib/exam-guide";
 import { saveExamGuide } from "../lib/exam-guide-state";
 import { eventsFrom, resultsHistoryText, weakConcepts } from "../lib/results-history";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
-import { excludedByReport, generateFlashcards, generateSessionQuiz, sourceChunks, sourceTextOf, type Quiz, type Session } from "../lib/session-quiz";
+import { excludedByReport, generateFlashcards, generateSessionQuiz, quizStatus, sourceChunks, sourceTextOf, type GenerateQuizInput, type Quiz, type QuizStatus, type Session, type StoredQuestion } from "../lib/session-quiz";
 import { itemsFromSession, rowsFromState, sheetAsText, updateMemorySheet, type MemoryItem } from "../lib/memory-sheet";
 import { parseCoachReply, planActions, type DeckPlan, type KnownCourse, type QuizPlan, type SheetPlan } from "./chatActions";
-import { requireStudyAuth } from "./study";
+import { getSession, requireStudyAuth, saveSession } from "./study";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 router.use("/study/chat", requireStudyAuth);
@@ -116,13 +117,19 @@ const activeDeckView = (action: Extract<HomeChatAction, { type: "start_flashcard
     ? { sessionId: action.sessionId, courseId: action.courseId, topic: action.topic, done: context.done, total: context.total }
     : null;
 
-function quizContext(courses: KnownCourse[], action: Extract<HomeChatAction, { type: "start_quiz" }>, session: Session | null): coachPrompt.QuizContext | null {
+/** The coach's view of the latest set, plus whether the rest of it is still being written (D-052). */
+type QuizView = coachPrompt.QuizContext & { status: QuizStatus };
+
+function quizContext(courses: KnownCourse[], action: Extract<HomeChatAction, { type: "start_quiz" }>, session: Session | null): QuizView | null {
   const quiz = session?.quiz;
   if (!session || !quiz) return null;
   const courseName = courses.find((c) => c.id === session.courseId)?.name ?? session.courseId;
   const valid = quiz.questions.filter((q) => !q.invalid && !excludedByReport(q));
   const answered = valid.filter((q) => q.answers.length > 0);
-  const base = { courseName, topic: session.topic, kind: action.kind, answered: answered.length, total: valid.length };
+  const status = quizStatus(quiz);
+  // While the rest is on its way, the set's size is what it will be, not what has landed.
+  const total = status === "writing" ? Math.max(quiz.expectedCount, valid.length) : valid.length;
+  const base = { courseName, topic: session.topic, kind: action.kind, status, answered: answered.length, total };
   if (!quiz.grade) return { ...base, graded: null };
   const missed = answered
     .filter((q) => q.answers.at(-1)?.optionId !== q.correctOptionId)
@@ -137,9 +144,9 @@ function quizContext(courses: KnownCourse[], action: Extract<HomeChatAction, { t
   return { ...base, graded: { correct, percent: answered.length ? Math.round((correct / answered.length) * 100) : 0, missed } };
 }
 
-const activeQuizView = (action: Extract<HomeChatAction, { type: "start_quiz" }> | null, context: coachPrompt.QuizContext | null) =>
+const activeQuizView = (action: Extract<HomeChatAction, { type: "start_quiz" }> | null, context: QuizView | null) =>
   action && context && !context.graded
-    ? { sessionId: action.sessionId, courseId: action.courseId, topic: action.topic, kind: action.kind, answered: context.answered, total: context.total }
+    ? { sessionId: action.sessionId, courseId: action.courseId, topic: action.topic, kind: action.kind, status: context.status, answered: context.answered, total: context.total }
     : null;
 
 async function chatView(ownerId: string, courses: KnownCourse[], messages: HomeChatMessage[], version: number) {
@@ -302,6 +309,13 @@ async function sourcesFor(ownerId: string, state: JsonObject, courseId: string, 
   return sourceChunks(state, courseId, topic, [...await reviewedLectureMaterials(ownerId, courseId), ...sheet]);
 }
 
+// A set of six or more is written in two parts (D-052): the first three questions come back
+// with the coach's reply, the rest are written after the reply has gone out, so the first
+// card is on the phone in seconds instead of after the whole set.
+const FIRST_PART = 3;
+const SPLIT_FROM = 6;
+const WRITE_RETRIES = 3; // saves that lose a version race with the student's answers
+
 async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { courseId: string }, previous: Session | null, sectionWeights?: { name: string; weight: number | null }[], pastWeak: string[] = []): Promise<Session | null> {
   const session = newSession(plan.courseId, plan.topic, true);
   const { chunks, status } = await sourcesFor(ownerId, state, plan.courseId, plan.topic);
@@ -312,22 +326,62 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
     : [];
   // "The ones I missed" with no graded set in this chat: the course's past results (D-042).
   const missed = latestMissed.length ? latestMissed : plan.scope === "missed" ? pastWeak : [];
-  const quiz: Quiz | null = await generateSessionQuiz({
+  const input: Omit<GenerateQuizInput, "expectedCount"> = {
     courseId: plan.courseId, topic: plan.topic, kind: plan.kind,
     mode: missed.length ? "targeted" : "diagnostic",
-    expectedCount: plan.count, originalPrompts, weakConcepts: missed, sourceText: sourceTextOf(chunks), status,
+    originalPrompts, weakConcepts: missed, sourceText: sourceTextOf(chunks), status,
     ...(sectionWeights?.length && !missed.length ? { sectionWeights } : {}),
-  });
+  };
+  // "Missed topics" sets carry 1–2 questions from the earlier set that were answered correctly (SPEC §6 step 7); they go last.
+  const carried: StoredQuestion[] = missed.length && previousQuiz
+    ? previousQuiz.questions.filter((q) => q.answers.length && q.answers.at(-1)?.optionId === q.correctOptionId).slice(0, OLD_MATERIAL_QUESTIONS)
+      .map((q) => ({ ...q, id: randomUUID(), answers: [], feedback: undefined, flag: undefined, invalid: undefined }))
+    : [];
+  const firstCount = plan.count >= SPLIT_FROM ? FIRST_PART : plan.count;
+  const quiz: Quiz | null = await generateSessionQuiz({ ...input, expectedCount: firstCount });
   if (!quiz) return null;
-  // "Missed topics" sets carry 1–2 questions from the earlier set that were answered correctly (SPEC §6 step 7).
-  if (missed.length && previousQuiz) {
-    const earlier = previousQuiz.questions.filter((q) => q.answers.length && q.answers.at(-1)?.optionId === q.correctOptionId).slice(0, OLD_MATERIAL_QUESTIONS);
-    for (const q of earlier) quiz.questions.push({ ...q, id: randomUUID(), answers: [], feedback: undefined, flag: undefined, invalid: undefined });
-    quiz.expectedCount = quiz.questions.length;
-  }
+  const rest = plan.count - firstCount;
+  quiz.expectedCount = plan.count + carried.length;
+  if (rest > 0) quiz.writing = { startedAt: new Date().toISOString() };
+  else quiz.questions.push(...carried);
   session.quiz = quiz;
   await insertSession(ownerId, session);
+  if (rest > 0) {
+    void writeRestOfSet(ownerId, session.id, { ...input, expectedCount: rest, originalPrompts: [...originalPrompts, ...quiz.questions.map((q) => q.prompt)] }, carried);
+  }
   return session;
+}
+
+/**
+ * The second part of a set, after the reply has gone out. Appends what the writer returns
+ * (plus the carried questions) to the stored session and clears the writing marker; the
+ * student may be answering the first part meanwhile, so the save retries on a version race.
+ * A failed writer leaves the set as its first part (the missing questions count as invalid).
+ */
+async function writeRestOfSet(ownerId: string, sessionId: string, input: GenerateQuizInput, carried: StoredQuestion[]): Promise<void> {
+  const log = logger.child({ ownerId, sessionId });
+  let part: Quiz | null = null;
+  try {
+    part = await generateSessionQuiz(input);
+  } catch (error) {
+    log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat: the rest of the set failed; keeping the first part");
+  }
+  const added = part?.questions ?? [];
+  const invalid = part ? part.invalidItemCount : input.expectedCount;
+  for (let attempt = 0; attempt < WRITE_RETRIES; attempt += 1) {
+    const session = await getSession(sessionId, ownerId);
+    const quiz = session?.quiz;
+    if (!session || !quiz || !quiz.writing) return; // deleted with its course, or already finished
+    if (quiz.grade) { log.warn("Home chat: the rest of the set arrived after grading; dropped"); return; }
+    quiz.questions.push(...added, ...carried);
+    quiz.invalidItemCount += invalid;
+    quiz.writing = null;
+    if (await saveSession(session, ownerId)) {
+      log.info({ added: added.length, carried: carried.length, invalid }, "Home chat: the rest of the set is in");
+      return;
+    }
+  }
+  log.error("Home chat: could not save the rest of the set after retries; the set keeps its first part");
 }
 
 /** Builds and stores a flashcard deck; null when no valid card came back. Throws on AI failure. */
@@ -547,7 +601,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
           .where(and(eq(studySessionsTable.ownerId, ownerId), eq(studySessionsTable.courseId, courseId))).orderBy(desc(studySessionsTable.createdAt)).limit(40)).map((r) => r.session as Session)));
         const session = await startQuiz(ownerId, latestState, { ...plan.quiz, courseId }, sameCourse(lastQuizSession, courseId), allTopics ? guideSections : undefined, pastWeak);
         if (!session) throw new Error("No valid questions were generated");
-        done.push({ type: "start_quiz", sessionId: session.id, courseId, topic: plan.quiz.topic, kind: plan.quiz.kind, count: session.quiz!.questions.length });
+        done.push({ type: "start_quiz", sessionId: session.id, courseId, topic: plan.quiz.topic, kind: plan.quiz.kind, count: session.quiz!.writing ? session.quiz!.expectedCount : session.quiz!.questions.length });
       } catch (error) {
         // The reply promised a set it cannot deliver: save nothing (courses created above stay), let the student retry.
         req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat quiz generation failed");
