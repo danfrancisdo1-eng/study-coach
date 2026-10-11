@@ -19,6 +19,7 @@
 - Nothing. Seven commits are on PR #1; the tour and the aesthetics pass still wait for Dan's phone check.
 
 ### Next
+- **D-051 (direction, held until Dan is at the Mac):** practice sets as one live card at a time in the chat, streaming first. Also waiting on go: the exam-guide fix (near-match suggestion, no invented domains for an unknown code; evals need the keys on the Mac).
 - Dan on the phone: the welcome flow on a throwaway account, "See the welcome again", Light and Dark.
 - Then: free tier + Apple IAP decisions (Phase 3), the informal Expo Go beta, TestFlight prep.
 

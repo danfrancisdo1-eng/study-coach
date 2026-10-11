@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-11 — D-051: Practice sets as one live card at a time in the chat (direction, not built)
+- Dan: "One live card at a time is the way to do it." Hold until he is at the Mac. Direction: (1) questions stream in as they are written, so the first one appears within seconds instead of after the whole set; (2) a practice set lives in the thread as cards, one live card at a time, answered in place, the explanation and memory trick under it, the next card arriving after; graded cards collapse to one line each with the score card at the end, so the thread stays readable and is the history; (3) exam mode keeps the full-screen sheet (numbered bubbles, mark for review, jump around). Build order: streaming first (no design decisions, helps every set), then the inline cards. Plan to be written with Dan at the Mac. Decided by Dan.
+
 ## 2026-10-09 — D-050: The tour is one hero and one title per page
 - Dan, after seeing the tour: "remove the study coach double", "get rid of all the extra subheading, completely unnecessary". Meaning, confirmed by Dan after two wrong readings: the tour's first page keeps its title "Welcome to Study Coach" and the brand mark but loses the brand name repeated under the mark; every page loses the line of copy under its title, so each is hero + title + button. The in-chat welcome (D-047, Dan's own mock) stays; it never showed on Dan's phone because his account has courses, and it shows by itself only on an account with none ("See the welcome again" replays it). Claude Code removed the welcome and the "Welcome to Study Coach" title by mistake in two commits and restored both.
 - Verified here: typecheck; unit tests; iOS bundle export. Needs real-iPhone check: the tour as it now reads. Decided by Dan.
