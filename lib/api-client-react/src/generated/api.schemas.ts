@@ -403,6 +403,35 @@ export interface StudySession {
   flashcards?: StudyFlashcardDeck | null;
 }
 
+export type CourseResultsTopicsItem = {
+  topic: string;
+  missed: number;
+  /** Questions and cards answered on this topic */
+  total: number;
+  sets: number;
+  lastAt: string;
+};
+
+export type CourseResultsConceptsItem = {
+  concept: string;
+  missed: number;
+  right: number;
+  lastAt: string;
+  /** The last few results, newest first; true = right */
+  last: boolean[];
+};
+
+export interface CourseResults {
+  /** Graded sets and finished decks counted */
+  sets: number;
+  /** Most recently tested first */
+  topics: CourseResultsTopicsItem[];
+  /** Most missed first */
+  concepts: CourseResultsConceptsItem[];
+  /** Concepts missed the last time they came up, most recent first; what the coach would drill next */
+  weak: string[];
+}
+
 export type ExamGuideSectionsItem = {
   name: string;
   /**

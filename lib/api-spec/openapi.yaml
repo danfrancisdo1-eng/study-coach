@@ -186,6 +186,20 @@ paths:
         "403": { description: Explicit persisted AI consent required }
         "404": { description: Course not found }
         "502": { description: The lookup failed; nothing was saved }
+  /study/courses/{courseId}/results:
+    parameters:
+      - { name: courseId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
+    get:
+      operationId: getCourseResults
+      tags: [study]
+      summary: What the course's graded sets and finished decks say, per topic and per concept, plus the concepts to drill next
+      description: No AI call. Topics are the topics sets were asked for; concepts come from the questions. An account with nothing graded gets empty lists.
+      responses:
+        "200":
+          description: The course's results
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseResults" }
   /study/courses/{courseId}:
     parameters:
       - { name: courseId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
@@ -705,6 +719,39 @@ components:
         reviewSchedule: { type: array, items: { type: object, additionalProperties: true } }
         reportText: { type: ["string", "null"] }
         flashcards: { oneOf: [{ $ref: "#/components/schemas/StudyFlashcardDeck" }, { type: "null" }] }
+    CourseResults:
+      type: object
+      required: [topics, concepts, weak, sets]
+      properties:
+        sets: { type: integer, description: "Graded sets and finished decks counted" }
+        topics:
+          type: array
+          description: Most recently tested first
+          items:
+            type: object
+            required: [topic, missed, total, sets, lastAt]
+            properties:
+              topic: { type: string }
+              missed: { type: integer }
+              total: { type: integer, description: "Questions and cards answered on this topic" }
+              sets: { type: integer }
+              lastAt: { type: string, format: date-time }
+        concepts:
+          type: array
+          description: Most missed first
+          items:
+            type: object
+            required: [concept, missed, right, lastAt, last]
+            properties:
+              concept: { type: string }
+              missed: { type: integer }
+              right: { type: integer }
+              lastAt: { type: string, format: date-time }
+              last: { type: array, items: { type: boolean }, description: "The last few results, newest first; true = right" }
+        weak:
+          type: array
+          description: Concepts missed the last time they came up, most recent first; what the coach would drill next
+          items: { type: string }
     ExamGuide:
       type: object
       required: [found, examName, examCode, vendor, sections, sourceUrl, notes, fetchedAt]

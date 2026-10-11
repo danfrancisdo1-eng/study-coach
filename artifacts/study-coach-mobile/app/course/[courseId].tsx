@@ -1,22 +1,28 @@
 import React, { useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import {
-  deleteCourse, getGetStudyStateQueryKey, getListLecturesQueryKey, getListStudySessionsQueryKey, useGetStudyState, useListLectures, useListStudySessions, useLookupExamGuide, usePutStudyState,
+  deleteCourse, getGetCourseResultsQueryKey, getGetStudyStateQueryKey, getListLecturesQueryKey, getListStudySessionsQueryKey, useGetCourseResults, useGetStudyState, useListLectures, useListStudySessions, useLookupExamGuide, usePutStudyState,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { ActionButton } from '@/components/ActionButton';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
 import { CourseSkeleton } from '@/components/Skeleton';
+import { ALL_TOPICS, studyRequest, topicChoices, type StudyAction } from '@/lib/course-actions';
 
 /**
- * One course or exam (SPEC §7 course list layer, D-023): rename, exam date, materials
- * (add / delete), lectures, delete the course. Opened by tapping a row on the home screen.
+ * One course or exam (SPEC §7 course list layer, D-023, D-058): the actions row (add material,
+ * add another course, back to the list, delete, practice, simulated exam, flashcards, hooks),
+ * the topic history (missed out of answered per topic) and the coach's recommended topics,
+ * then the exam guide, progress, memory sheet, materials, lectures and the manager.
+ * Practice, exam, flashcards and hooks go through the chat: the course becomes the coach's
+ * focus and the request is sent on the student's behalf (`/(tabs)?send=…`).
  */
 
 type StateRecord = Record<string, unknown>;
@@ -32,12 +38,15 @@ export default function CourseScreen() {
   // "Add material" right after adding the course (D-057): the screen opens scrolled to the intake card.
   const scrollRef = useRef<ScrollView>(null);
   const intakeY = useRef<number | null>(null);
+  const manageY = useRef<number | null>(null);
   const scrolledToIntake = useRef(false);
+  const scrollTo = (y: number | null) => { if (y !== null) scrollRef.current?.scrollTo({ y: Math.max(0, y - 12), animated: true }); };
   const scrollToIntake = () => {
     if (intake !== '1' || scrolledToIntake.current || intakeY.current === null) return;
     scrolledToIntake.current = true;
-    scrollRef.current?.scrollTo({ y: Math.max(0, intakeY.current - 12), animated: true });
+    scrollTo(intakeY.current);
   };
+  const [picker, setPicker] = useState<StudyAction | null>(null); // "Which topics?" for flashcards and hooks (D-058)
   const { isLoaded, isSignedIn, userId } = useAuth();
   const colors = useColors();
   const styles = createStyles(colors);
@@ -47,6 +56,7 @@ export default function CourseScreen() {
   const stateQuery = useGetStudyState({ query: { queryKey: stateKey, enabled: !!userId } });
   const lecturesQuery = useListLectures({ courseId }, { query: { queryKey: [...getListLecturesQueryKey({ courseId }), userId], enabled: !!userId && !!courseId } });
   const sessionsQuery = useListStudySessions({ query: { queryKey: [...getListStudySessionsQueryKey(), userId], enabled: !!userId } });
+  const resultsQuery = useGetCourseResults(courseId ?? '', { query: { queryKey: [...getGetCourseResultsQueryKey(courseId ?? ''), userId], enabled: !!userId && !!courseId } });
   const putState = usePutStudyState();
   const lookupGuide = useLookupExamGuide();
   const [editing, setEditing] = useState(false);
@@ -56,7 +66,7 @@ export default function CourseScreen() {
   const [saving, setSaving] = useState(false);
 
   if (!isLoaded) return null;
-  if (!isSignedIn) return <Redirect href="/(auth)/sign-in" />;
+  if (!isSignedIn) return <Redirect href="/" />;
 
   const state = record(stateQuery.data?.state);
   const courses = Array.isArray(state.courses) ? state.courses.map(record) : [];
@@ -113,6 +123,16 @@ export default function CourseScreen() {
   };
 
   const lectures = lecturesQuery.data?.lectures ?? [];
+  const results = resultsQuery.data;
+  const topics = topicChoices(guideSections.map((sec) => String(sec.name ?? '')), (results?.topics ?? []).map((t) => t.topic));
+
+  // Practice, exam, flashcards, hooks (D-058): this course becomes the coach's focus and the chat sends the request.
+  const startWithCoach = (action: StudyAction, topic: string | null) => {
+    setPicker(null);
+    if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, courseId!).catch(() => {});
+    router.navigate({ pathname: '/(tabs)', params: { send: studyRequest(action, topic), courseId: courseId! } });
+  };
+  const toList = () => { if (router.canGoBack()) router.back(); else router.replace('/course-list'); };
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -129,6 +149,54 @@ export default function CourseScreen() {
       ) : (
         <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]} onContentSizeChange={scrollToIntake}>
           {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
+
+          <View style={styles.card} testID="panel-course-actions">
+            <Text style={styles.kicker}>Actions</Text>
+            <View style={styles.actions}>
+              <ActionButton label="Add material" icon="plus-circle" onPress={() => scrollTo(intakeY.current)} testID="button-action-material" />
+              <ActionButton label="Add another course" icon="plus" secondary onPress={() => router.push({ pathname: '/course-list', params: { add: '1' } })} testID="button-action-add-course" />
+              <ActionButton label="Return to course list" icon="list" secondary onPress={toList} testID="button-action-list" />
+              <ActionButton label="Delete course" icon="trash-2" secondary onPress={() => scrollTo(manageY.current)} testID="button-action-delete" />
+            </View>
+            <Text style={styles.kicker}>Study with the coach</Text>
+            <View style={styles.actions}>
+              <ActionButton label="Practice questions" icon="edit-3" onPress={() => startWithCoach('practice', null)} testID="button-action-practice" />
+              <ActionButton label="Simulated exam" icon="clock" secondary onPress={() => startWithCoach('exam', null)} testID="button-action-exam" />
+              <ActionButton label="Flashcards" icon="layers" secondary onPress={() => setPicker('flashcards')} testID="button-action-flashcards" />
+              <ActionButton label="Hooks" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
+            </View>
+            {state.aiConsent !== true ? <Text style={styles.caption}>The coach needs your AI consent first; it asks on the coach screen.</Text> : null}
+          </View>
+
+          <View style={styles.card} testID="panel-topic-history">
+            <Text style={styles.kicker}>Topics tested · {results?.topics.length ?? 0}</Text>
+            {resultsQuery.isLoading ? <ActivityIndicator color={colors.primaryText} /> : null}
+            {(results?.topics ?? []).map((t) => (
+              <View key={t.topic} style={styles.topicRow} accessible accessibilityLabel={`${t.topic}: missed ${t.missed} of ${t.total}`}>
+                <View style={styles.rowBetween}>
+                  <Text style={styles.body} numberOfLines={1}>{t.topic}</Text>
+                  <Text style={styles.scoreText}>missed {t.missed} of {t.total}</Text>
+                </View>
+                <View style={styles.track}><View style={[styles.fill, { width: `${t.total ? Math.round(((t.total - t.missed) / t.total) * 100) : 0}%` }]} /></View>
+              </View>
+            ))}
+            {results && !results.topics.length ? <Text style={styles.caption}>Nothing graded yet. Practice questions or a simulated exam will fill this in.</Text> : null}
+          </View>
+
+          {results?.weak.length ? (
+            <View style={styles.card} testID="panel-coach-recommends">
+              <Text style={styles.kicker}>Coach recommends</Text>
+              <Text style={styles.caption}>Missed the last time they came up. Tap one for a practice set on it.</Text>
+              <View style={styles.chips}>
+                {results.weak.map((concept) => (
+                  <Pressable key={concept} accessibilityRole="button" onPress={() => startWithCoach('practice', concept)} style={({ pressed }) => [styles.chip, pressed && styles.pressed]} testID="button-weak-topic">
+                    <Text style={styles.chipText}>{concept}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
           {editing ? (
             <View style={styles.card}>
               <Text style={styles.kicker}>Name</Text>
@@ -218,7 +286,7 @@ export default function CourseScreen() {
             {!lectures.length ? <Text style={styles.caption}>No lectures yet.</Text> : null}
           </View>
 
-          <View style={styles.card}>
+          <View style={styles.card} onLayout={(e) => { manageY.current = e.nativeEvent.layout.y; }}>
             <CourseManager
               courseName={typeof course.name === 'string' ? course.name : 'this course'}
               materials={materials.map((m) => ({ id: m.id, name: m.name, extractionFormat: m.extractionFormat }))}
@@ -229,6 +297,24 @@ export default function CourseScreen() {
           </View>
         </ScrollView>
       )}
+
+      {/* "Which topics?" for flashcards and hooks (D-058): the exam guide's sections, the topics already tested, or all. */}
+      <Modal visible={picker !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setPicker(null)}>
+        <View style={[styles.screen, { paddingTop: 20 }]}>
+          <View style={styles.header}>
+            <View style={styles.headerCopy}><Text style={styles.title}>{picker === 'hooks' ? 'Hooks on which topics?' : 'Flashcards on which topics?'}</Text><Text style={styles.caption}>Pick one, or all of them</Text></View>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setPicker(null)} style={styles.iconButton} testID="button-close-picker"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
+          </View>
+          <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
+            {topics.map((topic) => (
+              <Pressable key={topic} accessibilityRole="button" onPress={() => { if (picker) startWithCoach(picker, topic === ALL_TOPICS ? null : topic); }} style={({ pressed }) => [styles.topicChoice, topic === ALL_TOPICS && styles.topicChoiceAll, pressed && styles.pressed]} testID="button-topic-choice">
+                <Feather name={topic === ALL_TOPICS ? 'layers' : 'bookmark'} size={16} color={topic === ALL_TOPICS ? colors.primaryForeground : colors.primaryText} />
+                <Text style={[styles.topicChoiceText, topic === ALL_TOPICS && styles.topicChoiceAllText]}>{topic}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -254,4 +340,16 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   lectureRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10 },
   errorText: { color: colors.destructive, fontSize: 13 },
   scoreText: { color: colors.foreground, fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  topicRow: { gap: 6 },
+  track: { height: 5, borderRadius: 3, backgroundColor: colors.secondary, overflow: 'hidden' },
+  fill: { height: 5, backgroundColor: colors.primary },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { minHeight: 44, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.chipBorder, backgroundColor: colors.chipBg, alignItems: 'center', justifyContent: 'center' },
+  chipText: { color: colors.primaryText, fontSize: 13.5, fontWeight: '600' },
+  topicChoice: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
+  topicChoiceAll: { backgroundColor: colors.primary, borderColor: colors.primary },
+  topicChoiceText: { flex: 1, color: colors.foreground, fontSize: 16, fontWeight: '600' },
+  topicChoiceAllText: { color: colors.primaryForeground },
+  pressed: { opacity: 0.8 },
 });

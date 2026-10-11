@@ -17,8 +17,10 @@
 
 - **D-057 stage 2:** after adding a course the sheet asks "What next?" (Add material → course screen at the intake card; Add another course; Return to course list). Verified here: typecheck; tests; iOS bundle export.
 
+- **D-058 stage 3:** course screen actions (8, two rows), topic picker for Flashcards and Hooks, "Topics tested" with missed/total, "Coach recommends"; `GET /study/courses/{courseId}/results` on the server; the chat takes a `send` handoff. Verified here: typecheck; 119/119 tests; iOS bundle export.
+
 ### In progress
-- Stage 3 (course screen): actions Add material, Add another course, Return to course list, Delete course, Practice questions, Simulated exam, Flashcards, Hooks (the last two with a topic picker + All); topic history with missed/total per topic; the coach's recommended weak topics. Needs a small server endpoint for the per-topic history.
+- Nothing on the branch. Dan's three stages are built; all wait for his phone check and for PR #1 to merge (the results endpoint and the two-part sets run on Render).
 
 ### Next
 - First: get the Mac onto `de55e96` (one command, see HANDOFF) and have Dan look at one question. Then "match it" for the feedback styling if he confirms.

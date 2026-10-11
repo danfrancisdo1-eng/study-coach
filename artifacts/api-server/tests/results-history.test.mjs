@@ -2,7 +2,7 @@
 // and the text the coach reads.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { conceptTallies, eventsFrom, resultsHistoryText, weakConcepts } from '../src/lib/results-history.ts';
+import { conceptTallies, eventsFrom, resultsHistoryText, topicTallies, weakConcepts } from '../src/lib/results-history.ts';
 
 const q = (concept, right, extra = {}) => ({
   id: `${concept}-${Math.random()}`, prompt: concept, concept, options: [{ id: 'a', text: 'A' }, { id: 'b', text: 'B' }, { id: 'c', text: 'C' }, { id: 'd', text: 'D' }],
@@ -56,4 +56,16 @@ test('the text is bounded', () => {
   const text = resultsHistoryText(eventsFrom(many));
   assert.ok(text.length <= 2401, `text is ${text.length} chars`);
   assert.equal((text.match(/^- /gm) ?? []).length, 12, 'at most 12 sets listed');
+});
+
+test('topic tallies: missed out of answered per set topic, across sets and decks, most recently tested first (D-058)', () => {
+  const s1 = session('2026-10-05T10:00:00Z', 'Respiration', [graded('2026-10-05T10:30:00Z', 'practice', [q('Glycolysis', true), q('Krebs', false)])]);
+  const s2 = session('2026-10-07T10:00:00Z', 'Membranes', [graded('2026-10-07T10:30:00Z', 'exam', [q('Osmosis', false), q('Pump', false), q('Glycolysis', true)])],
+    { cards: [{ id: 'c1', front: 'f', back: 'b', concept: 'Osmosis', results: ['again', 'got'] }, { id: 'c2', front: 'f', back: 'b', concept: 'Diffusion', results: ['got'] }], createdAt: '2026-10-07T11:00:00Z', completedAt: '2026-10-07T11:10:00Z', sourceStatus: {} });
+  const s3 = session('2026-10-09T10:00:00Z', 'respiration', [graded('2026-10-09T10:30:00Z', 'practice', [q('Krebs', true), q('ETC', false), q('Glycolysis', true)])]);
+  assert.deepEqual(topicTallies(eventsFrom([s1, s2, s3])), [
+    { topic: 'respiration', missed: 2, total: 5, sets: 2, lastAt: '2026-10-09T10:30:00Z' },
+    { topic: 'Membranes', missed: 3, total: 5, sets: 2, lastAt: '2026-10-07T11:10:00Z' },
+  ], 'the same topic in any case is one row, spelled as last tested; a deck counts as a set on its topic');
+  assert.deepEqual(topicTallies([]), []);
 });

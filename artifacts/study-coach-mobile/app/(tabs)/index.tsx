@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, FlatList, Keyboard, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
-import { Redirect, router, useFocusEffect } from 'expo-router';
+import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
@@ -93,6 +93,9 @@ export default function CoachHome() {
   const openedForRef = useRef<string | null>(null);
   const [intakeBusy, setIntakeBusy] = useState(false);
   const [replayWelcome, setReplayWelcome] = useState(false); // "See the welcome again" on the courses page
+  // A request handed over by the course screen (D-058: practice, exam, flashcards, hooks), sent once the chat is on that course.
+  const { send: handoff, courseId: handoffCourseId } = useLocalSearchParams<{ send?: string; courseId?: string }>();
+  const handoffSentRef = useRef<string | null>(null);
   const [welcomeBusy, setWelcomeBusy] = useState(false);
 
   const stateQuery = useGetStudyState({ query: { queryKey: [...getGetStudyStateQueryKey(), userId], enabled: !!userId } });
@@ -202,6 +205,18 @@ export default function CoachHome() {
     listRef.current?.scrollToOffset({ offset: liveScrollOffset(liveHeight, viewportRef.current - stripHeight - 24, 40), animated: true });
   };
 
+  // The course screen's handoff (D-058) goes out once the chat is loaded, consented and on that course. Before the early returns: hooks keep their order.
+  const sendTextRef = useRef<(text: string) => Promise<void>>(async () => {});
+  useEffect(() => {
+    if (!handoff || stateQuery.isLoading || chatQuery.isLoading || stateQuery.error || chatQuery.error || !consented || busy) return;
+    if (handoffCourseId && focusCourseId !== handoffCourseId) return;
+    const key = `${handoffCourseId ?? ''}|${handoff}`;
+    if (handoffSentRef.current === key) return;
+    handoffSentRef.current = key;
+    router.setParams({ send: undefined, courseId: undefined });
+    void sendTextRef.current(handoff);
+  });
+
   if (!isLoaded) return null;
   if (!isSignedIn) return <Redirect href="/" />;
 
@@ -293,6 +308,7 @@ export default function CoachHome() {
 
   // The + corner (CLAUDE.md §8): opens the material sheet on the course the coach
   // most recently worked on; with no course yet, the coach asks for one first.
+  sendTextRef.current = sendText;
   const sendMessage = () => sendText(draft);
 
   const openPlus = () => {

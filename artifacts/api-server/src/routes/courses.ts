@@ -4,6 +4,9 @@ import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable
 import { requireStudyAuth } from "./study";
 import { lookupExamGuide, type ExamGuide } from "../lib/exam-guide";
 import { saveExamGuide } from "../lib/exam-guide-state";
+import { conceptTallies, eventsFrom, topicTallies, weakConcepts } from "../lib/results-history";
+import type { Session } from "../lib/session-quiz";
+import { desc } from "drizzle-orm";
 
 const router: IRouter = Router();
 router.use("/study/courses", requireStudyAuth);
@@ -16,6 +19,28 @@ function owner(req: Request): string {
   if (!req.studyOwnerId) throw new Error("Missing authenticated account");
   return req.studyOwnerId;
 }
+
+// The course screen's results (D-058): per topic, questions missed out of answered across the
+// course's graded sets and finished decks; per concept the same; and the concepts the coach
+// would drill next (missed last time). No AI: the same facts the coach prompt reads (D-042).
+router.get("/study/courses/:courseId/results", async (req, res): Promise<void> => {
+  const courseId = req.params.courseId;
+  if (typeof courseId !== "string" || !courseId.trim() || courseId.length > 200) {
+    res.status(400).json({ error: "Invalid course id." });
+    return;
+  }
+  const ownerId = owner(req);
+  const rows = await db.select({ session: studySessionsTable.session }).from(studySessionsTable)
+    .where(and(eq(studySessionsTable.ownerId, ownerId), eq(studySessionsTable.courseId, courseId)))
+    .orderBy(desc(studySessionsTable.createdAt)).limit(200);
+  const events = eventsFrom(rows.map((r) => r.session as unknown as Session));
+  res.json({
+    topics: topicTallies(events),
+    concepts: conceptTallies(events).slice(0, 40).map((t) => ({ concept: t.concept, missed: t.missed, right: t.right, lastAt: t.lastAt, last: t.last })),
+    weak: weakConcepts(events, 6),
+    sets: events.length,
+  });
+});
 
 // Deletes one course and everything saved for it, atomically: the course entry, its
 // materials and the review items of its sessions (study state), its study sessions,

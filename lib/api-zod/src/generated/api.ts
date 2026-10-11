@@ -246,6 +246,38 @@ export const LookupExamGuideResponse = zod.object({
 
 
 /**
+ * No AI call. Topics are the topics sets were asked for; concepts come from the questions. An account with nothing graded gets empty lists.
+ * @summary What the course's graded sets and finished decks say, per topic and per concept, plus the concepts to drill next
+ */
+export const getCourseResultsPathCourseIdMax = 200;
+
+
+
+export const GetCourseResultsParams = zod.object({
+  "courseId": zod.coerce.string().min(1).max(getCourseResultsPathCourseIdMax)
+})
+
+export const GetCourseResultsResponse = zod.object({
+  "sets": zod.number().int().describe('Graded sets and finished decks counted'),
+  "topics": zod.array(zod.object({
+  "topic": zod.string(),
+  "missed": zod.number().int(),
+  "total": zod.number().int().describe('Questions and cards answered on this topic'),
+  "sets": zod.number().int(),
+  "lastAt": zod.coerce.date()
+})).describe('Most recently tested first'),
+  "concepts": zod.array(zod.object({
+  "concept": zod.string(),
+  "missed": zod.number().int(),
+  "right": zod.number().int(),
+  "lastAt": zod.coerce.date(),
+  "last": zod.array(zod.boolean()).describe('The last few results, newest first; true = right')
+})).describe('Most missed first'),
+  "weak": zod.array(zod.string()).describe('Concepts missed the last time they came up, most recent first; what the coach would drill next')
+})
+
+
+/**
  * Removes the course, its saved materials, its study sessions and their review items, and its lectures and transcripts, in one transaction. Other courses and accounts are untouched.
  * @summary Permanently delete one course and everything saved for it
  */

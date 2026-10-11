@@ -1,0 +1,32 @@
+/**
+ * The course screen's actions (D-058): what to say to the coach for each study action, and the
+ * topics a student can pick from. Pure, so it is testable.
+ */
+export type StudyAction = 'practice' | 'exam' | 'flashcards' | 'hooks';
+
+export const ALL_TOPICS = 'All topics';
+
+/** The message sent to the coach on the student's behalf. A null topic means the whole course. */
+export function studyRequest(action: StudyAction, topic: string | null): string {
+  const scope = topic && topic !== ALL_TOPICS ? topic : 'all topics';
+  switch (action) {
+    case 'practice': return `Give me a practice set on ${scope}`;
+    case 'exam': return `Give me a simulated exam on ${scope}`;
+    case 'flashcards': return `Flashcards on ${scope}`;
+    case 'hooks': return `Give me memory tricks (hooks) for ${scope}`;
+  }
+}
+
+/** Topics to choose from: the exam guide's sections first, then topics already tested, no repeats (case-insensitive), then All. */
+export function topicChoices(sections: readonly string[], tested: readonly string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of [...sections, ...tested]) {
+    const topic = raw.trim().replace(/\s+/g, ' ');
+    const key = topic.toLowerCase();
+    if (!topic || seen.has(key) || key === ALL_TOPICS.toLowerCase()) continue;
+    seen.add(key);
+    out.push(topic);
+  }
+  return [...out, ALL_TOPICS];
+}
