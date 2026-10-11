@@ -198,28 +198,28 @@ export default function CourseListScreen() {
           {!rows.length ? <Text style={styles.empty}>No courses yet. Add one here, or just tell the coach what you're studying.</Text> : null}
           <Text style={styles.sectionTitle}>Account</Text>
           {PRIVACY_URL ? (
-            <Pressable accessibilityRole="link" onPress={openPrivacy} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="link-privacy">
-              <Feather name="shield" size={16} color={colors.mutedForeground} />
-              <View style={styles.rowCopy}><Text style={styles.rowName}>Privacy policy</Text><Text style={styles.caption}>What is collected, where it goes, how to delete it</Text></View>
-              <Feather name="external-link" size={16} color={colors.mutedForeground} />
+            <Pressable accessibilityRole="link" onPress={openPrivacy} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="link-privacy">
+              <Feather name="shield" size={14} color={colors.mutedForeground} />
+              <View style={styles.rowCopy}><Text style={styles.compactName}>Privacy policy</Text><Text style={styles.compactCaption}>What is collected, where it goes, how to delete it</Text></View>
+              <Feather name="external-link" size={14} color={colors.mutedForeground} />
             </Pressable>
           ) : null}
-          <Pressable accessibilityRole="button" onPress={() => { if (!userId) return; AsyncStorage.setItem(welcomeReplayKey(userId), '1').catch(() => {}).finally(toCoach); }} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-replay-welcome">
-            <Feather name="compass" size={16} color={colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text style={styles.rowName}>See the welcome again</Text><Text style={styles.caption}>The three steps: course, material, coach</Text></View>
+          <Pressable accessibilityRole="button" onPress={() => { if (!userId) return; AsyncStorage.setItem(welcomeReplayKey(userId), '1').catch(() => {}).finally(toCoach); }} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-replay-welcome">
+            <Feather name="compass" size={14} color={colors.mutedForeground} />
+            <View style={styles.rowCopy}><Text style={styles.compactName}>See the welcome again</Text><Text style={styles.compactCaption}>The three steps: course, material, coach</Text></View>
           </Pressable>
           {/* The first-launch tour (D-049) plays once per phone; this replays it and comes back here. */}
-          <Pressable accessibilityRole="button" onPress={() => router.push('/onboarding?replay=1')} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-replay-tour">
-            <Feather name="play-circle" size={16} color={colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text style={styles.rowName}>See the tour again</Text><Text style={styles.caption}>The five pages from the first launch</Text></View>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/onboarding?replay=1')} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-replay-tour">
+            <Feather name="play-circle" size={14} color={colors.mutedForeground} />
+            <View style={styles.rowCopy}><Text style={styles.compactName}>See the tour again</Text><Text style={styles.compactCaption}>The five pages from the first launch</Text></View>
           </Pressable>
-          <Pressable accessibilityRole="button" onPress={() => void signOut()} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-sign-out">
-            <Feather name="log-out" size={16} color={colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text style={styles.rowName}>Sign out</Text><Text style={styles.caption}>The next sign-in starts with the tour</Text></View>
+          <Pressable accessibilityRole="button" onPress={() => void signOut()} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-sign-out">
+            <Feather name="log-out" size={14} color={colors.mutedForeground} />
+            <View style={styles.rowCopy}><Text style={styles.compactName}>Sign out</Text><Text style={styles.compactCaption}>The next sign-in starts with the tour</Text></View>
           </Pressable>
-          <Pressable accessibilityRole="button" onPress={() => { setError(''); setDeleteWord(''); setDeleteOpen(true); }} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-delete-account">
-            <Feather name="trash-2" size={16} color={colors.destructive} />
-            <View style={styles.rowCopy}><Text style={[styles.rowName, { color: colors.destructive }]}>Delete my account</Text><Text style={styles.caption}>Removes your courses, sets, chats and sign-in. Cannot be undone.</Text></View>
+          <Pressable accessibilityRole="button" onPress={() => { setError(''); setDeleteWord(''); setDeleteOpen(true); }} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-delete-account">
+            <Feather name="trash-2" size={14} color={colors.destructive} />
+            <View style={styles.rowCopy}><Text style={[styles.compactName, { color: colors.destructive }]}>Delete my account</Text><Text style={styles.compactCaption}>Removes your courses, sets, chats and sign-in. Cannot be undone.</Text></View>
           </Pressable>
         </ScrollView>
       )}
@@ -309,6 +309,10 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   rowName: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
   empty: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20, paddingVertical: 12 },
   sectionTitle: { color: colors.mutedForeground, fontSize: 13, fontWeight: '700', marginTop: 18, marginBottom: 2 },
+  // Account rows (Dan: "about half the size and decrease the font, it's distracting"): 36 pt with a 44-pt hit area via the row's own padding.
+  compactRow: { minHeight: 36, paddingVertical: 4, gap: 8 },
+  compactName: { color: colors.foreground, fontSize: 14, fontWeight: '600' },
+  compactCaption: { color: colors.mutedForeground, fontSize: 11 },
   errorText: { color: colors.destructive, fontSize: 13 },
   sheetContent: { paddingHorizontal: 18, paddingTop: 10, gap: 15 },
   segment: { flexDirection: 'row', borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },

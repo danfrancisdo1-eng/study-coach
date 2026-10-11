@@ -14,7 +14,7 @@ import { ActionButton } from '@/components/ActionButton';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
 import { CourseSkeleton } from '@/components/Skeleton';
-import { ALL_TOPICS, studyRequest, topicChoices, type StudyAction } from '@/lib/course-actions';
+import { ALL_TOPICS, NO_MATERIAL_NOTE_KEY, studyRequest, topicChoices, type StudyAction } from '@/lib/course-actions';
 
 /**
  * One course or exam (SPEC §7 course list layer, D-023, D-058): the actions row (add material,
@@ -47,6 +47,7 @@ export default function CourseScreen() {
     scrollTo(intakeY.current);
   };
   const [picker, setPicker] = useState<StudyAction | null>(null); // "Which topics?" for flashcards and hooks (D-058)
+  const [noMaterialNote, setNoMaterialNote] = useState(false); // the one-time note under "Questions without material" (D-060)
   const { isLoaded, isSignedIn, userId } = useAuth();
   const colors = useColors();
   const styles = createStyles(colors);
@@ -133,6 +134,14 @@ export default function CourseScreen() {
     router.navigate({ pathname: '/(tabs)', params: { send: studyRequest(action, topic), courseId: courseId! } });
   };
   const toList = () => { if (router.canGoBack()) router.back(); else router.replace('/course-list'); };
+  // Questions without material (D-060): the first tap on this phone shows a small red note and a Proceed; later taps go straight to the coach.
+  const questionsWithoutMaterial = async () => {
+    if (noMaterialNote) { setNoMaterialNote(false); startWithCoach('practiceNoMaterial', null); return; }
+    const seen = await AsyncStorage.getItem(NO_MATERIAL_NOTE_KEY).catch(() => null);
+    if (seen === '1') { startWithCoach('practiceNoMaterial', null); return; }
+    AsyncStorage.setItem(NO_MATERIAL_NOTE_KEY, '1').catch(() => {});
+    setNoMaterialNote(true);
+  };
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -164,7 +173,15 @@ export default function CourseScreen() {
               <ActionButton label="Simulated exam" icon="clock" secondary onPress={() => startWithCoach('exam', null)} testID="button-action-exam" />
               <ActionButton label="Flashcards" icon="layers" secondary onPress={() => setPicker('flashcards')} testID="button-action-flashcards" />
               <ActionButton label="Hooks" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
+              <ActionButton label="Outline" icon="list" secondary onPress={() => startWithCoach('outline', null)} testID="button-action-outline" />
+              <ActionButton label="Questions without material" icon="help-circle" secondary onPress={() => void questionsWithoutMaterial()} testID="button-action-no-material" />
             </View>
+            {noMaterialNote ? (
+              <View style={styles.noteRow} testID="note-no-material">
+                <Text style={styles.noteText}>Recommended: upload your material first for the best results.</Text>
+                <ActionButton label="Proceed" icon="arrow-right" onPress={() => void questionsWithoutMaterial()} testID="button-no-material-proceed" />
+              </View>
+            ) : null}
             {state.aiConsent !== true ? <Text style={styles.caption}>The coach needs your AI consent first; it asks on the coach screen.</Text> : null}
           </View>
 
@@ -341,6 +358,8 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   errorText: { color: colors.destructive, fontSize: 13 },
   scoreText: { color: colors.foreground, fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  noteRow: { gap: 8 },
+  noteText: { color: colors.destructive, fontSize: 12.5, lineHeight: 17 },
   topicRow: { gap: 6 },
   track: { height: 5, borderRadius: 3, backgroundColor: colors.secondary, overflow: 'hidden' },
   fill: { height: 5, backgroundColor: colors.primary },

@@ -39,7 +39,7 @@ export function Welcome({ onAddCourse, onExplore, busy = false }: { onAddCourse:
         <Text style={styles.title} accessibilityRole="header">A tutor that has already read your material.</Text>
         <View style={styles.steps}>
           {STEPS.map((step, i) => (
-            <Animated.View key={step.title} entering={SlideInRight.delay(i * STEP_GAP_MS).duration(520).easing(Easing.out(Easing.back(1.4)))} style={styles.step}
+            <Animated.View key={step.title} entering={SlideInRight.delay(i * STEP_GAP_MS).duration(320).easing(Easing.out(Easing.back(1.15)))} style={styles.step}
               accessible accessibilityLabel={`${step.ordinal}. ${step.title}: ${step.body}`} testID={`welcome-step-${i + 1}`}>
               <View style={styles.bar} />
               <Feather name={step.icon} size={34} color={colors.primaryText} style={styles.icon} />
