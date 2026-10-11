@@ -426,6 +426,10 @@ export default function CoachHome() {
           <Text style={styles.brand}>Study Coach</Text>
           <Text numberOfLines={1} style={styles.headerSub}>Your coach</Text>
         </View>
+        {/* Dan: "need a Return to course list button" on the chat, not only the strip. */}
+        <Pressable accessibilityLabel="Return to course list" accessibilityRole="button" testID="button-courses" onPress={openCourses} style={styles.iconButton}>
+          <Feather name="list" size={20} color={colors.foreground} />
+        </Pressable>
         <Pressable accessibilityLabel="Sign out" accessibilityRole="button" testID="button-sign-out" onPress={() => void signOut()} style={styles.iconButton}>
           <Feather name="log-out" size={18} color={colors.foreground} />
         </Pressable>

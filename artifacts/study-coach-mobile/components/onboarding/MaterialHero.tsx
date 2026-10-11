@@ -1,12 +1,12 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, SlideInLeft, SlideInRight } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, SlideInRight } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 
 /**
  * Tour page 5 (D-049): the four ways material comes in, the same four the + button offers,
- * sliding in from alternating sides, then the one rule that matters about them.
+ * sliding in from the right one after another with one short settle (Dan: no zig-zag), then the one rule that matters about them.
  */
 const SOURCES: { icon: React.ComponentProps<typeof Feather>['name']; label: string; note: string }[] = [
   { icon: 'camera', label: 'Photos', note: 'notes, a whiteboard, a textbook page' },
@@ -21,7 +21,7 @@ export function MaterialHero() {
   return (
     <View style={styles.wrap} testID="hero-material">
       {SOURCES.map((source, i) => (
-        <Animated.View key={source.label} entering={(i % 2 === 0 ? SlideInLeft : SlideInRight).delay(200 + i * 140).springify().damping(17)} style={styles.row}>
+        <Animated.View key={source.label} entering={SlideInRight.delay(200 + i * 160).duration(320).easing(Easing.out(Easing.back(1.15)))} style={styles.row}>
           <View style={styles.iconWrap}><Feather name={source.icon} size={18} color={colors.primaryText} /></View>
           <View style={styles.copy}>
             <Text style={styles.label}>{source.label}</Text>

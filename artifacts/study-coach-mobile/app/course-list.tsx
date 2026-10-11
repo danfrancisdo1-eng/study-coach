@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import {
-  getGetStudyStateQueryKey, getListStudySessionsQueryKey, useDeleteAccount, useGetStudyState, useListStudySessions, useLookupExamGuide, usePutStudyState,
+  getGetStudyStateQueryKey, getListStudySessionsQueryKey, useDeleteAccount, useGetStudyState, useListStudySessions, useLookupExamGuide, usePutStudyState, getListLecturesQueryKey, useListLectures,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { BUILD } from '@/constants/build';
@@ -60,6 +60,8 @@ export default function CourseListScreen() {
   const stateKey = [...getGetStudyStateQueryKey(), userId];
   const stateQuery = useGetStudyState({ query: { queryKey: stateKey, enabled: !!userId } });
   const sessionsQuery = useListStudySessions({ query: { queryKey: [...getListStudySessionsQueryKey(), userId], enabled: !!userId } });
+  // Recorded lectures are material too (Dan: "I added a recorded lecture and it's not counting").
+  const lecturesQuery = useListLectures(undefined, { query: { queryKey: [...getListLecturesQueryKey(), userId], enabled: !!userId } });
   const putState = usePutStudyState();
   const lookupGuide = useLookupExamGuide();
   const deleteAccount = useDeleteAccount();
@@ -97,6 +99,7 @@ export default function CourseListScreen() {
   // The list is the home for a returning account (D-056): with the coach screen underneath, go back to it; as the root, open it.
   const atRoot = !router.canGoBack();
   const toCoach = () => { if (router.canGoBack()) router.back(); else router.push('/(tabs)'); };
+  const lecturesFor = (courseId: string) => (lecturesQuery.data?.lectures ?? []).filter((l) => l.courseId === courseId).length;
   const select = (id: string | null) => {
     setFocusId(id);
     if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, id ?? '').catch(() => {});
@@ -155,7 +158,7 @@ export default function CourseListScreen() {
 
   const detail = (row: Row) => [
     row.kind === 'exam' ? `exam${row.examDate ? ` · ${row.examDate}` : ''}` : 'course',
-    `${row.materials} material${row.materials === 1 ? '' : 's'}`,
+    `${row.materials + lecturesFor(row.id)} material${row.materials + lecturesFor(row.id) === 1 ? '' : 's'}`,
     ...(lastResult.get(row.id) ? [lastResult.get(row.id)!] : []),
     ...(row.kind === 'exam' ? [lookingUp === row.id ? 'looking up the exam guide…' : row.guide?.found ? `${row.guide.sections} sections` : row.guide ? 'no official guide found' : ''] : []),
   ].filter(Boolean).join(' · ');
@@ -197,30 +200,30 @@ export default function CourseListScreen() {
             </View>
           ))}
           {!rows.length ? <Text style={styles.empty}>No courses yet. Add one here, or just tell the coach what you're studying.</Text> : null}
-          <Text style={styles.sectionTitle}>Account · build {BUILD}</Text>
+          <Text maxFontSizeMultiplier={1} style={styles.sectionTitle}>Account · build {BUILD}</Text>
           {PRIVACY_URL ? (
             <Pressable accessibilityRole="link" onPress={openPrivacy} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="link-privacy">
               <Feather name="shield" size={14} color={colors.mutedForeground} />
-              <View style={styles.rowCopy}><Text style={styles.compactName}>Privacy policy</Text><Text style={styles.compactCaption}>What is collected, where it goes, how to delete it</Text></View>
+              <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Privacy policy</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>What is collected, where it goes, how to delete it</Text></View>
               <Feather name="external-link" size={14} color={colors.mutedForeground} />
             </Pressable>
           ) : null}
           <Pressable accessibilityRole="button" onPress={() => { if (!userId) return; AsyncStorage.setItem(welcomeReplayKey(userId), '1').catch(() => {}).finally(toCoach); }} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-replay-welcome">
             <Feather name="compass" size={14} color={colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text style={styles.compactName}>See the welcome again</Text><Text style={styles.compactCaption}>The three steps: course, material, coach</Text></View>
+            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>See the welcome again</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>The three steps: course, material, coach</Text></View>
           </Pressable>
           {/* The first-launch tour (D-049) plays once per phone; this replays it and comes back here. */}
           <Pressable accessibilityRole="button" onPress={() => router.push('/onboarding?replay=1')} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-replay-tour">
             <Feather name="play-circle" size={14} color={colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text style={styles.compactName}>See the tour again</Text><Text style={styles.compactCaption}>The five pages from the first launch</Text></View>
+            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>See the tour again</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>The five pages from the first launch</Text></View>
           </Pressable>
           <Pressable accessibilityRole="button" onPress={() => void signOut()} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-sign-out">
             <Feather name="log-out" size={14} color={colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text style={styles.compactName}>Sign out</Text><Text style={styles.compactCaption}>The next sign-in starts with the tour</Text></View>
+            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Sign out</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>The next sign-in starts with the tour</Text></View>
           </Pressable>
           <Pressable accessibilityRole="button" onPress={() => { setError(''); setDeleteWord(''); setDeleteOpen(true); }} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-delete-account">
             <Feather name="trash-2" size={14} color={colors.destructive} />
-            <View style={styles.rowCopy}><Text style={[styles.compactName, { color: colors.destructive }]}>Delete my account</Text><Text style={styles.compactCaption}>Removes your courses, sets, chats and sign-in. Cannot be undone.</Text></View>
+            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={[styles.compactName, { color: colors.destructive }]}>Delete my account</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>Removes your courses, sets, chats and sign-in. Cannot be undone.</Text></View>
           </Pressable>
         </ScrollView>
       )}
@@ -311,9 +314,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   empty: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20, paddingVertical: 12 },
   sectionTitle: { color: colors.mutedForeground, fontSize: 13, fontWeight: '700', marginTop: 18, marginBottom: 2 },
   // Account rows (Dan: "about half the size and decrease the font, it's distracting"): 36 pt with a 44-pt hit area via the row's own padding.
-  compactRow: { minHeight: 36, paddingVertical: 4, gap: 8 },
-  compactName: { color: colors.foreground, fontSize: 14, fontWeight: '600' },
-  compactCaption: { color: colors.mutedForeground, fontSize: 11 },
+  compactRow: { minHeight: 34, paddingVertical: 3, gap: 8 },
+  compactName: { color: colors.foreground, fontSize: 13, fontWeight: '600' },
+  compactCaption: { color: colors.mutedForeground, fontSize: 10.5 },
   errorText: { color: colors.destructive, fontSize: 13 },
   sheetContent: { paddingHorizontal: 18, paddingTop: 10, gap: 15 },
   segment: { flexDirection: 'row', borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
