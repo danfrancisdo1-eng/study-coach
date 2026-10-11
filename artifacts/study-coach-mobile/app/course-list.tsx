@@ -197,6 +197,11 @@ export default function CourseListScreen() {
             <Feather name="compass" size={16} color={colors.mutedForeground} />
             <View style={styles.rowCopy}><Text style={styles.rowName}>See the welcome again</Text><Text style={styles.caption}>The three steps: course, material, coach</Text></View>
           </Pressable>
+          {/* The first-launch tour (D-049) plays once per phone; this replays it and comes back here. */}
+          <Pressable accessibilityRole="button" onPress={() => router.push('/onboarding?replay=1')} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-replay-tour">
+            <Feather name="play-circle" size={16} color={colors.mutedForeground} />
+            <View style={styles.rowCopy}><Text style={styles.rowName}>See the tour again</Text><Text style={styles.caption}>The five pages from the first launch</Text></View>
+          </Pressable>
           <Pressable accessibilityRole="button" onPress={() => { setError(''); setDeleteWord(''); setDeleteOpen(true); }} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-delete-account">
             <Feather name="trash-2" size={16} color={colors.destructive} />
             <View style={styles.rowCopy}><Text style={[styles.rowName, { color: colors.destructive }]}>Delete my account</Text><Text style={styles.caption}>Removes your courses, sets, chats and sign-in. Cannot be undone.</Text></View>
