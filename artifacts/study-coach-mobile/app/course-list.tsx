@@ -12,6 +12,7 @@ import {
   getGetStudyStateQueryKey, getListStudySessionsQueryKey, useDeleteAccount, useGetStudyState, useListStudySessions, useLookupExamGuide, usePutStudyState,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { BUILD } from '@/constants/build';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { welcomeReplayKey } from '@/lib/welcome';
 import { CourseListSkeleton } from '@/components/Skeleton';
@@ -196,7 +197,7 @@ export default function CourseListScreen() {
             </View>
           ))}
           {!rows.length ? <Text style={styles.empty}>No courses yet. Add one here, or just tell the coach what you're studying.</Text> : null}
-          <Text style={styles.sectionTitle}>Account</Text>
+          <Text style={styles.sectionTitle}>Account · build {BUILD}</Text>
           {PRIVACY_URL ? (
             <Pressable accessibilityRole="link" onPress={openPrivacy} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="link-privacy">
               <Feather name="shield" size={14} color={colors.mutedForeground} />
