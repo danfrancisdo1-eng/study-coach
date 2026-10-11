@@ -8,10 +8,14 @@
 
 - **D-053 live practice card (commit 2 of 2 for D-051):** `components/LiveSetCard.tsx` under the coach message that started the set; one live question, answered ones collapse to a line, skeleton while the rest is written, one-tap grade from the last answer, score with concept bars; `lib/live-set.ts` (5 tests); `constants/type.ts` type scale and faces from Dan's Grok-built reference (Source Sans 3 + Fraunces, two packages added, loaded at launch). Exam sets keep the sheet. Verified here: typecheck; 35/35 mobile tests; 109/109 server tests; iOS bundle export. **Needs real-iPhone check:** see D-053.
 
+- **`de55e96`:** the card ignores the phone's Text Size (Dan's screenshots showed a uniform 1.25× scale; the Grok reference is a web page). Not yet seen on the phone: his checkout had not pulled when he stopped.
+- **Dan saw the live card on the phone** (question 1 in the chat, Source Sans 3) at 23:45 on 2026-10-11.
+
 ### In progress
-- Nothing on the branch. Waiting on Dan: merge PR #1 (yes/no), then the phone checks.
+- Nothing on the branch. Session ended with Dan frustrated about the size; docs/HANDOFF.md top section says exactly what to do first next time.
 
 ### Next
+- First: get the Mac onto `de55e96` (one command, see HANDOFF) and have Dan look at one question. Then "match it" for the feedback styling if he confirms.
 - Dan's phone checks still open: the tour ("See the tour" under "Create account" on the sign-in screen), the frosted strip (Dan: "I didn't see any frosted glass"), skeletons, Light mode, Reduce Motion.
 - Waiting on Dan: merge PR #1 (deploys the server to Render) so the D-051 work gets its own PR; the exam-guide fix (near-match suggestion, no invented domains for an unknown code; evals need the keys on the Mac).
 

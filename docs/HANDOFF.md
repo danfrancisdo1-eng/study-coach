@@ -1,5 +1,39 @@
 # Study Coach — handoff for the next Claude Code session
 
+## Handoff 2026-10-11 (read this section first; the 2026-10-09 section below it is still accurate for the Windows setup and for how Dan works)
+
+**Read in this order:** this section, CLAUDE.md, docs/PROGRESS.md (Session 8 at the top), docs/DECISIONS.md D-051 to D-053.
+
+### Where the work is
+- Branch `claude/archived-chat-recovery-dmunmu`, draft PR #1 on `danfrancisdo1-eng/study-coach`, 12 commits, head `de55e96`, base `main` at `f9c3a43`. Nothing merged, nothing deployed. Dan never answered yes or no on merging; ask once, plainly, then do what he says. Merging deploys the API to Render automatically.
+- `main` (live on Render) still has only what was there on 2026-10-04 through D-046.
+
+### What the PR holds, newest first
+1. **`de55e96` the live card ignores the phone's Text Size** (`maxFontSizeMultiplier={1}` on every text in `components/LiveSetCard.tsx`). Dan's phone showed the card a step larger than his Grok reference on the same phone; the reference is a web page, which does not apply iOS Text Size. **Dan never saw this commit on the phone** (see "Where the session ended").
+2. **`c8d7cbc` D-053 fonts:** Source Sans 3 (400/600/700) and Fraunces (600) from `@expo-google-fonts`, one face per import path in `app/_layout.tsx` (the packages' root index would bundle every weight), sizes in `constants/type.ts` from the Grok report Dan sent: question 18 semibold, choices 16, letters 14 bold, labels 14, buttons 16 on 48-tall, titles Fraunces 36, score 48 with "/20" at 30. Lockfile regenerated with pnpm 12 (what Dan's machines run) so its diff is only the two packages; pnpm 10 (this cloud container) rewrites 1,500 unrelated lines, so use `npx -y pnpm@12 install --lockfile-only --ignore-scripts` after any dependency change here.
+3. **`3130798` D-053 live practice card:** `components/LiveSetCard.tsx` renders a practice set under the coach message that started it (anchored to the message, so it stays as history). One question live; answered ones collapse to one line (tap to reopen, "Looks wrong?" kept); skeleton while the rest is written; last answer's button "See the score" grades in one tap; score + line + per-concept bars. `lib/live-set.ts` (5 unit tests) decides which set is live (latest `start_quiz` action with a session id), row results, tallies, the score line, and the scroll offset. The chat list is inverted; the card's message is skipped by `placeNewest` and `placeLive` scrolls so the live block starts at the top when taller than the room. Exam sets and decks keep the full-screen sheet (`QuizCard.tsx`, whose practice paths are now unused but left in place) and the resume bar. **Verified on Dan's phone:** the card appears in the chat with question 1 (screenshots 23:45 and 23:52 on 2026-10-11), so the wiring works.
+4. **`e19f6b2` D-052 two-part sets (server):** a chat-first set of six or more is written in two parts: three questions before the reply goes out, the rest in the background (`writeRestOfSet` in `routes/chat.ts`), appended with a version-race retry. `quiz.writing = { startedAt }` meanwhile; `status: writing | ready` on `StudyQuiz` and `HomeChatActiveQuiz` (`lib/quiz-status.ts`, stale after 3 minutes = ready); answers taken while writing, grading answers 409; a failed second part leaves the set as its first part. Sets under six unchanged. No prompt change. Tests: `tests/home-chat.test.mjs` last test (the AI stub can now return a promise to hold a reply), `tests/quiz-status.test.mjs`. **Not visible to Dan until merged**, since the phone talks to Render.
+5. Everything from the 2026-10-09 section: welcome (D-047, verified by Dan), aesthetics pass (D-048; Dan saw the gold ring, "very faint"; he did not see the frosted strip), tour (D-049/D-050, unseen).
+
+### Where the session ended (2026-10-11, about 23:55 local)
+- Dan was at the Mac. Preview runs from `/Users/mini_home/Downloads/study-coach-project` (note: the web app folder inside it is also named `study-coach`; `cd` by the full path). Node and pnpm 12 installed tonight (`sudo npm install -g pnpm`), Expo CLI logged in as `danfrancis`, same Wi-Fi, `npx expo start --clear` in `artifacts/study-coach-mobile`.
+- He saw the live card with question 1, but the text read about 22 pt instead of 18. Cause, measured from his screenshots: a uniform 1.25 scale on every size, i.e. the phone's Text Size; Grok's page ignores it, React Native honors it. Fix pushed as `de55e96`. His next two screenshots were pixel-identical to the pre-fix one, which means the Mac had not pulled. He stopped there, angry ("I paid $600 extra last week and I'm getting the same shit"), and asked for this handoff.
+- **First thing next session:** get the Mac onto `de55e96` and have him look at one question. Give him exactly this, nothing else: `cd /Users/mini_home/Downloads/study-coach-project && git pull && git log --oneline -1`, then shake the phone, Reload. If the size is still wrong on `de55e96`, measure again before touching code.
+- Dan sent screenshots of Grok's feedback screen and said nothing explicit; the clear next ask is "match it": wrong pick tinted red with an x, right one green with a check, a "Not this one" panel for the explanation, a "Remember it" card for the trick, "Your answer / Best answer" on the collapsed rows, full-width dark "Next question →" button. Confirm with one word before building.
+
+### Still unverified on the phone
+- The two-part sets (needs merge), the card's feedback, collapse, skeleton, score, Light mode, Reduce Motion; the tour; the frosted strip; the skeletons.
+
+### Waiting on Dan
+- Merge PR #1: yes or no.
+- "Match it" for the feedback styling.
+- The exam-guide fix (D-044 follow-up: normalize codes, near-match suggestion such as AI-501 → AI-500, never invent domains for an unknown code; needs the API keys on the Mac or in env secrets to run the evals).
+
+### Working with Dan (added tonight)
+- Everything in the 2026-10-09 section holds. Tonight's lesson: when he says "nothing changed", the checkout is stale nine times out of ten. Ask for `git log --oneline -1` output before anything else, and give one single-line command that does the pull and prints the hash.
+- He compares against his Grok-built reference app ("Microsoft AZ-731 Quiz", cream and teal, Source Sans 3 + Fraunces). He wants crisp and professional. He measures by eye; so measure his screenshots (923 px wide ≈ 2.35 px/pt) before arguing.
+- He does not read the .md files. Put the state in chat, short.
+
 ## Handoff 2026-10-09 (read this section first; the 2026-10-04 handoff below is older and partly stale)
 
 **Read in this order:** this section, CLAUDE.md, docs/PROGRESS.md (Session 7 at the top), docs/DECISIONS.md D-046 to D-050.
