@@ -9,6 +9,12 @@ import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
+// One face per import path: the packages' root index pulls every weight (≈1.5 MB each) into the bundle.
+import { SourceSans3_400Regular } from '@expo-google-fonts/source-sans-3/400Regular';
+import { SourceSans3_600SemiBold } from '@expo-google-fonts/source-sans-3/600SemiBold';
+import { SourceSans3_700Bold } from '@expo-google-fonts/source-sans-3/700Bold';
+import { Fraunces_600SemiBold } from '@expo-google-fonts/fraunces/600SemiBold';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -54,10 +60,14 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  // System font (SF Pro) everywhere (D-043): nothing to download, Dynamic Type for free.
+  // System font (SF Pro) for the app's chrome (D-043). The question cards use Source Sans 3 and
+  // Fraunces (D-053, constants/type.ts); the faces ship in the bundle and load before the splash
+  // goes, and a load error still opens the app on the system font.
+  const [fontsReady, fontError] = useFonts({ SourceSans3_400Regular, SourceSans3_600SemiBold, SourceSans3_700Bold, Fraunces_600SemiBold });
   useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
+    if (fontsReady || fontError) SplashScreen.hideAsync();
+  }, [fontsReady, fontError]);
+  if (!fontsReady && !fontError) return null;
 
   return (
     <SafeAreaProvider>

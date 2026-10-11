@@ -9,7 +9,7 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { Bone, SkeletonGroup } from '@/components/Skeleton';
-import { TYPE } from '@/constants/type';
+import { FONT, TYPE } from '@/constants/type';
 import { conceptTallies, rowResult, scoreLine } from '@/lib/live-set';
 
 /**
@@ -317,23 +317,23 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   option: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.background, paddingHorizontal: 14, paddingVertical: 12 },
   optionCorrect: { borderColor: colors.correct, borderWidth: 2, paddingHorizontal: 13, paddingVertical: 11 },
   optionWrong: { borderColor: colors.wrong, borderWidth: 2, paddingHorizontal: 13, paddingVertical: 11 },
-  optionLetter: { width: 28, height: 28, borderRadius: 14, textAlign: 'center', lineHeight: 28, overflow: 'hidden', backgroundColor: colors.secondary, color: colors.foreground, fontWeight: '600', fontSize: 13 },
+  optionLetter: { ...TYPE.letter, width: 28, height: 28, borderRadius: 14, textAlign: 'center', overflow: 'hidden', backgroundColor: colors.secondary, color: colors.foreground },
   optionLetterCorrect: { backgroundColor: colors.correct, color: '#ffffff' },
   optionLetterWrong: { backgroundColor: colors.wrong, color: '#ffffff' },
   optionText: { ...TYPE.option, flex: 1, color: colors.foreground },
-  optionTextMarked: { fontWeight: '600' },
+  optionTextMarked: { fontFamily: FONT.sansSemi },
   feedback: { gap: 10 },
   verdict: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  verdictText: { ...TYPE.body, fontWeight: '700' },
+  verdictText: { ...TYPE.bodySemi },
   body: { ...TYPE.body, color: colors.foreground },
   small: { ...TYPE.small, color: colors.mutedForeground },
   muted: { ...TYPE.small, color: colors.mutedForeground },
   hook: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, padding: 12, borderRadius: 14, backgroundColor: colors.hookBg },
-  hookText: { ...TYPE.small, flex: 1, color: colors.hookText, fontWeight: '600' },
+  hookText: { ...TYPE.smallSemi, flex: 1, color: colors.hookText },
   heading: { ...TYPE.heading, color: colors.foreground },
   score: { color: colors.foreground },
   scoreBig: { ...TYPE.score, color: colors.foreground },
-  scoreOf: { ...TYPE.heading, color: colors.mutedForeground },
+  scoreOf: { ...TYPE.scoreOf, color: colors.mutedForeground },
   tallies: { gap: 10, paddingTop: 4 },
   tally: { gap: 6 },
   tallyHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
@@ -341,14 +341,14 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   tallyCount: { ...TYPE.small, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   // Report link: small and away from the main button on purpose (UX_PRINCIPLES: destructive-ish actions are small and separated).
   reportLink: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', paddingRight: 12 },
-  reportLinkText: { ...TYPE.small, color: colors.mutedForeground, fontWeight: '600', textDecorationLine: 'underline' },
+  reportLinkText: { ...TYPE.smallSemi, color: colors.mutedForeground, textDecorationLine: 'underline' },
   note: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 10, borderRadius: 10, backgroundColor: colors.background },
   noteText: { ...TYPE.small, flex: 1, color: colors.foreground },
-  noteStrong: { fontWeight: '700' },
-  primaryButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: colors.primary, paddingHorizontal: 16 },
-  primaryText: { ...TYPE.body, color: colors.primaryForeground, fontWeight: '700' },
+  noteStrong: { fontFamily: FONT.sansSemi },
+  primaryButton: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: colors.primary, paddingHorizontal: 16 },
+  primaryText: { ...TYPE.button, color: colors.primaryForeground },
   secondaryButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border },
-  secondaryText: { ...TYPE.small, color: colors.foreground, fontWeight: '600' },
+  secondaryText: { ...TYPE.smallSemi, color: colors.foreground },
   skeletonWrap: { gap: 12 },
   skeleton: { gap: 10 },
   skeletonFirstOption: { marginTop: 6 },
