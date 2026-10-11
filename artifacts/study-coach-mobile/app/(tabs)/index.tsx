@@ -562,7 +562,11 @@ export default function CoachHome() {
                   onError={(problem) => setError(readableError(problem))} />
               ) : null}
               {(gradedSessionId && !activeQuiz && !deckSessionId) || (finishedDeckId && !activeDeck) ? (
-                <Pressable accessibilityRole="button" onPress={() => { setStudyOpen(false); setGradedSessionId(null); setFinishedDeckId(null); }} style={styles.backToChat} testID="button-done-study"><Text style={styles.backToChatText}>Back to chat</Text></Pressable>
+                <>
+                  <Pressable accessibilityRole="button" onPress={() => { setStudyOpen(false); setGradedSessionId(null); setFinishedDeckId(null); }} style={styles.backToChat} testID="button-done-study"><Text style={styles.backToChatText}>Back to chat</Text></Pressable>
+                  {/* Dan (D-059): the review ends with a way back to the course list. */}
+                  <Pressable accessibilityRole="button" onPress={() => { setStudyOpen(false); setGradedSessionId(null); setFinishedDeckId(null); openCourses(); }} style={styles.toCourses} testID="button-done-courses"><Text style={styles.toCoursesText}>Return to course list</Text></Pressable>
+                </>
               ) : null}
             </ScrollView>
           </View>
@@ -681,6 +685,8 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   resumeText: { flex: 1, color: colors.primaryForeground, fontSize: 15, fontWeight: '700' },
   backToChat: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary, marginTop: 4 },
   backToChatText: { color: colors.primaryForeground, fontSize: 17, fontWeight: '700' },
+  toCourses: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
+  toCoursesText: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
   quizDockContent: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 6, gap: 8 },
   hideScore: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   hideScoreText: { color: colors.mutedForeground, fontSize: 13, fontWeight: '600' },
