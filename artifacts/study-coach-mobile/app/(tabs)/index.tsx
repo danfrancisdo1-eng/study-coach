@@ -23,6 +23,8 @@ import { shouldShowWelcome, welcomeReplayKey, withWelcomeSeen } from '@/lib/welc
 import { GlassBar } from '@/components/GlassBar';
 import { GlowRing } from '@/components/GlowRing';
 import { HomeSkeleton } from '@/components/Skeleton';
+import { LiveSetCard } from '@/components/LiveSetCard';
+import { liveScrollOffset, liveSetAction } from '@/lib/live-set';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.'; // sent for the student after Grade so the coach can respond to the result
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
@@ -157,9 +159,14 @@ export default function CoachHome() {
   const openCourses = () => router.push('/course-list');
   const activeQuiz = chatQuery.data?.activeQuiz ?? null;
   const activeDeck = chatQuery.data?.activeDeck ?? null;
-  const quizSessionId = activeQuiz?.sessionId ?? gradedSessionId;
+  // A practice set lives in the thread as a card under the coach message that started it
+  // (D-053); exam sets keep the full-screen sheet with the numbered bubbles (D-037).
+  const liveSet = useMemo(() => liveSetAction(messages), [messages]);
+  const liveCardSessionId = liveSet?.kind === 'practice' ? liveSet.sessionId : null;
+  const examQuizId = activeQuiz && activeQuiz.kind !== 'practice' ? activeQuiz.sessionId : null;
+  const quizSessionId = examQuizId ?? gradedSessionId;
   const deckSessionId = activeDeck?.sessionId ?? finishedDeckId;
-  const activeStudyId = activeDeck?.sessionId ?? activeQuiz?.sessionId ?? null;
+  const activeStudyId = activeDeck?.sessionId ?? examQuizId;
   useEffect(() => {
     // A newly started set or deck opens full screen once; reopening later is the resume bar's job.
     if (activeStudyId && openedForRef.current !== activeStudyId) { openedForRef.current = activeStudyId; setStudyOpen(true); }
@@ -183,9 +190,15 @@ export default function CoachHome() {
   }, [messages.length]);
   const placeNewest = (id: string, height: number) => {
     if (positionedRef.current === id || id !== messages[messages.length - 1]?.id) return;
+    if (id === liveSet?.messageId) return; // the live card places itself: its question starts at the top (placeLive)
     positionedRef.current = id;
     const room = viewportRef.current - stripHeight - 24;
     if (room > 0 && height > room) listRef.current?.scrollToOffset({ offset: height - room, animated: true });
+  };
+  // The live card's question (or feedback, or score) starts at the top when it is taller than the room, else the list sits at the bottom.
+  const placeLive = (messageId: string, liveHeight: number) => {
+    if (messageId !== messages[messages.length - 1]?.id) return;
+    listRef.current?.scrollToOffset({ offset: liveScrollOffset(liveHeight, viewportRef.current - stripHeight - 24, 40), animated: true });
   };
 
   if (!isLoaded) return null;
@@ -356,6 +369,11 @@ export default function CoachHome() {
           <Feather name="bookmark" size={14} color={colors.primaryText} />
           <Text style={styles.actionText}>Saved to your memory sheet</Text>
         </View>
+      ) : action.type === 'start_quiz' && action.sessionId && action.sessionId === liveCardSessionId ? (
+        <LiveSetCard key={`live-${action.sessionId}`} sessionId={action.sessionId} userId={userId}
+          onStepChange={(_step, liveHeight) => placeLive(item.id, liveHeight)}
+          onGraded={() => { void sendText(FINISHED_SET_MESSAGE); }}
+          onError={(problem) => setError(readableError(problem))} />
       ) : (
         <View key={`${action.type}-${action.courseId}-${action.sessionId ?? ''}`} style={styles.actionChip}>
           <Feather name={action.type === 'create_course' ? 'plus-circle' : action.type === 'start_quiz' ? 'edit-3' : action.type === 'start_flashcards' ? 'layers' : action.type === 'lookup_exam_guide' || action.type === 'web_search' ? 'search' : 'play-circle'} size={14} color={colors.primaryText} />
