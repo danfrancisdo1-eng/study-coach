@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@clerk/expo';
@@ -28,7 +28,16 @@ const readable = (problem: unknown): string => {
 };
 
 export default function CourseScreen() {
-  const { courseId } = useLocalSearchParams<{ courseId: string }>();
+  const { courseId, intake } = useLocalSearchParams<{ courseId: string; intake?: string }>();
+  // "Add material" right after adding the course (D-057): the screen opens scrolled to the intake card.
+  const scrollRef = useRef<ScrollView>(null);
+  const intakeY = useRef<number | null>(null);
+  const scrolledToIntake = useRef(false);
+  const scrollToIntake = () => {
+    if (intake !== '1' || scrolledToIntake.current || intakeY.current === null) return;
+    scrolledToIntake.current = true;
+    scrollRef.current?.scrollTo({ y: Math.max(0, intakeY.current - 12), animated: true });
+  };
   const { isLoaded, isSignedIn, userId } = useAuth();
   const colors = useColors();
   const styles = createStyles(colors);
@@ -118,7 +127,7 @@ export default function CourseScreen() {
       {stateQuery.isLoading ? <CourseSkeleton /> : !course ? (
         <View style={styles.center}><Text style={styles.body}>This course isn’t in your account anymore.</Text></View>
       ) : (
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
+        <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]} onContentSizeChange={scrollToIntake}>
           {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
           {editing ? (
             <View style={styles.card}>
@@ -183,7 +192,7 @@ export default function CourseScreen() {
             )) : <Text style={styles.caption}>Fills itself from the questions you miss. Ask the coach "Quiz me from my memory sheet" any time.</Text>}
           </View>
 
-          <View style={styles.card}>
+          <View style={styles.card} onLayout={(e) => { intakeY.current = e.nativeEvent.layout.y; scrollToIntake(); }} testID="card-add-material">
             <Text style={styles.kicker}>Add material</Text>
             <MaterialIntake
               key={`${userId ?? ''}:${courseId}`}

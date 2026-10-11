@@ -15,8 +15,10 @@
 
 - **D-056 home = course list for a returning account** (`lib/home.ts`, entry route, Coach button and Sign out on the list). Verified here: typecheck; 37/37 tests; iOS bundle export.
 
+- **D-057 stage 2:** after adding a course the sheet asks "What next?" (Add material → course screen at the intake card; Add another course; Return to course list). Verified here: typecheck; tests; iOS bundle export.
+
 ### In progress
-- Dan's three-stage agenda: next stage 2 (three buttons after adding a course: Add material, Add another course, Return to course list), then stage 3 (course screen actions incl. Flashcards and Hooks with a topic picker, topic history with misses, coach recommendations).
+- Stage 3 (course screen): actions Add material, Add another course, Return to course list, Delete course, Practice questions, Simulated exam, Flashcards, Hooks (the last two with a topic picker + All); topic history with missed/total per topic; the coach's recommended weak topics. Needs a small server endpoint for the per-topic history.
 
 ### Next
 - First: get the Mac onto `de55e96` (one command, see HANDOFF) and have Dan look at one question. Then "match it" for the feedback styling if he confirms.
