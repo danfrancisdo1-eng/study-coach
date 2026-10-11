@@ -19,8 +19,10 @@
 
 - **D-058 stage 3:** course screen actions (8, two rows), topic picker for Flashcards and Hooks, "Topics tested" with missed/total, "Coach recommends"; `GET /study/courses/{courseId}/results` on the server; the chat takes a `send` handoff. Verified here: typecheck; 119/119 tests; iOS bundle export.
 
+- **Dan's phone, 13:20:** a full practice set on the live card through to the score, Light mode: it works. His notes became **D-059**: sets open over the chat (sheet, dimmed thread), no jump on answer, review under the score grouped by section, the welcome settles once. Verified here: typecheck; 40/40 mobile tests; iOS bundle export.
+
 ### In progress
-- Nothing on the branch. Dan's three stages are built; all wait for his phone check and for PR #1 to merge (the results endpoint and the two-part sets run on Render).
+- Nothing on the branch. Waiting for Dan's next look and for PR #1 to merge (the results endpoint and the two-part sets run on Render).
 
 ### Next
 - First: get the Mac onto `de55e96` (one command, see HANDOFF) and have Dan look at one question. Then "match it" for the feedback styling if he confirms.

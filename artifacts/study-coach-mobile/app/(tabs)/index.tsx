@@ -24,7 +24,7 @@ import { GlassBar } from '@/components/GlassBar';
 import { GlowRing } from '@/components/GlowRing';
 import { HomeSkeleton } from '@/components/Skeleton';
 import { LiveSetCard } from '@/components/LiveSetCard';
-import { liveScrollOffset, liveSetAction } from '@/lib/live-set';
+import { liveSetAction } from '@/lib/live-set';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.'; // sent for the student after Grade so the coach can respond to the result
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
@@ -166,11 +166,12 @@ export default function CoachHome() {
   // A practice set lives in the thread as a card under the coach message that started it
   // (D-053); exam sets keep the full-screen sheet with the numbered bubbles (D-037).
   const liveSet = useMemo(() => liveSetAction(messages), [messages]);
-  const liveCardSessionId = liveSet?.kind === 'practice' ? liveSet.sessionId : null;
-  const examQuizId = activeQuiz && activeQuiz.kind !== 'practice' ? activeQuiz.sessionId : null;
-  const quizSessionId = examQuizId ?? gradedSessionId;
+  // The set opens over the chat (D-059, Dan: "the question pops and fills the screen leaving the chat in the
+  // background"): practice sets show the live card, exam sets the sheet with the bubbles (D-037).
+  const quizSessionId = activeQuiz?.sessionId ?? gradedSessionId;
+  const quizIsPractice = quizSessionId ? (activeQuiz?.sessionId === quizSessionId ? activeQuiz.kind === 'practice' : liveSet?.sessionId === quizSessionId && liveSet.kind === 'practice') : false;
   const deckSessionId = activeDeck?.sessionId ?? finishedDeckId;
-  const activeStudyId = activeDeck?.sessionId ?? examQuizId;
+  const activeStudyId = activeDeck?.sessionId ?? activeQuiz?.sessionId ?? null;
   useEffect(() => {
     // A newly started set or deck opens full screen once; reopening later is the resume bar's job.
     if (activeStudyId && openedForRef.current !== activeStudyId) { openedForRef.current = activeStudyId; setStudyOpen(true); }
@@ -194,15 +195,9 @@ export default function CoachHome() {
   }, [messages.length]);
   const placeNewest = (id: string, height: number) => {
     if (positionedRef.current === id || id !== messages[messages.length - 1]?.id) return;
-    if (id === liveSet?.messageId) return; // the live card places itself: its question starts at the top (placeLive)
     positionedRef.current = id;
     const room = viewportRef.current - stripHeight - 24;
     if (room > 0 && height > room) listRef.current?.scrollToOffset({ offset: height - room, animated: true });
-  };
-  // The live card's question (or feedback, or score) starts at the top when it is taller than the room, else the list sits at the bottom.
-  const placeLive = (messageId: string, liveHeight: number) => {
-    if (messageId !== messages[messages.length - 1]?.id) return;
-    listRef.current?.scrollToOffset({ offset: liveScrollOffset(liveHeight, viewportRef.current - stripHeight - 24, 40), animated: true });
   };
 
   // The course screen's handoff (D-058) goes out once the chat is loaded, consented and on that course. Before the early returns: hooks keep their order.
@@ -386,11 +381,17 @@ export default function CoachHome() {
           <Feather name="bookmark" size={14} color={colors.primaryText} />
           <Text style={styles.actionText}>Saved to your memory sheet</Text>
         </View>
-      ) : action.type === 'start_quiz' && action.sessionId && action.sessionId === liveCardSessionId ? (
-        <LiveSetCard key={`live-${action.sessionId}`} sessionId={action.sessionId} userId={userId}
-          onStepChange={(_step, liveHeight) => placeLive(item.id, liveHeight)}
-          onGraded={() => { void sendText(FINISHED_SET_MESSAGE); }}
-          onError={(problem) => setError(readableError(problem))} />
+      ) : action.type === 'start_quiz' && action.sessionId && action.sessionId === liveSet?.sessionId ? (
+        // The latest set: a compact card that opens it over the chat (in progress) or reopens its review (graded).
+        <Pressable key={`set-${action.sessionId}`} accessibilityRole="button" onPress={() => { if (activeQuiz?.sessionId !== action.sessionId) setGradedSessionId(action.sessionId!); setStudyOpen(true); }}
+          style={({ pressed }) => [styles.setCard, pressed && styles.pressed]} testID="card-set">
+          <Feather name="edit-3" size={16} color={colors.primaryText} />
+          <View style={styles.setCardCopy}>
+            <Text style={styles.setCardTitle}>{action.kind === 'practice' ? 'Practice set' : 'Exam set'} · {action.topic ?? ''}</Text>
+            <Text style={styles.caption}>{activeQuiz?.sessionId === action.sessionId ? `${activeQuiz.answered} of ${activeQuiz.total} answered` : `${action.count ?? ''} questions · graded`}</Text>
+          </View>
+          <Text style={styles.openLinkText}>{activeQuiz?.sessionId === action.sessionId ? 'Open' : 'Review'}</Text>
+        </Pressable>
       ) : (
         <View key={`${action.type}-${action.courseId}-${action.sessionId ?? ''}`} style={styles.actionChip}>
           <Feather name={action.type === 'create_course' ? 'plus-circle' : action.type === 'start_quiz' ? 'edit-3' : action.type === 'start_flashcards' ? 'layers' : action.type === 'lookup_exam_guide' || action.type === 'web_search' ? 'search' : 'play-circle'} size={14} color={colors.primaryText} />
@@ -528,33 +529,43 @@ export default function CoachHome() {
           <Feather name="chevron-right" size={18} color={colors.primaryForeground} />
         </Pressable>
       ) : null}
-      <Modal visible={studyOpen && Boolean(quizSessionId || deckSessionId) && Boolean(userId)} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setStudyOpen(false)}>
-        <View style={[styles.screen, { paddingTop: insets.top }]}>
-          <View style={styles.header}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Back to chat" onPress={() => setStudyOpen(false)} style={styles.iconButton} testID="button-back-to-chat">
-              <Feather name="chevron-left" size={24} color={colors.foreground} />
-            </Pressable>
-            <View style={styles.headerCopy}>
-              <Text style={styles.brand}>{deckSessionId ? 'Flashcards' : 'Questions'}</Text>
-              <Text numberOfLines={1} style={styles.headerSub}>{(activeDeck ?? activeQuiz)?.topic ?? 'Study Coach'}</Text>
+      {/* The set or deck over the chat (D-059): a dimmed thread behind, a sheet that fills the screen, Back to chat on top. */}
+      <Modal visible={studyOpen && Boolean(quizSessionId || deckSessionId) && Boolean(userId)} transparent animationType="fade" onRequestClose={() => setStudyOpen(false)}>
+        <View style={styles.overlay}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Back to chat" onPress={() => setStudyOpen(false)} style={[styles.overlayBackdrop, { height: insets.top + 28 }]} />
+          <View style={[styles.overlaySheet, { paddingBottom: insets.bottom }]}>
+            <View style={styles.header}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Back to chat" onPress={() => setStudyOpen(false)} style={styles.iconButton} testID="button-back-to-chat">
+                <Feather name="chevron-down" size={24} color={colors.foreground} />
+              </Pressable>
+              <View style={styles.headerCopy}>
+                <Text style={styles.brand}>{deckSessionId ? 'Flashcards' : quizIsPractice ? 'Practice' : 'Exam'}</Text>
+                <Text numberOfLines={1} style={styles.headerSub}>{(activeDeck ?? activeQuiz)?.topic ?? 'Study Coach'}</Text>
+              </View>
             </View>
+            <ScrollView ref={quizScrollRef} style={styles.studySheet} contentContainerStyle={[styles.quizDockContent, { paddingBottom: 24 }]} keyboardShouldPersistTaps="handled" testID="dock-quiz">
+              {deckSessionId ? (
+                <FlashcardDeck key={deckSessionId} sessionId={deckSessionId} userId={userId}
+                  onStepChange={() => quizScrollRef.current?.scrollTo({ y: 0, animated: false })}
+                  onFinished={(finished) => { setFinishedDeckId(finished.id); void sendText(FINISHED_DECK_MESSAGE); }}
+                  onError={(problem) => setError(readableError(problem))} />
+              ) : quizSessionId && quizIsPractice ? (
+                <LiveSetCard key={quizSessionId} sessionId={quizSessionId} userId={userId}
+                  // A new question or the score starts at the top; feedback stays where the answer was tapped (Dan: no jump).
+                  onStepChange={(step) => { if (step.startsWith('question:') || step === 'score') quizScrollRef.current?.scrollTo({ y: 0, animated: false }); }}
+                  onGraded={(graded) => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
+                  onError={(problem) => setError(readableError(problem))} />
+              ) : quizSessionId ? (
+                <QuizCard key={quizSessionId} sessionId={quizSessionId} userId={userId}
+                  onStepChange={() => quizScrollRef.current?.scrollTo({ y: 0, animated: false })}
+                  onGraded={(graded) => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
+                  onError={(problem) => setError(readableError(problem))} />
+              ) : null}
+              {(gradedSessionId && !activeQuiz && !deckSessionId) || (finishedDeckId && !activeDeck) ? (
+                <Pressable accessibilityRole="button" onPress={() => { setStudyOpen(false); setGradedSessionId(null); setFinishedDeckId(null); }} style={styles.backToChat} testID="button-done-study"><Text style={styles.backToChatText}>Back to chat</Text></Pressable>
+              ) : null}
+            </ScrollView>
           </View>
-        <ScrollView ref={quizScrollRef} style={styles.studySheet} contentContainerStyle={[styles.quizDockContent, { paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled" testID="dock-quiz">
-          {deckSessionId ? (
-            <FlashcardDeck key={deckSessionId} sessionId={deckSessionId} userId={userId}
-              onStepChange={() => quizScrollRef.current?.scrollTo({ y: 0, animated: false })}
-              onFinished={(finished) => { setFinishedDeckId(finished.id); void sendText(FINISHED_DECK_MESSAGE); }}
-              onError={(problem) => setError(readableError(problem))} />
-          ) : quizSessionId ? (
-            <QuizCard key={quizSessionId} sessionId={quizSessionId} userId={userId}
-              onStepChange={() => quizScrollRef.current?.scrollTo({ y: 0, animated: false })}
-              onGraded={(graded) => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
-              onError={(problem) => setError(readableError(problem))} />
-          ) : null}
-          {(gradedSessionId && !activeQuiz && !deckSessionId) || (finishedDeckId && !activeDeck) ? (
-            <Pressable accessibilityRole="button" onPress={() => { setStudyOpen(false); setGradedSessionId(null); setFinishedDeckId(null); }} style={styles.backToChat} testID="button-done-study"><Text style={styles.backToChatText}>Back to chat</Text></Pressable>
-          ) : null}
-        </ScrollView>
         </View>
       </Modal>
       {(consented || showWelcome) && !loading && !loadError ? (
@@ -660,6 +671,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   sessionLabel: { color: colors.mutedForeground, fontSize: 12, fontWeight: '600' },
   quizDock: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
   studySheet: { flex: 1 },
+  overlay: { flex: 1, backgroundColor: 'rgba(8, 12, 24, 0.55)' },
+  overlayBackdrop: { width: '100%' },
+  overlaySheet: { flex: 1, backgroundColor: colors.background, borderTopLeftRadius: 22, borderTopRightRadius: 22, overflow: 'hidden' },
+  setCard: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6, minHeight: 56, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
+  setCardCopy: { flex: 1, minWidth: 0, gap: 2 },
+  setCardTitle: { color: colors.foreground, fontSize: 14.5, fontWeight: '700' },
   resumeBar: { marginHorizontal: 14, marginBottom: 6, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, borderRadius: 14, backgroundColor: colors.primary },
   resumeText: { flex: 1, color: colors.primaryForeground, fontSize: 15, fontWeight: '700' },
   backToChat: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary, marginTop: 4 },

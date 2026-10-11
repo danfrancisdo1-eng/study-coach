@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { conceptTallies, liveScrollOffset, liveSetAction, rowResult, scoreLine } from './live-set.ts';
+import { conceptTallies, liveScrollOffset, liveSetAction, rowResult, scoreLine, sectionOf, sectionTallies } from './live-set.ts';
 
 test('the live set is the latest start_quiz action with a session, whichever message holds it', () => {
   assert.equal(liveSetAction([]), null);
@@ -48,4 +48,14 @@ test('the list scrolls up by the overflow of the live block, never past the bott
   assert.equal(liveScrollOffset(700, 600, 36), 136);
   assert.equal(liveScrollOffset(700, 0, 36), 0, 'no viewport yet');
   assert.equal(liveScrollOffset(0, 600, 36), 0);
+});
+
+test('section tallies group "Section: detail" concepts by their section; plain concepts stay as they are', () => {
+  assert.equal(sectionOf('Plan and manage an Azure AI solution: authentication'), 'Plan and manage an Azure AI solution');
+  assert.equal(sectionOf('Osmosis'), 'Osmosis');
+  assert.deepEqual(sectionTallies([q('Plan and manage: auth', 'a', 'a'), q('Plan and manage: deploy', 'b', 'c'), q('Implement vision: OCR', 'd', 'e'), q('Plan and manage: cost')]), [
+    { concept: 'Plan and manage', correct: 1, total: 2 },
+    { concept: 'Implement vision', correct: 0, total: 1 },
+  ]);
+  assert.deepEqual(sectionTallies([q('Cells', 'a', 'a'), q('ATP', 'b', 'c')]), [{ concept: 'Cells', correct: 1, total: 1 }, { concept: 'ATP', correct: 0, total: 1 }]);
 });

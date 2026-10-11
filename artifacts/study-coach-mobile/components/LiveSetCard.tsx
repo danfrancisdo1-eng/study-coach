@@ -10,14 +10,15 @@ import {
 import { useColors } from '@/hooks/useColors';
 import { Bone, SkeletonGroup } from '@/components/Skeleton';
 import { FONT, TYPE } from '@/constants/type';
-import { conceptTallies, rowResult, scoreLine } from '@/lib/live-set';
+import { rowResult, scoreLine, sectionTallies } from '@/lib/live-set';
 
 /**
  * A practice set as one live card in the chat (D-051/D-053, Dan: "one live card at a time").
  * It sits under the coach message that started the set and stays there as the thread's
  * history. One question is live at a time: tap an option, the verdict, explanation and
- * memory trick land under it, Next brings the following question; answered questions
- * collapse to one line each above the live one (tap to reopen). While the rest of a
+ * memory trick land under it, Next brings the following question. After grading, the score
+ * with bars per exam section, then the review: every question as one line (tap to reopen).
+ * While the rest of a
  * two-part set is still being written (D-052) the card polls and shows a skeleton for the
  * next question. Grade is offered when every question is in and answered; the score, a
  * line, and per-concept bars close the card. "Looks wrong?" (D-034) stays on every
@@ -181,10 +182,11 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
     } catch (problem) { onError(problem); }
   };
 
-  // Answered questions, one line each, above the live block; the one being reviewed stays live.
-  const collapsed = answered.filter((q) => q.id !== reviewingId || !!quiz.grade);
+  // The review (D-059): after grading, every answered question as one line, under the score; tap to reopen one.
+  const collapsed = quiz.grade ? answered : [];
   const rows = collapsed.length ? (
     <View style={styles.rows} testID="rows-live-set">
+      <CardText style={styles.kicker}>Review</CardText>
       {collapsed.map((q) => {
         const result = rowResult(q);
         const open = expandedId === q.id;
@@ -208,17 +210,18 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
   let live: React.ReactNode;
   if (quiz.grade) {
     const percent = quiz.grade.percent;
-    const tallies = conceptTallies(quiz.questions.filter(counts));
+    const tallies = sectionTallies(quiz.questions.filter(counts));
     live = (
       <Animated.View entering={FadeInUp.duration(320)} style={styles.live} onLayout={liveLayout(step)} testID="panel-live-score">
         <CardText style={styles.score}><CardText style={styles.scoreBig}>{quiz.grade.correct}</CardText><CardText style={styles.scoreOf}>/{quiz.grade.answered}</CardText></CardText>
         <CardText style={styles.body}>{scoreLine(percent)}</CardText>
         <CardText style={styles.small}>{percent}% on the questions you answered{quiz.grade.unanswered ? ` · ${quiz.grade.unanswered} skipped` : ''}.</CardText>
-        {tallies.length > 1 ? (
+        {tallies.length ? (
           <View style={styles.tallies} testID="panel-live-tallies">
+            <CardText style={styles.kicker}>By section</CardText>
             {tallies.map((t) => (
               <View key={t.concept} style={styles.tally} accessible accessibilityLabel={`${t.concept}: ${t.correct} of ${t.total}`}>
-                <View style={styles.tallyHead}><CardText numberOfLines={1} style={styles.tallyName}>{t.concept}</CardText><CardText style={styles.tallyCount}>{t.correct}/{t.total}</CardText></View>
+                <View style={styles.tallyHead}><CardText numberOfLines={2} style={styles.tallyName}>{t.concept}</CardText><CardText style={styles.tallyCount}>{t.correct}/{t.total}</CardText></View>
                 <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${Math.round((t.correct / t.total) * 100)}%` }, t.correct < t.total && styles.progressFillPartial]} /></View>
               </View>
             ))}
@@ -275,8 +278,8 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
           <View style={[styles.progressFill, { width: `${total ? Math.round((answered.length / total) * 100) : 0}%` }]} />
         </View>
       ) : null}
-      {rows}
       {live}
+      {rows}
     </Animated.View>
   );
 }

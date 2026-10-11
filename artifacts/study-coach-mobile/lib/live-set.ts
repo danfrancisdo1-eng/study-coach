@@ -47,6 +47,18 @@ export function conceptTallies(questions: readonly QuestionLike[]): { concept: s
   return out;
 }
 
+/** The exam section a concept belongs to: the part before the first colon ("Plan and manage an Azure AI solution: authentication" → the section), else the concept itself. */
+export function sectionOf(concept: string): string {
+  const head = concept.split(':')[0]!.trim().replace(/\s+/g, ' ');
+  return head || concept.trim();
+}
+
+/** Correct / answered per exam section (concepts grouped by the part before the colon), in first-seen order; one row per concept when no concept has a section. */
+export function sectionTallies(questions: readonly QuestionLike[]): { concept: string; correct: number; total: number }[] {
+  const sectioned = questions.some((q) => q.concept.includes(':'));
+  return conceptTallies(questions.map((q) => (sectioned ? { ...q, concept: sectionOf(q.concept) } : q)));
+}
+
 /** One short line under the score. */
 export function scoreLine(percent: number): string {
   if (percent >= 90) return 'Strong. The remaining misses are the ones worth drilling.';
