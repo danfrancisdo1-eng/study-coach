@@ -223,7 +223,8 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
       <Animated.View entering={FadeInUp.duration(320)} style={styles.live} onLayout={liveLayout(step)} testID="panel-live-score">
         <CardText style={styles.score}><CardText style={styles.scoreBig}>{quiz.grade.correct}</CardText><CardText style={styles.scoreOf}>/{quiz.grade.answered}</CardText></CardText>
         <CardText style={styles.body}>{scoreLine(percent)}</CardText>
-        <CardText style={styles.small}>{percent}% on the questions you answered{quiz.grade.unanswered ? ` · ${quiz.grade.unanswered} skipped` : ''}.</CardText>
+        {/* Review finding 14 (D-087): the big score already says it; only skipped questions need a line. */}
+        {quiz.grade.unanswered ? <CardText style={styles.small}>{quiz.grade.unanswered} skipped.</CardText> : null}
         {tallies.length ? (
           <View style={styles.tallies} testID="panel-live-tallies">
             <CardText style={styles.kicker}>By section</CardText>
