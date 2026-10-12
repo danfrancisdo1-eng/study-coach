@@ -66,6 +66,7 @@ export default function CourseListScreen() {
   const lookupGuide = useLookupExamGuide();
   const deleteAccount = useDeleteAccount();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false); // usability finding 8: Account (and Delete) folded away on the everyday list
   const [deleteWord, setDeleteWord] = useState('');
   const [focusId, setFocusId] = useState<string | null>(null);
   const [lookingUp, setLookingUp] = useState<string | null>(null);
@@ -203,7 +204,12 @@ export default function CourseListScreen() {
           {!rows.length ? <Text style={styles.empty}>No courses yet. Add one here, or just tell the coach what you're studying.</Text> : null}
           {/* Dan (2026-10-12): a plain way to the coach right after the courses, not only the header icon. */}
           <View style={styles.coachButton}><ActionButton label="Talk to the coach" icon="message-circle" onPress={toCoach} testID="button-talk-to-coach" /></View>
-          <Text maxFontSizeMultiplier={1} style={styles.sectionTitle}>Account · build {BUILD}</Text>
+          <Pressable accessibilityRole="button" accessibilityState={{ expanded: accountOpen }} accessibilityLabel="Account" onPress={() => setAccountOpen((open) => !open)} style={({ pressed }) => [styles.accountToggle, pressed && styles.pressed]} testID="button-account-toggle">
+            <Feather name="user" size={14} color={colors.mutedForeground} />
+            <Text maxFontSizeMultiplier={1} style={styles.accountToggleText}>Account · build {BUILD}</Text>
+            <Feather name={accountOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+          </Pressable>
+          {accountOpen ? <>
           {PRIVACY_URL ? (
             <Pressable accessibilityRole="link" onPress={openPrivacy} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="link-privacy">
               <Feather name="shield" size={14} color={colors.mutedForeground} />
@@ -224,10 +230,12 @@ export default function CourseListScreen() {
             <Feather name="log-out" size={14} color={colors.mutedForeground} />
             <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Sign out</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>The next sign-in starts with the tour</Text></View>
           </Pressable>
+          <View style={styles.accountDivider} />
           <Pressable accessibilityRole="button" onPress={() => { setError(''); setDeleteWord(''); setDeleteOpen(true); }} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-delete-account">
             <Feather name="trash-2" size={14} color={colors.destructive} />
             <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={[styles.compactName, { color: colors.destructive }]}>Delete my account</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>Removes your courses, sets, chats and sign-in. Cannot be undone.</Text></View>
           </Pressable>
+          </> : null}
         </ScrollView>
       )}
 
@@ -316,6 +324,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   rowCopy: { flex: 1, minWidth: 0 },
   rowName: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
   empty: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20, paddingVertical: 12 },
+  accountToggle: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 18 },
+  accountToggleText: { flex: 1, color: colors.mutedForeground, fontSize: 13, fontWeight: '700' },
+  accountDivider: { height: 1, backgroundColor: colors.border, marginTop: 14, marginBottom: 6 },
   coachButton: { marginTop: 4, marginBottom: 8 },
   sectionTitle: { color: colors.mutedForeground, fontSize: 13, fontWeight: '700', marginTop: 18, marginBottom: 2 },
   // Account rows (Dan: "about half the size and decrease the font, it's distracting"): 36 pt with a 44-pt hit area via the row's own padding.
