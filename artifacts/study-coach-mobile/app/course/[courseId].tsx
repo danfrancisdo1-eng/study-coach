@@ -184,7 +184,6 @@ export default function CourseScreen() {
               <ActionButton label="Add material" icon="plus-circle" onPress={() => scrollTo(intakeY.current)} testID="button-action-material" />
               <ActionButton label="Add another course" icon="plus" secondary onPress={() => router.push({ pathname: '/course-list', params: { add: '1' } })} testID="button-action-add-course" />
               <ActionButton label="Return to course list" icon="list" secondary onPress={toList} testID="button-action-list" />
-              <ActionButton label="Delete course" icon="trash-2" secondary onPress={() => scrollTo(manageY.current)} testID="button-action-delete" />
             </View>
             <Text style={styles.kicker}>Study with the coach</Text>
             <View style={styles.actions}>
