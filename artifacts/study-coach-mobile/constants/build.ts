@@ -4,4 +4,4 @@
  * is running the version Claude Code just pushed. Format: date, a counter for that day, the
  * decision it belongs to.
  */
-export const BUILD = '2026-10-12 #25 · D-080';
+export const BUILD = '2026-10-12 #26 · D-081';

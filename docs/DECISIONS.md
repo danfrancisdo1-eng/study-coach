@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-12 — D-081: Sign-up headline "Find the flaws. Fix the facts."
+- Review finding 24 ("Make room to learn." did not say what the app does). Offered: "Walk into the exam ready.", "Know it before the test.", "Your material. Your coach.", "Study less. Remember more."; Dan chose his own: "Find the flaws. Fix the facts." The line under it is unchanged. Build stamp #26. Verified here: typecheck. Decided by Dan.
+
 ## 2026-10-12 — D-080: An Account page
 - Dan: "the sign out is there now. but we need a link to account page". New `app/account.tsx`: Privacy policy, See the welcome again, See the tour again, Sign out, then under a divider Delete my account (the typed-DELETE sheet moved here from the course list, unchanged), and the build stamp. The course list keeps Sign out in view (D-079) and an "Account ›" row in place of the fold (D-072). Web: the signed-in page already has Sign out; it has no Delete my account (gap since D-046, not new). Build stamp #25.
 - UX checklist (code review): 56-pt rows; one destructive action, set apart and red; native back chevron; labels on every row; theme tokens; no motion; paywall N/A. Verified here: typecheck; mobile tests; iOS bundle export. Needs real-iPhone check: course list → Account → each row; Delete on a throwaway account only. Decided by Dan.
