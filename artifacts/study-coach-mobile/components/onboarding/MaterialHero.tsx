@@ -12,7 +12,7 @@ const SOURCES: { icon: React.ComponentProps<typeof Feather>['name']; label: stri
   { icon: 'camera', label: 'Photos', note: 'notes, a whiteboard, a textbook page' },
   { icon: 'file-text', label: 'Files', note: 'PDF, Word, a syllabus, slides' },
   { icon: 'link', label: 'Website link', note: 'one public page, read once' },
-  { icon: 'mic', label: 'Record a lecture', note: 'transcribed; the audio stays on the phone' },
+  { icon: 'mic', label: 'Record a lecture', note: 'transcribed; audio stays on your phone' },
 ];
 
 export function MaterialHero() {
@@ -36,7 +36,7 @@ export function MaterialHero() {
 
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   wrap: { alignSelf: 'stretch', gap: 8 },
-  row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
+  row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   iconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.chipBg, borderWidth: 1, borderColor: colors.chipBorder },
   copy: { flex: 1, gap: 1 },
   label: { color: colors.foreground, fontSize: 15, fontWeight: '600' },

@@ -16,7 +16,7 @@ import { useColors } from '@/hooks/useColors';
  */
 const STEP_GAP_MS = 2000; // Dan: "after 2 seconds have the second box slide in"
 const STEPS: { ordinal: string; icon: React.ComponentProps<typeof Feather>['name']; title: string; body: string }[] = [
-  { ordinal: '1st', icon: 'book-open', title: 'Add a course or exam', body: 'course or certification exam, with an optional exam date.' },
+  { ordinal: '1st', icon: 'book-open', title: 'Add a course or exam', body: 'with an optional exam date.' },
   { ordinal: '2nd', icon: 'plus-circle', title: 'Add your material', body: 'notes, a syllabus, photos, a file, or record a lecture. Audio stays on the phone.' },
   { ordinal: '3rd', icon: 'message-circle', title: 'Talk to your coach', body: 'practice sets, timed exams, flashcards, and a straight readiness call.' },
 ];
