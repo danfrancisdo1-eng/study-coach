@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-12 — D-082 to D-087: Review findings 11, 13 to 15, 23, 26 to 30
+- Dan: "23 go, 26 go, 27 remove the family member function, 28-30 go, 11-16 go except leave the build number in place; we will remove it before public."
+- D-082 (27): the AI consent card is three short lines on the phone and the web, naming Anthropic Claude and OpenAI (transcription); the family-member sentence is gone (also from the old phone screen). The web card did not name the provider before; it does now. The session-report sharing feature behind that sentence is a separate removal, planned with Dan first.
+- D-083 (23, 28): on sign-up, a tap on Apple, Google or Create account before "I'm 13 or older" turns the line red with "Tick "I'm 13 or older" first."; a backing behind the status bar so the title never scrolls under the clock. D-084 (11, 13, 28): sign-in says "Welcome back." only on a phone that has signed in before (`lib/sign-in-copy.ts`, 1 test), otherwise "Sign in."; "See the tour" styled like "Create account"; the same status-bar backing. D-085 (26, 15): the course list loses the "All courses" row (its icon overlapped the text in Dark); row details wrap to two lines and drop "no official guide found". D-086 (29, 30): the welcome's first card reads "with an optional exam date."; the tour's lecture row "transcribed; audio stays on your phone", rows padded. D-087 (14): the practice score drops the repeated percent line; only skipped questions get one. 12 (build stamp) stays until the public build; 16 (Expo gear) is dev-only.
+- UX checklist (code review): 44-pt targets kept (the age-gate overlays cover the existing buttons); one primary per screen; consent chunked into three lines; native patterns; theme tokens (destructive for the nudge, background for the status backing); words with every colour change; no motion; paywall N/A. Verified here: typecheck; 134/134 tests; iOS bundle export. Build stamps #27 to #32. Needs real-iPhone check. Decided by Dan.
+
 ## 2026-10-12 — D-081: Sign-up headline "Find the flaws. Fix the facts."
 - Review finding 24 ("Make room to learn." did not say what the app does). Offered: "Walk into the exam ready.", "Know it before the test.", "Your material. Your coach.", "Study less. Remember more."; Dan chose his own: "Find the flaws. Fix the facts." The line under it is unchanged. Build stamp #26. Verified here: typecheck. Decided by Dan.
 

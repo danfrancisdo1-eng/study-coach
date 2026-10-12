@@ -25,7 +25,7 @@ Method (D-064, option 1): five personas look at the real screens Dan sent from h
 9. **The "+" button in the general chat opens an alert ("Which course or exam?") instead of doing something.** Priya taps + first, every time. Fix: when there is no course, "+" opens the Add sheet directly. *Chat composer.*
 10. **The coach's chips repeat as text.** After a set: "Quiz me on these again", "Another set on everything", "Flashcards for the misses", and above them "Your turn: explain it back to me…", a question the chips do not answer. Maria does not know whether to type or tap. Fix: when the reply ends with a question, the first chip should be an answer to it, or the question moves above the chips with "or type your answer". *Course chat.*
 
-### Minor (polish)
+### Minor (polish) — 11, 13, 14, 15 fixed in D-084 to D-087; 12 kept until the public build; 16 dev-only
 11. "Welcome back." on sign-in for someone who just finished the tour and tapped Skip. Fix: "Sign in" as the title; "Welcome back" only when the device has signed in before.
 12. The build stamp "Account · build 2026-10-12 #8 · D-062" is for Dan, not students. Fix: show it only in development builds, or move it to the bottom of the sign-in screen only.
 13. The tour's "Get started" lands on sign-up with the 13+ checkbox; fine. But "See the tour" on sign-in is 12 pt grey under a grey line; Ellen cannot find it. Fix: same style as "Create account".
@@ -49,12 +49,12 @@ Phone was in airplane mode, which explains the failed extraction and the flashca
 21. **Finding 10 seen live:** the coach asks "answer my last question … or jump into a new set?" and the four chips are all new-set options; while the coach is thinking the chips go pale and look disabled. *Course chat.* Medium (same fix as 10).
 22. **Screenshot 9, "What next?":** clear, three choices, one primary. Fine. **Extraction (AI-501):** worked online; "544 characters saved for this course" means nothing to a student. Fix: "IMG_0667.png saved to this course." Minor.
 
-## Round 3 — screenshot 11, sign-up on a new account (2026-10-12 14:02)
+## Round 3 — screenshot 11, sign-up on a new account (2026-10-12 14:02) — 23 fixed (D-083), 24 Dan's headline (D-081)
 23. **Apple and Google look tappable but do nothing until "I'm 13 or older" is ticked**, with no message. Priya taps Apple first and gives up. Fix: a tap on either before the box is ticked makes the 13+ line turn red with "Tick 'I'm 13 or older' first." *Sign-up.* Medium.
 24. **"Make room to learn." does not say what the app does.** Dave reads it twice. Fix (Dan's call on wording): e.g. "Your courses, quizzes and coach in one place." *Sign-up.* Minor.
 25. "Create account" sits below the fold and is pale until the form is complete; fine once 23 is fixed. The legal line and privacy link read clearly. The heavy display font belongs to the deferred aesthetics redesign. *Sign-up.* Note.
 
-## Round 3 continued — screenshots 12 to 15 (welcome, consent card, Dark mode), 2026-10-12 14:07–14:11
+## Round 3 continued — screenshots 12 to 15 (welcome, consent card, Dark mode), 2026-10-12 14:07–14:11 — 26 to 30 fixed (D-082 to D-086)
 26. **Course list, Dark: the "All courses" row's layers icon overlaps the "A".** That row was meant to go with finding 3 and is still there. Fix: remove the row (the coach's "All courses" thread stays reachable from the chat strip) or give the icon its own padding. *Course list.* Minor (visual bug).
 27. **The AI consent card is one long paragraph.** Priya and Ellen skip it. Fix: three short lines (what goes where, AI can be wrong, you can change this any time) and fix the "Nothing is sent a family member" sentence. *Consent card.* Medium.
 28. **Sign-up: the big title scrolls under the status bar with nothing behind it.** Fix: a background behind the safe area. *Sign-up.* Minor.
