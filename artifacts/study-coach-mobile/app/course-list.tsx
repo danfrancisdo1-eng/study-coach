@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Redirect, router } from 'expo-router';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import {
-  getGetStudyStateQueryKey, getListStudySessionsQueryKey, useDeleteAccount, useGetStudyState, useListStudySessions, useLookupExamGuide, usePutStudyState,
+  getGetStudyStateQueryKey, getListStudySessionsQueryKey, useDeleteAccount, useGetStudyState, useListStudySessions, useLookupExamGuide, usePutStudyState, getListLecturesQueryKey, useListLectures,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { BUILD } from '@/constants/build';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
+import { welcomeReplayKey } from '@/lib/welcome';
+import { CourseListSkeleton } from '@/components/Skeleton';
 
 /**
  * Courses & exams on their own page (D-036): the home screen keeps only the "Coach · <course>"
@@ -56,6 +60,8 @@ export default function CourseListScreen() {
   const stateKey = [...getGetStudyStateQueryKey(), userId];
   const stateQuery = useGetStudyState({ query: { queryKey: stateKey, enabled: !!userId } });
   const sessionsQuery = useListStudySessions({ query: { queryKey: [...getListStudySessionsQueryKey(), userId], enabled: !!userId } });
+  // Recorded lectures are material too (Dan: "I added a recorded lecture and it's not counting").
+  const lecturesQuery = useListLectures(undefined, { query: { queryKey: [...getListLecturesQueryKey(), userId], enabled: !!userId } });
   const putState = usePutStudyState();
   const lookupGuide = useLookupExamGuide();
   const deleteAccount = useDeleteAccount();
@@ -63,7 +69,10 @@ export default function CourseListScreen() {
   const [deleteWord, setDeleteWord] = useState('');
   const [focusId, setFocusId] = useState<string | null>(null);
   const [lookingUp, setLookingUp] = useState<string | null>(null);
-  const [addOpen, setAddOpen] = useState(false);
+  const { add } = useLocalSearchParams<{ add?: string }>(); // the welcome's "Add a course or exam" lands here with the sheet open (D-047)
+  const [addOpen, setAddOpen] = useState(add === '1');
+  // After a save the sheet turns into "what next?" (D-057): Add material, Add another course, Return to the list.
+  const [justAdded, setJustAdded] = useState<{ id: string; name: string } | null>(null);
   const [addKind, setAddKind] = useState<'course' | 'exam'>('course');
   const [addName, setAddName] = useState('');
   const [addDate, setAddDate] = useState('');
@@ -75,7 +84,7 @@ export default function CourseListScreen() {
   }, [userId]);
 
   if (!isLoaded) return null;
-  if (!isSignedIn) return <Redirect href="/(auth)/sign-in" />;
+  if (!isSignedIn) return <Redirect href="/" />;
 
   const rows = rowsFrom(stateQuery.data?.state);
   const busy = putState.isPending;
@@ -87,10 +96,14 @@ export default function CourseListScreen() {
     if (typeof score === 'number') lastResult.set(summary.courseId, `last set ${Math.round(score)}%`);
   }
 
+  // The list is the home for a returning account (D-056): with the coach screen underneath, go back to it; as the root, open it.
+  const atRoot = !router.canGoBack();
+  const toCoach = () => { if (router.canGoBack()) router.back(); else router.push('/(tabs)'); };
+  const lecturesFor = (courseId: string) => (lecturesQuery.data?.lectures ?? []).filter((l) => l.courseId === courseId).length;
   const select = (id: string | null) => {
     setFocusId(id);
     if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, id ?? '').catch(() => {});
-    router.back();
+    toCoach();
   };
 
   // After an exam is added, fetch its official guide once; the row shows progress meanwhile.
@@ -112,12 +125,15 @@ export default function CourseListScreen() {
       const previous = stateQuery.data;
       const state = record(previous?.state);
       const course = { id: newId(), name, kind: addKind, ...(addKind === 'exam' && addDate.trim() ? { examDate: addDate.trim() } : {}) };
-      const result = await putState.mutateAsync({ data: { state: { aiConsent: true, materials: [], ...state, courses: [...(Array.isArray(state.courses) ? state.courses : []), course] }, version: previous?.version ?? 0 } });
+      // Adding a course never grants AI consent by itself (D-047): the consent card stays the one place that does.
+      const result = await putState.mutateAsync({ data: { state: { aiConsent: false, materials: [], ...state, courses: [...(Array.isArray(state.courses) ? state.courses : []), course] }, version: previous?.version ?? 0 } });
       queryClient.setQueryData(stateKey, result);
-      setAddOpen(false); setAddName(''); setAddDate(''); setAddKind('course');
+      setAddName(''); setAddDate(''); setAddKind('course');
+      setJustAdded({ id: course.id, name: course.name });
       setFocusId(course.id);
       if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, course.id).catch(() => {});
-      if (course.kind === 'exam') void fetchGuide(course.id);
+      // The guide lookup is an AI call: before consent it is refused, so the home screen runs it right after the card.
+      if (course.kind === 'exam' && state.aiConsent === true) void fetchGuide(course.id);
     } catch (problem) {
       if ((problem as { status?: number }).status === 409) await queryClient.invalidateQueries({ queryKey: stateKey });
       setError(readable(problem));
@@ -142,7 +158,7 @@ export default function CourseListScreen() {
 
   const detail = (row: Row) => [
     row.kind === 'exam' ? `exam${row.examDate ? ` · ${row.examDate}` : ''}` : 'course',
-    `${row.materials} material${row.materials === 1 ? '' : 's'}`,
+    `${row.materials + lecturesFor(row.id)} material${row.materials + lecturesFor(row.id) === 1 ? '' : 's'}`,
     ...(lastResult.get(row.id) ? [lastResult.get(row.id)!] : []),
     ...(row.kind === 'exam' ? [lookingUp === row.id ? 'looking up the exam guide…' : row.guide?.found ? `${row.guide.sections} sections` : row.guide ? 'no official guide found' : ''] : []),
   ].filter(Boolean).join(' · ');
@@ -150,13 +166,17 @@ export default function CourseListScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="screen-course-list">
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
-        <View style={styles.headerCopy}><Text style={styles.title}>Courses & exams</Text><Text style={styles.caption}>Tap one to make it the coach's focus</Text></View>
+        {atRoot ? (
+          <Pressable accessibilityRole="button" accessibilityLabel="Talk to your coach" onPress={toCoach} style={styles.iconButton} testID="button-coach"><Feather name="message-circle" size={22} color={colors.primaryText} /></Pressable>
+        ) : (
+          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
+        )}
+        <View style={styles.headerCopy}><Text style={styles.title}>Courses & exams</Text><Text style={styles.caption}>{atRoot ? 'Tap one to study it with the coach' : "Tap one to make it the coach's focus"}</Text></View>
         <Pressable accessibilityRole="button" onPress={() => setAddOpen(true)} style={styles.addButton} testID="button-add-course">
           <Feather name="plus" size={16} color={colors.primaryText} /><Text style={styles.addText}>Add</Text>
         </Pressable>
       </View>
-      {stateQuery.isLoading ? <View style={styles.center}><ActivityIndicator color={colors.primaryText} /></View> : (
+      {stateQuery.isLoading ? <CourseListSkeleton /> : (
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
           {error && !addOpen ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
           <Pressable accessibilityRole="button" accessibilityState={{ selected: focusId === null }} onPress={() => select(null)} style={({ pressed }) => [styles.row, pressed && styles.pressed]} testID="row-all-courses">
@@ -180,17 +200,30 @@ export default function CourseListScreen() {
             </View>
           ))}
           {!rows.length ? <Text style={styles.empty}>No courses yet. Add one here, or just tell the coach what you're studying.</Text> : null}
-          <Text style={styles.sectionTitle}>Account</Text>
+          <Text maxFontSizeMultiplier={1} style={styles.sectionTitle}>Account · build {BUILD}</Text>
           {PRIVACY_URL ? (
-            <Pressable accessibilityRole="link" onPress={openPrivacy} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="link-privacy">
-              <Feather name="shield" size={16} color={colors.mutedForeground} />
-              <View style={styles.rowCopy}><Text style={styles.rowName}>Privacy policy</Text><Text style={styles.caption}>What is collected, where it goes, how to delete it</Text></View>
-              <Feather name="external-link" size={16} color={colors.mutedForeground} />
+            <Pressable accessibilityRole="link" onPress={openPrivacy} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="link-privacy">
+              <Feather name="shield" size={14} color={colors.mutedForeground} />
+              <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Privacy policy</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>What is collected, where it goes, how to delete it</Text></View>
+              <Feather name="external-link" size={14} color={colors.mutedForeground} />
             </Pressable>
           ) : null}
-          <Pressable accessibilityRole="button" onPress={() => { setError(''); setDeleteWord(''); setDeleteOpen(true); }} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} testID="button-delete-account">
-            <Feather name="trash-2" size={16} color={colors.destructive} />
-            <View style={styles.rowCopy}><Text style={[styles.rowName, { color: colors.destructive }]}>Delete my account</Text><Text style={styles.caption}>Removes your courses, sets, chats and sign-in. Cannot be undone.</Text></View>
+          <Pressable accessibilityRole="button" onPress={() => { if (!userId) return; AsyncStorage.setItem(welcomeReplayKey(userId), '1').catch(() => {}).finally(toCoach); }} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-replay-welcome">
+            <Feather name="compass" size={14} color={colors.mutedForeground} />
+            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>See the welcome again</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>The three steps: course, material, coach</Text></View>
+          </Pressable>
+          {/* The first-launch tour (D-049) plays once per phone; this replays it and comes back here. */}
+          <Pressable accessibilityRole="button" onPress={() => router.push('/onboarding?replay=1')} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-replay-tour">
+            <Feather name="play-circle" size={14} color={colors.mutedForeground} />
+            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>See the tour again</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>The five pages from the first launch</Text></View>
+          </Pressable>
+          <Pressable accessibilityRole="button" onPress={() => void signOut()} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-sign-out">
+            <Feather name="log-out" size={14} color={colors.mutedForeground} />
+            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Sign out</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>The next sign-in starts with the tour</Text></View>
+          </Pressable>
+          <Pressable accessibilityRole="button" onPress={() => { setError(''); setDeleteWord(''); setDeleteOpen(true); }} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-delete-account">
+            <Feather name="trash-2" size={14} color={colors.destructive} />
+            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={[styles.compactName, { color: colors.destructive }]}>Delete my account</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>Removes your courses, sets, chats and sign-in. Cannot be undone.</Text></View>
           </Pressable>
         </ScrollView>
       )}
@@ -213,12 +246,32 @@ export default function CourseListScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      <Modal visible={addOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setAddOpen(false)}>
+      <Modal visible={addOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { setAddOpen(false); setJustAdded(null); }}>
         <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: 20 }]}>
           <View style={styles.header}>
-            <View style={styles.headerCopy}><Text style={styles.title}>Add a course or exam</Text></View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setAddOpen(false)} style={styles.iconButton} testID="button-close-add"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
+            <View style={styles.headerCopy}><Text style={styles.title}>{justAdded ? `Added ${justAdded.name}` : 'Add a course or exam'}</Text></View>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => { setAddOpen(false); setJustAdded(null); }} style={styles.iconButton} testID="button-close-add"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
           </View>
+          {justAdded ? (
+            <View style={styles.sheetContent} testID="panel-added-next">
+              <Text style={styles.nextTitle}>What next?</Text>
+              <Animated.View entering={FadeInUp.delay(80).duration(260)}>
+                <Pressable accessibilityRole="button" onPress={() => { const id = justAdded.id; setJustAdded(null); setAddOpen(false); router.push({ pathname: '/course/[courseId]', params: { courseId: id, intake: '1' } }); }} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]} testID="button-next-material">
+                  <Text style={styles.primaryButtonText}>Add material</Text>
+                </Pressable>
+              </Animated.View>
+              <Animated.View entering={FadeInUp.delay(260).duration(260)}>
+                <Pressable accessibilityRole="button" onPress={() => setJustAdded(null)} style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]} testID="button-next-another">
+                  <Text style={styles.secondaryButtonText}>Add another course</Text>
+                </Pressable>
+              </Animated.View>
+              <Animated.View entering={FadeInUp.delay(440).duration(260)}>
+                <Pressable accessibilityRole="button" onPress={() => { setJustAdded(null); setAddOpen(false); }} style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]} testID="button-next-list">
+                  <Text style={styles.secondaryButtonText}>Return to course list</Text>
+                </Pressable>
+              </Animated.View>
+            </View>
+          ) : (
           <View style={styles.sheetContent}>
             <View style={styles.segment}>
               {(['course', 'exam'] as const).map((kind) => (
@@ -234,6 +287,7 @@ export default function CourseListScreen() {
               <Text style={styles.primaryButtonText}>{addKind === 'exam' ? 'Add exam' : 'Add course'}</Text>
             </Pressable>
           </View>
+          )}
         </KeyboardAvoidingView>
       </Modal>
     </View>
@@ -259,6 +313,10 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   rowName: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
   empty: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20, paddingVertical: 12 },
   sectionTitle: { color: colors.mutedForeground, fontSize: 13, fontWeight: '700', marginTop: 18, marginBottom: 2 },
+  // Account rows (Dan: "about half the size and decrease the font, it's distracting"): 36 pt with a 44-pt hit area via the row's own padding.
+  compactRow: { minHeight: 34, paddingVertical: 3, gap: 8 },
+  compactName: { color: colors.foreground, fontSize: 13, fontWeight: '600' },
+  compactCaption: { color: colors.mutedForeground, fontSize: 10.5 },
   errorText: { color: colors.destructive, fontSize: 13 },
   sheetContent: { paddingHorizontal: 18, paddingTop: 10, gap: 15 },
   segment: { flexDirection: 'row', borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
@@ -269,6 +327,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   input: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.card, color: colors.foreground, fontSize: 15, paddingHorizontal: 13 },
   primaryButton: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary, paddingHorizontal: 16 },
   primaryButtonText: { color: colors.primaryForeground, fontSize: 17, fontWeight: '700' },
+  secondaryButton: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, paddingHorizontal: 16 },
+  secondaryButtonText: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
+  nextTitle: { color: colors.mutedForeground, fontSize: 15, lineHeight: 21 },
   pressed: { opacity: 0.8 },
   disabled: { opacity: 0.45 },
 });

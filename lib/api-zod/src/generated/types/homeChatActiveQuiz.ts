@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { HomeChatActiveQuizKind } from './homeChatActiveQuizKind';
+import type { HomeChatActiveQuizStatus } from './homeChatActiveQuizStatus';
 
 /**
  * The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.
@@ -15,6 +16,9 @@ export interface HomeChatActiveQuiz {
   courseId: string;
   topic: string;
   kind: HomeChatActiveQuizKind;
+  /** writing: the first questions are in the session and the rest are still being written (poll the session); ready: every question is in */
+  status: HomeChatActiveQuizStatus;
   answered: number;
+  /** The questions the set will have (expectedCount while writing) */
   total: number;
 }

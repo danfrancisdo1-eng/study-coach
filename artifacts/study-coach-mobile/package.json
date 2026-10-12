@@ -57,6 +57,8 @@
   },
   "dependencies": {
     "@clerk/expo": "^4.7.1",
+    "@expo-google-fonts/fraunces": "^0.4.1",
+    "@expo-google-fonts/source-sans-3": "^0.4.2",
     "expo-audio": "~57.0.5",
     "expo-auth-session": "~57.0.13",
     "expo-crypto": "~57.0.3",

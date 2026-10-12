@@ -27,7 +27,7 @@ import { rememberMisses } from "../lib/memory-sheet";
 import { parseFlagCheck } from "../lib/flag-check";
 import * as flagCheckPrompt from "../prompts/flag-check.v1";
 import {
-  generateSessionQuiz, jsonObject, safeSession, scoreQuiz, excludedByReport, sourceChunks, sourceTextOf,
+  generateSessionQuiz, jsonObject, quizStatus, safeSession, scoreQuiz, excludedByReport, sourceChunks, sourceTextOf,
   type JsonObject, type Quiz, type Session, type SourceStatus, type StoredQuestion, type StoredQuestionFlag, type StudyQuestionFlagKind,
 } from "../lib/session-quiz";
 
@@ -769,7 +769,7 @@ function validateState(value: unknown): string | null {
   return null;
 }
 
-async function getSession(id: string, ownerId: string): Promise<Session | null> {
+export async function getSession(id: string, ownerId: string): Promise<Session | null> {
   const rows = await db.select().from(studySessionsTable)
     .where(and(eq(studySessionsTable.id, id), eq(studySessionsTable.ownerId, ownerId))).limit(1);
   const row = rows[0];
@@ -778,7 +778,7 @@ async function getSession(id: string, ownerId: string): Promise<Session | null> 
   return { ...session, attempts: Array.isArray(session.attempts) ? session.attempts : [], _version: row.version };
 }
 
-async function saveSession(session: Session, ownerId: string): Promise<boolean> {
+export async function saveSession(session: Session, ownerId: string): Promise<boolean> {
   const expectedVersion = session._version ?? 1;
   const { _version, ...storedSession } = session;
   const updated = await db.update(studySessionsTable)
@@ -1295,6 +1295,11 @@ router.post("/study/sessions/:id/grade", async (req, res): Promise<void> => {
       return;
     }
     res.json(safeSession(session));
+    return;
+  }
+  // The rest of a two-part set (D-052) is still on its way: grading now would score a partial set.
+  if (quizStatus(session.quiz) === "writing") {
+    res.status(409).json({ error: "The coach is still writing the rest of this set. Try again in a moment." });
     return;
   }
   const now = new Date();

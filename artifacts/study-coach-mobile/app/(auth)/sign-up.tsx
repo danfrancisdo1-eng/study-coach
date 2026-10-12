@@ -28,7 +28,7 @@ export default function SignUpScreen() {
 
   const finishSignUp = async () => {
     await signUp.finalize();
-    router.replace('/(tabs)');
+    router.replace('/');
   };
 
   const submit = async () => {
@@ -54,7 +54,7 @@ export default function SignUpScreen() {
   };
 
   if (isSignedIn) {
-    return <Redirect href="/(tabs)" />;
+    return <Redirect href="/" />;
   }
 
   return (

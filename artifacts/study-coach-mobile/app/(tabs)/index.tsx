@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, FlatList, Keyboard, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
-import { Redirect, router, useFocusEffect } from 'expo-router';
+import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
@@ -18,6 +18,13 @@ import { defaultIntakeCourse, type IntakeCourse } from '@/lib/intake-course';
 import { QuizCard } from '@/components/QuizCard';
 import { FlashcardDeck } from '@/components/FlashcardDeck';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
+import { Welcome } from '@/components/Welcome';
+import { shouldShowWelcome, welcomeReplayKey, withWelcomeSeen } from '@/lib/welcome';
+import { GlassBar } from '@/components/GlassBar';
+import { GlowRing } from '@/components/GlowRing';
+import { HomeSkeleton } from '@/components/Skeleton';
+import { LiveSetCard } from '@/components/LiveSetCard';
+import { liveSetAction } from '@/lib/live-set';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.'; // sent for the student after Grade so the coach can respond to the result
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
@@ -85,6 +92,11 @@ export default function CoachHome() {
   const [studyOpen, setStudyOpen] = useState(false); // the full-screen sheet for the active set / deck
   const openedForRef = useRef<string | null>(null);
   const [intakeBusy, setIntakeBusy] = useState(false);
+  const [replayWelcome, setReplayWelcome] = useState(false); // "See the welcome again" on the courses page
+  // A request handed over by the course screen (D-058: practice, exam, flashcards, hooks), sent once the chat is on that course.
+  const { send: handoff, courseId: handoffCourseId } = useLocalSearchParams<{ send?: string; courseId?: string }>();
+  const handoffSentRef = useRef<string | null>(null);
+  const [welcomeBusy, setWelcomeBusy] = useState(false);
 
   const stateQuery = useGetStudyState({ query: { queryKey: [...getGetStudyStateQueryKey(), userId], enabled: !!userId } });
   // One thread per course (D-038): the chat follows the focused course; no focus = the general thread.
@@ -134,6 +146,7 @@ export default function CoachHome() {
   useFocusEffect(useCallback(() => {
     if (!userId) return;
     AsyncStorage.getItem(`study-coach-focus:${userId}`).then((saved) => { setFocusCourseId(saved || null); }).catch(() => {});
+    AsyncStorage.getItem(welcomeReplayKey(userId)).then((flag) => { setReplayWelcome(flag === '1'); }).catch(() => {});
   }, [userId]));
   const selectCourse = (id: string | null) => {
     setFocusCourseId(id);
@@ -146,10 +159,17 @@ export default function CoachHome() {
     }
   }, [courses.length, messages.length]);
   // The course list page (D-036): pick the coach's focus, open a course, add one.
-  const openCourses = () => router.push('/course-list');
+  // The list is the home for a returning account (D-056): when it is underneath, go back to it; otherwise open it.
+  const openCourses = () => { if (router.canGoBack()) router.back(); else router.push('/course-list'); };
   const activeQuiz = chatQuery.data?.activeQuiz ?? null;
   const activeDeck = chatQuery.data?.activeDeck ?? null;
+  // A practice set lives in the thread as a card under the coach message that started it
+  // (D-053); exam sets keep the full-screen sheet with the numbered bubbles (D-037).
+  const liveSet = useMemo(() => liveSetAction(messages), [messages]);
+  // The set opens over the chat (D-059, Dan: "the question pops and fills the screen leaving the chat in the
+  // background"): practice sets show the live card, exam sets the sheet with the bubbles (D-037).
   const quizSessionId = activeQuiz?.sessionId ?? gradedSessionId;
+  const quizIsPractice = quizSessionId ? (activeQuiz?.sessionId === quizSessionId ? activeQuiz.kind === 'practice' : liveSet?.sessionId === quizSessionId && liveSet.kind === 'practice') : false;
   const deckSessionId = activeDeck?.sessionId ?? finishedDeckId;
   const activeStudyId = activeDeck?.sessionId ?? activeQuiz?.sessionId ?? null;
   useEffect(() => {
@@ -168,6 +188,7 @@ export default function CoachHome() {
   const newestFirst = useMemo(() => [...messages].reverse(), [messages]);
   const viewportRef = useRef(0);
   const positionedRef = useRef<string | null>(null);
+  const [stripHeight, setStripHeight] = useState(48); // the glass course strip overlaps the top of the chat (D-048)
   useEffect(() => {
     positionedRef.current = null;
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
@@ -175,12 +196,24 @@ export default function CoachHome() {
   const placeNewest = (id: string, height: number) => {
     if (positionedRef.current === id || id !== messages[messages.length - 1]?.id) return;
     positionedRef.current = id;
-    const room = viewportRef.current - 24;
+    const room = viewportRef.current - stripHeight - 24;
     if (room > 0 && height > room) listRef.current?.scrollToOffset({ offset: height - room, animated: true });
   };
 
+  // The course screen's handoff (D-058) goes out once the chat is loaded, consented and on that course. Before the early returns: hooks keep their order.
+  const sendTextRef = useRef<(text: string) => Promise<void>>(async () => {});
+  useEffect(() => {
+    if (!handoff || stateQuery.isLoading || chatQuery.isLoading || stateQuery.error || chatQuery.error || !consented || busy) return;
+    if (handoffCourseId && focusCourseId !== handoffCourseId) return;
+    const key = `${handoffCourseId ?? ''}|${handoff}`;
+    if (handoffSentRef.current === key) return;
+    handoffSentRef.current = key;
+    router.setParams({ send: undefined, courseId: undefined });
+    void sendTextRef.current(handoff);
+  });
+
   if (!isLoaded) return null;
-  if (!isSignedIn) return <Redirect href="/(auth)/sign-in" />;
+  if (!isSignedIn) return <Redirect href="/" />;
 
   const giveConsent = async () => {
     setError('');
@@ -191,9 +224,34 @@ export default function CoachHome() {
       const ageConfirmedAt = typeof state.ageConfirmedAt === 'string' ? state.ageConfirmedAt : new Date().toISOString();
       const result = await putState.mutateAsync({ data: { state: { ...state, aiConsent: true, ageConfirmedAt }, version: previous?.version ?? 0 } });
       queryClient.setQueryData([...getGetStudyStateQueryKey(), userId], result);
+      // An exam added before consent (welcome → Add) could not look up its guide yet; do it now.
+      for (const course of coursesFrom(result.state)) if (course.kind === 'exam' && !course.guide) void fetchGuide(course.id);
     } catch (problem) {
       setError(readableError(problem));
     }
+  };
+
+  // The welcome (D-047) is dismissed by either choice; the account remembers it (`welcomeSeenAt`),
+  // then "Add a course or exam" opens the courses page with the Add sheet already up.
+  const dismissWelcome = async (next: 'add' | 'explore') => {
+    if (welcomeBusy) return;
+    setWelcomeBusy(true);
+    setError('');
+    try {
+      const previous = stateQuery.data;
+      if (!(typeof record(previous?.state).welcomeSeenAt === 'string')) {
+        const result = await putState.mutateAsync({ data: { state: withWelcomeSeen(previous?.state), version: previous?.version ?? 0 } });
+        queryClient.setQueryData([...getGetStudyStateQueryKey(), userId], result);
+      }
+    } catch (problem) {
+      // Not saved (offline, or the state changed on another device): the welcome simply shows again next time.
+      if ((problem as { status?: number }).status === 409) await queryClient.invalidateQueries({ queryKey: [...getGetStudyStateQueryKey(), userId] });
+    } finally {
+      setWelcomeBusy(false);
+    }
+    setReplayWelcome(false);
+    if (userId) AsyncStorage.removeItem(welcomeReplayKey(userId)).catch(() => {});
+    if (next === 'add') router.push({ pathname: '/course-list', params: { add: '1' } });
   };
 
   // Report a coach reply (D-046): long-press → reason → the server marks the message and logs it for review.
@@ -245,12 +303,13 @@ export default function CoachHome() {
 
   // The + corner (CLAUDE.md §8): opens the material sheet on the course the coach
   // most recently worked on; with no course yet, the coach asks for one first.
+  sendTextRef.current = sendText;
   const sendMessage = () => sendText(draft);
 
   const openPlus = () => {
     const course = focusCourse ?? defaultIntakeCourse(courses, messages);
     if (!course) {
-      Alert.alert('Which class?', 'Tell your coach which class you’re taking first, and it will set the course up for you.');
+      Alert.alert('Which course or exam?', 'Add a course or certification exam first, or tell your coach which one you are working on, and it will set it up for you.');
       return;
     }
     setIntakeCourseId(course.id);
@@ -322,6 +381,17 @@ export default function CoachHome() {
           <Feather name="bookmark" size={14} color={colors.primaryText} />
           <Text style={styles.actionText}>Saved to your memory sheet</Text>
         </View>
+      ) : action.type === 'start_quiz' && action.sessionId && action.sessionId === liveSet?.sessionId ? (
+        // The latest set: a compact card that opens it over the chat (in progress) or reopens its review (graded).
+        <Pressable key={`set-${action.sessionId}`} accessibilityRole="button" onPress={() => { if (activeQuiz?.sessionId !== action.sessionId) setGradedSessionId(action.sessionId!); setStudyOpen(true); }}
+          style={({ pressed }) => [styles.setCard, pressed && styles.pressed]} testID="card-set">
+          <Feather name="edit-3" size={16} color={colors.primaryText} />
+          <View style={styles.setCardCopy}>
+            <Text style={styles.setCardTitle}>{action.kind === 'practice' ? 'Practice set' : 'Exam set'} · {action.topic ?? ''}</Text>
+            <Text style={styles.caption}>{activeQuiz?.sessionId === action.sessionId ? `${activeQuiz.answered} of ${activeQuiz.total} answered` : `${action.count ?? ''} questions · graded`}</Text>
+          </View>
+          <Text style={styles.openLinkText}>{activeQuiz?.sessionId === action.sessionId ? 'Open' : 'Review'}</Text>
+        </Pressable>
       ) : (
         <View key={`${action.type}-${action.courseId}-${action.sessionId ?? ''}`} style={styles.actionChip}>
           <Feather name={action.type === 'create_course' ? 'plus-circle' : action.type === 'start_quiz' ? 'edit-3' : action.type === 'start_flashcards' ? 'layers' : action.type === 'lookup_exam_guide' || action.type === 'web_search' ? 'search' : 'play-circle'} size={14} color={colors.primaryText} />
@@ -346,6 +416,7 @@ export default function CoachHome() {
 
   const loading = stateQuery.isLoading || chatQuery.isLoading;
   const loadError = stateQuery.error ?? chatQuery.error;
+  const showWelcome = !loading && !loadError && shouldShowWelcome(stateQuery.data?.state, replayWelcome);
 
   return (
     <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: insets.top }]}>
@@ -355,22 +426,19 @@ export default function CoachHome() {
           <Text style={styles.brand}>Study Coach</Text>
           <Text numberOfLines={1} style={styles.headerSub}>Your coach</Text>
         </View>
+        {/* Dan: "need a Return to course list button" on the chat, not only the strip. */}
+        <Pressable accessibilityLabel="Return to course list" accessibilityRole="button" testID="button-courses" onPress={openCourses} style={styles.iconButton}>
+          <Feather name="list" size={20} color={colors.foreground} />
+        </Pressable>
         <Pressable accessibilityLabel="Sign out" accessibilityRole="button" testID="button-sign-out" onPress={() => void signOut()} style={styles.iconButton}>
           <Feather name="log-out" size={18} color={colors.foreground} />
         </Pressable>
       </View>
 
-      {consented && !loading && !loadError ? (
-        <Pressable accessibilityRole="button" accessibilityLabel="Courses and exams" accessibilityHint="Choose which course the coach works on, open a course, or add one" onPress={openCourses} style={({ pressed }) => [styles.focusBar, pressed && styles.pressed]} testID="button-focus-course">
-          <Text style={styles.kicker}>Coach</Text>
-          <Text numberOfLines={1} style={styles.focusText}>{focusCourse ? focusCourse.name : courses.length ? 'All courses' : 'Add a course or exam'}</Text>
-          <Text style={styles.focusCount}>{courses.length ? `${courses.length} ${courses.length === 1 ? 'course' : 'courses'}` : ''}</Text>
-          <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-        </Pressable>
-      ) : null}
-
       {loading ? (
-        <View style={styles.center}><ActivityIndicator color={colors.primaryText} /></View>
+        <HomeSkeleton />
+      ) : showWelcome ? (
+        <Welcome busy={welcomeBusy} onAddCourse={() => void dismissWelcome('add')} onExplore={() => void dismissWelcome('explore')} />
       ) : loadError ? (
         <View style={styles.errorCard}>
           <Text style={styles.errorTitle}>Couldn’t load your chat</Text>
@@ -393,13 +461,15 @@ export default function CoachHome() {
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
       ) : (
+        <View style={styles.chatArea}>
         <FlatList
           ref={listRef}
           data={newestFirst}
           inverted={newestFirst.length > 0}
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
-          contentContainerStyle={styles.list}
+          // Inverted lists flip their padding: the room under the glass strip is paddingBottom when inverted.
+          contentContainerStyle={[styles.list, newestFirst.length > 0 ? { paddingBottom: 12 + stripHeight } : { paddingTop: 12 + stripHeight }]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           onLayout={(e) => { viewportRef.current = e.nativeEvent.layout.height; }}
@@ -409,14 +479,13 @@ export default function CoachHome() {
             <View style={[styles.turn, styles.coachTurn]} testID="chat-empty">
               {focusCourse ? (
                 <>
-                  <Text style={styles.body}>{focusCourse.name} is set up. Where do you want to start?</Text>
+                  {/* The long how-to lives on the welcome now (D-047); the first thread message stays to one line. */}
+                  <Text style={styles.body}>{focusCourse.name} is set. Add notes or a lecture with +, or ask for a practice set.</Text>
                   <View style={styles.chipRow}>
                     {[
                       { label: 'Add material', hint: 'syllabus, notes, photos, a lecture', onPress: openPlus },
+                      { label: 'Practice set', onPress: () => void sendText('Give me a practice set on the main topics') },
                       { label: 'Show the topics', onPress: () => void sendText(`Show me the topics for ${focusCourse.name}`) },
-                      { label: 'Quiz me on all topics', onPress: () => void sendText('Quiz me on all topics') },
-                      { label: 'Flashcards', onPress: () => void sendText('Flashcards on the key terms') },
-                      { label: 'How am I doing?', onPress: () => void sendText('How am I doing in this course? What am I weak on?') },
                     ].map((chip) => (
                       <Pressable key={chip.label} accessibilityRole="button" accessibilityHint={chip.hint} disabled={busy} onPress={chip.onPress} style={[styles.suggestion, busy && styles.disabled]} testID="button-start-chip">
                         <Text style={styles.suggestionText}>{chip.label}</Text>
@@ -425,13 +494,32 @@ export default function CoachHome() {
                   </View>
                 </>
               ) : (
-                <Text style={styles.body}>Hey. Which course or certification exam are we working on? You can also add notes, a syllabus, photos, or record a lecture with the + button.</Text>
+                <>
+                  <Text style={styles.body}>Hey. Which course or certification exam are we working on?</Text>
+                  {!courses.length ? (
+                    <View style={styles.chipRow}>
+                      <Pressable accessibilityRole="button" disabled={busy} onPress={() => router.push({ pathname: '/course-list', params: { add: '1' } })} style={[styles.suggestion, busy && styles.disabled]} testID="button-start-chip">
+                        <Text style={styles.suggestionText}>Add a course or exam</Text>
+                      </Pressable>
+                    </View>
+                  ) : null}
+                </>
               )}
             </View>
           )}
-          ListHeaderComponent={busy ? <View style={styles.busyRow}><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.caption}>{send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '') ? 'Coach is working… writing questions can take up to a minute.' : 'Coach is thinking…'}</Text></View> : null}
+          ListHeaderComponent={busy ? <View style={styles.busyRow}><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.caption}>{send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '') ? 'Coach is writing the first questions…' : 'Coach is thinking…'}</Text></View> : null}
           testID="list-home-chat"
         />
+        {/* The one frosted panel (D-048): the "Coach · <course>" strip, which the chat scrolls under. */}
+        <GlassBar style={styles.focusGlass} onLayout={(e) => setStripHeight(Math.round(e.nativeEvent.layout.height))}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Courses and exams" accessibilityHint="Choose which course the coach works on, open a course, or add one" onPress={openCourses} style={({ pressed }) => [styles.focusBar, pressed && styles.pressed]} testID="button-focus-course">
+            <Text style={styles.kicker}>Coach</Text>
+            <Text numberOfLines={1} style={styles.focusText}>{focusCourse ? focusCourse.name : courses.length ? 'All courses' : 'Add a course or exam'}</Text>
+            <Text style={styles.focusCount}>{courses.length ? `${courses.length} ${courses.length === 1 ? 'course' : 'courses'}` : ''}</Text>
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+          </Pressable>
+        </GlassBar>
+        </View>
       )}
 
       {/* The active question set is docked above the composer, outside the chat scroll, so every
@@ -445,48 +533,66 @@ export default function CoachHome() {
           <Feather name="chevron-right" size={18} color={colors.primaryForeground} />
         </Pressable>
       ) : null}
-      <Modal visible={studyOpen && Boolean(quizSessionId || deckSessionId) && Boolean(userId)} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setStudyOpen(false)}>
-        <View style={[styles.screen, { paddingTop: insets.top }]}>
-          <View style={styles.header}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Back to chat" onPress={() => setStudyOpen(false)} style={styles.iconButton} testID="button-back-to-chat">
-              <Feather name="chevron-left" size={24} color={colors.foreground} />
-            </Pressable>
-            <View style={styles.headerCopy}>
-              <Text style={styles.brand}>{deckSessionId ? 'Flashcards' : 'Questions'}</Text>
-              <Text numberOfLines={1} style={styles.headerSub}>{(activeDeck ?? activeQuiz)?.topic ?? 'Study Coach'}</Text>
+      {/* The set or deck over the chat (D-059): a dimmed thread behind, a sheet that fills the screen, Back to chat on top. */}
+      <Modal visible={studyOpen && Boolean(quizSessionId || deckSessionId) && Boolean(userId)} transparent animationType="fade" onRequestClose={() => setStudyOpen(false)}>
+        <View style={styles.overlay}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Back to chat" onPress={() => setStudyOpen(false)} style={[styles.overlayBackdrop, { height: insets.top + 28 }]} />
+          <View style={[styles.overlaySheet, { paddingBottom: insets.bottom }]}>
+            <View style={styles.header}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Back to chat" onPress={() => setStudyOpen(false)} style={styles.iconButton} testID="button-back-to-chat">
+                <Feather name="chevron-down" size={24} color={colors.foreground} />
+              </Pressable>
+              <View style={styles.headerCopy}>
+                <Text style={styles.brand}>{deckSessionId ? 'Flashcards' : quizIsPractice ? 'Practice' : 'Exam'}</Text>
+                <Text numberOfLines={1} style={styles.headerSub}>{(activeDeck ?? activeQuiz)?.topic ?? 'Study Coach'}</Text>
+              </View>
             </View>
+            <ScrollView ref={quizScrollRef} style={styles.studySheet} contentContainerStyle={[styles.quizDockContent, { paddingBottom: 24 }]} keyboardShouldPersistTaps="handled" testID="dock-quiz">
+              {deckSessionId ? (
+                <FlashcardDeck key={deckSessionId} sessionId={deckSessionId} userId={userId}
+                  onStepChange={() => quizScrollRef.current?.scrollTo({ y: 0, animated: false })}
+                  onFinished={(finished) => { setFinishedDeckId(finished.id); void sendText(FINISHED_DECK_MESSAGE); }}
+                  onError={(problem) => setError(readableError(problem))} />
+              ) : quizSessionId && quizIsPractice ? (
+                <LiveSetCard key={quizSessionId} sessionId={quizSessionId} userId={userId}
+                  // A new question or the score starts at the top; feedback stays where the answer was tapped (Dan: no jump).
+                  onStepChange={(step) => { if (step.startsWith('question:') || step === 'score') quizScrollRef.current?.scrollTo({ y: 0, animated: false }); }}
+                  onGraded={(graded) => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
+                  onError={(problem) => setError(readableError(problem))} />
+              ) : quizSessionId ? (
+                <QuizCard key={quizSessionId} sessionId={quizSessionId} userId={userId}
+                  onStepChange={() => quizScrollRef.current?.scrollTo({ y: 0, animated: false })}
+                  onGraded={(graded) => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
+                  onError={(problem) => setError(readableError(problem))} />
+              ) : null}
+              {(gradedSessionId && !activeQuiz && !deckSessionId) || (finishedDeckId && !activeDeck) ? (
+                <>
+                  <Pressable accessibilityRole="button" onPress={() => { setStudyOpen(false); setGradedSessionId(null); setFinishedDeckId(null); }} style={styles.backToChat} testID="button-done-study"><Text style={styles.backToChatText}>Back to chat</Text></Pressable>
+                  {/* Dan (D-059): the review ends with a way back to the course list. */}
+                  <Pressable accessibilityRole="button" onPress={() => { setStudyOpen(false); setGradedSessionId(null); setFinishedDeckId(null); openCourses(); }} style={styles.toCourses} testID="button-done-courses"><Text style={styles.toCoursesText}>Return to course list</Text></Pressable>
+                </>
+              ) : null}
+            </ScrollView>
           </View>
-        <ScrollView ref={quizScrollRef} style={styles.studySheet} contentContainerStyle={[styles.quizDockContent, { paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled" testID="dock-quiz">
-          {deckSessionId ? (
-            <FlashcardDeck key={deckSessionId} sessionId={deckSessionId} userId={userId}
-              onStepChange={() => quizScrollRef.current?.scrollTo({ y: 0, animated: false })}
-              onFinished={(finished) => { setFinishedDeckId(finished.id); void sendText(FINISHED_DECK_MESSAGE); }}
-              onError={(problem) => setError(readableError(problem))} />
-          ) : quizSessionId ? (
-            <QuizCard key={quizSessionId} sessionId={quizSessionId} userId={userId}
-              onStepChange={() => quizScrollRef.current?.scrollTo({ y: 0, animated: false })}
-              onGraded={(graded) => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
-              onError={(problem) => setError(readableError(problem))} />
-          ) : null}
-          {(gradedSessionId && !activeQuiz && !deckSessionId) || (finishedDeckId && !activeDeck) ? (
-            <Pressable accessibilityRole="button" onPress={() => { setStudyOpen(false); setGradedSessionId(null); setFinishedDeckId(null); }} style={styles.backToChat} testID="button-done-study"><Text style={styles.backToChatText}>Back to chat</Text></Pressable>
-          ) : null}
-        </ScrollView>
         </View>
       </Modal>
-      {consented && !loading && !loadError ? (
-        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+      {(consented || showWelcome) && !loading && !loadError ? (
+        // During the welcome the composer stays in place but dimmed and inert (Dan: the first tap is the course, not a message into an empty thread).
+        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10) }, showWelcome && styles.composerDimmed]} accessibilityElementsHidden={showWelcome} importantForAccessibility={showWelcome ? 'no-hide-descendants' : 'auto'}>
           {error ? <Text style={styles.errorText} testID="status-chat-error">{error}</Text> : null}
           <View style={styles.composerRow}>
-            <Pressable accessibilityLabel="Add material or record a lecture" accessibilityRole="button" onPress={openPlus} style={styles.plusButton} testID="button-materials-plus">
+            <Pressable accessibilityLabel="Add material or record a lecture" accessibilityRole="button" disabled={showWelcome} onPress={openPlus} style={styles.plusButton} testID="button-materials-plus">
               <Feather name="plus" size={22} color={colors.primaryForeground} />
             </Pressable>
+            {/* The gold ring spins only while the coach is writing a reply or a set (D-048). */}
+            <GlowRing active={send.isPending} radius={16} style={styles.inputRing}>
             <TextInput
               value={draft} onChangeText={setDraft} placeholder="Message your coach" placeholderTextColor={colors.mutedForeground}
-              multiline maxLength={8000} style={[styles.input, { height: draft ? draftHeight : 44 }]} editable={!busy} accessibilityLabel="Message your coach" testID="input-home-chat"
+              multiline maxLength={8000} style={[styles.input, { height: draft ? draftHeight : 44 }]} editable={!busy && !showWelcome} accessibilityLabel="Message your coach" testID="input-home-chat"
               onContentSizeChange={(e) => setDraftHeight(Math.min(140, Math.max(44, Math.ceil(e.nativeEvent.contentSize.height) + (Platform.OS === 'ios' ? 22 : 16))))}
               returnKeyType="send" blurOnSubmit submitBehavior="blurAndSubmit" onSubmitEditing={() => void sendMessage()}
             />
+            </GlowRing>
             <Pressable accessibilityLabel="Send" accessibilityRole="button" disabled={busy || !draft.trim()} onPress={() => void sendMessage()} style={[styles.sendButton, (busy || !draft.trim()) && styles.disabled]} testID="button-send-home-chat">
               <Feather name="send" size={18} color={colors.primaryForeground} />
             </Pressable>
@@ -573,10 +679,18 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   sessionLabel: { color: colors.mutedForeground, fontSize: 12, fontWeight: '600' },
   quizDock: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
   studySheet: { flex: 1 },
+  overlay: { flex: 1, backgroundColor: 'rgba(8, 12, 24, 0.55)' },
+  overlayBackdrop: { width: '100%' },
+  overlaySheet: { flex: 1, backgroundColor: colors.background, borderTopLeftRadius: 22, borderTopRightRadius: 22, overflow: 'hidden' },
+  setCard: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6, minHeight: 56, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
+  setCardCopy: { flex: 1, minWidth: 0, gap: 2 },
+  setCardTitle: { color: colors.foreground, fontSize: 14.5, fontWeight: '700' },
   resumeBar: { marginHorizontal: 14, marginBottom: 6, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, borderRadius: 14, backgroundColor: colors.primary },
   resumeText: { flex: 1, color: colors.primaryForeground, fontSize: 15, fontWeight: '700' },
   backToChat: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary, marginTop: 4 },
   backToChatText: { color: colors.primaryForeground, fontSize: 17, fontWeight: '700' },
+  toCourses: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
+  toCoursesText: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
   quizDockContent: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 6, gap: 8 },
   hideScore: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   hideScoreText: { color: colors.mutedForeground, fontSize: 13, fontWeight: '600' },
@@ -584,9 +698,11 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   suggestion: { minHeight: 44, maxWidth: '100%', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.chipBorder, backgroundColor: colors.chipBg, alignItems: 'center', justifyContent: 'center' },
   suggestionText: { color: colors.primaryText, fontSize: 13.5, lineHeight: 18, fontWeight: '600' },
   composer: { paddingHorizontal: 14, paddingTop: 8, gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
+  composerDimmed: { opacity: 0.35, pointerEvents: 'none' },
   composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   plusButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
-  input: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 16, backgroundColor: colors.card, color: colors.foreground, fontSize: 15, lineHeight: 20, paddingHorizontal: 13, paddingVertical: Platform.OS === 'ios' ? 11 : 8 },
+  inputRing: { flex: 1 },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.card, color: colors.foreground, fontSize: 15, lineHeight: 20, paddingHorizontal: 13, paddingVertical: Platform.OS === 'ios' ? 11 : 8 },
   sendButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   disabled: { opacity: 0.45 },
   consentWrap: { flex: 1, padding: 18, gap: 10 },
@@ -610,7 +726,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   courseRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   courseCopy: { flex: 1, minWidth: 0 },
   courseName: { color: colors.foreground, fontSize: 15, fontWeight: '600' },
-  focusBar: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  chatArea: { flex: 1 },
+  focusGlass: { position: 'absolute', top: 0, left: 0, right: 0 },
+  focusBar: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18 },
   focusText: { flex: 1, color: colors.foreground, fontSize: 17, fontWeight: '600' },
   focusCount: { color: colors.mutedForeground, fontSize: 12 },
   segment: { flexDirection: 'row', borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },

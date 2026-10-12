@@ -5,6 +5,7 @@ import { useAuth, useSignIn } from '@clerk/expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { useColors } from '@/hooks/useColors';
+import { BUILD } from '@/constants/build';
 import { Feather } from '@expo/vector-icons';
 import { SocialSignIn } from '@/components/SocialSignIn';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
@@ -24,7 +25,7 @@ export default function SignInScreen() {
 
   const finishSignIn = async () => {
     await signIn.finalize();
-    router.replace('/(tabs)');
+    router.replace('/');
   };
 
   const submit = async () => {
@@ -64,7 +65,7 @@ export default function SignInScreen() {
   };
 
   if (isSignedIn) {
-    return <Redirect href="/(tabs)" />;
+    return <Redirect href="/" />;
   }
 
   const needsEmailCode = signIn.status === 'needs_client_trust';
@@ -112,6 +113,8 @@ export default function SignInScreen() {
             <Text style={[styles.body, { color: colors.mutedForeground }]}>New to Study Coach? </Text>
             <Link href="/(auth)/sign-up" testID="link-sign-up"><Text style={[styles.link, { color: colors.primaryText }]}>Create account</Text></Link>
           </View>
+          <Link href="/onboarding?replay=1" style={styles.textButton} testID="link-tour"><Text style={[styles.body, { color: colors.mutedForeground }]}>See the tour</Text></Link>
+          <Text style={[styles.build, { color: colors.mutedForeground }]} testID="text-build">Build {BUILD}</Text>
         </>
       )}
       {error ? <Text accessibilityRole="alert" testID="status-auth-error" style={[styles.error, { color: colors.destructive }]}>{error}</Text> : null}
@@ -135,6 +138,7 @@ const styles = StyleSheet.create({
   linkRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 13, flexWrap: 'wrap' },
   body: { fontSize: 14 },
   link: { fontSize: 14, fontWeight: '700' },
+  build: { fontSize: 11, textAlign: 'center', marginTop: 8, opacity: 0.8 },
   caption: { fontSize: 12, lineHeight: 18 },
   captionLink: { fontSize: 12 },
   error: { fontSize: 13, lineHeight: 19, marginTop: 7 },

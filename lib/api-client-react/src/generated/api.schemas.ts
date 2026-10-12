@@ -251,6 +251,17 @@ export const StudyQuizKind = {
   exam: 'exam',
 } as const;
 
+/**
+ * Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready.
+ */
+export type StudyQuizStatus = typeof StudyQuizStatus[keyof typeof StudyQuizStatus];
+
+
+export const StudyQuizStatus = {
+  writing: 'writing',
+  ready: 'ready',
+} as const;
+
 export type StudyQuestionFlagKind = typeof StudyQuestionFlagKind[keyof typeof StudyQuestionFlagKind];
 
 
@@ -334,6 +345,8 @@ export interface StudyQuiz {
   mode: StudyQuizMode;
   /** Chat-first sets only. Practice: feedback appears on each answered question before grading. */
   kind?: StudyQuizKind;
+  /** Chat-first sets of six or more arrive in two parts (D-052): writing while the rest of the questions are still being written (poll this session every second or two; the questions already here can be answered), ready once every question is in. Grading waits for ready. */
+  status: StudyQuizStatus;
   /** @minimum 1 */
   expectedCount: number;
   /** @minimum 0 */
@@ -388,6 +401,35 @@ export interface StudySession {
   /** @nullable */
   reportText: string | null;
   flashcards?: StudyFlashcardDeck | null;
+}
+
+export type CourseResultsTopicsItem = {
+  topic: string;
+  missed: number;
+  /** Questions and cards answered on this topic */
+  total: number;
+  sets: number;
+  lastAt: string;
+};
+
+export type CourseResultsConceptsItem = {
+  concept: string;
+  missed: number;
+  right: number;
+  lastAt: string;
+  /** The last few results, newest first; true = right */
+  last: boolean[];
+};
+
+export interface CourseResults {
+  /** Graded sets and finished decks counted */
+  sets: number;
+  /** Most recently tested first */
+  topics: CourseResultsTopicsItem[];
+  /** Most missed first */
+  concepts: CourseResultsConceptsItem[];
+  /** Concepts missed the last time they came up, most recent first; what the coach would drill next */
+  weak: string[];
 }
 
 export type ExamGuideSectionsItem = {
@@ -576,6 +618,17 @@ export const HomeChatActiveQuizKind = {
 } as const;
 
 /**
+ * writing: the first questions are in the session and the rest are still being written (poll the session); ready: every question is in
+ */
+export type HomeChatActiveQuizStatus = typeof HomeChatActiveQuizStatus[keyof typeof HomeChatActiveQuizStatus];
+
+
+export const HomeChatActiveQuizStatus = {
+  writing: 'writing',
+  ready: 'ready',
+} as const;
+
+/**
  * The question set most recently started from this chat, while it is still ungraded. Questions come from GET /study/sessions/{sessionId}.
  */
 export interface HomeChatActiveQuiz {
@@ -583,7 +636,10 @@ export interface HomeChatActiveQuiz {
   courseId: string;
   topic: string;
   kind: HomeChatActiveQuizKind;
+  /** writing: the first questions are in the session and the rest are still being written (poll the session); ready: every question is in */
+  status: HomeChatActiveQuizStatus;
   answered: number;
+  /** The questions the set will have (expectedCount while writing) */
   total: number;
 }
 

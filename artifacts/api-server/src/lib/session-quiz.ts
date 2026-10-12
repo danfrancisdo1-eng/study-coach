@@ -66,6 +66,13 @@ export type Quiz = {
   mode: "diagnostic" | "targeted";
   /** Chat-first sets (SPEC §6 step 4): practice reveals feedback per answer; exam only after grading. Absent on older sessions (= exam). */
   kind?: QuizKind;
+  /**
+   * Set while the rest of a chat-first set is still being written in the background (D-052):
+   * the first part is already in `questions` and can be answered. Cleared when the last part
+   * lands or the writer gives up; a writer that died leaves it, so `quizStatus` also treats a
+   * stale start as finished.
+   */
+  writing?: { startedAt: string } | null;
   expectedCount: number;
   questions: StoredQuestion[];
   sourceStatus: SourceStatus;
@@ -114,6 +121,9 @@ function practiceFeedback(question: StoredQuestion): NonNullable<StoredQuestion[
 import { countsInScore, excludedByReport } from "./question-counts";
 export { countsInScore, excludedByReport };
 
+import { quizStatus, WRITING_TIMEOUT_MS, type QuizStatus } from "./quiz-status";
+export { quizStatus, WRITING_TIMEOUT_MS, type QuizStatus };
+
 export type QuizScore = { correct: number; answered: number; excluded: number; invalidItems: number; unanswered: number; total: number; percent: number; gradedAt: string };
 
 /** The score of a set as it stands: used at grading and again when a report changes what counts. */
@@ -144,6 +154,7 @@ export function safeSession(session: Session): Record<string, unknown> {
   const publicQuiz = (value: Quiz): Record<string, unknown> => ({
     mode: value.mode,
     ...(value.kind ? { kind: value.kind } : {}),
+    status: quizStatus(value),
     expectedCount: value.expectedCount,
     invalidItemCount: value.invalidItemCount + value.questions.filter((question) => question.invalid || excludedByReport(question)).length,
     qualityNotice: QUESTION_QUALITY_NOTICE,

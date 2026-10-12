@@ -23,6 +23,7 @@ import type {
   AnalyzeInput,
   AnalyzeResult,
   CourseDeletion,
+  CourseResults,
   DeleteAccount200,
   ExamGuide,
   FlashcardReviewInput,
@@ -918,6 +919,84 @@ export const useLookupExamGuide = <TError = ErrorType<void>,
       > => {
       return useMutation(getLookupExamGuideMutationOptions(options));
     }
+
+export const getGetCourseResultsUrl = (courseId: string,) => {
+
+
+
+
+  return `/api/study/courses/${courseId}/results`
+}
+
+/**
+ * No AI call. Topics are the topics sets were asked for; concepts come from the questions. An account with nothing graded gets empty lists.
+ * @summary What the course's graded sets and finished decks say, per topic and per concept, plus the concepts to drill next
+ */
+export const getCourseResults = async (courseId: string, options?: Parameters<typeof customFetch>[1]): Promise<CourseResults> => {
+
+  return customFetch<CourseResults>(getGetCourseResultsUrl(courseId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCourseResultsQueryKey = (courseId: string,) => {
+    return [
+    `/api/study/courses/${courseId}/results`
+    ] as const;
+    }
+
+
+export const getGetCourseResultsQueryOptions = <TData = Awaited<ReturnType<typeof getCourseResults>>, TError = ErrorType<unknown>>(courseId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCourseResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCourseResultsQueryKey(courseId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCourseResults>>> = ({ signal }) => getCourseResults(courseId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: courseId !== null && courseId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCourseResults>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCourseResultsQueryResult = NonNullable<Awaited<ReturnType<typeof getCourseResults>>>
+export type GetCourseResultsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary What the course's graded sets and finished decks say, per topic and per concept, plus the concepts to drill next
+ */
+
+export function useGetCourseResults<TData = Awaited<ReturnType<typeof getCourseResults>>, TError = ErrorType<unknown>>(
+ courseId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCourseResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCourseResultsQueryOptions(courseId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getDeleteCourseUrl = (courseId: string,) => {
 

@@ -1,5 +1,91 @@
 # Study Coach — handoff for the next Claude Code session
 
+## Handoff 2026-10-11 (read this section first; the 2026-10-09 section below it is still accurate for the Windows setup and for how Dan works)
+
+**Read in this order:** this section, CLAUDE.md, docs/PROGRESS.md (Session 8 at the top), docs/DECISIONS.md D-051 to D-053.
+
+### Where the work is
+- Branch `claude/archived-chat-recovery-dmunmu`, draft PR #1 on `danfrancisdo1-eng/study-coach`, 12 commits, head `de55e96`, base `main` at `f9c3a43`. Nothing merged, nothing deployed. Dan never answered yes or no on merging; ask once, plainly, then do what he says. Merging deploys the API to Render automatically.
+- `main` (live on Render) still has only what was there on 2026-10-04 through D-046.
+
+### What the PR holds, newest first
+1. **`de55e96` the live card ignores the phone's Text Size** (`maxFontSizeMultiplier={1}` on every text in `components/LiveSetCard.tsx`). Dan's phone showed the card a step larger than his Grok reference on the same phone; the reference is a web page, which does not apply iOS Text Size. **Dan never saw this commit on the phone** (see "Where the session ended").
+2. **`c8d7cbc` D-053 fonts:** Source Sans 3 (400/600/700) and Fraunces (600) from `@expo-google-fonts`, one face per import path in `app/_layout.tsx` (the packages' root index would bundle every weight), sizes in `constants/type.ts` from the Grok report Dan sent: question 18 semibold, choices 16, letters 14 bold, labels 14, buttons 16 on 48-tall, titles Fraunces 36, score 48 with "/20" at 30. Lockfile regenerated with pnpm 12 (what Dan's machines run) so its diff is only the two packages; pnpm 10 (this cloud container) rewrites 1,500 unrelated lines, so use `npx -y pnpm@12 install --lockfile-only --ignore-scripts` after any dependency change here.
+3. **`3130798` D-053 live practice card:** `components/LiveSetCard.tsx` renders a practice set under the coach message that started it (anchored to the message, so it stays as history). One question live; answered ones collapse to one line (tap to reopen, "Looks wrong?" kept); skeleton while the rest is written; last answer's button "See the score" grades in one tap; score + line + per-concept bars. `lib/live-set.ts` (5 unit tests) decides which set is live (latest `start_quiz` action with a session id), row results, tallies, the score line, and the scroll offset. The chat list is inverted; the card's message is skipped by `placeNewest` and `placeLive` scrolls so the live block starts at the top when taller than the room. Exam sets and decks keep the full-screen sheet (`QuizCard.tsx`, whose practice paths are now unused but left in place) and the resume bar. **Verified on Dan's phone:** the card appears in the chat with question 1 (screenshots 23:45 and 23:52 on 2026-10-11), so the wiring works.
+4. **`e19f6b2` D-052 two-part sets (server):** a chat-first set of six or more is written in two parts: three questions before the reply goes out, the rest in the background (`writeRestOfSet` in `routes/chat.ts`), appended with a version-race retry. `quiz.writing = { startedAt }` meanwhile; `status: writing | ready` on `StudyQuiz` and `HomeChatActiveQuiz` (`lib/quiz-status.ts`, stale after 3 minutes = ready); answers taken while writing, grading answers 409; a failed second part leaves the set as its first part. Sets under six unchanged. No prompt change. Tests: `tests/home-chat.test.mjs` last test (the AI stub can now return a promise to hold a reply), `tests/quiz-status.test.mjs`. **Not visible to Dan until merged**, since the phone talks to Render.
+5. Everything from the 2026-10-09 section: welcome (D-047, verified by Dan), aesthetics pass (D-048; Dan saw the gold ring, "very faint"; he did not see the frosted strip), tour (D-049/D-050, unseen).
+
+### Added at 03:30 on 2026-10-12: Dan's three-stage agenda is built (D-055 to D-058)
+- D-055 the welcome is numbered, slides in step by step, shows until a course exists. D-056 a returning account opens on the course list (Coach button and Sign out there); an empty one on the welcome. D-057 after adding a course the sheet asks "What next?" (Add material / Add another course / Return to course list). D-058 the course screen: actions in two rows, "Which topics?" picker for Flashcards and Hooks, "Topics tested" (missed X of Y per topic), "Coach recommends"; server endpoint `GET /study/courses/{courseId}/results`; the chat takes `?send=…&courseId=…` and sends it once it is on that course. None of it seen on Dan's phone yet; the endpoint needs the merge. Still unanswered: merge PR #1 yes/no; "match it" for the Grok-style feedback on the live card.
+
+### Added at 01:55 on 2026-10-12: the tour plays before every sign-in (D-054)
+- Dan saw the tour once, liked it, and wants it on every new login. `app/index.tsx` now sends every signed-out launch to `/onboarding`; Skip goes to sign-in, Get started to sign-up. Also "See the tour again" in Account (`3713acc`). He rejected Grok's suggestion to hard-code `<Redirect href="/onboarding" />` (it would bounce signed-in users too).
+
+### Added at 01:45 on 2026-10-12: the app was sitting on a loading screen
+- Dan came back with Grok's diagnosis: "the loading screen is being shown and never told to go away." That is why his screenshots never changed: he was not seeing new code at all. Three things can hold this app on a loading screen: (1) the font gate added in `c8d7cbc` (`return null` until Source Sans 3 and Fraunces loaded), removed in `604bd53`, the app now opens at once; (2) the Clerk spinner in `app/index.tsx` (`!isLoaded`) when the network is down; (3) the home skeleton while the Render API wakes up (free tier sleeps; the first request can take a minute). The Render host cannot be reached from the cloud container, so (3) was not checked. Next session: pull `604bd53` first, then if a loading screen still shows, ask which one (a blank splash, a lone spinner, or the gray skeleton shapes) and that tells you which of the three it is.
+
+### Where the session ended (2026-10-11, about 23:55 local)
+- Dan was at the Mac. Preview runs from `/Users/mini_home/Downloads/study-coach-project` (note: the web app folder inside it is also named `study-coach`; `cd` by the full path). Node and pnpm 12 installed tonight (`sudo npm install -g pnpm`), Expo CLI logged in as `danfrancis`, same Wi-Fi, `npx expo start --clear` in `artifacts/study-coach-mobile`.
+- He saw the live card with question 1, but the text read about 22 pt instead of 18. Cause, measured from his screenshots: a uniform 1.25 scale on every size, i.e. the phone's Text Size; Grok's page ignores it, React Native honors it. Fix pushed as `de55e96`. His next two screenshots were pixel-identical to the pre-fix one, which means the Mac had not pulled. He stopped there, angry ("I paid $600 extra last week and I'm getting the same shit"), and asked for this handoff.
+- **First thing next session:** get the Mac onto `de55e96` and have him look at one question. Give him exactly this, nothing else: `cd /Users/mini_home/Downloads/study-coach-project && git pull && git log --oneline -1`, then shake the phone, Reload. If the size is still wrong on `de55e96`, measure again before touching code.
+- Dan sent screenshots of Grok's feedback screen and said nothing explicit; the clear next ask is "match it": wrong pick tinted red with an x, right one green with a check, a "Not this one" panel for the explanation, a "Remember it" card for the trick, "Your answer / Best answer" on the collapsed rows, full-width dark "Next question →" button. Confirm with one word before building.
+
+### Still unverified on the phone
+- The two-part sets (needs merge), the card's feedback, collapse, skeleton, score, Light mode, Reduce Motion; the tour; the frosted strip; the skeletons.
+
+### Waiting on Dan
+- Merge PR #1: yes or no.
+- "Match it" for the feedback styling.
+- The exam-guide fix (D-044 follow-up: normalize codes, near-match suggestion such as AI-501 → AI-500, never invent domains for an unknown code; needs the API keys on the Mac or in env secrets to run the evals).
+
+### Working with Dan (added tonight)
+- Everything in the 2026-10-09 section holds. Tonight's lesson: when he says "nothing changed", the checkout is stale nine times out of ten. Ask for `git log --oneline -1` output before anything else, and give one single-line command that does the pull and prints the hash.
+- He compares against his Grok-built reference app ("Microsoft AZ-731 Quiz", cream and teal, Source Sans 3 + Fraunces). He wants crisp and professional. He measures by eye; so measure his screenshots (923 px wide ≈ 2.35 px/pt) before arguing.
+- He does not read the .md files. Put the state in chat, short.
+
+## Handoff 2026-10-09 (read this section first; the 2026-10-04 handoff below is older and partly stale)
+
+**Read in this order:** this section, CLAUDE.md, docs/PROGRESS.md (Session 7 at the top), docs/DECISIONS.md D-046 to D-050.
+
+### Where the work is
+- Branch `claude/archived-chat-recovery-dmunmu`, draft PR #1 on GitHub (`danfrancisdo1-eng/study-coach`), four commits, base `main` at `f9c3a43`. Nothing from it is merged or deployed. Dan has not approved a merge.
+- `main` (deployed on Render, auto-deploy on push) has everything through D-046: results history, dark/light look, exam-guide lookup from chat, web search, tappable links, 13+ checkbox, account deletion, report a reply, privacy page.
+
+### What the PR contains
+1. **D-048 aesthetics:** `components/GlassBar.tsx` (the "Coach · course" strip floats over the chat with native blur), `components/GlowRing.tsx` (gold ring around the message box while the coach writes), `components/Skeleton.tsx` (loading shapes on home, courses page, course screen). Reduce Motion respected.
+2. **D-049/D-050 first-launch tour:** `app/onboarding.tsx`, `components/onboarding/*`, `lib/onboarding.ts`. Five pages before sign-in, once per phone (AsyncStorage key `study-coach-onboarding-seen`), skippable after page 1, replayable from sign-in ("See the tour"). One hero and one title per page, no subheadings, no brand name repeated under the mark on the first page, whose title is "Welcome to Study Coach" (Dan, 2026-10-09). Tone: professional, for certification candidates as much as students.
+3. **D-047 in-chat welcome, built to Dan's own mock:** `components/Welcome.tsx`, `lib/welcome.ts`. Three short step cards (gold bar, icon, title, one line), a boundary line, the gold "Add a course or exam" button, "I'll explore first"; one screen, no scrolling. Shown in the chat area once per account when it has no courses and never dismissed (`welcomeSeenAt` in the study state); the composer under it is dimmed. Courses & exams → Account → "See the welcome again" replays it. Dan approved this; do not remove it (a commit on 2026-10-09 did so by misreading him and was reverted).
+4. **Consent fix (from D-047):** adding a course from the courses page no longer writes `aiConsent: true`; an exam added before consent gets its guide lookup right after the consent card. The first message of a fresh course thread is one line with three chips; the general thread with no courses offers an "Add a course or exam" chip that opens the courses page with the Add sheet up (`/course-list?add=1`).
+
+### Verified by Dan on his iPhone (2026-10-09, from the Windows PC preview at `a20b5a4`)
+- The in-chat welcome built to his mock: "That front page is fixed." The earlier complaints were about a stale checkout on the PC; once it was reset to GitHub and Expo restarted with `--clear`, the right screen appeared.
+
+### What Dan still has to check on the phone
+- The tour, all five pages, Light and Dark, Skip, "See the tour" from sign-in, Reduce Motion on. The stagger timing has never been seen by anyone; tune it by eye with Dan.
+- The glass strip over a busy chat (text contrast), the gold ring during "quiz me", the skeletons on a slow connection.
+- Then: merge PR #1 only with Dan's OK; Render deploys `main` on push.
+
+### How Dan runs the phone preview now (Windows PC "the beast", set up 2026-10-09)
+- Clone at `C:\Users\drdan\study-coach`, on the PR branch. Node 24 and pnpm 12 installed. Install with `pnpm install --ignore-scripts` in PowerShell (the repo's preinstall script needs a Unix shell).
+- `artifacts/study-coach-mobile/.env.local` holds `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` (copied from the Render service's Environment tab) and `EXPO_PUBLIC_DOMAIN=study-coach-api-pskt.onrender.com`.
+- `@expo/ngrok-bin-win32-x64@2.3.41` was added locally (not committed) because `pnpm-workspace.yaml` strips the Windows tunnel binary. Do not commit lockfile churn from a different pnpm version.
+- Expo CLI is logged in as `danfrancis` (Dan set a password on 2026-10-09; the account had none). Tunnel mode requires both Expo Go and the CLI signed in to the same account.
+- Start: `cd artifacts\study-coach-mobile` then `npx expo start --tunnel --port 8087`, in its own PowerShell window, never inside a Claude session. After a `git pull` in a second window the app reloads itself.
+- The Mac preview died on 2026-10-08 at 21:56 UTC when the Claude Code process on the Mac exited (`host_exit`), which also archived the "Study Coach build" chat. A Remote Control session and anything started inside it die together. Dan's 7-day usage limit on the Mac session resets 2026-10-10 02:00 UTC.
+
+### Working with Dan (learned this session)
+- He reads chat, not .md files. Plain language, short concrete steps, one command block at a time, say which folder to run it from.
+- He is on PowerShell, not Git Bash. He tends to paste file contents as commands; give Notepad for file edits.
+- He wants the product to look professional, not aimed at kids. Less copy, never a subheading under a title. Do only what he literally asked: on 2026-10-09 "remove the double and the subheadings" was read twice as more than that (the in-chat welcome was removed, then the tour's "Welcome to Study Coach" title), and both had to be restored. When an instruction could mean two things, ask one short question first.
+- Never paste a credential into chat; he did once (an Expo token, since told to revoke). Say where a value lives instead.
+
+### Open decisions
+- Free tier + Apple in-app purchase (D-003 open items: price, subscription vs one-time, caps).
+- Informal Expo Go beta first, then TestFlight (needs a development build and App Store Connect agreements on the Mac).
+- Whether to publish the app bundle to Expo's servers (EAS Update) so the phone never depends on a live computer. Not set up; needs an Expo access token added to the cloud environment's secrets, never pasted.
+
+---
+
 Prepared 2026-10-04 at the end of session 1 (Claude Code). **Read this first**, then CLAUDE.md, docs/PROGRESS.md and the newest entries in docs/DECISIONS.md. The previous Codex handoff (2026-10-03) is kept at the bottom for history.
 
 ## Who and how

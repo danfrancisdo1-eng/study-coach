@@ -80,4 +80,13 @@ test('results history reaches the coach and drives missed-scope sets', async (t)
   const gradedSummary = summaries.find((s) => s.id === set.sessionId);
   assert.deepEqual(gradedSummary.missedConcepts, ['concept-0', 'concept-2']);
   assert.equal(gradedSummary.diagnosticScore, 50);
+
+  // The course screen's results (D-058): per topic, per concept, and what to drill next; another course has nothing.
+  const results = (await call('GET', '/study/courses/bio/results')).body;
+  assert.equal(results.sets, 1);
+  assert.deepEqual(results.topics.map((t) => [t.topic, t.missed, t.total, t.sets]), [['cells', 2, 4, 1]]);
+  assert.deepEqual(results.concepts.map((c) => [c.concept, c.missed, c.right]), [['concept-0', 1, 0], ['concept-2', 1, 0], ['concept-1', 0, 1], ['concept-3', 0, 1]]);
+  assert.deepEqual(results.weak, ['concept-0', 'concept-2']);
+  assert.deepEqual((await call('GET', '/study/courses/chem/results')).body, { topics: [], concepts: [], weak: [], sets: 0 });
+  assert.equal((await call('GET', '/study/courses/%20/results')).status, 400);
 });

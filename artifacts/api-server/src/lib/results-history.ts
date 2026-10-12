@@ -70,6 +70,23 @@ export function conceptTallies(events: ResultEvent[]): ConceptTally[] {
   return [...map.values()].sort((a, b) => b.missed - a.missed || b.lastAt.localeCompare(a.lastAt));
 }
 
+export type TopicTally = { topic: string; missed: number; total: number; sets: number; /** newest first */ lastAt: string };
+
+/** Per set topic (the topic a set or deck was asked for): questions missed out of answered, across every graded set and finished deck; most recently tested first. */
+export function topicTallies(events: ResultEvent[]): TopicTally[] {
+  const map = new Map<string, TopicTally>();
+  for (const event of events) { // newest first, so the first sighting sets lastAt
+    const key = event.topic.trim().replace(/\s+/g, " ");
+    if (!key) continue;
+    const tally = map.get(key.toLowerCase()) ?? { topic: key, missed: 0, total: 0, sets: 0, lastAt: event.at };
+    tally.missed += event.total - event.correct;
+    tally.total += event.total;
+    tally.sets += 1;
+    map.set(key.toLowerCase(), tally);
+  }
+  return [...map.values()].sort((a, b) => b.lastAt.localeCompare(a.lastAt));
+}
+
 /** Concepts whose most recent result was a miss, most recently missed first. */
 export function weakConcepts(events: ResultEvent[], limit = 8): string[] {
   return conceptTallies(events).filter((t) => t.last[0] === false).slice(0, limit).map((t) => t.concept);

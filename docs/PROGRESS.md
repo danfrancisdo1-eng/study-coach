@@ -1,5 +1,63 @@
 # Progress
 
+## Session 8 — 2026-10-11 (Dan at the Mac; preview served from the Mac on this branch)
+
+### Done
+- **Mac preview on the branch:** Node installed on the Mac, pnpm installed with `sudo npm install -g pnpm`, the repo is at `/Users/mini_home/Downloads/study-coach-project` (the web app folder inside it is also named `study-coach`, so `cd` by the full path), Expo CLI logged in as `danfrancis`, `npx expo start --clear` in `artifacts/study-coach-mobile`, same Wi-Fi. Dan saw the welcome (approved mock, unchanged) and the gold ring ("a very faint gold light circling the message box").
+- **D-052 two-part sets (commit 1 of 2 for D-051):** the first three questions come back with the coach's reply, the rest are written in the background and appended; `status: writing | ready` on the set and on `activeQuiz`; answers taken while writing, grading waits; the phone's set sheet polls and shows "Writing question N…". Verified here: typecheck; 109/109 tests (new: two-part end-to-end + status unit tests); iOS bundle export. **Needs real-iPhone check:** a set of ten from the chat, first card in seconds.
+
+- **D-053 live practice card (commit 2 of 2 for D-051):** `components/LiveSetCard.tsx` under the coach message that started the set; one live question, answered ones collapse to a line, skeleton while the rest is written, one-tap grade from the last answer, score with concept bars; `lib/live-set.ts` (5 tests); `constants/type.ts` type scale and faces from Dan's Grok-built reference (Source Sans 3 + Fraunces, two packages added, loaded at launch). Exam sets keep the sheet. Verified here: typecheck; 35/35 mobile tests; 109/109 server tests; iOS bundle export. **Needs real-iPhone check:** see D-053.
+
+- **`de55e96`:** the card ignores the phone's Text Size (Dan's screenshots showed a uniform 1.25× scale; the Grok reference is a web page). Not yet seen on the phone: his checkout had not pulled when he stopped.
+- **Dan saw the live card on the phone** (question 1 in the chat, Source Sans 3) at 23:45 on 2026-10-11.
+
+- **02:00–02:30 on 2026-10-12, Dan back at the Mac on `82c2b2d`:** the loading-screen cause found (the font gate, removed), "See the tour again" in Account, the tour before every sign-in (D-054), the welcome rebuilt to Dan's stage-1 spec and shown until a course exists (D-055).
+
+- **D-056 home = course list for a returning account** (`lib/home.ts`, entry route, Coach button and Sign out on the list). Verified here: typecheck; 37/37 tests; iOS bundle export.
+
+- **D-057 stage 2:** after adding a course the sheet asks "What next?" (Add material → course screen at the intake card; Add another course; Return to course list). Verified here: typecheck; tests; iOS bundle export.
+
+- **D-058 stage 3:** course screen actions (8, two rows), topic picker for Flashcards and Hooks, "Topics tested" with missed/total, "Coach recommends"; `GET /study/courses/{courseId}/results` on the server; the chat takes a `send` handoff. Verified here: typecheck; 119/119 tests; iOS bundle export.
+
+- **Dan's phone, 13:20:** a full practice set on the live card through to the score, Light mode: it works. His notes became **D-059**: sets open over the chat (sheet, dimmed thread), no jump on answer, review under the score grouped by section, the welcome settles once. Verified here: typecheck; 40/40 mobile tests; iOS bundle export.
+
+### In progress
+- Nothing on the branch. Waiting for Dan's next look and for PR #1 to merge (the results endpoint and the two-part sets run on Render).
+
+### Next
+- First: get the Mac onto `de55e96` (one command, see HANDOFF) and have Dan look at one question. Then "match it" for the feedback styling if he confirms.
+- Dan's phone checks still open: the tour ("See the tour" under "Create account" on the sign-in screen), the frosted strip (Dan: "I didn't see any frosted glass"), skeletons, Light mode, Reduce Motion.
+- Waiting on Dan: merge PR #1 (deploys the server to Render) so the D-051 work gets its own PR; the exam-guide fix (near-match suggestion, no invented domains for an unknown code; evals need the keys on the Mac).
+
+### Blockers
+- None.
+
+## Session 7 — 2026-10-08 (night, cloud session; the Mac's Remote Control session was archived by a host exit at 21:56 UTC)
+
+### Done
+- **D-047 one-time welcome, branch `claude/archived-chat-recovery-dmunmu`:** `components/Welcome.tsx` + `lib/welcome.ts` (show/dismiss rules, 6 unit tests), home screen shows it in the chat area with the composer dimmed, `welcomeSeenAt` in the study state, "See the welcome again" in Account, `/course-list?add=1` opens the Add sheet, adding a course keeps the existing consent state (was: silently set true), exam guide lookup deferred until after consent, one-line first message with three chips, "course or exam" wording on the + alert. Verified here: typecheck; tests; iOS bundle export. **Needs real-iPhone check:** see D-047.
+
+- **D-048 aesthetics pass, second commit on the same branch:** `components/GlassBar.tsx` (the Coach strip floats over the chat with native blur), `components/GlowRing.tsx` (gold ring around the message box while the coach writes), `components/Skeleton.tsx` (home, courses page, course screen). Reduce Motion respected. Verified here: typecheck; tests; iOS bundle export. **Needs real-iPhone check:** see D-048. Draft PR #1 holds both commits.
+
+- Dan got the preview running from his Windows PC (pnpm, Node 24, `.env.local` with the publishable key from Render, `@expo/ngrok-bin-win32-x64` added locally for the tunnel, Expo CLI logged in as `danfrancis` after a password reset; the Expo account was created without a password). Rule of thumb for Windows: install in PowerShell with `pnpm install --ignore-scripts`; run the preview in its own window, never inside a Claude session.
+- Welcome revised to Dan's mock (shorter copy, icons, gold bar, one screen).
+- **D-049 first-launch tour, third commit on the PR:** `app/onboarding.tsx` + `components/onboarding/*` + `lib/onboarding.ts` (4 unit tests), root redirect, "See the tour" on sign-in. Professional tone per Dan. Verified here: typecheck; tests; iOS bundle export. **Needs real-iPhone check:** see D-049.
+
+- **D-050 on the PR:** the tour is hero + title + button per page, no subheadings, no brand name repeated under the mark; page 1 keeps "Welcome to Study Coach". The in-chat welcome (Dan's mock) stays; it only shows by itself on an account with no courses. Two over-reaches (welcome removed, tour title removed) were reverted the same night. docs/HANDOFF.md has a 2026-10-09 section at the top for the next thread.
+
+- **Dan verified the welcome on his iPhone** (2026-10-09, served from the PC at `a20b5a4`): "That front page is fixed."
+
+### In progress
+- Nothing. Seven commits are on PR #1; the tour and the aesthetics pass still wait for Dan's phone check.
+
+### Next
+- **D-051 (direction, held until Dan is at the Mac):** practice sets as one live card at a time in the chat, streaming first. Also waiting on go: the exam-guide fix (near-match suggestion, no invented domains for an unknown code; evals need the keys on the Mac).
+- Dan on the phone: the welcome flow on a throwaway account, "See the welcome again", Light and Dark.
+- Then: free tier + Apple IAP decisions (Phase 3), the informal Expo Go beta, TestFlight prep.
+
+### Blockers
+- No Mac in this session: no Expo tunnel, so nothing new can be seen on the phone until the Mac's preview is running again. Dan's 7-day usage limit on the Mac session resets 2026-10-10 02:00 UTC.
+
 ## Session 3 — 2026-10-05
 
 ### Done (branch `feature/chat-first-home`, not merged, not deployed)
