@@ -9,7 +9,7 @@ A mobile-first study companion for individual high-school and college students *
 
 ## 2. Core principles
 - Grounded: answers use the student's saved material. Outside content is labeled "supplemental" with sources. Never invent syllabus details, dates, or teacher requirements.
-- Student in control: extracted text is editable before saving; extracted course details are drafts until approved one by one; nothing is shared with a guardian automatically.
+- Student in control: extracted text is editable before saving; extracted course details are drafts until approved one by one; there is no sharing feature (D-088).
 - Private by default: account data is visible only to its owner. Users consent before any personal data goes to a named third-party AI provider.
 - Simple intake: one persistent **+** opens Photos, Files, OneDrive, Website link.
 - Academic integrity (D-008): no restriction. The app helps with anything the student asks; success = the student knows the material and scores 100 on the test.
@@ -30,7 +30,7 @@ A mobile-first study companion for individual high-school and college students *
 | Review | Spaced-repetition review schedule / flashcards | Schedule on iPhone; flashcards web-only | **[decide]** flashcards on iPhone in v1? |
 | Exam plan | Day-by-day plan to an exam date | Web only | **[decide]** iPhone v1? |
 | Lectures | Record/import lecture → transcript → review/correct → source-linked questions | Web only, browser storage | **iPhone v1, the differentiator (D-002).** Native recording incl. screen locked; transcription via OpenAI behind `lib/stt` (D-004) |
-| Sharing | Session/progress report, preview before sharing, optional guardian | "Dad" reports (web), preview on iPhone | Optional guardian; explicit per-report share |
+| Sharing | Removed (D-088, Dan: "not necessary"; a remnant of the one-family build) | Removed | None |
 | Safety | Report a bad AI response | Quiz questions only, pre-grade | All AI outputs |
 | Monetization | Free tier + premium via Apple IAP, Restore Purchases | Missing | **v1 (D-003):** one free course with full features; premium unlocks more courses. Server-enforced. **[decide]** price, subscription vs one-time, lapse behavior, AI caps |
 
@@ -62,7 +62,7 @@ A student with an exam coming up who has put some, not necessarily all, course m
    - **Memory sheet** (added 2026-10-07, D-025): each course or exam has a sheet of rows *term → trick → when you see X, think Y*. The student adds the misses of a graded set (or the again-cards of a deck) with one chip, or names things to add; the AI writes the rows, the app dedupes and shows them in the chat and on the course screen. "Quiz me from my memory sheet" makes a set from the sheet alone. Rows are never written without the student asking.
 7. **Retest.** Fresh questions on the chosen scope (missed topics or everything), with 1–2 from earlier material when the scope is the missed topics. Then back to step 5.
 8. **Student decides when to stop.** Scores are shown after every chunk; no target score ends the loop. Each pass updates the per-concept record (independent / hinted / missed) and the spaced-review schedule.
-9. Everything above is a **study session**; the existing check-in, draft/answer preservation, report-a-question, and optional guardian report (approval every time) stay.
+9. Everything above is a **study session**; the existing check-in, draft/answer preservation, and report-a-question stay. The guardian report was removed (D-088).
 
 ### What v1 doesn't do
 Games; short-answer grading; syllabus-based exam-date inference on iPhone (student picks the exam); teacher or group features; promises about what the real exam contains; forced minimums (no "you must finish 20 before grading").

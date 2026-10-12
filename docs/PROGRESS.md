@@ -21,13 +21,26 @@
 
 - **Dan's phone, 13:20:** a full practice set on the live card through to the score, Light mode: it works. His notes became **D-059**: sets open over the chat (sheet, dimmed thread), no jump on answer, review under the score grouped by section, the welcome settles once. Verified here: typecheck; 40/40 mobile tests; iOS bundle export.
 
+- **D-060 to D-062** (quicker welcome swipe, compact Account rows, Outline + Questions without material, build stamp, lectures counted, Courses button on the chat) and **PR #1 merged** (`bb5c1d0`, Render deploys it). **D-063** the Grok-style feedback on the live card, on a new PR.
+
+- **D-064** persona usability review (`docs/USABILITY_REVIEW_2026-10-12.md`); **D-065** its three critical fixes (Dan: "all worked perfectly"); the course screen's pencil opens the edit form in view (#11). All on draft PR #2.
+- **D-066** wording fixes 4 to 6: "Studying · <course>" on the chat strip, "Memory tricks" for Hooks, a plain welcome line about AI consent. Verified here: typecheck; 44/44 mobile tests; iOS bundle export. Build #12. **Needs real-iPhone check.**
+- **D-067** intake errors are plain sentences (Dan's airplane-mode screenshot showed a Clerk URL and a session id); **D-068** "Talk to the coach" button under the courses; **D-069** "See the welcome again" shows once and never covers a course-screen request (Flashcards landed on the welcome); **D-070** the exam sheet: Grade from any question once all are answered, marks never block it, "You scored 20%: 2 of 10 right.", misses in the app fonts and Grok's layout. Usability review round 2 from screenshots 1 to 9. Build #16. Verified here: typecheck; 48/48 mobile tests; iOS bundle export.
+- **Dan on the phone (2026-10-12 evening):** extraction works online; "that all looks good" after #16.
+- **D-079 to D-087:** Sign out always visible; an Account page; sign-up headline "Find the flaws. Fix the facts." (Dan's); consent card in three lines (phone and web); 13+ nudge; status-bar backing; sign-in title; course list tidy; welcome/tour copy; practice score line. Screenshots 11 to 15 reviewed (round 3). Build #32. Verified here: typecheck; 134/134 tests; iOS bundle export.
+- **D-088** the session-report sharing ("family member") feature removed from server, API, web and phone; privacy page and SPEC updated. Build #33.
+- **D-071 to D-078** (Dan: "fix 7-10 and the new findings"): exam dates as typed ("Nov 14"); Account folded on the course list; + with no course opens Add; coach.v16 chips answer the coach's question (evals coach 38/38 twice; needs the merge to reach the phone); one Delete course; missed bars; set times; plain intake wording with the file name. Build #23. Verified here: typecheck; 133/133 tests; iOS bundle export. **Needs real-iPhone check.**
+
 ### In progress
-- Nothing on the branch. Waiting for Dan's next look and for PR #1 to merge (the results endpoint and the two-part sets run on Render).
+- Screenshots 10 to 15 still to take (exam bubbles seen; 11 to 13 a brand-new account: sign-up, welcome, consent card; 14 and 15 Dark and Light). Run the personas on them and add to the review.
 
 ### Next
-- First: get the Mac onto `de55e96` (one command, see HANDOFF) and have Dan look at one question. Then "match it" for the feedback styling if he confirms.
+- PR #2 holds D-063 to D-088 (incl. coach.v16 and the reportText removal, which need the merge to reach Render).
+- Web app has no Delete my account (gap since D-046).
+- Dan: rotate the OpenAI key in `artifacts/api-server/.env` (a stray unnamed line printed it in the session) and delete that line.
+- PR #2 (draft) holds D-063 to D-070; merge when Dan says.
 - Dan's phone checks still open: the tour ("See the tour" under "Create account" on the sign-in screen), the frosted strip (Dan: "I didn't see any frosted glass"), skeletons, Light mode, Reduce Motion.
-- Waiting on Dan: merge PR #1 (deploys the server to Render) so the D-051 work gets its own PR; the exam-guide fix (near-match suggestion, no invented domains for an unknown code; evals need the keys on the Mac).
+- Waiting on Dan: the exam-guide fix (near-match suggestion, no invented domains for an unknown code; evals need the keys on the Mac).
 
 ### Blockers
 - None.

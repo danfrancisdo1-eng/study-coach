@@ -10,7 +10,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v15";
+import * as coachPrompt from "../prompts/coach.v16";
 import * as webLookupPrompt from "../prompts/web-lookup.v1";
 import { lookupExamGuide } from "../lib/exam-guide";
 import { saveExamGuide } from "../lib/exam-guide-state";
@@ -29,7 +29,7 @@ const MAX_MESSAGES = 80; // kept in the row; older turns drop off
 const HISTORY_TURNS = 20; // sent to the model
 const DEFAULT_SESSION_MINUTES = 20;
 // A new study session starts when the app opens and the last message is older than this
-// (SPEC §7 "resume where you left off"; the Danny guide's once-per-session check-in).
+// (SPEC §7 "resume where you left off"; the original guide's once-per-session check-in).
 const SESSION_GAP_MS = Number(process.env.HOME_CHAT_SESSION_GAP_MINUTES ?? "30") * 60_000;
 const OLD_MATERIAL_QUESTIONS = 2;
 const SCOPE_MATERIAL = /outline|syllabus|schedule|course description|reading list|contents/i; // a map of topics, not content
@@ -291,7 +291,7 @@ function newSession(courseId: string, topic: string, checkedIn: boolean): Sessio
     id: randomUUID(), courseId, topic, minutes: DEFAULT_SESSION_MINUTES, createdAt: now, status: "active",
     // Sets started from the chat skip the materials check-in: the chat's + already covers it.
     checkIn: checkedIn ? { skipped: true, recordedAt: now } : null,
-    messages: [], quiz: null, attempts: [], scores: { diagnostic: null, targeted: null }, reviewSchedule: [], reportText: null,
+    messages: [], quiz: null, attempts: [], scores: { diagnostic: null, targeted: null }, reviewSchedule: [],
   };
 }
 

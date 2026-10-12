@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { shouldShowWelcome, withWelcomeSeen } from './welcome.ts';
+import { replayOnOpen, shouldShowWelcome, withWelcomeSeen } from './welcome.ts';
 
 test('a new account (no state, or no courses and never dismissed) sees the welcome', () => {
   assert.equal(shouldShowWelcome(null), true);
@@ -35,4 +35,10 @@ test('dismissal never grants AI consent by itself', () => {
   assert.equal(withWelcomeSeen(null).aiConsent, false);
   assert.equal(withWelcomeSeen({ aiConsent: false, courses: [] }).aiConsent, false);
   assert.equal(withWelcomeSeen({ aiConsent: true, courses: [] }).aiConsent, true);
+});
+
+test('a replayed welcome shows once and never over a course-screen request (D-069)', () => {
+  assert.equal(replayOnOpen('1', false), true);
+  assert.equal(replayOnOpen('1', true), false);
+  assert.equal(replayOnOpen(null, false), false);
 });

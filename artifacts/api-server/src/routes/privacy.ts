@@ -43,7 +43,7 @@ const html = `<!doctype html>
 <p>Your account data and study content are stored on servers hosted by Render in the United States. Lecture audio is stored only on your device.</p>
 
 <h2>Sharing</h2>
-<p>Nothing you create is shared with anyone else unless you choose to share it yourself. Nothing is sent to a family member, teacher or other recipient automatically. We do not sell personal information.</p>
+<p>Study Coach has no sharing feature: nothing you create is sent to anyone other than the service providers listed above. We do not sell personal information.</p>
 
 <h2>Children</h2>
 <p>Study Coach is for people aged 13 and older. You confirm your age when you create an account. If we learn that an account belongs to a child under 13, we delete it.</p>

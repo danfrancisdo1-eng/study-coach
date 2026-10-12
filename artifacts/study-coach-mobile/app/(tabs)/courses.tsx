@@ -7,7 +7,6 @@ import {
   Modal,
   ScrollView,
   Pressable,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -47,6 +46,7 @@ import {
   type StudyState,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { friendlyError } from '@/lib/friendly-error';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 
 type Course = { id: string; name: string; code?: string };
@@ -64,10 +64,8 @@ function id(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
-function readableError(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return 'Something went wrong. Please try again.';
-}
+// One plain sentence, never a native exception or a URL (D-065, D-067).
+const readableError = (problem: unknown): string => friendlyError(problem);
 
 function objectRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? value as Record<string, unknown> : {};
@@ -535,15 +533,6 @@ function StudyCoach() {
     }
   };
 
-  const shareExactReport = async () => {
-    if (!session?.reportText) return;
-    try {
-      await Share.share({ message: session.reportText });
-    } catch (problem) {
-      handleError(problem);
-    }
-  };
-
   const openHome = () => {
     setSessionId(null);
     setSessionOwnerId(null);
@@ -556,7 +545,6 @@ function StudyCoach() {
     setMaterialsOpen(false);
   };
 
-  const reportText = session?.reportText;
   const sessionSummaries = sessionsQuery.data?.sessions ?? [];
   const statusMessage = error || (stateQuery.isError ? readableError(stateQuery.error) : '');
 
@@ -779,15 +767,6 @@ function StudyCoach() {
               <Text style={styles.muted}>A targeted retest uses a new question set. Previous answers remain part of your session history.</Text>
               <ActionButton label="Create a fresh retest" icon="repeat" onPress={() => void generatePractice('targeted')} disabled={busy || !savedState.aiConsent || reviewScheduleNeedsSync} testID="button-fresh-retest" />
               {reviewScheduleNeedsSync ? <Text style={styles.caption}>Sync the saved review schedule before starting another attempt.</Text> : null}
-            </View>
-          ) : null}
-          {reportText ? (
-            <View style={styles.card}>
-              <Text style={styles.kicker}>PREVIEW BEFORE SHARING</Text>
-              <Text style={styles.cardTitle}>Your session report</Text>
-              <Text style={styles.caption}>This is the exact server-approved text. Nothing is sent automatically.</Text>
-              <Text selectable style={styles.reportText} testID="text-exact-report">{reportText}</Text>
-              <ActionButton label="Share report" icon="share" onPress={shareExactReport} disabled={busy} testID="button-share-report" />
             </View>
           ) : null}
           <ActionButton label="Back to your study space" onPress={openHome} secondary testID="button-return-home" />
@@ -1081,7 +1060,7 @@ function StudyCoach() {
                 )}
                 <View style={styles.consentCard} testID="panel-ai-consent">
                   <View style={styles.consentHeading}><Feather name="shield" size={19} color={colors.accentForeground} /><Text style={styles.cardTitle}>Your choice before AI</Text></View>
-                  <Text style={styles.body}>Study Coach sends the topic, your messages, selected course materials, and your quiz answers to AI to teach, generate practice, and explain results. AI may make mistakes; review explanations. You can change this choice at any time. Nothing is sent to a family member or other recipient.</Text>
+                  <Text style={styles.body}>Study Coach sends the topic, your messages, selected course materials, and your quiz answers to AI to teach, generate practice, and explain results. AI may make mistakes; review explanations. You can change this choice at any time.</Text>
                   <Pressable
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: savedState.aiConsent === true }}
@@ -1227,7 +1206,6 @@ function createStyles(colors: Colors) {
   scoreCard: { borderRadius: 20, padding: 21, backgroundColor: colors.foreground, gap: 7 },
   score: { color: colors.primary, fontSize: 48, fontWeight: '700', letterSpacing: -2 },
   feedbackResult: { fontSize: 14, fontWeight: '700' },
-  reportText: { color: colors.foreground, fontSize: 12, lineHeight: 18, padding: 12, borderRadius: 12, backgroundColor: colors.secondary },
   progressTrack: { height: 7, backgroundColor: colors.muted, overflow: 'hidden', borderRadius: 10, marginTop: 3 },
   progressFill: { height: '100%', borderRadius: 10 },
   currentQuestion: { borderColor: colors.primary },

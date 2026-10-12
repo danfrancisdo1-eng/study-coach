@@ -35,7 +35,7 @@ payment data (none yet), location, contacts, advertising identifiers. No analyti
 | Web search (via Anthropic's web search tool) | the search query only (exam name/topic) | exam guide lookup; "search the web" requests | as above |
 | Render | hosts the API and the database | always | Render DPA |
 
-Nothing is sent to a family member, teacher, or any other recipient.
+Study Coach has no sharing feature (the session-report share was removed in D-088): nothing is sent to anyone beyond the providers above.
 
 ## Student controls (in the app)
 

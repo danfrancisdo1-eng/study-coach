@@ -8,6 +8,8 @@ import {
   type StudyQuestionFlagInputKind, type StudySession, type StudyQuizQuestionsItem,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { FONT, TYPE } from '@/constants/type';
+import { canGrade, scoreLine } from '@/lib/exam-sheet';
 
 /**
  * One question at a time inside the chat (SPEC §6 steps 4–5). Practice sets show the
@@ -55,6 +57,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
       return next;
     });
   };
+  const clearMarks = () => { setMarks(new Set()); AsyncStorage.removeItem(marksKey).catch(() => {}); };
   const session = sessionQuery.data;
   const quiz = session?.quiz ?? null;
   const busy = saveAnswer.isPending || grade.isPending;
@@ -63,10 +66,10 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   const step = !quiz ? 'loading' : quiz.grade ? 'score' : reviewingId ? `feedback:${reviewingId}` : `question:${currentId ?? quiz.questions.find((q) => counts(q) && !q.answer)?.id ?? 'grade'}`;
   useEffect(() => { onStepChange?.(step); }, [step]);
 
-  if (sessionQuery.isLoading) return <View style={styles.card}><ActivityIndicator color={colors.primaryText} /><Text style={styles.muted}>Loading your questions…</Text></View>;
+  if (sessionQuery.isLoading) return <View style={styles.card}><ActivityIndicator color={colors.primaryText} /><CardText style={styles.muted}>Loading your questions…</CardText></View>;
   if (!session || !quiz) {
-    return <View style={styles.card}><Text style={styles.muted}>Couldn’t load this set.</Text>
-      <Pressable accessibilityRole="button" onPress={() => void sessionQuery.refetch()} style={styles.secondaryButton} testID="button-retry-quiz"><Text style={styles.secondaryText}>Retry</Text></Pressable></View>;
+    return <View style={styles.card}><CardText style={styles.muted}>Couldn’t load this set.</CardText>
+      <Pressable accessibilityRole="button" onPress={() => void sessionQuery.refetch()} style={styles.secondaryButton} testID="button-retry-quiz"><CardText style={styles.secondaryText}>Retry</CardText></Pressable></View>;
   }
 
   const questions = quiz.questions.filter(counts);
@@ -93,9 +96,9 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
 
   // The report link, or the verdict once the question was reported.
   const reportNote = (question: StudyQuizQuestionsItem) => {
-    if (reportingId === question.id) return <View style={styles.note} testID="status-recheck"><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.noteText}>Checking the answer again…</Text></View>;
+    if (reportingId === question.id) return <View style={styles.note} testID="status-recheck"><ActivityIndicator color={colors.primaryText} size="small" /><CardText style={styles.noteText}>Checking the answer again…</CardText></View>;
     const recheck = question.flag?.recheck;
-    if (question.flag && !recheck) return <View style={styles.note} testID="note-recheck"><Feather name="flag" size={14} color={colors.mutedForeground} /><Text style={styles.noteText}>Reported. This question won’t count.</Text></View>;
+    if (question.flag && !recheck) return <View style={styles.note} testID="note-recheck"><Feather name="flag" size={14} color={colors.mutedForeground} /><CardText style={styles.noteText}>Reported. This question won’t count.</CardText></View>;
     if (recheck) {
       const youWereRight = recheck.verdict === 'key_wrong' && !!question.answer && recheck.correctOptionId === question.answer.optionId;
       const headline = recheck.verdict === 'key_holds' ? 'Checked again: the answer key holds.'
@@ -104,13 +107,13 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
       return (
         <View style={styles.note} testID={`note-recheck-${recheck.verdict}`}>
           <Feather name={recheck.verdict === 'key_holds' ? 'check-circle' : 'alert-circle'} size={14} color={recheck.verdict === 'key_holds' ? colors.mutedForeground : colors.primaryText} />
-          <Text style={styles.noteText}><Text style={styles.noteStrong}>{headline}</Text> {recheck.explanation}</Text>
+          <CardText style={styles.noteText}><CardText style={styles.noteStrong}>{headline}</CardText> {recheck.explanation}</CardText>
         </View>
       );
     }
     return (
       <Pressable accessibilityRole="button" accessibilityLabel="Report this question" disabled={!!reportingId} onPress={() => report(question)} style={styles.reportLink} testID={`button-report-${question.id}`}>
-        <Text style={styles.reportLinkText}>Looks wrong?</Text>
+        <CardText style={styles.reportLinkText}>Looks wrong?</CardText>
       </Pressable>
     );
   };
@@ -118,7 +121,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   const progress = (
     <View style={styles.progress} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: total, now: answered.length }}>
       <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${total ? Math.round((answered.length / total) * 100) : 0}%` }]} /></View>
-      <Text style={styles.progressText}>{answered.length} of {total} answered</Text>
+      <CardText style={styles.progressText}>{answered.length} of {total} answered</CardText>
     </View>
   );
 
@@ -127,17 +130,25 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
     const misses = quiz.questions.filter((q) => q.feedback && q.feedback.selectedOptionId && (q.feedback.selectedOptionId !== q.feedback.correctOptionId || (q.flag && !counts(q))));
     return (
       <View style={styles.card} testID="panel-quiz-score">
-        <Text style={styles.kicker}>{kindLabel} · {session.topic}</Text>
-        <Text style={styles.score}>{quiz.grade.correct} / {quiz.grade.answered}</Text>
-        <Text style={styles.body}>{quiz.grade.percent}% on the questions you answered{quiz.grade.unanswered ? ` · ${quiz.grade.unanswered} skipped` : ''}.</Text>
-        {misses.length ? <Text style={styles.cardTitle}>What you missed</Text> : <Text style={styles.cardTitle}>Nothing missed. Nice.</Text>}
+        <CardText style={styles.kicker}>{kindLabel} · {session.topic}</CardText>
+        <View style={styles.scoreRow}><CardText style={styles.score}>{quiz.grade.correct}</CardText><CardText style={styles.scoreOf}> / {quiz.grade.answered}</CardText></View>
+        {/* Dan (2026-10-12): "20% on the questions you answered" read like 20% missed. Say the score plainly. */}
+        <CardText style={styles.body}>{scoreLine(quiz.grade)}</CardText>
+        {misses.length ? <CardText style={styles.cardTitle}>Questions you missed</CardText> : <CardText style={styles.cardTitle}>Nothing missed. Nice.</CardText>}
         {misses.map((q, i) => (
+          // Grok's review layout (D-070): concept, question, the trick first, then your answer and the best answer as labelled lines.
           <View key={q.id} style={styles.miss} testID={`quiz-miss-${i}`}>
-            <Text style={styles.missPrompt}>{q.prompt}</Text>
-            <Text style={styles.wrong}>You chose: {q.feedback!.selectedOptionText}</Text>
-            <Text style={styles.right}>Correct: {q.feedback!.correctOptionText}</Text>
-            <Text style={styles.missExplain}>{q.feedback!.explanation}</Text>
-            {q.feedback!.hook ? <View style={styles.hook}><Feather name="zap" size={14} color={colors.hookText} /><Text style={styles.hookText}>{q.feedback!.hook}</Text></View> : null}
+            {q.concept ? <CardText style={styles.missKicker}>{q.concept}</CardText> : null}
+            <CardText style={styles.missPrompt}>{q.prompt}</CardText>
+            {q.feedback!.hook ? (
+              <View style={styles.hook}>
+                <View style={styles.hookHead}><Feather name="zap" size={14} color={colors.hookText} /><CardText style={styles.hookKicker}>Remember it this way</CardText></View>
+                <CardText style={styles.hookText}>{q.feedback!.hook}</CardText>
+              </View>
+            ) : null}
+            <View style={styles.answerLine}><CardText style={[styles.answerLabel, { color: colors.wrong }]}>Your answer</CardText><CardText style={styles.answerText}>{q.feedback!.selectedOptionText}</CardText></View>
+            <View style={styles.answerLine}><CardText style={[styles.answerLabel, { color: colors.correct }]}>Best answer</CardText><CardText style={styles.answerText}>{q.feedback!.correctOptionText}</CardText></View>
+            <CardText style={styles.missExplain}>{q.feedback!.explanation}</CardText>
             {reportNote(q)}
           </View>
         ))}
@@ -151,22 +162,22 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
     const position = questions.indexOf(reviewing);
     return (
       <View style={styles.card} testID="panel-quiz-feedback">
-        <Text style={styles.kicker}>{kindLabel} · {position >= 0 ? `Question ${position + 1} of ${total}` : 'Reported question'}</Text>
+        <CardText style={styles.kicker}>{kindLabel} · {position >= 0 ? `Question ${position + 1} of ${total}` : 'Reported question'}</CardText>
         <View style={styles.miss}>
-          <Text style={styles.missPrompt}>{reviewing.prompt}</Text>
+          <CardText style={styles.missPrompt}>{reviewing.prompt}</CardText>
           <View style={styles.verdict}>
             <Feather name={correct ? 'check-circle' : 'x-circle'} size={18} color={correct ? colors.correct : colors.wrong} />
-            <Text style={[styles.verdictText, { color: correct ? colors.correct : colors.wrong }]}>{correct ? 'Correct' : 'Not quite'}</Text>
+            <CardText style={[styles.verdictText, { color: correct ? colors.correct : colors.wrong }]}>{correct ? 'Correct' : 'Not quite'}</CardText>
           </View>
-          {!correct ? <Text style={styles.wrong}>You chose: {reviewing.feedback.selectedOptionText}</Text> : null}
-          <Text style={styles.right}>Correct: {reviewing.feedback.correctOptionText}</Text>
-          <Text style={styles.missExplain}>{reviewing.feedback.explanation}</Text>
-          {!correct && reviewing.feedback.hook ? <View style={styles.hook}><Feather name="zap" size={14} color={colors.hookText} /><Text style={styles.hookText}>{reviewing.feedback.hook}</Text></View> : null}
+          {!correct ? <View style={styles.answerLine}><CardText style={[styles.answerLabel, { color: colors.wrong }]}>Your answer</CardText><CardText style={styles.answerText}>{reviewing.feedback.selectedOptionText}</CardText></View> : null}
+          <View style={styles.answerLine}><CardText style={[styles.answerLabel, { color: colors.correct }]}>Best answer</CardText><CardText style={styles.answerText}>{reviewing.feedback.correctOptionText}</CardText></View>
+          <CardText style={styles.missExplain}>{reviewing.feedback.explanation}</CardText>
+          {!correct && reviewing.feedback.hook ? <View style={styles.hook}><View style={styles.hookHead}><Feather name="zap" size={14} color={colors.hookText} /><CardText style={styles.hookKicker}>Remember it this way</CardText></View><CardText style={styles.hookText}>{reviewing.feedback.hook}</CardText></View> : null}
           {reportNote(reviewing)}
         </View>
         {progress}
         <Pressable accessibilityRole="button" onPress={() => setReviewingId(null)} style={styles.primaryButton} testID="button-quiz-next">
-          <Text style={styles.primaryText}>{answered.length >= questions.length && !writing ? 'See the score' : 'Next question'}</Text>
+          <CardText style={styles.primaryText}>{answered.length >= questions.length && !writing ? 'See the score' : 'Next question'}</CardText>
         </Pressable>
       </View>
     );
@@ -185,7 +196,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
         return (
           <Pressable key={q.id} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: here }}
             hitSlop={8} onPress={() => setCurrentId(q.id)} style={[styles.bubble, answered && styles.bubbleAnswered, marked && styles.bubbleMarked, here && styles.bubbleHere]} testID={`button-quiz-bubble-${i}`}>
-            <Text style={[styles.bubbleText, answered && styles.bubbleTextAnswered]}>{i + 1}</Text>
+            <CardText style={[styles.bubbleText, answered && styles.bubbleTextAnswered]}>{i + 1}</CardText>
           </Pressable>
         );
       })}
@@ -197,29 +208,39 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
     // The first part is answered and the rest has not landed yet: the card waits (polling above), no Grade yet.
     return (
       <View style={styles.card} testID="panel-quiz-writing">
-        <Text style={styles.kicker}>{kindLabel} · {session.topic}</Text>
+        <CardText style={styles.kicker}>{kindLabel} · {session.topic}</CardText>
         {progress}
         {bubbles}
-        <View style={styles.note}><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.noteText}>Writing question {answered.length + 1}…</Text></View>
+        <View style={styles.note}><ActivityIndicator color={colors.primaryText} size="small" /><CardText style={styles.noteText}>Writing question {answered.length + 1}…</CardText></View>
       </View>
     );
   }
+  // Grade is reachable from every question once all are answered (Dan: after going back to review
+  // one there was no way to grade). Marks never block it: grading counts the answers as they stand.
+  const allAnswered = canGrade(questions.length, answered.length, writing);
+  const gradeBlock = allAnswered ? (
+    <View style={styles.gradeBlock}>
+      {marked.length ? <CardText style={styles.muted}>{marked.length} still marked for review. Grading counts the answers you have now.</CardText> : null}
+      <Pressable accessibilityRole="button" disabled={busy} onPress={async () => {
+        try {
+          const graded = await grade.mutateAsync({ id: sessionId });
+          queryClient.setQueryData(key, graded);
+          clearMarks();
+          onGraded(graded);
+        } catch (problem) { onError(problem); }
+      }} style={[styles.primaryButton, busy && styles.disabled]} testID="button-quiz-grade">
+        {busy ? <ActivityIndicator color={colors.primaryForeground} /> : <CardText style={styles.primaryText}>Grade exam</CardText>}
+      </Pressable>
+    </View>
+  ) : null;
   if (!current) {
     return (
       <View style={styles.card} testID="panel-quiz-grade">
-        <Text style={styles.kicker}>{kindLabel} · {session.topic}</Text>
-        <Text style={styles.cardTitle}>All {questions.length} answered.</Text>
+        <CardText style={styles.kicker}>{kindLabel} · {session.topic}</CardText>
+        <CardText style={styles.cardTitle}>All {questions.length} answered.</CardText>
         {bubbles}
-        {marked.length ? <Text style={styles.muted}>{marked.length} marked for review. Tap a red bubble to go back to it, or grade now.</Text> : null}
-        <Pressable accessibilityRole="button" disabled={busy} onPress={async () => {
-          try {
-            const graded = await grade.mutateAsync({ id: sessionId });
-            queryClient.setQueryData(key, graded);
-            onGraded(graded);
-          } catch (problem) { onError(problem); }
-        }} style={[styles.primaryButton, busy && styles.disabled]} testID="button-quiz-grade">
-          {busy ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={styles.primaryText}>Grade</Text>}
-        </Pressable>
+        {!marked.length ? <CardText style={styles.muted}>Tap a bubble to look at a question again, or grade now.</CardText> : null}
+        {gradeBlock}
       </View>
     );
   }
@@ -241,43 +262,52 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   const chosen = isExam ? current.answer?.optionId ?? null : null;
   return (
     <View style={styles.card} testID="panel-quiz-question">
-      <Text style={styles.kicker}>{kindLabel} · Question {questions.indexOf(current) + 1} of {total}</Text>
+      <CardText style={styles.kicker}>{kindLabel} · Question {questions.indexOf(current) + 1} of {total}</CardText>
       {progress}
       {bubbles}
-      <Text style={styles.prompt}>{current.prompt}</Text>
+      <CardText style={styles.prompt}>{current.prompt}</CardText>
       {current.options.map((option, i) => (
         <Pressable key={option.id} accessibilityRole="button" accessibilityState={{ selected: chosen === option.id }} disabled={busy} onPress={() => void choose(option.id)}
           style={({ pressed }) => [styles.option, chosen === option.id && styles.optionChosen, pressed && styles.pressed, busy && styles.disabled]} testID={`button-quiz-option-${i}`}>
-          <Text style={[styles.optionLetter, chosen === option.id && styles.optionLetterChosen]}>{'ABCDE'[i]}</Text>
-          <Text style={styles.optionText}>{option.text}</Text>
+          <CardText style={[styles.optionLetter, chosen === option.id && styles.optionLetterChosen]}>{'ABCDE'[i]}</CardText>
+          <CardText style={styles.optionText}>{option.text}</CardText>
         </Pressable>
       ))}
       {isExam ? (
         <Pressable accessibilityRole="button" accessibilityState={{ selected: marks.has(current.id) }} onPress={() => toggleMark(current.id)} style={[styles.markButton, marks.has(current.id) && styles.markButtonOn]} testID="button-quiz-mark">
           <Feather name="flag" size={15} color={marks.has(current.id) ? colors.wrong : colors.foreground} />
-          <Text style={[styles.markText, marks.has(current.id) && { color: colors.wrong }]}>{marks.has(current.id) ? 'Marked for review' : 'Mark for review'}</Text>
+          <CardText style={[styles.markText, marks.has(current.id) && { color: colors.wrong }]}>{marks.has(current.id) ? 'Marked for review' : 'Mark for review'}</CardText>
         </Pressable>
       ) : null}
-      {busy ? <ActivityIndicator color={colors.primaryText} /> : null}
+      {isExam ? gradeBlock : null}
+      {busy && !allAnswered ? <ActivityIndicator color={colors.primaryText} /> : null}
     </View>
   );
 }
 
-// Review card: black with white text, red for the student's wrong answer, green for the
-// correct one, in both modes (Dan, 2026-10-06); theme tokens since D-043.
+/** Card text ignores the phone's Text Size, as the live practice card does (D-053). */
+function CardText(props: React.ComponentProps<typeof Text>) {
+  return <Text maxFontSizeMultiplier={1} {...props} />;
+}
+
+// Exam sheet type and colours (D-070): the same faces and sizes as the live practice card
+// (Source Sans 3, Fraunces for the score), and the review laid out like Dan's Grok reference:
+// light cards, the trick in a tinted card, "Your answer" / "Best answer" as labelled lines.
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
-  card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 16, gap: 10 },
-  kicker: { color: colors.mutedForeground, fontSize: 12.5, lineHeight: 17, fontWeight: '600' },
-  prompt: { color: colors.foreground, fontSize: 15, lineHeight: 22, fontWeight: '500' },
-  body: { color: colors.foreground, fontSize: 15, lineHeight: 22 },
-  muted: { color: colors.mutedForeground, fontSize: 13, lineHeight: 19 },
+  card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 16, gap: 12 },
+  kicker: { ...TYPE.kicker, color: colors.mutedForeground },
+  prompt: { ...TYPE.prompt, color: colors.foreground },
+  body: { ...TYPE.body, color: colors.foreground },
+  muted: { ...TYPE.small, color: colors.mutedForeground },
   progress: { gap: 4 },
   progressTrack: { height: 5, borderRadius: 3, backgroundColor: colors.secondary, overflow: 'hidden' },
   progressFill: { height: 5, backgroundColor: colors.primary },
-  progressText: { color: colors.mutedForeground, fontSize: 11 },
-  hook: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 10, borderRadius: 10, backgroundColor: colors.hookBg },
-  hookText: { flex: 1, color: colors.hookText, fontSize: 12.5, lineHeight: 18, fontWeight: '600' },
-  cardTitle: { color: colors.foreground, fontSize: 17, lineHeight: 23, fontWeight: '700' },
+  progressText: { ...TYPE.small, color: colors.mutedForeground },
+  hook: { gap: 6, padding: 14, borderRadius: 14, backgroundColor: colors.hookBg },
+  hookHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  hookKicker: { ...TYPE.smallSemi, color: colors.hookText },
+  hookText: { ...TYPE.bodySemi, color: colors.reviewText },
+  cardTitle: { ...TYPE.heading, fontSize: 24, lineHeight: 30, color: colors.foreground },
   option: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.background, paddingHorizontal: 13, paddingVertical: 10 },
   optionChosen: { borderColor: colors.primary, borderWidth: 2, paddingHorizontal: 12, paddingVertical: 9 },
   optionLetterChosen: { backgroundColor: colors.primary, color: colors.primaryForeground },
@@ -287,32 +317,36 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   bubbleAnswered: { borderColor: colors.correct, backgroundColor: colors.correct }, // fill = answered
   bubbleMarked: { borderColor: colors.wrong }, // ring = marked, whether answered or not
   bubbleHere: { transform: [{ scale: 1.18 }] },
-  bubbleText: { color: colors.foreground, fontSize: 12, fontWeight: '700' },
+  bubbleText: { fontFamily: FONT.sansBold, fontSize: 12, color: colors.foreground },
   bubbleTextAnswered: { color: '#ffffff' },
   markButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
   markButtonOn: { borderColor: colors.wrong },
-  markText: { color: colors.foreground, fontSize: 14, fontWeight: '600' },
-  optionLetter: { width: 26, height: 26, borderRadius: 13, textAlign: 'center', lineHeight: 26, overflow: 'hidden', backgroundColor: colors.secondary, color: colors.foreground, fontWeight: '700', fontSize: 13 },
-  optionText: { flex: 1, color: colors.foreground, fontSize: 14, lineHeight: 20 },
+  markText: { ...TYPE.smallSemi, color: colors.foreground },
+  optionLetter: { ...TYPE.letter, width: 28, height: 28, borderRadius: 14, textAlign: 'center', overflow: 'hidden', backgroundColor: colors.secondary, color: colors.foreground },
+  optionText: { ...TYPE.option, flex: 1, color: colors.foreground },
   verdict: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  verdictText: { fontSize: 16, fontWeight: '700' },
-  // Review card type (Dan, 2026-10-08: "the fonts need to be smaller here"): one step down across the card.
-  wrong: { color: colors.wrong, fontSize: 14, lineHeight: 19, fontWeight: '600' },
-  right: { color: colors.correct, fontSize: 14, lineHeight: 19, fontWeight: '700' },
-  miss: { gap: 7, padding: 13, borderRadius: 16, backgroundColor: colors.reviewBg },
-  missPrompt: { color: colors.reviewText, fontSize: 14.5, lineHeight: 20, fontWeight: '600' },
-  missExplain: { color: colors.reviewMuted, fontSize: 13, lineHeight: 18.5 },
+  verdictText: { ...TYPE.bodySemi, fontSize: 17 },
+  miss: { gap: 10, padding: 14, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background },
+  missKicker: { ...TYPE.kicker, fontSize: 13, color: colors.hookText },
+  missPrompt: { ...TYPE.bodySemi, fontSize: 17, lineHeight: 24, color: colors.foreground },
+  answerLine: { gap: 2 },
+  answerLabel: { ...TYPE.smallSemi },
+  answerText: { ...TYPE.body, color: colors.foreground },
+  missExplain: { ...TYPE.small, color: colors.mutedForeground },
   // Report link: small and away from the main button on purpose (UX_PRINCIPLES: destructive-ish actions are small and separated).
   reportLink: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', paddingRight: 12 },
-  reportLinkText: { color: colors.reviewMuted, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
+  reportLinkText: { ...TYPE.smallSemi, color: colors.mutedForeground, textDecorationLine: 'underline' },
   note: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 10, borderRadius: 10, backgroundColor: colors.card },
-  noteText: { flex: 1, color: colors.foreground, fontSize: 13, lineHeight: 19 },
-  noteStrong: { fontWeight: '700' },
-  score: { color: colors.foreground, fontSize: 40, fontWeight: '700', letterSpacing: -1, fontVariant: ['tabular-nums'] },
+  noteText: { ...TYPE.small, flex: 1, color: colors.foreground },
+  noteStrong: { fontFamily: FONT.sansSemi },
+  scoreRow: { flexDirection: 'row', alignItems: 'baseline' },
+  score: { ...TYPE.score, color: colors.foreground, fontVariant: ['tabular-nums'] },
+  scoreOf: { ...TYPE.scoreOf, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  gradeBlock: { gap: 8, marginTop: 4 },
   primaryButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.primary, paddingHorizontal: 16 },
-  primaryText: { color: colors.primaryForeground, fontSize: 16, fontWeight: '700' },
+  primaryText: { ...TYPE.button, color: colors.primaryForeground },
   secondaryButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border },
-  secondaryText: { color: colors.foreground, fontSize: 15, fontWeight: '600' },
+  secondaryText: { ...TYPE.smallSemi, color: colors.foreground },
   pressed: { opacity: 0.8 },
   disabled: { opacity: 0.5 },
 });

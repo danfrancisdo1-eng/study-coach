@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, FlatList, Keyboard, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useAuth, useClerk } from '@clerk/expo';
+import { useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ import {
   type HomeChat, type HomeChatMessage,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { friendlyError } from '@/lib/friendly-error';
 import { ActionButton } from '@/components/ActionButton';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
 import { defaultIntakeCourse, type IntakeCourse } from '@/lib/intake-course';
@@ -19,7 +20,7 @@ import { QuizCard } from '@/components/QuizCard';
 import { FlashcardDeck } from '@/components/FlashcardDeck';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { Welcome } from '@/components/Welcome';
-import { shouldShowWelcome, welcomeReplayKey, withWelcomeSeen } from '@/lib/welcome';
+import { replayOnOpen, shouldShowWelcome, welcomeReplayKey, withWelcomeSeen } from '@/lib/welcome';
 import { GlassBar } from '@/components/GlassBar';
 import { GlowRing } from '@/components/GlowRing';
 import { HomeSkeleton } from '@/components/Skeleton';
@@ -36,16 +37,15 @@ const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
  * opens it, sits between the header and the chat so the chat keeps the screen.
  */
 
-const AI_NOTICE = 'Study Coach sends your messages, your course names, selected course materials and your quiz answers to Anthropic Claude (and OpenAI for lecture transcription) to coach you, generate practice and explain results. AI may make mistakes; review explanations. You can change this choice at any time. Nothing is sent to a family member or other recipient. Press and hold any coach reply to report it.';
+// Three short lines instead of one paragraph (review finding 27, D-082); the family-member line is gone with that feature.
+const AI_NOTICE: { icon: React.ComponentProps<typeof Feather>['name']; text: string }[] = [
+  { icon: 'send', text: 'Your messages, course names, chosen course material and quiz answers go to Anthropic Claude to coach you. Lecture recordings are transcribed by OpenAI.' },
+  { icon: 'alert-circle', text: 'AI can make mistakes. Press and hold any coach reply to report it.' },
+  { icon: 'refresh-cw', text: 'You can change this choice at any time.' },
+];
 
-function readableError(problem: unknown): string {
-  if (problem && typeof problem === 'object') {
-    const data = (problem as { data?: { error?: unknown } }).data;
-    if (data && typeof data.error === 'string') return data.error;
-    if (typeof (problem as { message?: unknown }).message === 'string') return (problem as { message: string }).message;
-  }
-  return 'Something went wrong. Please try again.';
-}
+// Plain sentences only, never a stack trace (D-065, usability review finding 2). A 409 already refetched the chat, so it says so.
+const readableError = (problem: unknown): string => friendlyError(problem);
 
 type StateRecord = Record<string, unknown>;
 const record = (value: unknown): StateRecord => (value && typeof value === 'object' ? value as StateRecord : {});
@@ -74,7 +74,6 @@ function materialsFrom(state: unknown, courseId: string): SavedMaterial[] {
 
 export default function CoachHome() {
   const { isLoaded, isSignedIn, userId } = useAuth();
-  const { signOut } = useClerk();
   const colors = useColors();
   const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
@@ -146,8 +145,11 @@ export default function CoachHome() {
   useFocusEffect(useCallback(() => {
     if (!userId) return;
     AsyncStorage.getItem(`study-coach-focus:${userId}`).then((saved) => { setFocusCourseId(saved || null); }).catch(() => {});
-    AsyncStorage.getItem(welcomeReplayKey(userId)).then((flag) => { setReplayWelcome(flag === '1'); }).catch(() => {});
-  }, [userId]));
+    AsyncStorage.getItem(welcomeReplayKey(userId)).then((flag) => {
+      setReplayWelcome(replayOnOpen(flag, Boolean(handoff)));
+      if (flag) AsyncStorage.removeItem(welcomeReplayKey(userId)).catch(() => {});
+    }).catch(() => {});
+  }, [userId, handoff]));
   const selectCourse = (id: string | null) => {
     setFocusCourseId(id);
     if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, id ?? '').catch(() => {});
@@ -302,16 +304,14 @@ export default function CoachHome() {
   };
 
   // The + corner (CLAUDE.md §8): opens the material sheet on the course the coach
-  // most recently worked on; with no course yet, the coach asks for one first.
+  // most recently worked on; with no course yet, the Add sheet.
   sendTextRef.current = sendText;
   const sendMessage = () => sendText(draft);
 
   const openPlus = () => {
     const course = focusCourse ?? defaultIntakeCourse(courses, messages);
-    if (!course) {
-      Alert.alert('Which course or exam?', 'Add a course or certification exam first, or tell your coach which one you are working on, and it will set it up for you.');
-      return;
-    }
+    // Usability finding 9 (D-073): with no course, + opens the Add sheet instead of an alert; with courses but none picked, the list.
+    if (!course) { router.push(courses.length ? '/course-list' : '/course-list?add=1'); return; }
     setIntakeCourseId(course.id);
   };
 
@@ -426,12 +426,9 @@ export default function CoachHome() {
           <Text style={styles.brand}>Study Coach</Text>
           <Text numberOfLines={1} style={styles.headerSub}>Your coach</Text>
         </View>
-        {/* Dan: "need a Return to course list button" on the chat, not only the strip. */}
+        {/* Dan: "need a Return to course list button" on the chat. Sign out is not here: it read as "go back" (D-065); it lives in Account. */}
         <Pressable accessibilityLabel="Return to course list" accessibilityRole="button" testID="button-courses" onPress={openCourses} style={styles.iconButton}>
           <Feather name="list" size={20} color={colors.foreground} />
-        </Pressable>
-        <Pressable accessibilityLabel="Sign out" accessibilityRole="button" testID="button-sign-out" onPress={() => void signOut()} style={styles.iconButton}>
-          <Feather name="log-out" size={18} color={colors.foreground} />
         </Pressable>
       </View>
 
@@ -451,7 +448,9 @@ export default function CoachHome() {
         <View style={styles.consentWrap}>
           <View style={styles.consentCard} testID="panel-ai-consent">
             <View style={styles.consentHeading}><Feather name="shield" size={19} color={colors.primaryText} /><Text style={styles.cardTitle}>Your choice before AI</Text></View>
-            <Text style={styles.body}>{AI_NOTICE}</Text>
+            {AI_NOTICE.map((line) => (
+              <View key={line.icon} style={styles.consentLine}><Feather name={line.icon} size={16} color={colors.mutedForeground} style={styles.consentIcon} /><Text style={[styles.body, styles.consentText]}>{line.text}</Text></View>
+            ))}
             {PRIVACY_URL ? <Text style={[styles.body, styles.link]} accessibilityRole="link" onPress={openPrivacy} testID="link-privacy">Read the privacy policy</Text> : null}
             <Pressable accessibilityRole="button" disabled={busy} onPress={() => void giveConsent()} style={[styles.primaryButton, busy && styles.disabled]} testID="button-ai-consent">
               <Feather name="check" size={16} color={colors.primaryForeground} />
@@ -513,7 +512,7 @@ export default function CoachHome() {
         {/* The one frosted panel (D-048): the "Coach · <course>" strip, which the chat scrolls under. */}
         <GlassBar style={styles.focusGlass} onLayout={(e) => setStripHeight(Math.round(e.nativeEvent.layout.height))}>
           <Pressable accessibilityRole="button" accessibilityLabel="Courses and exams" accessibilityHint="Choose which course the coach works on, open a course, or add one" onPress={openCourses} style={({ pressed }) => [styles.focusBar, pressed && styles.pressed]} testID="button-focus-course">
-            <Text style={styles.kicker}>Coach</Text>
+            <Text style={styles.kicker}>{focusCourse ? 'Studying' : 'Coach'}</Text>
             <Text numberOfLines={1} style={styles.focusText}>{focusCourse ? focusCourse.name : courses.length ? 'All courses' : 'Add a course or exam'}</Text>
             <Text style={styles.focusCount}>{courses.length ? `${courses.length} ${courses.length === 1 ? 'course' : 'courses'}` : ''}</Text>
             <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
@@ -707,6 +706,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   disabled: { opacity: 0.45 },
   consentWrap: { flex: 1, padding: 18, gap: 10 },
   consentCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 20, gap: 12 },
+  consentLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  consentIcon: { marginTop: 3 },
+  consentText: { flex: 1 },
   consentHeading: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   cardTitle: { color: colors.foreground, fontSize: 17, fontWeight: '700' },
   primaryButton: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: colors.primary, paddingHorizontal: 16 },

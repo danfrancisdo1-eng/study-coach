@@ -10,6 +10,9 @@ import {
   deleteCourse, getGetCourseResultsQueryKey, getGetStudyStateQueryKey, getListLecturesQueryKey, getListStudySessionsQueryKey, useGetCourseResults, useGetStudyState, useListLectures, useListStudySessions, useLookupExamGuide, usePutStudyState,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { friendlyError } from '@/lib/friendly-error';
+import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
+import { whenLabel } from '@/lib/when';
 import { ActionButton } from '@/components/ActionButton';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
@@ -27,11 +30,8 @@ import { ALL_TOPICS, NO_MATERIAL_NOTE_KEY, studyRequest, topicChoices, type Stud
 
 type StateRecord = Record<string, unknown>;
 const record = (value: unknown): StateRecord => (value && typeof value === 'object' ? value as StateRecord : {});
-const readable = (problem: unknown): string => {
-  const data = (problem as { data?: { error?: unknown } }).data;
-  if (data && typeof data.error === 'string') return data.error;
-  return problem instanceof Error ? problem.message : 'Something went wrong. Please try again.';
-};
+// Plain sentences only, never a stack trace (D-065).
+const readable = (problem: unknown): string => friendlyError(problem);
 
 export default function CourseScreen() {
   const { courseId, intake } = useLocalSearchParams<{ courseId: string; intake?: string }>();
@@ -98,10 +98,11 @@ export default function CourseScreen() {
   const saveDetails = async () => {
     const trimmed = name.trim();
     if (!trimmed || busy) return;
-    if (examDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(examDate.trim())) { setError('Exam date must look like 2026-11-14.'); return; }
+    const iso = parseExamDate(examDate);
+    if (examDate.trim() && !iso) { setError('Try the exam date like Nov 14 or 11/14/2026.'); return; }
     setError(''); setSaving(true);
     try {
-      await persist({ courses: courses.map((c) => c.id === courseId ? { ...c, name: trimmed, ...(isExam ? { examDate: examDate.trim() || undefined } : {}) } : c) });
+      await persist({ courses: courses.map((c) => c.id === courseId ? { ...c, name: trimmed, ...(isExam ? { examDate: iso ?? undefined } : {}) } : c) });
       setEditing(false);
     } catch (problem) { setError(readable(problem)); } finally { setSaving(false); }
   };
@@ -131,7 +132,12 @@ export default function CourseScreen() {
   const startWithCoach = (action: StudyAction, topic: string | null) => {
     setPicker(null);
     if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, courseId!).catch(() => {});
-    router.navigate({ pathname: '/(tabs)', params: { send: studyRequest(action, topic), courseId: courseId! } });
+    router.replace({ pathname: '/(tabs)', params: { send: studyRequest(action, topic), courseId: courseId! } });
+  };
+  // The chat on this course, with nothing sent (D-065: opening a course no longer lands in the chat by itself).
+  const talkToCoach = () => {
+    if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, courseId!).catch(() => {});
+    router.replace('/(tabs)');
   };
   const toList = () => { if (router.canGoBack()) router.back(); else router.replace('/course-list'); };
   // Questions without material (D-060): the first tap on this phone shows a small red note and a Proceed; later taps go straight to the coach.
@@ -149,15 +155,29 @@ export default function CourseScreen() {
         <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
         <View style={styles.headerCopy}>
           <Text numberOfLines={1} style={styles.title}>{typeof course?.name === 'string' ? course.name : 'Course'}</Text>
-          <Text style={styles.caption}>{isExam ? `Certification exam${typeof course?.examDate === 'string' ? ` · ${course.examDate}` : ''}` : 'Course'}</Text>
+          <Text style={styles.caption}>{isExam ? `Certification exam${typeof course?.examDate === 'string' ? ` · ${describeExamDate(course.examDate)}` : ''}` : 'Course'}</Text>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Edit name and date" onPress={() => { setName(typeof course?.name === 'string' ? course.name : ''); setExamDate(typeof course?.examDate === 'string' ? course.examDate : ''); setEditing(true); }} style={styles.iconButton} testID="button-edit-course"><Feather name="edit-2" size={20} color={colors.foreground} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Edit name and date" onPress={() => { setName(typeof course?.name === 'string' ? course.name : ''); setExamDate(typeof course?.examDate === 'string' ? describeExamDate(course.examDate) : ''); setEditing(true); scrollRef.current?.scrollTo({ y: 0, animated: true }); }} style={styles.iconButton} testID="button-edit-course"><Feather name="edit-2" size={20} color={colors.foreground} /></Pressable>
       </View>
       {stateQuery.isLoading ? <CourseSkeleton /> : !course ? (
         <View style={styles.center}><Text style={styles.body}>This course isn’t in your account anymore.</Text></View>
       ) : (
         <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]} onContentSizeChange={scrollToIntake}>
           {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
+          {/* The edit form sits at the top so the pencil visibly does something (Dan: it looked broken when the form opened below the fold). */}
+          {editing ? (
+            <View style={styles.card}>
+              <Text style={styles.kicker}>Name</Text>
+              <TextInput value={name} onChangeText={setName} maxLength={120} style={styles.input} accessibilityLabel="Course name" testID="input-course-name" />
+              {isExam ? <><Text style={styles.kicker}>Exam date</Text>
+                <TextInput value={examDate} onChangeText={setExamDate} placeholder="e.g. Nov 14" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-exam-date" />
+                {examDate.trim() ? <Text style={styles.caption} testID="text-exam-date-hint">{examDateHint(examDate)}</Text> : null}</> : null}
+              <View style={styles.row}>
+                <ActionButton label="Save" icon="check" onPress={() => void saveDetails()} disabled={busy || !name.trim()} testID="button-save-course" />
+                <ActionButton label="Cancel" secondary onPress={() => setEditing(false)} testID="button-cancel-edit" />
+              </View>
+            </View>
+          ) : null}
 
           <View style={styles.card} testID="panel-course-actions">
             <Text style={styles.kicker}>Actions</Text>
@@ -165,14 +185,14 @@ export default function CourseScreen() {
               <ActionButton label="Add material" icon="plus-circle" onPress={() => scrollTo(intakeY.current)} testID="button-action-material" />
               <ActionButton label="Add another course" icon="plus" secondary onPress={() => router.push({ pathname: '/course-list', params: { add: '1' } })} testID="button-action-add-course" />
               <ActionButton label="Return to course list" icon="list" secondary onPress={toList} testID="button-action-list" />
-              <ActionButton label="Delete course" icon="trash-2" secondary onPress={() => scrollTo(manageY.current)} testID="button-action-delete" />
             </View>
             <Text style={styles.kicker}>Study with the coach</Text>
             <View style={styles.actions}>
               <ActionButton label="Practice questions" icon="edit-3" onPress={() => startWithCoach('practice', null)} testID="button-action-practice" />
+              <ActionButton label="Talk to the coach" icon="message-circle" secondary onPress={talkToCoach} testID="button-action-chat" />
               <ActionButton label="Simulated exam" icon="clock" secondary onPress={() => startWithCoach('exam', null)} testID="button-action-exam" />
               <ActionButton label="Flashcards" icon="layers" secondary onPress={() => setPicker('flashcards')} testID="button-action-flashcards" />
-              <ActionButton label="Hooks" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
+              <ActionButton label="Memory tricks" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
               <ActionButton label="Outline" icon="list" secondary onPress={() => startWithCoach('outline', null)} testID="button-action-outline" />
               <ActionButton label="Questions without material" icon="help-circle" secondary onPress={() => void questionsWithoutMaterial()} testID="button-action-no-material" />
             </View>
@@ -194,7 +214,8 @@ export default function CourseScreen() {
                   <Text style={styles.body} numberOfLines={1}>{t.topic}</Text>
                   <Text style={styles.scoreText}>missed {t.missed} of {t.total}</Text>
                 </View>
-                <View style={styles.track}><View style={[styles.fill, { width: `${t.total ? Math.round(((t.total - t.missed) / t.total) * 100) : 0}%` }]} /></View>
+                {/* Review finding 18 (D-076): the bar is the missed share, in the wrong colour, so it reads the same as the words. */}
+                <View style={styles.track}><View style={[styles.fill, { backgroundColor: colors.wrong, width: `${t.total ? Math.round((t.missed / t.total) * 100) : 0}%` }]} /></View>
               </View>
             ))}
             {results && !results.topics.length ? <Text style={styles.caption}>Nothing graded yet. Practice questions or a simulated exam will fill this in.</Text> : null}
@@ -214,18 +235,6 @@ export default function CourseScreen() {
             </View>
           ) : null}
 
-          {editing ? (
-            <View style={styles.card}>
-              <Text style={styles.kicker}>Name</Text>
-              <TextInput value={name} onChangeText={setName} maxLength={120} style={styles.input} accessibilityLabel="Course name" testID="input-course-name" />
-              {isExam ? <><Text style={styles.kicker}>Exam date (YYYY-MM-DD)</Text>
-                <TextInput value={examDate} onChangeText={setExamDate} placeholder="2026-11-14" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-exam-date" /></> : null}
-              <View style={styles.row}>
-                <ActionButton label="Save" icon="check" onPress={() => void saveDetails()} disabled={busy || !name.trim()} testID="button-save-course" />
-                <ActionButton label="Cancel" secondary onPress={() => setEditing(false)} testID="button-cancel-edit" />
-              </View>
-            </View>
-          ) : null}
 
           {isExam ? (
             <View style={styles.card} testID="panel-exam-guide">
@@ -256,7 +265,7 @@ export default function CourseScreen() {
                 <Text style={styles.kicker}>Progress · {graded.length} {graded.length === 1 ? 'set' : 'sets'}</Text>
                 {graded.slice(0, 5).map((s) => (
                   <View key={s.id} style={styles.rowBetween}>
-                    <Text style={styles.body} numberOfLines={1}>{s.createdAt.slice(0, 10)} · {s.topic}</Text>
+                    <Text style={styles.body} numberOfLines={1}>{whenLabel(s.createdAt)} · {s.topic}</Text>
                     <Text style={styles.scoreText}>{Math.round((s.targetedScore ?? s.diagnosticScore) as number)}%</Text>
                   </View>
                 ))}
@@ -319,7 +328,7 @@ export default function CourseScreen() {
       <Modal visible={picker !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setPicker(null)}>
         <View style={[styles.screen, { paddingTop: 20 }]}>
           <View style={styles.header}>
-            <View style={styles.headerCopy}><Text style={styles.title}>{picker === 'hooks' ? 'Hooks on which topics?' : 'Flashcards on which topics?'}</Text><Text style={styles.caption}>Pick one, or all of them</Text></View>
+            <View style={styles.headerCopy}><Text style={styles.title}>{picker === 'hooks' ? 'Memory tricks on which topics?' : 'Flashcards on which topics?'}</Text><Text style={styles.caption}>Pick one, or all of them</Text></View>
             <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setPicker(null)} style={styles.iconButton} testID="button-close-picker"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
           </View>
           <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>

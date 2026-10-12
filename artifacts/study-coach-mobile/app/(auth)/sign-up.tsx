@@ -20,6 +20,7 @@ export default function SignUpScreen() {
   const [code, setCode] = useState('');
   const [message, setMessage] = useState('');
   const [ageOk, setAgeOk] = useState(false); // App Store readiness (D-046): 13+ attestation before any account is created
+  const [ageNudge, setAgeNudge] = useState(false); // review finding 23 (D-083): a tap on Apple/Google/Create before the box says why nothing happened
   const busy = fetchStatus === 'fetching';
   const error = message || errors.fields.emailAddress?.message || errors.fields.password?.message || errors.fields.code?.message || '';
   const verifying = signUp.status === 'missing_requirements' &&
@@ -58,6 +59,7 @@ export default function SignUpScreen() {
   }
 
   return (
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
     <KeyboardAwareScrollViewCompat
       style={[styles.screen, { backgroundColor: colors.background }]}
       contentContainerStyle={[styles.container, { paddingTop: insets.top + 25, paddingBottom: insets.bottom + 26 }]}
@@ -67,7 +69,7 @@ export default function SignUpScreen() {
     >
       <View style={[styles.brandMark, { backgroundColor: colors.primary }]}><Feather name="book-open" size={23} color={colors.primaryForeground} /></View>
       <Text style={[styles.eyebrow, { color: colors.primaryText }]}>Study Coach</Text>
-      <Text style={[styles.title, { color: colors.foreground }]}>{verifying ? 'Check your email.' : 'Make room to learn.'}</Text>
+      <Text style={[styles.title, { color: colors.foreground }]}>{verifying ? 'Check your email.' : 'Find the flaws. Fix the facts.'}</Text>
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{verifying ? `We sent a verification code to ${emailAddress}.` : 'Create an account to keep courses and study sessions in sync.'}</Text>
       {verifying ? (
         <>
@@ -82,22 +84,29 @@ export default function SignUpScreen() {
         </>
       ) : (
         <>
-          <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: ageOk }} accessibilityLabel="I am 13 or older" onPress={() => setAgeOk((v) => !v)} style={styles.checkRow} testID="checkbox-age">
-            <Feather name={ageOk ? 'check-square' : 'square'} size={22} color={ageOk ? colors.primaryText : colors.mutedForeground} />
-            <Text style={[styles.checkText, { color: colors.foreground }]}>I'm 13 or older.</Text>
+          <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: ageOk }} accessibilityLabel="I am 13 or older" onPress={() => { setAgeOk((v) => !v); setAgeNudge(false); }} style={styles.checkRow} testID="checkbox-age">
+            <Feather name={ageOk ? 'check-square' : 'square'} size={22} color={ageOk ? colors.primaryText : ageNudge ? colors.destructive : colors.mutedForeground} />
+            <Text style={[styles.checkText, { color: ageNudge ? colors.destructive : colors.foreground }]}>I'm 13 or older.</Text>
           </Pressable>
+          {ageNudge ? <Text accessibilityRole="alert" style={[styles.caption, { color: colors.destructive }]} testID="status-age-nudge">Tick "I'm 13 or older" first.</Text> : null}
           <Text style={[styles.caption, { color: colors.mutedForeground }]}>
             Study Coach is for people 13 and older. By creating an account you agree to the{' '}
             {PRIVACY_URL ? <Text style={[styles.link, styles.captionLink, { color: colors.primaryText }]} accessibilityRole="link" onPress={openPrivacy} testID="link-privacy">privacy policy</Text> : 'privacy policy'}.
           </Text>
-          <SocialSignIn disabled={!ageOk} />
+          <View>
+            <SocialSignIn disabled={!ageOk} />
+            {!ageOk ? <Pressable accessibilityRole="button" accessibilityLabel="Tick I'm 13 or older first" onPress={() => setAgeNudge(true)} style={StyleSheet.absoluteFill} testID="button-age-gate-social" /> : null}
+          </View>
           <Text style={[styles.label, { color: colors.foreground }]}>Email address</Text>
           <TextInput testID="input-sign-up-email" value={emailAddress} onChangeText={setEmailAddress} keyboardType="email-address" autoCapitalize="none" autoComplete="email" style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} placeholder="you@example.com" placeholderTextColor={colors.mutedForeground} />
           <Text style={[styles.label, { color: colors.foreground }]}>Password</Text>
           <TextInput testID="input-sign-up-password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} placeholder="Create a password" placeholderTextColor={colors.mutedForeground} />
+          <View>
           <Pressable testID="button-sign-up-submit" accessibilityRole="button" disabled={busy || !ageOk || !emailAddress.trim() || password.length < 8} onPress={() => void submit()} style={[styles.button, { backgroundColor: colors.primary }, (busy || !ageOk || !emailAddress.trim() || password.length < 8) && styles.disabled]}>
             <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>{busy ? 'Creating account…' : 'Create account'}</Text>
           </Pressable>
+            {!ageOk ? <Pressable accessibilityRole="button" accessibilityLabel="Tick I'm 13 or older first" onPress={() => setAgeNudge(true)} style={StyleSheet.absoluteFill} testID="button-age-gate-submit" /> : null}
+          </View>
           <Text style={[styles.caption, { color: colors.mutedForeground }]}>Use at least 8 characters. Email verification is required.</Text>
           <View style={styles.linkRow}>
             <Text style={[styles.body, { color: colors.mutedForeground }]}>Already have an account? </Text>
@@ -108,11 +117,15 @@ export default function SignUpScreen() {
       <View nativeID="clerk-captcha" />
       {error ? <Text accessibilityRole="alert" testID="status-auth-error" style={[styles.error, { color: colors.destructive }]}>{error}</Text> : null}
     </KeyboardAwareScrollViewCompat>
+    {/* Review finding 28 (D-083): the title no longer scrolls under the clock and battery. */}
+    <View pointerEvents="none" style={[styles.statusBacking, { height: insets.top, backgroundColor: colors.background }]} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  statusBacking: { position: 'absolute', top: 0, left: 0, right: 0 },
   container: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 25, gap: 12 },
   brandMark: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 17, marginBottom: 8 },
   eyebrow: { fontSize: 14, fontWeight: '600' },

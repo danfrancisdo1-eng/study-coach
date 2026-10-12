@@ -103,7 +103,6 @@
 .ae-grade-tag { display: inline-flex; border-radius: 30px; padding: 5px 9px; background: #eee8dc; color: #526070; font-size: .7rem; font-weight: 700; }
 .ae-grade-tag[data-result="correct"] { background: #dcece3; color: #32634d; }
 .ae-grade-tag[data-result="incorrect"], .ae-grade-tag[data-result="partial"] { background: #f7e3d6; color: #a94f31; }
-.ae-report { white-space: pre-wrap; overflow-wrap: anywhere; font: 400 .79rem/1.75 var(--app-font-mono, monospace); color: #303d50; background: #f2efe5; padding: 19px; border: 1px solid #ded8c9; border-radius: 12px; max-height: 360px; overflow: auto; }
 .ae-skeleton { height: 13px; margin: 12px 0; border-radius: 7px; background: #e9e3d7; animation: ae-pulse 1.7s ease-in-out infinite; }
 .ae-skeleton:nth-child(2) { width: 83%; }.ae-skeleton:nth-child(3) { width: 64%; }
 @keyframes ae-pulse { 50% { opacity: .48; } }

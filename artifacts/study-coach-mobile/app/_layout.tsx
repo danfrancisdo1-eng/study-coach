@@ -7,6 +7,8 @@ import { ClerkLoaded, ClerkProvider, useAuth } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SIGNED_IN_BEFORE_KEY } from '@/lib/sign-in-copy';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
@@ -35,6 +37,8 @@ function AuthenticatedApiRuntime() {
     }
     previousUserId.current = userId ?? null;
   }, [userId]);
+  // The sign-in screen says "Welcome back." only on a phone that has signed in before (review finding 11, D-084).
+  useEffect(() => { if (userId) AsyncStorage.setItem(SIGNED_IN_BEFORE_KEY, '1').catch(() => {}); }, [userId]);
 
   return (
     <Stack screenOptions={{ headerBackTitle: 'Back', headerShown: false }}>

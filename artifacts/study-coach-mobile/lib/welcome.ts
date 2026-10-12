@@ -21,4 +21,13 @@ export function withWelcomeSeen(state: unknown, now: Date = new Date()): StateRe
   return { courses: [], materials: [], ...s, aiConsent: s.aiConsent === true, welcomeSeenAt: typeof s.welcomeSeenAt === 'string' && s.welcomeSeenAt ? s.welcomeSeenAt : now.toISOString() };
 }
 
+/**
+ * "See the welcome again" shows it once (D-069): the flag is used up the first time the chat
+ * opens, so leaving by another route never leaves the welcome stuck over the chat, and a
+ * request from the course screen (Flashcards, Practice…) never lands behind it.
+ */
+export function replayOnOpen(flag: string | null, hasHandoff: boolean): boolean {
+  return flag === '1' && !hasHandoff;
+}
+
 export const welcomeReplayKey = (userId: string) => `study-coach-welcome-replay:${userId}`;
