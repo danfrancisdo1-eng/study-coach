@@ -674,6 +674,39 @@ export const coachCases: CoachCase[] = [
     expectations: ["One line about the result (7 of 10), no repeat of the corrections", "Offers the four choices as suggestions"],
     maxWords: 40,
   },
+  // coach.v16 (D-074): suggestions answer the reply; the four after-set chips are for the first reply only.
+  {
+    name: "later turn after a set: chips answer the coach's own question, not the four set options (Dan's screenshot)",
+    courses: [{ id: "chem-1", name: "Chem 102", materials: 0, lectures: 0 }], firstVisit: false, history: [
+      { role: "user", content: "I finished the set." },
+      { role: "assistant", content: "2 of 9 on Kinetics. What next?" },
+      { role: "user", content: "Memory tricks for the misses" },
+      { role: "assistant", content: "Arrhenius: bigger Ea, smaller k; the barrier is in the exponent. Your turn: explain back to me why a bigger Ea makes k smaller." },
+    ],
+    quiz: { courseName: "Chem 102", topic: "Kinetics", kind: "exam", answered: 9, total: 9, graded: { correct: 2, percent: 22, missed: [
+      { concept: "Arrhenius equation", prompt: "Raising Ea at fixed T does what to k?", chose: "increases k", correct: "decreases k", explanation: "k = A·e^(−Ea/RT): a larger Ea makes the exponent more negative." },
+    ] } },
+    message: "What's up",
+    expectedActions: [],
+    expectations: [
+      "If the reply asks the student a question, every suggestion is a possible answer to that question or a way out of it (e.g. show the answer, skip); the suggestions are NOT the four after-set options (memory tricks / flashcards / another set on everything / another set on the missed topics) all together",
+    ],
+    maxWords: 60,
+  },
+  {
+    name: "student stuck on the coach's explain-it-back question: chips answer the question or are ways out, not set options",
+    courses: [{ id: "bio-1", name: "BIOL 114", materials: 3, lectures: 1 }], firstVisit: false, history: [
+      { role: "user", content: "teach me osmosis quickly" },
+      { role: "assistant", content: "Osmosis is water moving across a selectively permeable membrane toward the side with more solute. Your turn: in your own words, why does an animal cell swell in a hypotonic solution?" },
+    ],
+    message: "hmm not sure",
+    expectedActions: [],
+    expectations: [
+      "Gives a short hint or the answer (more solute inside the cell, so water moves in) in 1 to 3 sentences",
+      "If the reply ends with a question, the suggestions are answers to that question or ways out of it (e.g. show me the answer, try again, a set on osmosis); they are not the four after-set options (memory tricks / flashcards for the misses / another set on everything / missed topics)",
+    ],
+    maxWords: 80,
+  },
   // coach.v9 (D-025): the memory sheet.
   {
     name: "after a graded set the student asks to save the misses: nothing to do, the sheet is automatic",

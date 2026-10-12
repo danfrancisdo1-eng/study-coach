@@ -2,6 +2,20 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-12 — D-074: coach.v16: the chips answer the coach's own question
+- Usability finding 10 (seen live as 21 on Dan's phone: the coach asked "answer my last question … or jump into a new set?" and the four chips were all set options). Dan: "fix 7-10".
+- coach.v16 (`src/prompts/coach.v16.ts`, served by `routes/chat.ts`): the four after-set chips are for the first reply after a graded set only; in every other reply a closing question gets chips that answer it, an explain-it-back question gets only the ways out ("Show me the answer", "Skip it, new set"), and real choices are offered as the chips rather than asking whether to show them. A first draft also capped chips at four; the guide-lookup eval caught it (five sections + All topics), so the cap was dropped.
+- Evals: 2 new coach cases (Dan's Chem 102 screenshot; stuck on an explain-it-back question); coach 38/38 twice on Claude (claude-sonnet-5-5). Tests 132/132; typecheck. Reaches the phone and the web only after a merge to `main` deploys Render. Decided by Dan.
+
+## 2026-10-12 — D-073: "+" with no course opens the Add sheet
+- Usability finding 9; Dan: "fix 7-10". With no course, the chat's + goes to the course list with the Add sheet open (was an alert, "Which course or exam?"); with courses but none chosen, the list. The web app has no such alert. Build stamp #19. Verified here: typecheck. Needs real-iPhone check. Decided by Dan.
+
+## 2026-10-12 — D-072: Account folded away on the course list; Delete my account set apart
+- Usability finding 8. The course list shows one "Account · build …" row that opens Privacy, See the welcome again, See the tour again, Sign out and, under a divider, Delete my account. Build stamp #18. Verified here: typecheck. Needs real-iPhone check. Decided by Dan.
+
+## 2026-10-12 — D-071: Exam dates as people type them
+- Usability finding 7 (Ellen typed "Nov 14"). `lib/exam-date.ts` (4 tests) reads "Nov 14", "November 14th", "14 Nov 2026", "11/14", "11/14/26", "2026-11-14"; a date without a year is the next one to come. Stored as YYYY-MM-DD as before; shown back under the field ("Exam on Sat, Nov 14, 2026") and in rows and the course header in words. No date-picker dependency added. Web already uses the browser date picker. Build stamp #17. Verified here: typecheck; tests. Needs real-iPhone check. Decided by Dan.
+
 ## 2026-10-12 — D-070: The exam sheet: Grade from any question, a plain score line, the review in the app's fonts and Grok's layout
 - Dan (phone, a graded AI-501 exam, with two Grok reference screenshots): after finishing, going back to a question left no way to grade; questions still marked for review should not block grading; "20% on the questions you answered" read wrong; the exam sheet still used "the old thick larger bolded font".
 - Built (`components/QuizCard.tsx`, `lib/exam-sheet.ts`, 2 tests): once every question is answered, every question shows "Grade exam" (with "N still marked for review. Grading counts the answers you have now." when any are marked); marks clear after grading. The score reads "2 / 10" in Fraunces with "You scored 20%: 2 of 10 right."; the heading "Questions you missed". Each missed question is a light card: concept, question, "Remember it this way" (the trick), "Your answer" and "Best answer" as labelled lines, then the explanation and "Looks wrong?". All text uses the Source Sans 3 / Fraunces scale from `constants/type.ts` and ignores the phone's Text Size, like the live practice card. Build stamp #16.
