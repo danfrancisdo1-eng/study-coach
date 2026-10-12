@@ -420,7 +420,12 @@ export function AccountExperience(props: AccountExperienceProps) {
         <div className="ae-card ae-card--compact ae-card--tint" data-testid="panel-ai-consent">
           <ShieldCheck size={23} strokeWidth={1.6} aria-hidden="true" style={{ color: '#407058', marginBottom: 11 }} />
           <h2 className="ae-heading" style={{ fontSize: '1.35rem' }}>Before AI joins in</h2>
-          <p className="ae-muted" style={{ fontSize: '.8rem', margin: '0 0 14px' }}>Teaching and question generation use an online AI service. Your messages and selected extracted material text may be sent to it to answer your request; long materials are only partially selected and coverage is shown. Scoring uses the saved answer key on our server. Review your files before adding them. Study progress is private to your account; sharing a report is always your choice. You may turn off AI access at any time.</p>
+          {/* Same three lines as the phone's consent card (D-082), naming the providers. */}
+          <ul className="ae-muted" style={{ fontSize: '.8rem', margin: '0 0 14px', paddingLeft: 18, lineHeight: 1.5 }}>
+            <li>Your messages, course names, chosen course material and quiz answers go to Anthropic Claude to coach you. Lecture recordings are transcribed by OpenAI.</li>
+            <li>AI can make mistakes. Report a reply that looks wrong.</li>
+            <li>You can change this choice at any time.</li>
+          </ul>
           <label className="ae-row" style={{ alignItems: 'flex-start', fontSize: '.81rem', fontWeight: 700, cursor: 'pointer' }}>
             <input type="checkbox" checked={aiConsent} onChange={event => onConsentChange(event.target.checked)} disabled={busy} data-testid="checkbox-ai-consent" style={{ marginTop: 3, accentColor: '#bd5a3b' }} />
             I understand and agree to AI processing for my account until I turn it off.

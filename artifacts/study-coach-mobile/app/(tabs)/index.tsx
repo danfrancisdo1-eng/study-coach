@@ -37,7 +37,12 @@ const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
  * opens it, sits between the header and the chat so the chat keeps the screen.
  */
 
-const AI_NOTICE = 'Study Coach sends your messages, your course names, selected course materials and your quiz answers to Anthropic Claude (and OpenAI for lecture transcription) to coach you, generate practice and explain results. AI may make mistakes; review explanations. You can change this choice at any time. Nothing is sent to a family member or other recipient. Press and hold any coach reply to report it.';
+// Three short lines instead of one paragraph (review finding 27, D-082); the family-member line is gone with that feature.
+const AI_NOTICE: { icon: React.ComponentProps<typeof Feather>['name']; text: string }[] = [
+  { icon: 'send', text: 'Your messages, course names, chosen course material and quiz answers go to Anthropic Claude to coach you. Lecture recordings are transcribed by OpenAI.' },
+  { icon: 'alert-circle', text: 'AI can make mistakes. Press and hold any coach reply to report it.' },
+  { icon: 'refresh-cw', text: 'You can change this choice at any time.' },
+];
 
 // Plain sentences only, never a stack trace (D-065, usability review finding 2). A 409 already refetched the chat, so it says so.
 const readableError = (problem: unknown): string => friendlyError(problem);
@@ -443,7 +448,9 @@ export default function CoachHome() {
         <View style={styles.consentWrap}>
           <View style={styles.consentCard} testID="panel-ai-consent">
             <View style={styles.consentHeading}><Feather name="shield" size={19} color={colors.primaryText} /><Text style={styles.cardTitle}>Your choice before AI</Text></View>
-            <Text style={styles.body}>{AI_NOTICE}</Text>
+            {AI_NOTICE.map((line) => (
+              <View key={line.icon} style={styles.consentLine}><Feather name={line.icon} size={16} color={colors.mutedForeground} style={styles.consentIcon} /><Text style={[styles.body, styles.consentText]}>{line.text}</Text></View>
+            ))}
             {PRIVACY_URL ? <Text style={[styles.body, styles.link]} accessibilityRole="link" onPress={openPrivacy} testID="link-privacy">Read the privacy policy</Text> : null}
             <Pressable accessibilityRole="button" disabled={busy} onPress={() => void giveConsent()} style={[styles.primaryButton, busy && styles.disabled]} testID="button-ai-consent">
               <Feather name="check" size={16} color={colors.primaryForeground} />
@@ -699,6 +706,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   disabled: { opacity: 0.45 },
   consentWrap: { flex: 1, padding: 18, gap: 10 },
   consentCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 20, gap: 12 },
+  consentLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  consentIcon: { marginTop: 3 },
+  consentText: { flex: 1 },
   consentHeading: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   cardTitle: { color: colors.foreground, fontSize: 17, fontWeight: '700' },
   primaryButton: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: colors.primary, paddingHorizontal: 16 },

@@ -1080,7 +1080,7 @@ function StudyCoach() {
                 )}
                 <View style={styles.consentCard} testID="panel-ai-consent">
                   <View style={styles.consentHeading}><Feather name="shield" size={19} color={colors.accentForeground} /><Text style={styles.cardTitle}>Your choice before AI</Text></View>
-                  <Text style={styles.body}>Study Coach sends the topic, your messages, selected course materials, and your quiz answers to AI to teach, generate practice, and explain results. AI may make mistakes; review explanations. You can change this choice at any time. Nothing is sent to a family member or other recipient.</Text>
+                  <Text style={styles.body}>Study Coach sends the topic, your messages, selected course materials, and your quiz answers to AI to teach, generate practice, and explain results. AI may make mistakes; review explanations. You can change this choice at any time.</Text>
                   <Pressable
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: savedState.aiConsent === true }}
