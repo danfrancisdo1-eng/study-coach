@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-12 — D-080: An Account page
+- Dan: "the sign out is there now. but we need a link to account page". New `app/account.tsx`: Privacy policy, See the welcome again, See the tour again, Sign out, then under a divider Delete my account (the typed-DELETE sheet moved here from the course list, unchanged), and the build stamp. The course list keeps Sign out in view (D-079) and an "Account ›" row in place of the fold (D-072). Web: the signed-in page already has Sign out; it has no Delete my account (gap since D-046, not new). Build stamp #25.
+- UX checklist (code review): 56-pt rows; one destructive action, set apart and red; native back chevron; labels on every row; theme tokens; no motion; paywall N/A. Verified here: typecheck; mobile tests; iOS bundle export. Needs real-iPhone check: course list → Account → each row; Delete on a throwaway account only. Decided by Dan.
+
 ## 2026-10-12 — D-079: Sign out stays in view on the course list
 - Dan: "There is no logout button anywhere" (D-072 folded Sign out away with Delete). Sign out is now always visible right after "Talk to the coach"; the folded row reads "More: privacy, tour, delete account · build …". Build stamp #24. Verified here: typecheck; mobile tests; iOS bundle export. Needs real-iPhone check. Decided by Dan (bug).
 

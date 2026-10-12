@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
@@ -9,15 +9,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import {
-  getGetStudyStateQueryKey, getListStudySessionsQueryKey, useDeleteAccount, useGetStudyState, useListStudySessions, useLookupExamGuide, usePutStudyState, getListLecturesQueryKey, useListLectures,
+  getGetStudyStateQueryKey, getListStudySessionsQueryKey, useGetStudyState, useListStudySessions, useLookupExamGuide, usePutStudyState, getListLecturesQueryKey, useListLectures,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { ActionButton } from '@/components/ActionButton';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
 import { BUILD } from '@/constants/build';
-import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
-import { welcomeReplayKey } from '@/lib/welcome';
 import { CourseListSkeleton } from '@/components/Skeleton';
 
 /**
@@ -64,10 +62,6 @@ export default function CourseListScreen() {
   const lecturesQuery = useListLectures(undefined, { query: { queryKey: [...getListLecturesQueryKey(), userId], enabled: !!userId } });
   const putState = usePutStudyState();
   const lookupGuide = useLookupExamGuide();
-  const deleteAccount = useDeleteAccount();
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false); // usability finding 8: Account (and Delete) folded away on the everyday list
-  const [deleteWord, setDeleteWord] = useState('');
   const [focusId, setFocusId] = useState<string | null>(null);
   const [lookingUp, setLookingUp] = useState<string | null>(null);
   const { add } = useLocalSearchParams<{ add?: string }>(); // the welcome's "Add a course or exam" lands here with the sheet open (D-047)
@@ -142,22 +136,6 @@ export default function CourseListScreen() {
     }
   };
 
-  // Account deletion (D-046): everything on the server and the sign-in identity, after typing DELETE.
-  const removeAccount = async () => {
-    if (deleteWord.trim() !== 'DELETE' || deleteAccount.isPending) return;
-    setError('');
-    try {
-      const result = await deleteAccount.mutateAsync();
-      setDeleteOpen(false);
-      if (userId) AsyncStorage.removeItem(`study-coach-focus:${userId}`).catch(() => {});
-      queryClient.clear();
-      if (!result.identityDeleted) Alert.alert('Your data is deleted', 'Your sign-in could not be removed automatically. Contact support and it will be finished by hand.');
-      await signOut();
-    } catch (problem) {
-      setError(readable(problem));
-    }
-  };
-
   const detail = (row: Row) => [
     row.kind === 'exam' ? `exam${row.examDate ? ` · ${describeExamDate(row.examDate)}` : ''}` : 'course',
     `${row.materials + lecturesFor(row.id)} material${row.materials + lecturesFor(row.id) === 1 ? '' : 's'}`,
@@ -209,54 +187,14 @@ export default function CourseListScreen() {
             <Feather name="log-out" size={14} color={colors.mutedForeground} />
             <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Sign out</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>The next sign-in starts with the tour</Text></View>
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityState={{ expanded: accountOpen }} accessibilityLabel="Account" onPress={() => setAccountOpen((open) => !open)} style={({ pressed }) => [styles.accountToggle, pressed && styles.pressed]} testID="button-account-toggle">
+          {/* The Account page (D-080): privacy, welcome and tour again, sign out, delete my account. */}
+          <Pressable accessibilityRole="button" onPress={() => router.push('/account')} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-account">
             <Feather name="user" size={14} color={colors.mutedForeground} />
-            <Text maxFontSizeMultiplier={1} style={styles.accountToggleText}>More: privacy, tour, delete account · build {BUILD}</Text>
-            <Feather name={accountOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Account</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>Privacy, the tour again, delete my account · build {BUILD}</Text></View>
+            <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
           </Pressable>
-          {accountOpen ? <>
-          {PRIVACY_URL ? (
-            <Pressable accessibilityRole="link" onPress={openPrivacy} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="link-privacy">
-              <Feather name="shield" size={14} color={colors.mutedForeground} />
-              <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Privacy policy</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>What is collected, where it goes, how to delete it</Text></View>
-              <Feather name="external-link" size={14} color={colors.mutedForeground} />
-            </Pressable>
-          ) : null}
-          <Pressable accessibilityRole="button" onPress={() => { if (!userId) return; AsyncStorage.setItem(welcomeReplayKey(userId), '1').catch(() => {}).finally(toCoach); }} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-replay-welcome">
-            <Feather name="compass" size={14} color={colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>See the welcome again</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>The three steps: course, material, coach</Text></View>
-          </Pressable>
-          {/* The first-launch tour (D-049) plays once per phone; this replays it and comes back here. */}
-          <Pressable accessibilityRole="button" onPress={() => router.push('/onboarding?replay=1')} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-replay-tour">
-            <Feather name="play-circle" size={14} color={colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>See the tour again</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>The five pages from the first launch</Text></View>
-          </Pressable>
-          <View style={styles.accountDivider} />
-          <Pressable accessibilityRole="button" onPress={() => { setError(''); setDeleteWord(''); setDeleteOpen(true); }} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-delete-account">
-            <Feather name="trash-2" size={14} color={colors.destructive} />
-            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={[styles.compactName, { color: colors.destructive }]}>Delete my account</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>Removes your courses, sets, chats and sign-in. Cannot be undone.</Text></View>
-          </Pressable>
-          </> : null}
         </ScrollView>
       )}
-
-      <Modal visible={deleteOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setDeleteOpen(false)}>
-        <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: 20 }]}>
-          <View style={styles.header}>
-            <View style={styles.headerCopy}><Text style={styles.title}>Delete my account</Text></View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setDeleteOpen(false)} style={styles.iconButton} testID="button-close-delete"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
-          </View>
-          <View style={styles.sheetContent}>
-            <Text style={styles.empty}>This deletes your courses and exams, uploaded materials, practice sets, flashcards, memory sheet, conversations and lecture transcripts from our servers, and your sign-in. Lecture recordings stay on this phone until you delete the app. This cannot be undone.</Text>
-            <Text style={styles.caption}>Type DELETE to confirm</Text>
-            <TextInput value={deleteWord} onChangeText={setDeleteWord} autoCapitalize="characters" autoCorrect={false} placeholder="DELETE" placeholderTextColor={colors.mutedForeground} style={styles.input} accessibilityLabel="Type DELETE to confirm" testID="input-delete-word" autoFocus />
-            {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
-            <Pressable accessibilityRole="button" disabled={deleteWord.trim() !== 'DELETE' || deleteAccount.isPending} onPress={() => void removeAccount()} style={[styles.primaryButton, { backgroundColor: colors.destructive }, (deleteWord.trim() !== 'DELETE' || deleteAccount.isPending) && styles.disabled]} testID="button-confirm-delete">
-              <Text style={[styles.primaryButtonText, { color: '#ffffff' }]}>{deleteAccount.isPending ? 'Deleting…' : 'Delete everything'}</Text>
-            </Pressable>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
 
       <Modal visible={addOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { setAddOpen(false); setJustAdded(null); }}>
         <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: 20 }]}>
@@ -326,9 +264,6 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   rowName: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
   empty: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20, paddingVertical: 12 },
   signOutRow: { marginTop: 18 },
-  accountToggle: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  accountToggleText: { flex: 1, color: colors.mutedForeground, fontSize: 13, fontWeight: '700' },
-  accountDivider: { height: 1, backgroundColor: colors.border, marginTop: 14, marginBottom: 6 },
   coachButton: { marginTop: 4, marginBottom: 8 },
   sectionTitle: { color: colors.mutedForeground, fontSize: 13, fontWeight: '700', marginTop: 18, marginBottom: 2 },
   // Account rows (Dan: "about half the size and decrease the font, it's distracting"): 36 pt with a 44-pt hit area via the row's own padding.

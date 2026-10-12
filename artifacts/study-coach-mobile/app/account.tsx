@@ -1,0 +1,127 @@
+import React, { useMemo, useState } from 'react';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Redirect, router } from 'expo-router';
+import { useAuth, useClerk } from '@clerk/expo';
+import { useQueryClient } from '@tanstack/react-query';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Feather } from '@expo/vector-icons';
+import { useDeleteAccount } from '@workspace/api-client-react';
+import { useColors } from '@/hooks/useColors';
+import { friendlyError } from '@/lib/friendly-error';
+import { BUILD } from '@/constants/build';
+import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
+import { welcomeReplayKey } from '@/lib/welcome';
+
+/**
+ * The Account page (D-080, Dan: "we need a link to account page"): privacy, the welcome and
+ * the tour again, sign out, and account deletion (D-046) set apart at the bottom. Reached
+ * from the "Account" row on the course list, which keeps its own Sign out in view (D-079).
+ */
+export default function AccountScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
+  const { isLoaded, isSignedIn, userId } = useAuth();
+  const { signOut } = useClerk();
+  const deleteAccount = useDeleteAccount();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteWord, setDeleteWord] = useState('');
+  const [error, setError] = useState('');
+
+  if (isLoaded && !isSignedIn) return <Redirect href="/" />;
+
+  const back = () => { if (router.canGoBack()) router.back(); else router.replace('/course-list'); };
+
+  // Account deletion (D-046): everything on the server and the sign-in identity, after typing DELETE.
+  const removeAccount = async () => {
+    if (deleteWord.trim() !== 'DELETE' || deleteAccount.isPending) return;
+    setError('');
+    try {
+      const result = await deleteAccount.mutateAsync();
+      setDeleteOpen(false);
+      if (userId) AsyncStorage.removeItem(`study-coach-focus:${userId}`).catch(() => {});
+      queryClient.clear();
+      if (!result.identityDeleted) Alert.alert('Your data is deleted', 'Your sign-in could not be removed automatically. Contact support and it will be finished by hand.');
+      await signOut();
+    } catch (problem) {
+      setError(friendlyError(problem));
+    }
+  };
+
+  const row = (icon: React.ComponentProps<typeof Feather>['name'], label: string, caption: string, onPress: () => void, testID: string, danger = false) => (
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.row, pressed && styles.pressed]} testID={testID}>
+      <Feather name={icon} size={18} color={danger ? colors.destructive : colors.mutedForeground} />
+      <View style={styles.rowCopy}>
+        <Text style={[styles.rowName, danger && { color: colors.destructive }]}>{label}</Text>
+        <Text style={styles.caption}>{caption}</Text>
+      </View>
+      {danger ? null : <Feather name="chevron-right" size={18} color={colors.mutedForeground} />}
+    </Pressable>
+  );
+
+  return (
+    <View style={[styles.screen, { paddingTop: insets.top }]} testID="screen-account">
+      <View style={styles.header}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={back} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
+        <View style={styles.headerCopy}><Text style={styles.title}>Account</Text></View>
+      </View>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
+        {PRIVACY_URL ? row('shield', 'Privacy policy', 'What is collected, where it goes, how to delete it', openPrivacy, 'link-privacy') : null}
+        {row('compass', 'See the welcome again', 'The three steps: course, material, coach', () => {
+          if (!userId) return;
+          AsyncStorage.setItem(welcomeReplayKey(userId), '1').catch(() => {}).finally(() => router.navigate('/(tabs)'));
+        }, 'button-replay-welcome')}
+        {/* The first-launch tour (D-049) plays once per phone; this replays it and comes back here. */}
+        {row('play-circle', 'See the tour again', 'The five pages from the first launch', () => router.push('/onboarding?replay=1'), 'button-replay-tour')}
+        {row('log-out', 'Sign out', 'The next sign-in starts with the tour', () => void signOut(), 'button-sign-out')}
+        <View style={styles.divider} />
+        {row('trash-2', 'Delete my account', 'Removes your courses, sets, chats and sign-in. Cannot be undone.', () => { setError(''); setDeleteWord(''); setDeleteOpen(true); }, 'button-delete-account', true)}
+        <Text maxFontSizeMultiplier={1} style={styles.build}>Build {BUILD}</Text>
+      </ScrollView>
+
+      <Modal visible={deleteOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setDeleteOpen(false)}>
+        <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: 20 }]}>
+          <View style={styles.header}>
+            <View style={styles.headerCopy}><Text style={styles.title}>Delete my account</Text></View>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setDeleteOpen(false)} style={styles.iconButton} testID="button-close-delete"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
+          </View>
+          <View style={styles.sheetContent}>
+            <Text style={styles.empty}>This deletes your courses and exams, uploaded materials, practice sets, flashcards, memory sheet, conversations and lecture transcripts from our servers, and your sign-in. Lecture recordings stay on this phone until you delete the app. This cannot be undone.</Text>
+            <Text style={styles.caption}>Type DELETE to confirm</Text>
+            <TextInput value={deleteWord} onChangeText={setDeleteWord} autoCapitalize="characters" autoCorrect={false} placeholder="DELETE" placeholderTextColor={colors.mutedForeground} style={styles.input} accessibilityLabel="Type DELETE to confirm" testID="input-delete-word" autoFocus />
+            {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
+            <Pressable accessibilityRole="button" disabled={deleteWord.trim() !== 'DELETE' || deleteAccount.isPending} onPress={() => void removeAccount()} style={[styles.primaryButton, { backgroundColor: colors.destructive }, (deleteWord.trim() !== 'DELETE' || deleteAccount.isPending) && styles.disabled]} testID="button-confirm-delete">
+              <Text style={[styles.primaryButtonText, { color: '#ffffff' }]}>{deleteAccount.isPending ? 'Deleting…' : 'Delete everything'}</Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </View>
+  );
+}
+
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.background },
+  header: { minHeight: 58, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, gap: 6 },
+  headerCopy: { flex: 1, minWidth: 0 },
+  title: { color: colors.foreground, fontSize: 20, fontWeight: '700' },
+  caption: { color: colors.mutedForeground, fontSize: 12 },
+  iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
+  content: { paddingHorizontal: 16, paddingTop: 8, gap: 8 },
+  row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, paddingHorizontal: 12 },
+  rowCopy: { flex: 1, minWidth: 0, gap: 2 },
+  rowName: { color: colors.foreground, fontSize: 15, fontWeight: '600' },
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: 14 },
+  build: { color: colors.mutedForeground, fontSize: 11, marginTop: 18, textAlign: 'center' },
+  empty: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20, paddingVertical: 12 },
+  errorText: { color: colors.destructive, fontSize: 13 },
+  sheetContent: { paddingHorizontal: 18, paddingTop: 10, gap: 15 },
+  input: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.card, color: colors.foreground, fontSize: 15, paddingHorizontal: 13 },
+  primaryButton: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary, paddingHorizontal: 16 },
+  primaryButtonText: { color: colors.primaryForeground, fontSize: 17, fontWeight: '700' },
+  pressed: { opacity: 0.8 },
+  disabled: { opacity: 0.45 },
+});
