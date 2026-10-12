@@ -14,6 +14,7 @@ import {
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { ActionButton } from '@/components/ActionButton';
+import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
 import { BUILD } from '@/constants/build';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { welcomeReplayKey } from '@/lib/welcome';
@@ -118,12 +119,13 @@ export default function CourseListScreen() {
   const addCourse = async () => {
     const name = addName.trim();
     if (!name || busy) return;
-    if (addKind === 'exam' && addDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(addDate.trim())) { setError('Exam date must look like 2026-11-14.'); return; }
+    const addIso = addKind === 'exam' ? parseExamDate(addDate) : null;
+    if (addKind === 'exam' && addDate.trim() && !addIso) { setError('Try the exam date like Nov 14 or 11/14/2026.'); return; }
     setError('');
     try {
       const previous = stateQuery.data;
       const state = record(previous?.state);
-      const course = { id: newId(), name, kind: addKind, ...(addKind === 'exam' && addDate.trim() ? { examDate: addDate.trim() } : {}) };
+      const course = { id: newId(), name, kind: addKind, ...(addIso ? { examDate: addIso } : {}) };
       // Adding a course never grants AI consent by itself (D-047): the consent card stays the one place that does.
       const result = await putState.mutateAsync({ data: { state: { aiConsent: false, materials: [], ...state, courses: [...(Array.isArray(state.courses) ? state.courses : []), course] }, version: previous?.version ?? 0 } });
       queryClient.setQueryData(stateKey, result);
@@ -156,7 +158,7 @@ export default function CourseListScreen() {
   };
 
   const detail = (row: Row) => [
-    row.kind === 'exam' ? `exam${row.examDate ? ` · ${row.examDate}` : ''}` : 'course',
+    row.kind === 'exam' ? `exam${row.examDate ? ` · ${describeExamDate(row.examDate)}` : ''}` : 'course',
     `${row.materials + lecturesFor(row.id)} material${row.materials + lecturesFor(row.id) === 1 ? '' : 's'}`,
     ...(lastResult.get(row.id) ? [lastResult.get(row.id)!] : []),
     ...(row.kind === 'exam' ? [lookingUp === row.id ? 'looking up the exam guide…' : row.guide?.found ? `${row.guide.sections} sections` : row.guide ? 'no official guide found' : ''] : []),
@@ -282,7 +284,8 @@ export default function CourseListScreen() {
               ))}
             </View>
             <TextInput value={addName} onChangeText={setAddName} maxLength={120} placeholder={addKind === 'exam' ? 'e.g. AWS Solutions Architect Associate' : 'e.g. BIOL 114'} placeholderTextColor={colors.mutedForeground} style={styles.input} accessibilityLabel="Name" testID="input-add-name" autoFocus />
-            {addKind === 'exam' ? <TextInput value={addDate} onChangeText={setAddDate} placeholder="Exam date, e.g. 2026-11-14 (optional)" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-add-date" /> : null}
+            {addKind === 'exam' ? <TextInput value={addDate} onChangeText={setAddDate} placeholder="Exam date, e.g. Nov 14 (optional)" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-add-date" /> : null}
+            {addKind === 'exam' && addDate.trim() ? <Text style={styles.caption} testID="text-add-date-hint">{examDateHint(addDate)}</Text> : null}
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
             <Pressable accessibilityRole="button" disabled={busy || !addName.trim()} onPress={() => void addCourse()} style={[styles.primaryButton, (busy || !addName.trim()) && styles.disabled]} testID="button-save-add">
               <Text style={styles.primaryButtonText}>{addKind === 'exam' ? 'Add exam' : 'Add course'}</Text>

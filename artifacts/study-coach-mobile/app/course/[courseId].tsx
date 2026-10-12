@@ -11,6 +11,7 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
+import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
 import { ActionButton } from '@/components/ActionButton';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
@@ -96,10 +97,11 @@ export default function CourseScreen() {
   const saveDetails = async () => {
     const trimmed = name.trim();
     if (!trimmed || busy) return;
-    if (examDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(examDate.trim())) { setError('Exam date must look like 2026-11-14.'); return; }
+    const iso = parseExamDate(examDate);
+    if (examDate.trim() && !iso) { setError('Try the exam date like Nov 14 or 11/14/2026.'); return; }
     setError(''); setSaving(true);
     try {
-      await persist({ courses: courses.map((c) => c.id === courseId ? { ...c, name: trimmed, ...(isExam ? { examDate: examDate.trim() || undefined } : {}) } : c) });
+      await persist({ courses: courses.map((c) => c.id === courseId ? { ...c, name: trimmed, ...(isExam ? { examDate: iso ?? undefined } : {}) } : c) });
       setEditing(false);
     } catch (problem) { setError(readable(problem)); } finally { setSaving(false); }
   };
@@ -152,9 +154,9 @@ export default function CourseScreen() {
         <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
         <View style={styles.headerCopy}>
           <Text numberOfLines={1} style={styles.title}>{typeof course?.name === 'string' ? course.name : 'Course'}</Text>
-          <Text style={styles.caption}>{isExam ? `Certification exam${typeof course?.examDate === 'string' ? ` · ${course.examDate}` : ''}` : 'Course'}</Text>
+          <Text style={styles.caption}>{isExam ? `Certification exam${typeof course?.examDate === 'string' ? ` · ${describeExamDate(course.examDate)}` : ''}` : 'Course'}</Text>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Edit name and date" onPress={() => { setName(typeof course?.name === 'string' ? course.name : ''); setExamDate(typeof course?.examDate === 'string' ? course.examDate : ''); setEditing(true); scrollRef.current?.scrollTo({ y: 0, animated: true }); }} style={styles.iconButton} testID="button-edit-course"><Feather name="edit-2" size={20} color={colors.foreground} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Edit name and date" onPress={() => { setName(typeof course?.name === 'string' ? course.name : ''); setExamDate(typeof course?.examDate === 'string' ? describeExamDate(course.examDate) : ''); setEditing(true); scrollRef.current?.scrollTo({ y: 0, animated: true }); }} style={styles.iconButton} testID="button-edit-course"><Feather name="edit-2" size={20} color={colors.foreground} /></Pressable>
       </View>
       {stateQuery.isLoading ? <CourseSkeleton /> : !course ? (
         <View style={styles.center}><Text style={styles.body}>This course isn’t in your account anymore.</Text></View>
@@ -166,8 +168,9 @@ export default function CourseScreen() {
             <View style={styles.card}>
               <Text style={styles.kicker}>Name</Text>
               <TextInput value={name} onChangeText={setName} maxLength={120} style={styles.input} accessibilityLabel="Course name" testID="input-course-name" />
-              {isExam ? <><Text style={styles.kicker}>Exam date (YYYY-MM-DD)</Text>
-                <TextInput value={examDate} onChangeText={setExamDate} placeholder="2026-11-14" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-exam-date" /></> : null}
+              {isExam ? <><Text style={styles.kicker}>Exam date</Text>
+                <TextInput value={examDate} onChangeText={setExamDate} placeholder="e.g. Nov 14" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-exam-date" />
+                {examDate.trim() ? <Text style={styles.caption} testID="text-exam-date-hint">{examDateHint(examDate)}</Text> : null}</> : null}
               <View style={styles.row}>
                 <ActionButton label="Save" icon="check" onPress={() => void saveDetails()} disabled={busy || !name.trim()} testID="button-save-course" />
                 <ActionButton label="Cancel" secondary onPress={() => setEditing(false)} testID="button-cancel-edit" />
