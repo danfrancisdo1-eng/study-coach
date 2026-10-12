@@ -200,7 +200,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
     if (!mounted.current || upload.courseId !== courseId) return;
     setMaterialUploading(false);
     setExtractedMaterial(result);
-    setMaterialNotice(`${result.filename} · ready to review · ${result.characterCount.toLocaleString()} characters`);
+    setMaterialNotice(`${result.filename} is ready. Check the text below, then Save.`);
   };
 
   const handleMaterialExtractionError = (upload: PendingMaterial, problem: unknown) => {
@@ -238,7 +238,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
       };
       await onSave(addition);
       if (!mounted.current) return;
-      setMaterialNotice(`${extractedMaterial.filename} · ${extractedMaterial.characterCount.toLocaleString()} characters saved for this course`);
+      setMaterialNotice(`${extractedMaterial.filename} saved to this course.`);
       setExtractedMaterial(null);
       setMaterialUpload(null);
     } catch (problem) {
@@ -255,7 +255,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
         <View style={styles.extractionPreview} accessibilityRole="progressbar" accessibilityLabel="Extracting course material text" testID="status-material-extracting">
           <ActivityIndicator color={colors.primaryText} />
           <Text style={styles.cardTitle}>Extracting text</Text>
-          <Text style={styles.muted}>The file is being processed transiently. It will not be saved to your course unless you review and choose Save.</Text>
+          <Text style={styles.muted}>Reading your file. Nothing is saved until you check the text and tap Save.</Text>
           <ActionButton
             label="Cancel extraction"
             secondary
@@ -271,7 +271,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
       {extractedMaterial ? (
         <View style={styles.extractionPreview} testID="panel-material-extraction-preview">
           <Text style={styles.kicker}>REVIEW MATERIAL · {extractedMaterial.format.toUpperCase()}</Text>
-          <Text style={styles.cardTitle}>{extractedMaterial.filename} · {extractedMaterial.characterCount.toLocaleString()} characters</Text>
+          <Text style={styles.cardTitle}>{extractedMaterial.filename}</Text>
           <Text style={styles.muted}>{extractedMaterial.coverageNote}</Text>
           {extractedMaterial.sourceUrl ? <Text selectable style={styles.caption}>{extractedMaterial.sourceUrl}</Text> : null}
           <TextInput accessibilityLabel="Extracted material text" testID="input-extracted-text" multiline

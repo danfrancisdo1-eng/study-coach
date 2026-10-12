@@ -88,7 +88,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
   const courseId = current?.courseId ?? selectedCourseId;
   const materials = state.materials?.filter(item => item.courseId === courseId).map(item => ({
     id: item.id, filename: item.name, status: 'ready' as const,
-    detail: `${item.text.length.toLocaleString()} characters saved`,
+    detail: 'Saved to this course',
   })) ?? [];
   const savedMaterialsByCourse: Record<string, { id: string; name: string }[]> = {};
   for (const item of state.materials ?? []) {
