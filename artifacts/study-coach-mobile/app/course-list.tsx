@@ -204,9 +204,14 @@ export default function CourseListScreen() {
           {!rows.length ? <Text style={styles.empty}>No courses yet. Add one here, or just tell the coach what you're studying.</Text> : null}
           {/* Dan (2026-10-12): a plain way to the coach right after the courses, not only the header icon. */}
           <View style={styles.coachButton}><ActionButton label="Talk to the coach" icon="message-circle" onPress={toCoach} testID="button-talk-to-coach" /></View>
+          {/* Sign out stays in view (Dan: "There is no logout button anywhere" once Account was folded, D-079); the rest folds. */}
+          <Pressable accessibilityRole="button" onPress={() => void signOut()} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, styles.signOutRow, pressed && styles.pressed]} testID="button-sign-out">
+            <Feather name="log-out" size={14} color={colors.mutedForeground} />
+            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Sign out</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>The next sign-in starts with the tour</Text></View>
+          </Pressable>
           <Pressable accessibilityRole="button" accessibilityState={{ expanded: accountOpen }} accessibilityLabel="Account" onPress={() => setAccountOpen((open) => !open)} style={({ pressed }) => [styles.accountToggle, pressed && styles.pressed]} testID="button-account-toggle">
             <Feather name="user" size={14} color={colors.mutedForeground} />
-            <Text maxFontSizeMultiplier={1} style={styles.accountToggleText}>Account · build {BUILD}</Text>
+            <Text maxFontSizeMultiplier={1} style={styles.accountToggleText}>More: privacy, tour, delete account · build {BUILD}</Text>
             <Feather name={accountOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
           </Pressable>
           {accountOpen ? <>
@@ -225,10 +230,6 @@ export default function CourseListScreen() {
           <Pressable accessibilityRole="button" onPress={() => router.push('/onboarding?replay=1')} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-replay-tour">
             <Feather name="play-circle" size={14} color={colors.mutedForeground} />
             <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>See the tour again</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>The five pages from the first launch</Text></View>
-          </Pressable>
-          <Pressable accessibilityRole="button" onPress={() => void signOut()} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-sign-out">
-            <Feather name="log-out" size={14} color={colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Sign out</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>The next sign-in starts with the tour</Text></View>
           </Pressable>
           <View style={styles.accountDivider} />
           <Pressable accessibilityRole="button" onPress={() => { setError(''); setDeleteWord(''); setDeleteOpen(true); }} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-delete-account">
@@ -324,7 +325,8 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   rowCopy: { flex: 1, minWidth: 0 },
   rowName: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
   empty: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20, paddingVertical: 12 },
-  accountToggle: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 18 },
+  signOutRow: { marginTop: 18 },
+  accountToggle: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8 },
   accountToggleText: { flex: 1, color: colors.mutedForeground, fontSize: 13, fontWeight: '700' },
   accountDivider: { height: 1, backgroundColor: colors.border, marginTop: 14, marginBottom: 6 },
   coachButton: { marginTop: 4, marginBottom: 8 },
