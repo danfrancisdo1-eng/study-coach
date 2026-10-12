@@ -23,13 +23,16 @@
 
 - **D-060 to D-062** (quicker welcome swipe, compact Account rows, Outline + Questions without material, build stamp, lectures counted, Courses button on the chat) and **PR #1 merged** (`bb5c1d0`, Render deploys it). **D-063** the Grok-style feedback on the live card, on a new PR.
 
+- **D-064** persona usability review (`docs/USABILITY_REVIEW_2026-10-12.md`); **D-065** its three critical fixes (Dan: "all worked perfectly"); the course screen's pencil opens the edit form in view (#11). All on draft PR #2.
+- **D-066** wording fixes 4 to 6: "Studying · <course>" on the chat strip, "Memory tricks" for Hooks, a plain welcome line about AI consent. Verified here: typecheck; 44/44 mobile tests; iOS bundle export. Build #12. **Needs real-iPhone check.**
+
 ### In progress
-- The branch restarted from `main`; D-063 is its first commit. Dan is checking each push on the phone against the build stamp.
+- Screenshots 1 to 8 of the untested screens: Dan AirDrops them to the Mac and sends them here; then the persona review runs on them. 9 to 15 still to take (list in HANDOFF, 16:10 section).
 
 ### Next
-- First: get the Mac onto `de55e96` (one command, see HANDOFF) and have Dan look at one question. Then "match it" for the feedback styling if he confirms.
+- Usability review medium items 7 to 10 (date picker; Delete account off the course list; + with no course opens Add; chips that answer the coach's question), on Dan's go.
 - Dan's phone checks still open: the tour ("See the tour" under "Create account" on the sign-in screen), the frosted strip (Dan: "I didn't see any frosted glass"), skeletons, Light mode, Reduce Motion.
-- Waiting on Dan: merge PR #1 (deploys the server to Render) so the D-051 work gets its own PR; the exam-guide fix (near-match suggestion, no invented domains for an unknown code; evals need the keys on the Mac).
+- Waiting on Dan: the exam-guide fix (near-match suggestion, no invented domains for an unknown code; evals need the keys on the Mac).
 
 ### Blockers
 - None.

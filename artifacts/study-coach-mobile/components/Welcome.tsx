@@ -50,7 +50,7 @@ export function Welcome({ onAddCourse, onExplore, busy = false }: { onAddCourse:
             </Animated.View>
           ))}
         </View>
-        <Text style={styles.boundary}>For students 13 and up. Study content is sent to the AI providers named on the consent card.</Text>
+        <Text style={styles.boundary}>For students 13 and up. Your study content goes to an AI service; you'll be asked to agree before anything is sent.</Text>
       </View>
       <View style={styles.bottom}>
         <View style={styles.primaryWrap}>

@@ -189,7 +189,7 @@ export default function CourseScreen() {
               <ActionButton label="Talk to the coach" icon="message-circle" secondary onPress={talkToCoach} testID="button-action-chat" />
               <ActionButton label="Simulated exam" icon="clock" secondary onPress={() => startWithCoach('exam', null)} testID="button-action-exam" />
               <ActionButton label="Flashcards" icon="layers" secondary onPress={() => setPicker('flashcards')} testID="button-action-flashcards" />
-              <ActionButton label="Hooks" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
+              <ActionButton label="Memory tricks" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
               <ActionButton label="Outline" icon="list" secondary onPress={() => startWithCoach('outline', null)} testID="button-action-outline" />
               <ActionButton label="Questions without material" icon="help-circle" secondary onPress={() => void questionsWithoutMaterial()} testID="button-action-no-material" />
             </View>
@@ -324,7 +324,7 @@ export default function CourseScreen() {
       <Modal visible={picker !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setPicker(null)}>
         <View style={[styles.screen, { paddingTop: 20 }]}>
           <View style={styles.header}>
-            <View style={styles.headerCopy}><Text style={styles.title}>{picker === 'hooks' ? 'Hooks on which topics?' : 'Flashcards on which topics?'}</Text><Text style={styles.caption}>Pick one, or all of them</Text></View>
+            <View style={styles.headerCopy}><Text style={styles.title}>{picker === 'hooks' ? 'Memory tricks on which topics?' : 'Flashcards on which topics?'}</Text><Text style={styles.caption}>Pick one, or all of them</Text></View>
             <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setPicker(null)} style={styles.iconButton} testID="button-close-picker"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
           </View>
           <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>

@@ -504,7 +504,7 @@ export default function CoachHome() {
         {/* The one frosted panel (D-048): the "Coach · <course>" strip, which the chat scrolls under. */}
         <GlassBar style={styles.focusGlass} onLayout={(e) => setStripHeight(Math.round(e.nativeEvent.layout.height))}>
           <Pressable accessibilityRole="button" accessibilityLabel="Courses and exams" accessibilityHint="Choose which course the coach works on, open a course, or add one" onPress={openCourses} style={({ pressed }) => [styles.focusBar, pressed && styles.pressed]} testID="button-focus-course">
-            <Text style={styles.kicker}>Coach</Text>
+            <Text style={styles.kicker}>{focusCourse ? 'Studying' : 'Coach'}</Text>
             <Text numberOfLines={1} style={styles.focusText}>{focusCourse ? focusCourse.name : courses.length ? 'All courses' : 'Add a course or exam'}</Text>
             <Text style={styles.focusCount}>{courses.length ? `${courses.length} ${courses.length === 1 ? 'course' : 'courses'}` : ''}</Text>
             <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
