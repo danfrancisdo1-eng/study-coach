@@ -54,6 +54,14 @@ Phone was in airplane mode, which explains the failed extraction and the flashca
 24. **"Make room to learn." does not say what the app does.** Dave reads it twice. Fix (Dan's call on wording): e.g. "Your courses, quizzes and coach in one place." *Sign-up.* Minor.
 25. "Create account" sits below the fold and is pale until the form is complete; fine once 23 is fixed. The legal line and privacy link read clearly. The heavy display font belongs to the deferred aesthetics redesign. *Sign-up.* Note.
 
+## Round 3 continued — screenshots 12 to 15 (welcome, consent card, Dark mode), 2026-10-12 14:07–14:11
+26. **Course list, Dark: the "All courses" row's layers icon overlaps the "A".** That row was meant to go with finding 3 and is still there. Fix: remove the row (the coach's "All courses" thread stays reachable from the chat strip) or give the icon its own padding. *Course list.* Minor (visual bug).
+27. **The AI consent card is one long paragraph.** Priya and Ellen skip it. Fix: three short lines (what goes where, AI can be wrong, you can change this any time) and fix the "Nothing is sent a family member" sentence. *Consent card.* Medium.
+28. **Sign-up: the big title scrolls under the status bar with nothing behind it.** Fix: a background behind the safe area. *Sign-up.* Minor.
+29. **Tour page 5: "Record a lecture" wraps to three lines and touches the card border.** Fix: shorter caption ("transcribed; audio stays on your phone") or more padding. *Tour.* Minor.
+30. **Welcome: the first card repeats "course or exam" in its title and caption.** Fix: caption "with an optional exam date." *Welcome.* Minor.
+Dark mode otherwise reads well (welcome, list, tour); contrast fine.
+
 ## Untested (no phone screenshot yet)
 Course screen actions row and the one-time red note; Add sheet; "What next?" sheet; topic picker; AI consent card; material intake (photos, files, website, lecture); exam set sheet with bubbles; flashcards; light/dark on the welcome; Reduce Motion.
 
