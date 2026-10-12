@@ -25,12 +25,15 @@
 
 - **D-064** persona usability review (`docs/USABILITY_REVIEW_2026-10-12.md`); **D-065** its three critical fixes (Dan: "all worked perfectly"); the course screen's pencil opens the edit form in view (#11). All on draft PR #2.
 - **D-066** wording fixes 4 to 6: "Studying · <course>" on the chat strip, "Memory tricks" for Hooks, a plain welcome line about AI consent. Verified here: typecheck; 44/44 mobile tests; iOS bundle export. Build #12. **Needs real-iPhone check.**
+- **D-067** intake errors are plain sentences (Dan's airplane-mode screenshot showed a Clerk URL and a session id); **D-068** "Talk to the coach" button under the courses; **D-069** "See the welcome again" shows once and never covers a course-screen request (Flashcards landed on the welcome); **D-070** the exam sheet: Grade from any question once all are answered, marks never block it, "You scored 20%: 2 of 10 right.", misses in the app fonts and Grok's layout. Usability review round 2 from screenshots 1 to 9. Build #16. Verified here: typecheck; 48/48 mobile tests; iOS bundle export.
+- **Dan on the phone (2026-10-12 evening):** extraction works online; "that all looks good" after #16.
 
 ### In progress
-- Screenshots 1 to 8 of the untested screens: Dan AirDrops them to the Mac and sends them here; then the persona review runs on them. 9 to 15 still to take (list in HANDOFF, 16:10 section).
+- Screenshots 10 to 15 still to take (exam bubbles seen; 11 to 13 a brand-new account: sign-up, welcome, consent card; 14 and 15 Dark and Light). Run the personas on them and add to the review.
 
 ### Next
-- Usability review medium items 7 to 10 (date picker; Delete account off the course list; + with no course opens Add; chips that answer the coach's question), on Dan's go.
+- Usability review items waiting on Dan's go: 7 to 10 (date picker; Delete account off the course list; + with no course opens Add; chips that answer the coach's question, seen live as 21), then 17 to 20 and 22 (one Delete course; the missed bar; progress row times; plainer extraction wording).
+- PR #2 (draft) holds D-063 to D-070; merge when Dan says.
 - Dan's phone checks still open: the tour ("See the tour" under "Create account" on the sign-in screen), the frosted strip (Dan: "I didn't see any frosted glass"), skeletons, Light mode, Reduce Motion.
 - Waiting on Dan: the exam-guide fix (near-match suggestion, no invented domains for an unknown code; evals need the keys on the Mac).
 
