@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-12 — D-075 to D-078: Round-2 review findings fixed
+- Dan: "fix the new findings, replace '…characters saved' with name of file". D-075 (finding 17): the Actions card no longer has Delete course; it stays at the bottom of the course screen. D-076 (18): the Topics tested bar fills with the missed share in the wrong colour, matching "missed X of Y". D-077 (19): progress rows read "Oct 11, 2:14 pm · Kinetics" (`lib/when.ts`, 1 test). D-078 (20, 22): the extraction card says "Reading your file. Nothing is saved until you check the text and tap Save."; after review "<file> is ready. Check the text below, then Save."; after saving "<file> saved to this course."; no character counts on the phone or on the web materials list. Build stamps #20 to #23.
+- UX checklist (code review, D-071 to D-078): targets unchanged or 44 pt (Account row); one primary per block; Account chunked away; native patterns; progress clearer (times, missed bars); accent unchanged; the missed bar has words beside it, never colour alone; theme tokens; labels plain; no motion; paywall N/A. Verified here: typecheck; 133/133 tests; iOS bundle export. Needs real-iPhone check. Decided by Dan.
+
 ## 2026-10-12 — D-074: coach.v16: the chips answer the coach's own question
 - Usability finding 10 (seen live as 21 on Dan's phone: the coach asked "answer my last question … or jump into a new set?" and the four chips were all set options). Dan: "fix 7-10".
 - coach.v16 (`src/prompts/coach.v16.ts`, served by `routes/chat.ts`): the four after-set chips are for the first reply after a graded set only; in every other reply a closing question gets chips that answer it, an explain-it-back question gets only the ways out ("Show me the answer", "Skip it, new set"), and real choices are offered as the chips rather than asking whether to show them. A first draft also capped chips at four; the guide-lookup eval caught it (five sections + All topics), so the cap was dropped.
