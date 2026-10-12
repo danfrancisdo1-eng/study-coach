@@ -47,6 +47,7 @@ Phone was in airplane mode, which explains the failed extraction and the flashca
 19. **Progress rows are identical:** three lines "2026-10-11 · Kinetics" with different scores. Fix: "Oct 11, 2:14 pm · Kinetics", newest first. *Progress card.* Minor.
 20. **"The file is being processed transiently."** Dave stops at "transiently". Fix: "Reading your file. Nothing is saved until you check the text and tap Save." *Extraction card.* Minor.
 21. **Finding 10 seen live:** the coach asks "answer my last question … or jump into a new set?" and the four chips are all new-set options; while the coach is thinking the chips go pale and look disabled. *Course chat.* Medium (same fix as 10).
+22. **Screenshot 9, "What next?":** clear, three choices, one primary. Fine. **Extraction (AI-501):** worked online; "544 characters saved for this course" means nothing to a student. Fix: "IMG_0667.png saved to this course." Minor.
 
 ## Untested (no phone screenshot yet)
 Course screen actions row and the one-time red note; Add sheet; "What next?" sheet; topic picker; AI consent card; material intake (photos, files, website, lecture); exam set sheet with bubbles; flashcards; light/dark on the welcome; Reduce Motion.

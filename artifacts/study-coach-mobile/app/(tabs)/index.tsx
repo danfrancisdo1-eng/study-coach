@@ -20,7 +20,7 @@ import { QuizCard } from '@/components/QuizCard';
 import { FlashcardDeck } from '@/components/FlashcardDeck';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { Welcome } from '@/components/Welcome';
-import { shouldShowWelcome, welcomeReplayKey, withWelcomeSeen } from '@/lib/welcome';
+import { replayOnOpen, shouldShowWelcome, welcomeReplayKey, withWelcomeSeen } from '@/lib/welcome';
 import { GlassBar } from '@/components/GlassBar';
 import { GlowRing } from '@/components/GlowRing';
 import { HomeSkeleton } from '@/components/Skeleton';
@@ -140,8 +140,11 @@ export default function CoachHome() {
   useFocusEffect(useCallback(() => {
     if (!userId) return;
     AsyncStorage.getItem(`study-coach-focus:${userId}`).then((saved) => { setFocusCourseId(saved || null); }).catch(() => {});
-    AsyncStorage.getItem(welcomeReplayKey(userId)).then((flag) => { setReplayWelcome(flag === '1'); }).catch(() => {});
-  }, [userId]));
+    AsyncStorage.getItem(welcomeReplayKey(userId)).then((flag) => {
+      setReplayWelcome(replayOnOpen(flag, Boolean(handoff)));
+      if (flag) AsyncStorage.removeItem(welcomeReplayKey(userId)).catch(() => {});
+    }).catch(() => {});
+  }, [userId, handoff]));
   const selectCourse = (id: string | null) => {
     setFocusCourseId(id);
     if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, id ?? '').catch(() => {});

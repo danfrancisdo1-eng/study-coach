@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-12 — D-069: "See the welcome again" shows it once; it never covers a course-screen request
+- Dan (phone): "Flash cards brought me to the Home Screen" (the welcome). Cause: the replay flag set by "See the welcome again" was only cleared by the welcome's own two buttons; leaving any other way left it set, so every visit to the chat, including the Flashcards handoff, opened on the welcome with the request hidden behind it. Now the flag is used up the first time the chat opens, and is ignored when the chat arrives with a request from the course screen (`replayOnOpen` in `lib/welcome.ts`, 1 new test). Build stamp #15. Verified here: typecheck; 46/46 mobile tests; iOS bundle export. Needs real-iPhone check: Flashcards → a topic → the deck in the chat. Decided by Dan (bug).
+
 ## 2026-10-12 — D-068: A "Talk to the coach" button under the courses
 - Dan (phone, 2026-10-12): "Course list page needs a button after courses to speak with Coach." A full-width primary button right after the course rows goes back to the chat (the header's chat icon stays). Build stamp #14. Verified here: typecheck; mobile tests; iOS bundle export. Needs real-iPhone check. Decided by Dan.
 
