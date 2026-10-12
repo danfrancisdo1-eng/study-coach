@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Link, Redirect, useRouter } from 'expo-router';
 import { useAuth, useSignIn } from '@clerk/expo';
@@ -9,10 +10,13 @@ import { BUILD } from '@/constants/build';
 import { Feather } from '@expo/vector-icons';
 import { SocialSignIn } from '@/components/SocialSignIn';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
+import { SIGNED_IN_BEFORE_KEY, signInTitle } from '@/lib/sign-in-copy';
 
 export default function SignInScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const [signedInBefore, setSignedInBefore] = useState(false);
+  useEffect(() => { AsyncStorage.getItem(SIGNED_IN_BEFORE_KEY).then((v) => setSignedInBefore(v === '1')).catch(() => {}); }, []);
   const router = useRouter();
   const { signIn, errors, fetchStatus } = useSignIn();
   const { isSignedIn } = useAuth();
@@ -70,6 +74,7 @@ export default function SignInScreen() {
 
   const needsEmailCode = signIn.status === 'needs_client_trust';
   return (
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
     <KeyboardAwareScrollViewCompat
       style={[styles.screen, { backgroundColor: colors.background }]}
       contentContainerStyle={[styles.container, { paddingTop: insets.top + 25, paddingBottom: insets.bottom + 26 }]}
@@ -79,7 +84,7 @@ export default function SignInScreen() {
     >
       <View style={[styles.brandMark, { backgroundColor: colors.primary }]}><Feather name="book-open" size={23} color={colors.primaryForeground} /></View>
       <Text style={[styles.eyebrow, { color: colors.primaryText }]}>Study Coach</Text>
-      <Text style={[styles.title, { color: colors.foreground }]}>Welcome back.</Text>
+      <Text style={[styles.title, { color: colors.foreground }]}>{signInTitle(signedInBefore)}</Text>
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Sign in to continue your saved study sessions.</Text>
       {needsEmailCode ? (
         <>
@@ -113,17 +118,21 @@ export default function SignInScreen() {
             <Text style={[styles.body, { color: colors.mutedForeground }]}>New to Study Coach? </Text>
             <Link href="/(auth)/sign-up" testID="link-sign-up"><Text style={[styles.link, { color: colors.primaryText }]}>Create account</Text></Link>
           </View>
-          <Link href="/onboarding?replay=1" style={styles.textButton} testID="link-tour"><Text style={[styles.body, { color: colors.mutedForeground }]}>See the tour</Text></Link>
+          <Link href="/onboarding?replay=1" style={styles.textButton} testID="link-tour"><Text style={[styles.link, { color: colors.primaryText }]}>See the tour</Text></Link>
           <Text style={[styles.build, { color: colors.mutedForeground }]} testID="text-build">Build {BUILD}</Text>
         </>
       )}
       {error ? <Text accessibilityRole="alert" testID="status-auth-error" style={[styles.error, { color: colors.destructive }]}>{error}</Text> : null}
     </KeyboardAwareScrollViewCompat>
+    {/* Nothing scrolls under the clock and battery (review finding 28, D-083). */}
+    <View pointerEvents="none" style={[styles.statusBacking, { height: insets.top, backgroundColor: colors.background }]} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  statusBacking: { position: 'absolute', top: 0, left: 0, right: 0 },
   container: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 25, gap: 12 },
   brandMark: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 17, marginBottom: 8 },
   eyebrow: { fontSize: 14, fontWeight: '600' },
