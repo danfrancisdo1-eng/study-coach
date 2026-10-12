@@ -154,13 +154,26 @@ export default function CourseScreen() {
           <Text numberOfLines={1} style={styles.title}>{typeof course?.name === 'string' ? course.name : 'Course'}</Text>
           <Text style={styles.caption}>{isExam ? `Certification exam${typeof course?.examDate === 'string' ? ` · ${course.examDate}` : ''}` : 'Course'}</Text>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Edit name and date" onPress={() => { setName(typeof course?.name === 'string' ? course.name : ''); setExamDate(typeof course?.examDate === 'string' ? course.examDate : ''); setEditing(true); }} style={styles.iconButton} testID="button-edit-course"><Feather name="edit-2" size={20} color={colors.foreground} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Edit name and date" onPress={() => { setName(typeof course?.name === 'string' ? course.name : ''); setExamDate(typeof course?.examDate === 'string' ? course.examDate : ''); setEditing(true); scrollRef.current?.scrollTo({ y: 0, animated: true }); }} style={styles.iconButton} testID="button-edit-course"><Feather name="edit-2" size={20} color={colors.foreground} /></Pressable>
       </View>
       {stateQuery.isLoading ? <CourseSkeleton /> : !course ? (
         <View style={styles.center}><Text style={styles.body}>This course isn’t in your account anymore.</Text></View>
       ) : (
         <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]} onContentSizeChange={scrollToIntake}>
           {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
+          {/* The edit form sits at the top so the pencil visibly does something (Dan: it looked broken when the form opened below the fold). */}
+          {editing ? (
+            <View style={styles.card}>
+              <Text style={styles.kicker}>Name</Text>
+              <TextInput value={name} onChangeText={setName} maxLength={120} style={styles.input} accessibilityLabel="Course name" testID="input-course-name" />
+              {isExam ? <><Text style={styles.kicker}>Exam date (YYYY-MM-DD)</Text>
+                <TextInput value={examDate} onChangeText={setExamDate} placeholder="2026-11-14" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-exam-date" /></> : null}
+              <View style={styles.row}>
+                <ActionButton label="Save" icon="check" onPress={() => void saveDetails()} disabled={busy || !name.trim()} testID="button-save-course" />
+                <ActionButton label="Cancel" secondary onPress={() => setEditing(false)} testID="button-cancel-edit" />
+              </View>
+            </View>
+          ) : null}
 
           <View style={styles.card} testID="panel-course-actions">
             <Text style={styles.kicker}>Actions</Text>
@@ -218,18 +231,6 @@ export default function CourseScreen() {
             </View>
           ) : null}
 
-          {editing ? (
-            <View style={styles.card}>
-              <Text style={styles.kicker}>Name</Text>
-              <TextInput value={name} onChangeText={setName} maxLength={120} style={styles.input} accessibilityLabel="Course name" testID="input-course-name" />
-              {isExam ? <><Text style={styles.kicker}>Exam date (YYYY-MM-DD)</Text>
-                <TextInput value={examDate} onChangeText={setExamDate} placeholder="2026-11-14" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-exam-date" /></> : null}
-              <View style={styles.row}>
-                <ActionButton label="Save" icon="check" onPress={() => void saveDetails()} disabled={busy || !name.trim()} testID="button-save-course" />
-                <ActionButton label="Cancel" secondary onPress={() => setEditing(false)} testID="button-cancel-edit" />
-              </View>
-            </View>
-          ) : null}
 
           {isExam ? (
             <View style={styles.card} testID="panel-exam-guide">
