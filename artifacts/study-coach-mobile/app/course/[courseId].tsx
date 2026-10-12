@@ -213,7 +213,8 @@ export default function CourseScreen() {
                   <Text style={styles.body} numberOfLines={1}>{t.topic}</Text>
                   <Text style={styles.scoreText}>missed {t.missed} of {t.total}</Text>
                 </View>
-                <View style={styles.track}><View style={[styles.fill, { width: `${t.total ? Math.round(((t.total - t.missed) / t.total) * 100) : 0}%` }]} /></View>
+                {/* Review finding 18 (D-076): the bar is the missed share, in the wrong colour, so it reads the same as the words. */}
+                <View style={styles.track}><View style={[styles.fill, { backgroundColor: colors.wrong, width: `${t.total ? Math.round((t.missed / t.total) * 100) : 0}%` }]} /></View>
               </View>
             ))}
             {results && !results.topics.length ? <Text style={styles.caption}>Nothing graded yet. Practice questions or a simulated exam will fill this in.</Text> : null}
