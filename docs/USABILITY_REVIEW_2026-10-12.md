@@ -49,6 +49,11 @@ Phone was in airplane mode, which explains the failed extraction and the flashca
 21. **Finding 10 seen live:** the coach asks "answer my last question … or jump into a new set?" and the four chips are all new-set options; while the coach is thinking the chips go pale and look disabled. *Course chat.* Medium (same fix as 10).
 22. **Screenshot 9, "What next?":** clear, three choices, one primary. Fine. **Extraction (AI-501):** worked online; "544 characters saved for this course" means nothing to a student. Fix: "IMG_0667.png saved to this course." Minor.
 
+## Round 3 — screenshot 11, sign-up on a new account (2026-10-12 14:02)
+23. **Apple and Google look tappable but do nothing until "I'm 13 or older" is ticked**, with no message. Priya taps Apple first and gives up. Fix: a tap on either before the box is ticked makes the 13+ line turn red with "Tick 'I'm 13 or older' first." *Sign-up.* Medium.
+24. **"Make room to learn." does not say what the app does.** Dave reads it twice. Fix (Dan's call on wording): e.g. "Your courses, quizzes and coach in one place." *Sign-up.* Minor.
+25. "Create account" sits below the fold and is pale until the form is complete; fine once 23 is fixed. The legal line and privacy link read clearly. The heavy display font belongs to the deferred aesthetics redesign. *Sign-up.* Note.
+
 ## Untested (no phone screenshot yet)
 Course screen actions row and the one-time red note; Add sheet; "What next?" sheet; topic picker; AI consent card; material intake (photos, files, website, lecture); exam set sheet with bubbles; flashcards; light/dark on the welcome; Reduce Motion.
 
