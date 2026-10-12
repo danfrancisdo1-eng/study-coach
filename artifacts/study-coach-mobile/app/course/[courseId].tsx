@@ -12,6 +12,7 @@ import {
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
+import { whenLabel } from '@/lib/when';
 import { ActionButton } from '@/components/ActionButton';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
@@ -264,7 +265,7 @@ export default function CourseScreen() {
                 <Text style={styles.kicker}>Progress · {graded.length} {graded.length === 1 ? 'set' : 'sets'}</Text>
                 {graded.slice(0, 5).map((s) => (
                   <View key={s.id} style={styles.rowBetween}>
-                    <Text style={styles.body} numberOfLines={1}>{s.createdAt.slice(0, 10)} · {s.topic}</Text>
+                    <Text style={styles.body} numberOfLines={1}>{whenLabel(s.createdAt)} · {s.topic}</Text>
                     <Text style={styles.scoreText}>{Math.round((s.targetedScore ?? s.diagnosticScore) as number)}%</Text>
                   </View>
                 ))}
