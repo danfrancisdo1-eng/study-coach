@@ -95,11 +95,6 @@ export default function CourseListScreen() {
   const atRoot = !router.canGoBack();
   const toCoach = () => { if (router.canGoBack()) router.back(); else router.push('/(tabs)'); };
   const lecturesFor = (courseId: string) => (lecturesQuery.data?.lectures ?? []).filter((l) => l.courseId === courseId).length;
-  const select = (id: string | null) => {
-    setFocusId(id);
-    if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, id ?? '').catch(() => {});
-    toCoach();
-  };
 
   // After an exam is added, fetch its official guide once; the row shows progress meanwhile.
   const fetchGuide = async (courseId: string) => {
@@ -140,7 +135,7 @@ export default function CourseListScreen() {
     row.kind === 'exam' ? `exam${row.examDate ? ` · ${describeExamDate(row.examDate)}` : ''}` : 'course',
     `${row.materials + lecturesFor(row.id)} material${row.materials + lecturesFor(row.id) === 1 ? '' : 's'}`,
     ...(lastResult.get(row.id) ? [lastResult.get(row.id)!] : []),
-    ...(row.kind === 'exam' ? [lookingUp === row.id ? 'looking up the exam guide…' : row.guide?.found ? `${row.guide.sections} sections` : row.guide ? 'no official guide found' : ''] : []),
+    ...(row.kind === 'exam' ? [lookingUp === row.id ? 'looking up the exam guide…' : row.guide?.found ? `${row.guide.sections} sections` : ''] : []),
   ].filter(Boolean).join(' · ');
 
   return (
@@ -159,11 +154,6 @@ export default function CourseListScreen() {
       {stateQuery.isLoading ? <CourseListSkeleton /> : (
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
           {error && !addOpen ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
-          <Pressable accessibilityRole="button" accessibilityState={{ selected: focusId === null }} onPress={() => select(null)} style={({ pressed }) => [styles.row, pressed && styles.pressed]} testID="row-all-courses">
-            <Feather name="layers" size={16} color={focusId === null ? colors.primaryText : colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text style={[styles.rowName, focusId === null && { color: colors.primaryText }]}>All courses</Text><Text style={styles.caption}>Talk to the coach about any of them</Text></View>
-            {focusId === null ? <Feather name="check" size={16} color={colors.primaryText} /> : null}
-          </Pressable>
           {rows.map((row) => (
             // One tap opens the course (D-065, usability finding 3: the row used to do two things). The course you open becomes the coach's course.
             <Pressable key={row.id} accessibilityRole="button" accessibilityLabel={`Open ${row.name}`} accessibilityState={{ selected: row.id === focusId }}
@@ -173,7 +163,7 @@ export default function CourseListScreen() {
                 <Feather name={row.kind === 'exam' ? 'award' : 'book'} size={16} color={row.id === focusId ? colors.primaryText : colors.mutedForeground} />
                 <View style={styles.rowCopy}>
                   <Text numberOfLines={1} style={[styles.rowName, row.id === focusId && { color: colors.primaryText }]}>{row.name}</Text>
-                  <Text numberOfLines={1} style={styles.caption}>{detail(row)}</Text>
+                  <Text numberOfLines={2} style={styles.caption}>{detail(row)}</Text>
                 </View>
               </View>
               <View style={styles.rowOpen}><Feather name="chevron-right" size={18} color={colors.mutedForeground} /></View>
