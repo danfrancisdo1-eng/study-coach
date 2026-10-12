@@ -13,6 +13,7 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
+import { ActionButton } from '@/components/ActionButton';
 import { BUILD } from '@/constants/build';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { welcomeReplayKey } from '@/lib/welcome';
@@ -198,6 +199,8 @@ export default function CourseListScreen() {
             </Pressable>
           ))}
           {!rows.length ? <Text style={styles.empty}>No courses yet. Add one here, or just tell the coach what you're studying.</Text> : null}
+          {/* Dan (2026-10-12): a plain way to the coach right after the courses, not only the header icon. */}
+          <View style={styles.coachButton}><ActionButton label="Talk to the coach" icon="message-circle" onPress={toCoach} testID="button-talk-to-coach" /></View>
           <Text maxFontSizeMultiplier={1} style={styles.sectionTitle}>Account · build {BUILD}</Text>
           {PRIVACY_URL ? (
             <Pressable accessibilityRole="link" onPress={openPrivacy} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="link-privacy">
@@ -310,6 +313,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   rowCopy: { flex: 1, minWidth: 0 },
   rowName: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
   empty: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20, paddingVertical: 12 },
+  coachButton: { marginTop: 4, marginBottom: 8 },
   sectionTitle: { color: colors.mutedForeground, fontSize: 13, fontWeight: '700', marginTop: 18, marginBottom: 2 },
   // Account rows (Dan: "about half the size and decrease the font, it's distracting"): 36 pt with a 44-pt hit area via the row's own padding.
   compactRow: { minHeight: 34, paddingVertical: 3, gap: 8 },

@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-12 — D-068: A "Talk to the coach" button under the courses
+- Dan (phone, 2026-10-12): "Course list page needs a button after courses to speak with Coach." A full-width primary button right after the course rows goes back to the chat (the header's chat icon stays). Build stamp #14. Verified here: typecheck; mobile tests; iOS bundle export. Needs real-iPhone check. Decided by Dan.
+
+## 2026-10-12 — D-067: Material intake errors are plain sentences too
+- Dan's screenshot (phone in airplane mode): "IMG_0667.png was not saved; complete text extraction failed: ClerkJS: Network error at "https://…clerk.accounts.dev/v1/client/sessions/sess_…/tokens…" … (at ExpoModulesCore/Promise.swift:56)". D-065 had missed `components/MaterialIntake.tsx` and the old courses tab. Both now use `lib/friendly-error.ts`; the line reads "IMG_0667.png was not saved. No connection right now. Nothing was lost. Try again in a moment." A message carrying a URL or a session id is treated as technical and never shown (1 new test). Build stamp #13. Verified here: typecheck; 45/45 mobile tests; iOS bundle export. Needs real-iPhone check: airplane mode, add a photo. Decided by Dan (the D-065 rule).
+
 ## 2026-10-12 — D-066: Three wording fixes from the persona review ("focus", "Hooks", "consent card")
 - From `docs/USABILITY_REVIEW_2026-10-12.md` medium items 4 to 6; Dan: "ok go ahead".
 - (4) The chat strip's kicker reads "Studying" when a course is chosen ("Studying · Chem 102"), "Coach" when none is; the courses page subtitle already lost "focus" in D-065. (5) The course screen's "Hooks" button and its picker title read "Memory tricks"; the request sent to the coach still names hooks, so the coach's behaviour is unchanged. (6) The welcome's last line: "Your study content goes to an AI service; you'll be asked to agree before anything is sent." The web app has none of these labels, so nothing changed there. Build stamp #12.
