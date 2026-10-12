@@ -137,9 +137,12 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
               onPress={() => void choose(question, option.id)}
               style={({ pressed }) => [styles.option, mark === 'correct' && styles.optionCorrect, mark === 'wrong' && styles.optionWrong, pressed && answerable && styles.pressed, busy && answerable && styles.disabled]}
               testID={`button-live-option-${i}`}>
-              <CardText style={[styles.optionLetter, mark === 'correct' && styles.optionLetterCorrect, mark === 'wrong' && styles.optionLetterWrong]}>{'ABCDE'[i]}</CardText>
-              <CardText style={[styles.optionText, mark && styles.optionTextMarked]}>{option.text}</CardText>
-              {mark ? <Feather name={mark === 'correct' ? 'check' : 'x'} size={18} color={mark === 'correct' ? colors.correct : colors.wrong} /> : null}
+              {mark ? (
+                <View style={[styles.optionMark, mark === 'correct' ? styles.optionMarkRight : styles.optionMarkWrong]}><Feather name={mark === 'correct' ? 'check' : 'x'} size={16} color="#ffffff" /></View>
+              ) : (
+                <CardText style={styles.optionLetter}>{'ABCDE'[i]}</CardText>
+              )}
+              <CardText style={[styles.optionText, mark && styles.optionTextMarked, mark === 'correct' && { color: colors.correct }, mark === 'wrong' && { color: colors.wrong }]}>{option.text}</CardText>
             </Pressable>
           );
         })}
@@ -154,12 +157,17 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
     const correct = feedback.selectedOptionId === feedback.correctOptionId;
     return (
       <View style={styles.feedback}>
-        <View style={styles.verdict}>
-          <Feather name={correct ? 'check-circle' : 'x-circle'} size={20} color={correct ? colors.correct : colors.wrong} />
-          <CardText style={[styles.verdictText, { color: correct ? colors.correct : colors.wrong }]}>{correct ? 'Correct' : 'Not quite'}</CardText>
+        {/* Grok's feedback layout (Dan: "match it", D-063): a tinted panel headed by the verdict, then the trick as its own card. */}
+        <View style={[styles.verdictPanel, correct ? styles.verdictPanelRight : styles.verdictPanelWrong]} testID={correct ? 'panel-verdict-right' : 'panel-verdict-wrong'}>
+          <CardText style={[styles.verdictTitle, { color: correct ? colors.correct : colors.wrong }]}>{correct ? 'Correct' : 'Not this one'}</CardText>
+          <CardText style={styles.body}>{feedback.explanation}</CardText>
         </View>
-        <CardText style={styles.body}>{feedback.explanation}</CardText>
-        {feedback.hook ? <View style={styles.hook}><Feather name="zap" size={15} color={colors.hookText} /><CardText style={styles.hookText}>{feedback.hook}</CardText></View> : null}
+        {feedback.hook ? (
+          <View style={styles.hook}>
+            <View style={styles.hookHead}><Feather name="zap" size={14} color={colors.hookText} /><CardText style={styles.hookKicker}>Remember it</CardText></View>
+            <CardText style={styles.hookText}>{feedback.hook}</CardText>
+          </View>
+        ) : null}
         {reportNote(question)}
       </View>
     );
@@ -238,8 +246,8 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
       <View style={styles.live} onLayout={liveLayout(step)} testID="panel-live-feedback">
         {questionBlock(reviewing, position, false)}
         <Animated.View entering={FadeInUp.duration(280)}>{feedbackBlock(reviewing)}</Animated.View>
-        <Pressable accessibilityRole="button" disabled={busy} onPress={() => { if (last) void gradeSet(); else setReviewingId(null); }} style={[styles.primaryButton, busy && styles.disabled]} testID="button-live-next">
-          {busy ? <ActivityIndicator color={colors.primaryForeground} /> : <><CardText style={styles.primaryText}>{last ? 'See the score' : 'Next question'}</CardText><Feather name="arrow-right" size={18} color={colors.primaryForeground} /></>}
+        <Pressable accessibilityRole="button" disabled={busy} onPress={() => { if (last) void gradeSet(); else setReviewingId(null); }} style={[last ? styles.primaryButton : styles.nextButton, busy && styles.disabled]} testID="button-live-next">
+          {busy ? <ActivityIndicator color={last ? colors.primaryForeground : colors.background} /> : <><CardText style={last ? styles.primaryText : styles.nextText}>{last ? 'See the score' : 'Next question'}</CardText><Feather name="arrow-right" size={18} color={last ? colors.primaryForeground : colors.background} /></>}
         </Pressable>
       </View>
     );
@@ -327,21 +335,29 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   question: { gap: 10 },
   prompt: { ...TYPE.prompt, color: colors.foreground },
   option: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.background, paddingHorizontal: 14, paddingVertical: 12 },
-  optionCorrect: { borderColor: colors.correct, borderWidth: 2, paddingHorizontal: 13, paddingVertical: 11 },
-  optionWrong: { borderColor: colors.wrong, borderWidth: 2, paddingHorizontal: 13, paddingVertical: 11 },
+  // Tints: the theme's correct / wrong with alpha (8-digit hex), so both appearances keep their own hues.
+  optionCorrect: { borderColor: colors.correct, backgroundColor: `${colors.correct}1f` },
+  optionWrong: { borderColor: colors.wrong, backgroundColor: `${colors.wrong}1f` },
+  optionMark: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  optionMarkRight: { backgroundColor: colors.correct },
+  optionMarkWrong: { backgroundColor: colors.wrong },
   optionLetter: { ...TYPE.letter, width: 28, height: 28, borderRadius: 14, textAlign: 'center', overflow: 'hidden', backgroundColor: colors.secondary, color: colors.foreground },
   optionLetterCorrect: { backgroundColor: colors.correct, color: '#ffffff' },
   optionLetterWrong: { backgroundColor: colors.wrong, color: '#ffffff' },
   optionText: { ...TYPE.option, flex: 1, color: colors.foreground },
   optionTextMarked: { fontFamily: FONT.sansSemi },
   feedback: { gap: 10 },
-  verdict: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  verdictText: { ...TYPE.bodySemi },
+  verdictPanel: { gap: 8, padding: 14, borderRadius: 14, borderWidth: 1 },
+  verdictPanelWrong: { borderColor: colors.wrong, backgroundColor: `${colors.wrong}14` },
+  verdictPanelRight: { borderColor: colors.correct, backgroundColor: `${colors.correct}14` },
+  verdictTitle: { ...TYPE.bodySemi, fontSize: 17 },
   body: { ...TYPE.body, color: colors.foreground },
   small: { ...TYPE.small, color: colors.mutedForeground },
   muted: { ...TYPE.small, color: colors.mutedForeground },
-  hook: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, padding: 12, borderRadius: 14, backgroundColor: colors.hookBg },
-  hookText: { ...TYPE.smallSemi, flex: 1, color: colors.hookText },
+  hook: { gap: 6, padding: 14, borderRadius: 14, backgroundColor: colors.hookBg },
+  hookHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  hookKicker: { ...TYPE.kicker, color: colors.hookText },
+  hookText: { ...TYPE.bodySemi, color: colors.reviewText },
   heading: { ...TYPE.heading, color: colors.foreground },
   score: { color: colors.foreground },
   scoreBig: { ...TYPE.score, color: colors.foreground },
@@ -359,6 +375,8 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   noteStrong: { fontFamily: FONT.sansSemi },
   primaryButton: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: colors.primary, paddingHorizontal: 16 },
   primaryText: { ...TYPE.button, color: colors.primaryForeground },
+  nextButton: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: colors.foreground, paddingHorizontal: 16 },
+  nextText: { ...TYPE.button, color: colors.background },
   secondaryButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border },
   secondaryText: { ...TYPE.smallSemi, color: colors.foreground },
   skeletonWrap: { gap: 12 },

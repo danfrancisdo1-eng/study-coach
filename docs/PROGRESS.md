@@ -21,8 +21,10 @@
 
 - **Dan's phone, 13:20:** a full practice set on the live card through to the score, Light mode: it works. His notes became **D-059**: sets open over the chat (sheet, dimmed thread), no jump on answer, review under the score grouped by section, the welcome settles once. Verified here: typecheck; 40/40 mobile tests; iOS bundle export.
 
+- **D-060 to D-062** (quicker welcome swipe, compact Account rows, Outline + Questions without material, build stamp, lectures counted, Courses button on the chat) and **PR #1 merged** (`bb5c1d0`, Render deploys it). **D-063** the Grok-style feedback on the live card, on a new PR.
+
 ### In progress
-- Nothing on the branch. Waiting for Dan's next look and for PR #1 to merge (the results endpoint and the two-part sets run on Render).
+- The branch restarted from `main`; D-063 is its first commit. Dan is checking each push on the phone against the build stamp.
 
 ### Next
 - First: get the Mac onto `de55e96` (one command, see HANDOFF) and have Dan look at one question. Then "match it" for the feedback styling if he confirms.
