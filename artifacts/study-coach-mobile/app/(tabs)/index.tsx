@@ -299,16 +299,14 @@ export default function CoachHome() {
   };
 
   // The + corner (CLAUDE.md §8): opens the material sheet on the course the coach
-  // most recently worked on; with no course yet, the coach asks for one first.
+  // most recently worked on; with no course yet, the Add sheet.
   sendTextRef.current = sendText;
   const sendMessage = () => sendText(draft);
 
   const openPlus = () => {
     const course = focusCourse ?? defaultIntakeCourse(courses, messages);
-    if (!course) {
-      Alert.alert('Which course or exam?', 'Add a course or certification exam first, or tell your coach which one you are working on, and it will set it up for you.');
-      return;
-    }
+    // Usability finding 9 (D-073): with no course, + opens the Add sheet instead of an alert; with courses but none picked, the list.
+    if (!course) { router.push(courses.length ? '/course-list' : '/course-list?add=1'); return; }
     setIntakeCourseId(course.id);
   };
 
