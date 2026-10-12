@@ -5,7 +5,7 @@
  * errors get fixed wording.
  */
 const NETWORK = /network|fetch failed|failed to fetch|connection (was )?lost|timed? ?out|offline|not connected|unexpectedexception/i;
-const TECHNICAL = /exception|\.swift|\.java|\.kt\b|\(at |stack|undefined is not|cannot read propert|typeerror|syntaxerror|json parse/i;
+const TECHNICAL = /exception|\.swift|\.java|\.kt\b|\(at |stack|undefined is not|cannot read propert|typeerror|syntaxerror|json parse|https?:\/\/|sess_/i;
 
 export const MESSAGES = {
   network: 'No connection right now. Nothing was lost. Try again in a moment.',

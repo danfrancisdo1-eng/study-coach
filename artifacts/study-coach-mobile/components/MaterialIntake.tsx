@@ -6,6 +6,7 @@ import { File as ExpoFile } from 'expo-file-system';
 import { useExtractStudyMaterial, useExtractStudyWebsite, type StudyMaterialExtraction } from '@workspace/api-client-react';
 import { selectProviderMaterial } from '@/lib/material-file-provider';
 import { useColors } from '@/hooks/useColors';
+import { friendlyError } from '@/lib/friendly-error';
 import { ActionButton } from '@/components/ActionButton';
 
 /**
@@ -35,10 +36,8 @@ function id(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
-function readableError(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return 'Something went wrong. Please try again.';
-}
+// One plain sentence, never a native exception or a URL (D-065, D-067).
+const readableError = (problem: unknown): string => friendlyError(problem);
 
 function MaterialExtractionTask({ upload, onComplete, onFailure }: {
   upload: PendingMaterial;
@@ -148,7 +147,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
       setMaterialUpload({ id: id(), uri: picked.uri, filename: fileName, courseId });
     } catch (problem) {
       if (!mounted.current) return;
-      setMaterialNotice(`The file was not saved: ${readableError(problem)}`);
+      setMaterialNotice(`The file was not saved. ${readableError(problem)}`);
       onError?.(problem);
     }
   };
@@ -177,7 +176,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
       setMaterialNotice('Reading your photo…');
       setMaterialUpload({ id: id(), uri: asset.uri, filename, courseId });
     } catch (problem) {
-      if (mounted.current) setMaterialNotice(`Could not open Photos: ${readableError(problem)}`);
+      if (mounted.current) setMaterialNotice(`Could not open Photos. ${readableError(problem)}`);
     }
   };
 
@@ -213,7 +212,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
     setMaterialUploading(false);
     setMaterialUpload(null);
     setExtractedMaterial(null);
-    setMaterialNotice(`${filename} was not saved; complete text extraction failed: ${readableError(problem)}${pdfCoverage}`);
+    setMaterialNotice(`${filename} was not saved. ${readableError(problem)}${pdfCoverage}`);
   };
 
   const saveExtractedMaterial = async () => {

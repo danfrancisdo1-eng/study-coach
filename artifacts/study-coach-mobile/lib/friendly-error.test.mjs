@@ -24,3 +24,9 @@ test('technical text never reaches the student', () => {
   assert.equal(friendlyError(null), MESSAGES.generic);
   assert.equal(friendlyError(new Error('Your account is still loading. Try again in a moment.')), 'Your account is still loading. Try again in a moment.');
 });
+
+test('a sign-in token failure while offline shows the plain sentence, never the URL or session id (D-067)', () => {
+  const clerk = new Error('ClerkJS: Network error at "https://safe-firefly-7699.clerk.accounts.dev/v1/client/sessions/sess_abc/tokens?_is_native=1" - Error: fetch failed: UnexpectedException: The Internet connection appears to be offline. (at ExpoModulesCore/Promise.swift:56)');
+  assert.equal(friendlyError(clerk), MESSAGES.network);
+  assert.equal(friendlyError(new Error('Bad thing at https://example.com/x')), MESSAGES.generic);
+});

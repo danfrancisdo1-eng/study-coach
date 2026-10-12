@@ -47,6 +47,7 @@ import {
   type StudyState,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { friendlyError } from '@/lib/friendly-error';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 
 type Course = { id: string; name: string; code?: string };
@@ -64,10 +65,8 @@ function id(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
-function readableError(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return 'Something went wrong. Please try again.';
-}
+// One plain sentence, never a native exception or a URL (D-065, D-067).
+const readableError = (problem: unknown): string => friendlyError(problem);
 
 function objectRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? value as Record<string, unknown> : {};
