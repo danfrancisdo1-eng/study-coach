@@ -11,7 +11,7 @@ Method (D-064, option 1): five personas look at the real screens Dan sent from h
 
 ## Findings, ranked
 
-### Critical (a persona quits or does damage)
+### Critical (a persona quits or does damage) — all three fixed in D-065, build #10
 1. **The sign-out icon in the chat header reads as "exit this screen".** Priya and Ellen both tap the arrow-out-of-a-box at the top right to go back and get signed out; the next launch then runs the whole tour again (D-054). Fix: sign out lives in Account only; the header's right slot is the Courses button (now there) and nothing else. *Chat header.*
 2. **Raw error text reaches the student.** "fetch failed: UnexpectedException: The network connection was lost. (at ExpoModulesCore/Promise.swift:56)" and "The conversation changed on another device. Reload to see the latest." with no way to reload. Dave stops dead. Fix: map network failures to "No connection. Your answers are saved; try again." and make the stale-conversation line a tappable "Reload". *Chat composer error line.*
 3. **One row, two taps, two meanings on the courses page.** Tapping the name "makes it the coach's focus" and returns to the chat; the chevron opens the course. Maria taps the name expecting the course and lands back in the chat, twice. Fix: one tap on the row opens the course; the course screen already has "Talk to your coach" style actions; the focus follows the course you opened. The "All courses" row and the checkmark go. *Courses page.*

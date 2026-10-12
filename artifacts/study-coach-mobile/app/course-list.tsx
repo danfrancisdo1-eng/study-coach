@@ -12,6 +12,7 @@ import {
   getGetStudyStateQueryKey, getListStudySessionsQueryKey, useDeleteAccount, useGetStudyState, useListStudySessions, useLookupExamGuide, usePutStudyState, getListLecturesQueryKey, useListLectures,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { friendlyError } from '@/lib/friendly-error';
 import { BUILD } from '@/constants/build';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { welcomeReplayKey } from '@/lib/welcome';
@@ -26,11 +27,8 @@ import { CourseListSkeleton } from '@/components/Skeleton';
 type StateRecord = Record<string, unknown>;
 const record = (value: unknown): StateRecord => (value && typeof value === 'object' ? value as StateRecord : {});
 const newId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
-const readable = (problem: unknown): string => {
-  const data = (problem as { data?: { error?: unknown } }).data;
-  if (data && typeof data.error === 'string') return data.error;
-  return problem instanceof Error ? problem.message : 'Something went wrong. Please try again.';
-};
+// Plain sentences only, never a stack trace (D-065).
+const readable = (problem: unknown): string => friendlyError(problem);
 
 type Row = { id: string; name: string; kind: 'course' | 'exam'; examDate?: string; materials: number; guide: { found: boolean; sections: number } | null };
 
@@ -171,7 +169,7 @@ export default function CourseListScreen() {
         ) : (
           <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
         )}
-        <View style={styles.headerCopy}><Text style={styles.title}>Courses & exams</Text><Text style={styles.caption}>{atRoot ? 'Tap one to study it with the coach' : "Tap one to make it the coach's focus"}</Text></View>
+        <View style={styles.headerCopy}><Text style={styles.title}>Courses & exams</Text><Text style={styles.caption}>Tap one to open it</Text></View>
         <Pressable accessibilityRole="button" onPress={() => setAddOpen(true)} style={styles.addButton} testID="button-add-course">
           <Feather name="plus" size={16} color={colors.primaryText} /><Text style={styles.addText}>Add</Text>
         </Pressable>
@@ -181,23 +179,23 @@ export default function CourseListScreen() {
           {error && !addOpen ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
           <Pressable accessibilityRole="button" accessibilityState={{ selected: focusId === null }} onPress={() => select(null)} style={({ pressed }) => [styles.row, pressed && styles.pressed]} testID="row-all-courses">
             <Feather name="layers" size={16} color={focusId === null ? colors.primaryText : colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text style={[styles.rowName, focusId === null && { color: colors.primaryText }]}>All courses</Text><Text style={styles.caption}>The coach asks which one when it matters</Text></View>
+            <View style={styles.rowCopy}><Text style={[styles.rowName, focusId === null && { color: colors.primaryText }]}>All courses</Text><Text style={styles.caption}>Talk to the coach about any of them</Text></View>
             {focusId === null ? <Feather name="check" size={16} color={colors.primaryText} /> : null}
           </Pressable>
           {rows.map((row) => (
-            <View key={row.id} style={[styles.row, row.id === focusId && styles.rowSelected]} testID={`row-course-${row.id}`}>
-              <Pressable accessibilityRole="button" accessibilityLabel={`Coach on ${row.name}`} accessibilityState={{ selected: row.id === focusId }} onPress={() => select(row.id)} style={({ pressed }) => [styles.rowMain, pressed && styles.pressed]} testID={`button-focus-${row.id}`}>
+            // One tap opens the course (D-065, usability finding 3: the row used to do two things). The course you open becomes the coach's course.
+            <Pressable key={row.id} accessibilityRole="button" accessibilityLabel={`Open ${row.name}`} accessibilityState={{ selected: row.id === focusId }}
+              onPress={() => { setFocusId(row.id); if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, row.id).catch(() => {}); router.push({ pathname: '/course/[courseId]', params: { courseId: row.id } }); }}
+              style={({ pressed }) => [styles.row, row.id === focusId && styles.rowSelected, pressed && styles.pressed]} testID={`row-course-${row.id}`}>
+              <View style={styles.rowMain}>
                 <Feather name={row.kind === 'exam' ? 'award' : 'book'} size={16} color={row.id === focusId ? colors.primaryText : colors.mutedForeground} />
                 <View style={styles.rowCopy}>
                   <Text numberOfLines={1} style={[styles.rowName, row.id === focusId && { color: colors.primaryText }]}>{row.name}</Text>
                   <Text numberOfLines={1} style={styles.caption}>{detail(row)}</Text>
                 </View>
-                {row.id === focusId ? <Feather name="check" size={16} color={colors.primaryText} /> : null}
-              </Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel={`Open ${row.name}`} onPress={() => router.push({ pathname: '/course/[courseId]', params: { courseId: row.id } })} style={styles.rowOpen} testID={`button-open-${row.id}`}>
-                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-              </Pressable>
-            </View>
+              </View>
+              <View style={styles.rowOpen}><Feather name="chevron-right" size={18} color={colors.mutedForeground} /></View>
+            </Pressable>
           ))}
           {!rows.length ? <Text style={styles.empty}>No courses yet. Add one here, or just tell the coach what you're studying.</Text> : null}
           <Text maxFontSizeMultiplier={1} style={styles.sectionTitle}>Account · build {BUILD}</Text>

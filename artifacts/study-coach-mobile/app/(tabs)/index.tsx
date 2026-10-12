@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, FlatList, Keyboard, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useAuth, useClerk } from '@clerk/expo';
+import { useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ import {
   type HomeChat, type HomeChatMessage,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { friendlyError } from '@/lib/friendly-error';
 import { ActionButton } from '@/components/ActionButton';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
 import { defaultIntakeCourse, type IntakeCourse } from '@/lib/intake-course';
@@ -38,14 +39,8 @@ const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
 
 const AI_NOTICE = 'Study Coach sends your messages, your course names, selected course materials and your quiz answers to Anthropic Claude (and OpenAI for lecture transcription) to coach you, generate practice and explain results. AI may make mistakes; review explanations. You can change this choice at any time. Nothing is sent to a family member or other recipient. Press and hold any coach reply to report it.';
 
-function readableError(problem: unknown): string {
-  if (problem && typeof problem === 'object') {
-    const data = (problem as { data?: { error?: unknown } }).data;
-    if (data && typeof data.error === 'string') return data.error;
-    if (typeof (problem as { message?: unknown }).message === 'string') return (problem as { message: string }).message;
-  }
-  return 'Something went wrong. Please try again.';
-}
+// Plain sentences only, never a stack trace (D-065, usability review finding 2). A 409 already refetched the chat, so it says so.
+const readableError = (problem: unknown): string => friendlyError(problem);
 
 type StateRecord = Record<string, unknown>;
 const record = (value: unknown): StateRecord => (value && typeof value === 'object' ? value as StateRecord : {});
@@ -74,7 +69,6 @@ function materialsFrom(state: unknown, courseId: string): SavedMaterial[] {
 
 export default function CoachHome() {
   const { isLoaded, isSignedIn, userId } = useAuth();
-  const { signOut } = useClerk();
   const colors = useColors();
   const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
@@ -426,12 +420,9 @@ export default function CoachHome() {
           <Text style={styles.brand}>Study Coach</Text>
           <Text numberOfLines={1} style={styles.headerSub}>Your coach</Text>
         </View>
-        {/* Dan: "need a Return to course list button" on the chat, not only the strip. */}
+        {/* Dan: "need a Return to course list button" on the chat. Sign out is not here: it read as "go back" (D-065); it lives in Account. */}
         <Pressable accessibilityLabel="Return to course list" accessibilityRole="button" testID="button-courses" onPress={openCourses} style={styles.iconButton}>
           <Feather name="list" size={20} color={colors.foreground} />
-        </Pressable>
-        <Pressable accessibilityLabel="Sign out" accessibilityRole="button" testID="button-sign-out" onPress={() => void signOut()} style={styles.iconButton}>
-          <Feather name="log-out" size={18} color={colors.foreground} />
         </Pressable>
       </View>
 

@@ -10,6 +10,7 @@ import {
   deleteCourse, getGetCourseResultsQueryKey, getGetStudyStateQueryKey, getListLecturesQueryKey, getListStudySessionsQueryKey, useGetCourseResults, useGetStudyState, useListLectures, useListStudySessions, useLookupExamGuide, usePutStudyState,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { friendlyError } from '@/lib/friendly-error';
 import { ActionButton } from '@/components/ActionButton';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
@@ -27,11 +28,8 @@ import { ALL_TOPICS, NO_MATERIAL_NOTE_KEY, studyRequest, topicChoices, type Stud
 
 type StateRecord = Record<string, unknown>;
 const record = (value: unknown): StateRecord => (value && typeof value === 'object' ? value as StateRecord : {});
-const readable = (problem: unknown): string => {
-  const data = (problem as { data?: { error?: unknown } }).data;
-  if (data && typeof data.error === 'string') return data.error;
-  return problem instanceof Error ? problem.message : 'Something went wrong. Please try again.';
-};
+// Plain sentences only, never a stack trace (D-065).
+const readable = (problem: unknown): string => friendlyError(problem);
 
 export default function CourseScreen() {
   const { courseId, intake } = useLocalSearchParams<{ courseId: string; intake?: string }>();
@@ -131,7 +129,12 @@ export default function CourseScreen() {
   const startWithCoach = (action: StudyAction, topic: string | null) => {
     setPicker(null);
     if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, courseId!).catch(() => {});
-    router.navigate({ pathname: '/(tabs)', params: { send: studyRequest(action, topic), courseId: courseId! } });
+    router.replace({ pathname: '/(tabs)', params: { send: studyRequest(action, topic), courseId: courseId! } });
+  };
+  // The chat on this course, with nothing sent (D-065: opening a course no longer lands in the chat by itself).
+  const talkToCoach = () => {
+    if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, courseId!).catch(() => {});
+    router.replace('/(tabs)');
   };
   const toList = () => { if (router.canGoBack()) router.back(); else router.replace('/course-list'); };
   // Questions without material (D-060): the first tap on this phone shows a small red note and a Proceed; later taps go straight to the coach.
@@ -170,6 +173,7 @@ export default function CourseScreen() {
             <Text style={styles.kicker}>Study with the coach</Text>
             <View style={styles.actions}>
               <ActionButton label="Practice questions" icon="edit-3" onPress={() => startWithCoach('practice', null)} testID="button-action-practice" />
+              <ActionButton label="Talk to the coach" icon="message-circle" secondary onPress={talkToCoach} testID="button-action-chat" />
               <ActionButton label="Simulated exam" icon="clock" secondary onPress={() => startWithCoach('exam', null)} testID="button-action-exam" />
               <ActionButton label="Flashcards" icon="layers" secondary onPress={() => setPicker('flashcards')} testID="button-action-flashcards" />
               <ActionButton label="Hooks" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
