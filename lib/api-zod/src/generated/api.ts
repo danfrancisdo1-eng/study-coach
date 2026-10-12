@@ -596,7 +596,6 @@ export const CreateStudySessionResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable(),
   "flashcards": zod.union([zod.object({
   "createdAt": zod.coerce.date(),
   "completedAt": zod.coerce.date().nullable(),
@@ -836,7 +835,6 @@ export const GetStudySessionResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable(),
   "flashcards": zod.union([zod.object({
   "createdAt": zod.coerce.date(),
   "completedAt": zod.coerce.date().nullable(),
@@ -1442,7 +1440,6 @@ export const CheckInStudySessionResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable(),
   "flashcards": zod.union([zod.object({
   "createdAt": zod.coerce.date(),
   "completedAt": zod.coerce.date().nullable(),
@@ -1663,7 +1660,6 @@ export const SendStudyMessageResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable(),
   "flashcards": zod.union([zod.object({
   "createdAt": zod.coerce.date(),
   "completedAt": zod.coerce.date().nullable(),
@@ -1880,7 +1876,6 @@ export const GenerateStudyQuizResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable(),
   "flashcards": zod.union([zod.object({
   "createdAt": zod.coerce.date(),
   "completedAt": zod.coerce.date().nullable(),
@@ -2098,7 +2093,6 @@ export const SaveStudyAnswerResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable(),
   "flashcards": zod.union([zod.object({
   "createdAt": zod.coerce.date(),
   "completedAt": zod.coerce.date().nullable(),
@@ -2321,7 +2315,6 @@ export const FlagStudyQuestionResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable(),
   "flashcards": zod.union([zod.object({
   "createdAt": zod.coerce.date(),
   "completedAt": zod.coerce.date().nullable(),
@@ -2538,7 +2531,6 @@ export const ReviewFlashcardResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable(),
   "flashcards": zod.union([zod.object({
   "createdAt": zod.coerce.date(),
   "completedAt": zod.coerce.date().nullable(),
@@ -2750,7 +2742,6 @@ export const GradeStudyQuizResponse = zod.object({
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
-  "reportText": zod.string().nullable(),
   "flashcards": zod.union([zod.object({
   "createdAt": zod.coerce.date(),
   "completedAt": zod.coerce.date().nullable(),

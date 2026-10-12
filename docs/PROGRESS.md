@@ -28,13 +28,14 @@
 - **D-067** intake errors are plain sentences (Dan's airplane-mode screenshot showed a Clerk URL and a session id); **D-068** "Talk to the coach" button under the courses; **D-069** "See the welcome again" shows once and never covers a course-screen request (Flashcards landed on the welcome); **D-070** the exam sheet: Grade from any question once all are answered, marks never block it, "You scored 20%: 2 of 10 right.", misses in the app fonts and Grok's layout. Usability review round 2 from screenshots 1 to 9. Build #16. Verified here: typecheck; 48/48 mobile tests; iOS bundle export.
 - **Dan on the phone (2026-10-12 evening):** extraction works online; "that all looks good" after #16.
 - **D-079 to D-087:** Sign out always visible; an Account page; sign-up headline "Find the flaws. Fix the facts." (Dan's); consent card in three lines (phone and web); 13+ nudge; status-bar backing; sign-in title; course list tidy; welcome/tour copy; practice score line. Screenshots 11 to 15 reviewed (round 3). Build #32. Verified here: typecheck; 134/134 tests; iOS bundle export.
+- **D-088** the session-report sharing ("family member") feature removed from server, API, web and phone; privacy page and SPEC updated. Build #33.
 - **D-071 to D-078** (Dan: "fix 7-10 and the new findings"): exam dates as typed ("Nov 14"); Account folded on the course list; + with no course opens Add; coach.v16 chips answer the coach's question (evals coach 38/38 twice; needs the merge to reach the phone); one Delete course; missed bars; set times; plain intake wording with the file name. Build #23. Verified here: typecheck; 133/133 tests; iOS bundle export. **Needs real-iPhone check.**
 
 ### In progress
 - Screenshots 10 to 15 still to take (exam bubbles seen; 11 to 13 a brand-new account: sign-up, welcome, consent card; 14 and 15 Dark and Light). Run the personas on them and add to the review.
 
 ### Next
-- Remove the session-report sharing feature (the "family member" remnant: server `reportText`, web share preview, the old phone screen's Share): plan written, waiting on Dan's OK.
+- PR #2 holds D-063 to D-088 (incl. coach.v16 and the reportText removal, which need the merge to reach Render).
 - Web app has no Delete my account (gap since D-046).
 - Dan: rotate the OpenAI key in `artifacts/api-server/.env` (a stray unnamed line printed it in the session) and delete that line.
 - PR #2 (draft) holds D-063 to D-070; merge when Dan says.

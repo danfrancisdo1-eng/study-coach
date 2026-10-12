@@ -34,10 +34,6 @@ export type QuestionFeedback = {
   answerNote?: string;
 };
 export type ReviewItem = { id: string; concept: string; dueLabel?: string; note?: string };
-export type SessionReport = {
-  /** The exact, server-approved report string shown to the student and shared unchanged. */
-  text: string;
-};
 
 /**
  * Controlled authenticated study-session surface. Parent owns the authenticated identity,
@@ -47,7 +43,7 @@ export type SessionReport = {
 export type AccountExperienceProps = {
   courses: AccountCourse[];
   selectedCourseId: string | null;
-  phase: 'setup' | 'conversation' | 'quiz' | 'grading' | 'review' | 'report';
+  phase: 'setup' | 'conversation' | 'quiz' | 'grading' | 'review';
   sessionStarted: boolean;
   /** 'pending' is shown only once per session; parent advances to 'adding' or 'complete'. */
   materialsCheck: 'pending' | 'adding' | 'complete';
@@ -66,7 +62,6 @@ export type AccountExperienceProps = {
   quizTutorReply?: SessionTurn | null;
   feedback: QuestionFeedback[];
   reviewSchedule: ReviewItem[];
-  report?: SessionReport;
   /** Optional result text from the grader. Never calculated by this component. */
   resultSummary?: string;
   /** True for a newly generated retest rather than reusing the previous questions. */
@@ -98,9 +93,6 @@ export type AccountExperienceProps = {
   onMarkAssisted?: (questionId: string, assisted: boolean) => void;
   onSubmitQuiz: () => void;
   onRequestRetest: () => void;
-  onShowReport: () => void;
-  onShareReport: (exactText: string) => void;
-  onDismissReport: () => void;
   onRetry: () => void;
 };
 
@@ -115,12 +107,12 @@ export function AccountExperience(props: AccountExperienceProps) {
   const {
     courses, selectedCourseId, phase, sessionStarted, materialsCheck, aiConsent, materials,
     turns, questions, answers, assistedAnswers, qualityNotice, invalidItemCount = 0, flaggedQuestionIds = [],
-    quizTutorReply, feedback, reviewSchedule, report, resultSummary, isRetest,
+    quizTutorReply, feedback, reviewSchedule, resultSummary, isRetest,
     busy = false, error, onSelectCourse, onCreateCourse, onRenameCourse, onStartSession, examGuides = {}, onRefreshExamGuide, memorySheets = {},
     savedMaterialsByCourse = {}, onDeleteMaterial, onDeleteCourse,
     onMaterialsChoice, onUploadMaterials, onContinueMaterials, onConsentChange, onSendTurn,
-    onReadyForQuiz, onSelectAnswer, onFlagQuestion, onAskDuringQuiz, onMarkAssisted, onSubmitQuiz, onRequestRetest, onShowReport,
-    onShareReport, onDismissReport, onRetry,
+    onReadyForQuiz, onSelectAnswer, onFlagQuestion, onAskDuringQuiz, onMarkAssisted, onSubmitQuiz, onRequestRetest,
+    onRetry,
   } = props;
   const [newCourse, setNewCourse] = useState('');
   const [newKind, setNewKind] = useState<'course' | 'exam'>('course');
@@ -141,7 +133,7 @@ export function AccountExperience(props: AccountExperienceProps) {
   const canSubmit = questions.length > 0 && answered === answerableQuestions.length && !busy;
   const canStart = !!selected && aiConsent && !busy;
   const status = phase === 'grading' ? 'Checking answers' : phase === 'quiz' ? 'Practice in progress' :
-    phase === 'report' ? 'Report ready' : sessionStarted ? 'Session in progress' : 'Ready when you are';
+    sessionStarted ? 'Session in progress' : 'Ready when you are';
 
   function createCourse(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -181,7 +173,7 @@ export function AccountExperience(props: AccountExperienceProps) {
     <header className="ae-header">
       <div className="ae-header-copy">
         <span className="ae-kicker">YOUR STUDY SPACE / SESSION</span>
-        <h1 className="ae-title">{phase === 'report' ? 'Keep what you learned.' : 'Let’s work it through.'}</h1>
+        <h1 className="ae-title">Let’s work it through.</h1>
         <p className="ae-muted ae-intro">Start with an explanation, ask what you need, then practice until the idea sticks. Your work can pick up across your signed-in devices.</p>
       </div>
       <span className="ae-state" data-testid="status-session">{status}</span>
@@ -401,19 +393,9 @@ export function AccountExperience(props: AccountExperienceProps) {
           </article>) : <p className="ae-muted" data-testid="text-no-feedback">Feedback will appear when grading is complete.</p>}
           <div className="ae-row" style={{ marginTop: 20 }}>
             {!isRetest && <button type="button" className="ae-button ae-button--primary" onClick={onRequestRetest} disabled={busy || !feedback.length} data-testid="button-fresh-retest">Try a fresh retest <ArrowRight size={16} /></button>}
-            <button type="button" className="ae-button ae-button--outline" onClick={onShowReport} disabled={busy} data-testid="button-view-report">View report</button>
           </div>
         </div>}
 
-        {phase === 'report' && <div className="ae-card" data-testid="panel-report-preview">
-          <span className="ae-kicker">PREVIEW BEFORE SHARING</span><h2 className="ae-heading" style={{ marginTop: 11 }}>Your session report.</h2>
-          <p className="ae-muted">This is the exact text that will be shared. Nothing is sent automatically and no recipient is preselected.</p>
-          {report ? <><pre className="ae-report" data-testid="text-exact-report">{report.text}</pre>
-            <div className="ae-row" style={{ marginTop: 19 }}>
-              <button type="button" className="ae-button ae-button--primary" onClick={() => onShareReport(report.text)} disabled={busy} data-testid="button-share-report"><Send size={16} /> Share</button>
-              <button type="button" className="ae-button ae-button--outline" onClick={onDismissReport} disabled={busy} data-testid="button-not-now-report">Not now</button>
-            </div></> : <div className="ae-callout" data-testid="text-report-unavailable">The report is not ready yet. No result will be shown until it is available.</div>}
-        </div>}
       </div>
 
       <aside className="ae-aside" aria-label="Session context">

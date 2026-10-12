@@ -924,7 +924,7 @@ router.post("/study/sessions", async (req, res): Promise<void> => {
   const session: Session = {
     id, courseId: (req.body as JsonObject).courseId as string, topic: (req.body as JsonObject).topic as string,
     minutes: (req.body as JsonObject).minutes as number, createdAt: now, status: "active", checkIn: null,
-    messages: [], quiz: null, attempts: [], scores: { diagnostic: null, targeted: null }, reviewSchedule: [], reportText: null,
+    messages: [], quiz: null, attempts: [], scores: { diagnostic: null, targeted: null }, reviewSchedule: [],
     _version: 1,
   };
   const { _version, ...storedSession } = session;
@@ -1108,7 +1108,6 @@ router.post("/study/sessions/:id/quiz", async (req, res): Promise<void> => {
       return;
     }
     session.quiz = quiz;
-    session.reportText = null;
     session.status = "active";
     if (!await saveSession(session, owner(req))) {
       res.status(409).json({ error: "Session changed on another device. Please retry quiz generation." });
@@ -1339,27 +1338,6 @@ router.post("/study/sessions/:id/grade", async (req, res): Promise<void> => {
     });
   }
   session.reviewSchedule = [...session.reviewSchedule, ...review];
-  const skipped = valid.length - answered.length;
-  const missedConcepts = [...new Set(answered
-    .filter((question) => question.answers.at(-1)?.optionId !== question.correctOptionId)
-    .map((question) => question.concept))];
-  const formatScore = (value: Record<string, unknown> | null): string => {
-    if (!value) return "not yet graded";
-    return `${value.correct}/${value.answered} answered valid (${value.percent}%)`;
-  };
-  const remediationStatus = session.quiz.mode === "targeted"
-    ? "targeted retest completed"
-    : missedConcepts.length
-      ? "not yet completed; missed concepts need focused review"
-      : "no missed answered concepts identified";
-  const nextStep = missedConcepts.length
-    ? session.quiz.mode === "diagnostic"
-      ? "review the missed concepts, then take the targeted retest"
-      : "review the remaining missed concepts in a new focused session"
-    : session.quiz.mode === "diagnostic" && score.invalidItems === 0 && skipped === 0
-      ? "continue to the next topic or scheduled review"
-      : "review any excluded or unanswered questions, then choose the next topic";
-  session.reportText = `Course: ${session.courseId}. Topic: ${session.topic}. Diagnostic score: ${formatScore(session.scores.diagnostic)}. Targeted retest score: ${formatScore(session.scores.targeted)}. Latest ${session.quiz.mode === "diagnostic" ? "diagnostic" : "targeted retest"} score: ${formatScore(score)}. Score denominator includes answered valid questions only; ${skipped} unanswered and ${score.invalidItems} invalid or ambiguous item(s) excluded, including ${learnerReportedCount} learner report(s). Automated AI checks do not guarantee factual correctness. Reported questions are re-checked by an independent model: a confirmed key still counts; a wrong or unclear key is excluded and the score recomputed. Missed concepts: ${missedConcepts.join(", ") || "none among answered valid questions"}. Remediation status: ${remediationStatus}. Next step: ${nextStep}.`;
   session.status = "completed";
   if (!await saveSession(session, owner(req))) {
     const current = await getSession(session.id, owner(req));

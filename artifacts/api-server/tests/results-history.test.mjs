@@ -10,7 +10,7 @@ const q = (concept, right, extra = {}) => ({
 });
 const session = (createdAt, topic, attempts, flashcards = null) => ({
   id: `s-${createdAt}`, courseId: 'bio', topic, minutes: 15, createdAt, status: 'completed', checkIn: null, messages: [],
-  quiz: attempts.at(-1) ?? null, attempts, scores: { diagnostic: null, targeted: null }, reviewSchedule: [], reportText: null, flashcards,
+  quiz: attempts.at(-1) ?? null, attempts, scores: { diagnostic: null, targeted: null }, reviewSchedule: [], flashcards,
 });
 const graded = (gradedAt, kind, questions) => ({ mode: 'diagnostic', kind, expectedCount: questions.length, questions, sourceStatus: {}, invalidItemCount: 0, grade: { gradedAt } });
 

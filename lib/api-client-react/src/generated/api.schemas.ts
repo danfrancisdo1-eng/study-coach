@@ -398,8 +398,6 @@ export interface StudySession {
   attempts: StudyQuiz[];
   scores: StudySessionScores;
   reviewSchedule: StudySessionReviewScheduleItem[];
-  /** @nullable */
-  reportText: string | null;
   flashcards?: StudyFlashcardDeck | null;
 }
 

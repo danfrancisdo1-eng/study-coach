@@ -684,7 +684,7 @@ components:
     StudySession:
       type: object
       description: Public session payload. Never includes correct option IDs, answer indices, or grading keys.
-      required: [id, courseId, topic, minutes, createdAt, status, checkIn, messages, quiz, attempts, scores, reviewSchedule, reportText]
+      required: [id, courseId, topic, minutes, createdAt, status, checkIn, messages, quiz, attempts, scores, reviewSchedule]
       properties:
         id: { type: string, format: uuid }
         courseId: { type: string }
@@ -717,7 +717,6 @@ components:
             diagnostic: { oneOf: [{ $ref: "#/components/schemas/StudyScore" }, { type: "null" }] }
             targeted: { oneOf: [{ $ref: "#/components/schemas/StudyScore" }, { type: "null" }] }
         reviewSchedule: { type: array, items: { type: object, additionalProperties: true } }
-        reportText: { type: ["string", "null"] }
         flashcards: { oneOf: [{ $ref: "#/components/schemas/StudyFlashcardDeck" }, { type: "null" }] }
     CourseResults:
       type: object

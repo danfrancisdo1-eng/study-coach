@@ -7,7 +7,6 @@ import {
   Modal,
   ScrollView,
   Pressable,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -534,15 +533,6 @@ function StudyCoach() {
     }
   };
 
-  const shareExactReport = async () => {
-    if (!session?.reportText) return;
-    try {
-      await Share.share({ message: session.reportText });
-    } catch (problem) {
-      handleError(problem);
-    }
-  };
-
   const openHome = () => {
     setSessionId(null);
     setSessionOwnerId(null);
@@ -555,7 +545,6 @@ function StudyCoach() {
     setMaterialsOpen(false);
   };
 
-  const reportText = session?.reportText;
   const sessionSummaries = sessionsQuery.data?.sessions ?? [];
   const statusMessage = error || (stateQuery.isError ? readableError(stateQuery.error) : '');
 
@@ -778,15 +767,6 @@ function StudyCoach() {
               <Text style={styles.muted}>A targeted retest uses a new question set. Previous answers remain part of your session history.</Text>
               <ActionButton label="Create a fresh retest" icon="repeat" onPress={() => void generatePractice('targeted')} disabled={busy || !savedState.aiConsent || reviewScheduleNeedsSync} testID="button-fresh-retest" />
               {reviewScheduleNeedsSync ? <Text style={styles.caption}>Sync the saved review schedule before starting another attempt.</Text> : null}
-            </View>
-          ) : null}
-          {reportText ? (
-            <View style={styles.card}>
-              <Text style={styles.kicker}>PREVIEW BEFORE SHARING</Text>
-              <Text style={styles.cardTitle}>Your session report</Text>
-              <Text style={styles.caption}>This is the exact server-approved text. Nothing is sent automatically.</Text>
-              <Text selectable style={styles.reportText} testID="text-exact-report">{reportText}</Text>
-              <ActionButton label="Share report" icon="share" onPress={shareExactReport} disabled={busy} testID="button-share-report" />
             </View>
           ) : null}
           <ActionButton label="Back to your study space" onPress={openHome} secondary testID="button-return-home" />
@@ -1226,7 +1206,6 @@ function createStyles(colors: Colors) {
   scoreCard: { borderRadius: 20, padding: 21, backgroundColor: colors.foreground, gap: 7 },
   score: { color: colors.primary, fontSize: 48, fontWeight: '700', letterSpacing: -2 },
   feedbackResult: { fontSize: 14, fontWeight: '700' },
-  reportText: { color: colors.foreground, fontSize: 12, lineHeight: 18, padding: 12, borderRadius: 12, backgroundColor: colors.secondary },
   progressTrack: { height: 7, backgroundColor: colors.muted, overflow: 'hidden', borderRadius: 10, marginTop: 3 },
   progressFill: { height: '100%', borderRadius: 10 },
   currentQuestion: { borderColor: colors.primary },

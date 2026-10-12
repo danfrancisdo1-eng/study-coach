@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-12 — D-088: The session-report sharing ("family member") feature is removed
+- Dan: "lets remove the family member function. not necessary. thats a remnant of the initial build which was supposed to be just for my son danny and I." Then "yes. trim the fat."
+- Removed: the server no longer writes `reportText` after grading (and the report-only helpers went with it); the field is gone from `openapi.yaml` and the regenerated clients; the web signed-in page's "View report" / "Preview before sharing" / Share step; the classic web report page's "Would you like to send your results to Dad?" panel (the results themselves stay); the old phone course screen's "Share report" card. The privacy page and `docs/PRIVACY_DATA.md` now say there is no sharing feature; SPEC drops the optional guardian report (this reverses the replit.md "optional guardian sharing" direction). No database change: old sessions keep a field nobody reads. No files deleted.
+- Verified here: typecheck (all packages); 134/134 tests; iOS bundle export. Server change reaches the phone after the merge deploys Render. Build stamp #33. Decided by Dan.
+
 ## 2026-10-12 — D-082 to D-087: Review findings 11, 13 to 15, 23, 26 to 30
 - Dan: "23 go, 26 go, 27 remove the family member function, 28-30 go, 11-16 go except leave the build number in place; we will remove it before public."
 - D-082 (27): the AI consent card is three short lines on the phone and the web, naming Anthropic Claude and OpenAI (transcription); the family-member sentence is gone (also from the old phone screen). The web card did not name the provider before; it does now. The session-report sharing feature behind that sentence is a separate removal, planned with Dan first.

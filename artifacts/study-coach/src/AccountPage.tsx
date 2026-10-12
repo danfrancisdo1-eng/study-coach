@@ -76,7 +76,6 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
   const [intakeFiles, setIntakeFiles] = useState<File[]>([]);
   const [intakeCourseId, setIntakeCourseId] = useState<string | null>(null); // course for material added from the home chat
   const [assistedDrafts, setAssistedDrafts] = useState<Record<string, boolean>>({});
-  const [showReport, setShowReport] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -186,7 +185,6 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
     note: item.result === 'missed' ? 'Try recall again' : 'Keep practicing',
   }));
   const phase = !current || !current.checkIn ? 'setup' :
-    showReport && current.reportText ? 'report' :
     current.quiz?.grade ? 'review' :
     current.quiz ? 'quiz' :
     current.messages.length ? 'conversation' : 'setup';
@@ -207,7 +205,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
     </div>
     <div className="notice" style={{ marginBottom: 18 }}>Want to record or import a lecture? Open the browser-only lecture desk above. Its audio, corrected transcripts, and source-linked practice questions are separate from this account’s courses and materials; they do not sync between devices.</div>
     {sessionsQuery.data?.sessions.length ? <label className="field" style={{ maxWidth: 500, marginBottom: 16 }}>Your saved sessions
-      <select value={sessionId ?? ''} onChange={event => { setIntakeFiles([]); setSessionId(event.target.value || null); setShowReport(false); setAdding(false); }} data-testid="select-saved-session">
+      <select value={sessionId ?? ''} onChange={event => { setIntakeFiles([]); setSessionId(event.target.value || null); setAdding(false); }} data-testid="select-saved-session">
         <option value="">Start a new session</option>
         {sessionsQuery.data.sessions.map(item => <option key={item.id} value={item.id}>{item.topic} · {courses.find(course => course.id === item.courseId)?.name ?? 'Course'} · {formatDate(item.createdAt)}</option>)}
       </select>
@@ -215,7 +213,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
     {sessionId && sessionQuery.isLoading ? <div className="notice">Restoring your saved session…</div> : sessionId && sessionQuery.error ? <div className="error" role="alert">{message(sessionQuery.error)} <button type="button" onClick={() => void sessionQuery.refetch()} data-testid="button-retry-load-session">Try again</button></div> : <>
       {!current && <HomeChat aiConsent={state.aiConsent === true} busy={busy} courseId={selectedCourseId}
         onCoursesChanged={() => void client.invalidateQueries({ queryKey: stateKey })}
-        onOpenSession={id => { setIntakeFiles([]); setSessionId(id); setShowReport(false); setAdding(false); void client.invalidateQueries({ queryKey: listKey }); }} />}
+        onOpenSession={id => { setIntakeFiles([]); setSessionId(id); setAdding(false); void client.invalidateQueries({ queryKey: listKey }); }} />}
       {!current && courses.length > 0 && (
         <section className="ae-card" data-testid="panel-home-intake" style={{ marginBottom: 17 }}>
           <div className="ae-card-top"><div><span className="ae-kicker">ADD MATERIAL</span><h2 className="ae-heading">Which course?</h2></div></div>
@@ -248,7 +246,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
         qualityNotice={current?.quiz?.qualityNotice} invalidItemCount={current?.quiz?.invalidItemCount ?? 0}
         flaggedQuestionIds={flaggedQuestionIds}
         quizTutorReply={quizTutorReply} feedback={feedback}
-        reviewSchedule={reviewSchedule} report={current?.reportText ? { text: current.reportText } : undefined}
+        reviewSchedule={reviewSchedule}
         resultSummary={resultSummary} isRetest={current?.quiz?.mode === 'targeted'}
         busy={busy} error={error}
         onSelectCourse={selectCourse}
@@ -363,26 +361,13 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
         onRequestRetest={() => void act(async () => {
           if (!current) return;
           applySession(await quiz.mutateAsync({ id: current.id, data: { mode: 'targeted' } }));
-          setShowReport(false);
         })}
-        onShowReport={() => setShowReport(true)}
-        onShareReport={exactText => void act(async () => {
-          if (!current?.reportText || exactText !== current.reportText) throw new Error('The report changed. Reopen it before sharing.');
-          if (navigator.share) {
-            try { await navigator.share({ title: 'Study Coach session report', text: exactText }); setNotice('Share sheet opened. No recipient was preselected.'); }
-            catch (cause) { if ((cause as Error).name !== 'AbortError') throw cause; }
-          } else if (navigator.clipboard) {
-            await navigator.clipboard.writeText(exactText);
-            setNotice('Exact report copied. Paste it only if you choose.');
-          } else throw new Error('Sharing is unavailable in this browser. You can select and copy the preview text.');
-        })}
-        onDismissReport={() => setShowReport(false)}
         onRetry={() => { setError(''); void stateQuery.refetch(); if (sessionId) void sessionQuery.refetch(); }}
       />
       {current ? <MaterialIntake key={current.id} courseName={courses.find(item => item.id === current.courseId)?.name ?? 'this course'}
         consent={state.aiConsent} files={intakeFiles} onFilesChange={setIntakeFiles}
         onSave={preview => saveMaterial(current.courseId, preview)} /> : null}
-      {notice && <p className="notice" role="status" data-testid="status-report-share">{notice}</p>}
+      {notice && <p className="notice" role="status" data-testid="status-notice">{notice}</p>}
     </>}
   </div>;
 }

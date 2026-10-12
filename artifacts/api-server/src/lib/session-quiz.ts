@@ -99,7 +99,6 @@ export type Session = {
   attempts: Quiz[];
   scores: { diagnostic: Record<string, unknown> | null; targeted: Record<string, unknown> | null };
   reviewSchedule: Array<Record<string, unknown>>;
-  reportText: string | null;
   _version?: number;
 };
 
