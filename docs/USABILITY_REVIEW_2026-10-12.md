@@ -40,6 +40,14 @@ Method (D-064, option 1): five personas look at the real screens Dan sent from h
 - Tom: "I like the score by section. Finding my course again took a second; the strip says Coach, not my course." (4)
 - Ellen: "The date field beat me. The tiny tour link too." (7, 13)
 
+## Round 2 — Dan's screenshots 1 to 8 (course screen, red note, coach chat, intake), 2026-10-12 11:47–11:59
+Phone was in airplane mode, which explains the failed extraction and the flashcard hang (not app bugs). Fixed the same day: the raw Clerk/Swift error on the intake card (D-067); a "Talk to the coach" button under the courses (D-068, Dan's ask).
+17. **"Delete course" appears twice on the course screen** (in Actions and as the red link at the bottom). Tom: "why is delete the 4th thing I see?" Fix: keep only the bottom one; Actions keeps Add material, Add another course, Return to course list. *Course screen.* Medium.
+18. **"missed 23 of 28" with a bar filled to 18%.** The bar shows what was right while the words say missed; Ellen reads it as "18% missed". Fix: fill the bar with the missed share in the destructive tint, or say "5 of 28 right". *Topics tested.* Medium.
+19. **Progress rows are identical:** three lines "2026-10-11 · Kinetics" with different scores. Fix: "Oct 11, 2:14 pm · Kinetics", newest first. *Progress card.* Minor.
+20. **"The file is being processed transiently."** Dave stops at "transiently". Fix: "Reading your file. Nothing is saved until you check the text and tap Save." *Extraction card.* Minor.
+21. **Finding 10 seen live:** the coach asks "answer my last question … or jump into a new set?" and the four chips are all new-set options; while the coach is thinking the chips go pale and look disabled. *Course chat.* Medium (same fix as 10).
+
 ## Untested (no phone screenshot yet)
 Course screen actions row and the one-time red note; Add sheet; "What next?" sheet; topic picker; AI consent card; material intake (photos, files, website, lecture); exam set sheet with bubbles; flashcards; light/dark on the welcome; Reduce Motion.
 
