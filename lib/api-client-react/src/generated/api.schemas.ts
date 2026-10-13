@@ -5,6 +5,61 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type PremiumStatusPlan = typeof PremiumStatusPlan[keyof typeof PremiumStatusPlan];
+
+
+export const PremiumStatusPlan = {
+  free: 'free',
+  premium: 'premium',
+} as const;
+
+/**
+ * @nullable
+ */
+export type PremiumStatusSource = typeof PremiumStatusSource[keyof typeof PremiumStatusSource] | null;
+
+
+export const PremiumStatusSource = {
+  owner: 'owner',
+  revenuecat: 'revenuecat',
+} as const;
+
+export type PremiumStatusLimits = {
+  /**
+     * null = unlimited
+     * @nullable
+     */
+  courses: number | null;
+  sets: number;
+  messages: number;
+};
+
+export type PremiumStatusUsage = {
+  sets: number;
+  messages: number;
+  /** @nullable */
+  resetAt: string | null;
+};
+
+/**
+ * D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit or course_read_only.
+ */
+export interface PremiumStatus {
+  /** False until PREMIUM_LIMITS=on on the server; then limits apply */
+  enforced: boolean;
+  plan: PremiumStatusPlan;
+  /** @nullable */
+  source: PremiumStatusSource;
+  /** @nullable */
+  expiresAt: string | null;
+  /** @nullable */
+  productId: string | null;
+  limits: PremiumStatusLimits;
+  usage: PremiumStatusUsage;
+  activeCourseIds: string[];
+  readOnlyCourseIds: string[];
+}
+
 export type StudyStateCoursesItem = { [key: string]: unknown };
 
 export type StudyStateMaterialsItem = { [key: string]: unknown };

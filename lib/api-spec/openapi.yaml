@@ -149,6 +149,31 @@ paths:
                   deleted: { type: boolean }
                   identityDeleted: { type: boolean, description: "False when the data is gone but the sign-in identity could not be removed; the student should contact support" }
         "401": { description: Authentication required }
+  /premium:
+    get:
+      operationId: getPremiumStatus
+      tags: [study]
+      summary: The account's plan, limits, today's AI use and which courses are active (D-090)
+      responses:
+        "200":
+          description: Plan status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PremiumStatus" }
+        "401": { description: Authentication required }
+  /premium/refresh:
+    post:
+      operationId: refreshPremium
+      tags: [study]
+      summary: Re-check the purchase with RevenueCat (after a purchase or Restore Purchases)
+      responses:
+        "200":
+          description: Plan status after the check
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PremiumStatus" }
+        "401": { description: Authentication required }
+        "502": { description: RevenueCat could not be reached }
   /study/chat/report:
     post:
       operationId: reportHomeChatMessage
@@ -600,6 +625,32 @@ paths:
               schema: { $ref: "#/components/schemas/StudySession" }
 components:
   schemas:
+    PremiumStatus:
+      type: object
+      description: "D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit or course_read_only."
+      required: [enforced, plan, source, expiresAt, productId, limits, usage, activeCourseIds, readOnlyCourseIds]
+      properties:
+        enforced: { type: boolean, description: "False until PREMIUM_LIMITS=on on the server; then limits apply" }
+        plan: { type: string, enum: [free, premium] }
+        source: { type: ["string", "null"], enum: [owner, revenuecat, null] }
+        expiresAt: { type: ["string", "null"] }
+        productId: { type: ["string", "null"] }
+        limits:
+          type: object
+          required: [courses, sets, messages]
+          properties:
+            courses: { type: ["integer", "null"], description: "null = unlimited" }
+            sets: { type: integer }
+            messages: { type: integer }
+        usage:
+          type: object
+          required: [sets, messages, resetAt]
+          properties:
+            sets: { type: integer }
+            messages: { type: integer }
+            resetAt: { type: ["string", "null"] }
+        activeCourseIds: { type: array, items: { type: string } }
+        readOnlyCourseIds: { type: array, items: { type: string } }
     StudyState:
       type: object
       description: "Account-owned JSON study state. AI actions require aiConsent true persisted here. Dates should be explicitly confirmed by the student (confirmed: true)."

@@ -21,6 +21,8 @@ import { itemsFromSession, rowsFromState, sheetAsText, updateMemorySheet, type M
 import { parseCoachReply, planActions, type DeckPlan, type KnownCourse, type QuizPlan, type SheetPlan } from "./chatActions";
 import { getSession, requireStudyAuth, saveSession } from "./study";
 import { logger } from "../lib/logger";
+import { activeFor, consume, enforced, planFor, refund } from "../lib/premium-store";
+import { limitMessage } from "../lib/premium";
 
 const router: IRouter = Router();
 router.use("/study/chat", requireStudyAuth);
@@ -433,6 +435,23 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   }
   const messages = existing?.messages ?? [];
   const courses = knownCourses(state);
+  // Premium (D-090), only with PREMIUM_LIMITS=on: a read-only course takes no AI work, and every
+  // coach message counts toward the day's limit. Anything that stops the request gives it back.
+  const premium = enforced() ? await planFor(ownerId) : null;
+  if (premium && threadId && !activeFor(courses, premium).includes(threadId)) {
+    res.status(402).json({ error: limitMessage("read_only", premium.limits), code: "course_read_only" });
+    return;
+  }
+  if (premium && !await consume(ownerId, "messages", premium.limits.messages)) {
+    res.status(402).json({ error: limitMessage("messages", premium.limits), code: "daily_limit" });
+    return;
+  }
+  let messageCounted = !!premium;
+  const giveBack = async () => {
+    if (!messageCounted) return;
+    messageCounted = false;
+    await refund(ownerId, "messages");
+  };
   const lectureRows = await db.select({ courseId: lecturesTable.courseId }).from(lecturesTable).where(eq(lecturesTable.ownerId, ownerId));
   const materials = list(state.materials);
   const buildSummary = (courseList: KnownCourse[]) => courseList.map((course) => {
@@ -480,12 +499,19 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     if (!coach) throw new Error(response.text ? "Reply was not valid coach JSON" : "Empty response");
   } catch (error) {
     req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat AI request failed");
+    await giveBack();
     res.status(502).json({ error: "The coach could not answer just now. Your message was not lost; try sending it again." });
     return;
   }
 
   const plan = planActions(courses, coach.actions);
   if (plan.notes.length) req.log.info({ notes: plan.notes }, "Home chat actions skipped");
+  // The free plan has one course (D-090): a coach reply that would add another is not applied.
+  if (premium && premium.limits.courses !== null && plan.creates.length && courses.length + plan.creates.length > premium.limits.courses) {
+    await giveBack();
+    res.status(402).json({ error: limitMessage("course", premium.limits), code: "premium_required" });
+    return;
+  }
   const done: HomeChatAction[] = [];
   const created = await createCourses(ownerId, plan.creates);
   if (created === null) {
@@ -583,14 +609,35 @@ router.post("/study/chat", async (req, res): Promise<void> => {
         if (added.length) done.push({ type: "update_memory_sheet", courseId, rows: added.map(({ id, term, trick, whenYouSee, think }) => ({ id, term, trick, whenYouSee, think })) });
       } catch (error) {
         req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat memory sheet update failed");
+        await giveBack();
         res.status(502).json({ error: "The coach could not update your memory sheet just now. Try sending that again." });
         return;
       }
     } else if (courseId) req.log.info("Home chat memory sheet update skipped: nothing to add");
   }
+  // A set or deck (D-090): only on an active course, and within the day's sets.
+  const setGate = async (courseId: string): Promise<boolean> => {
+    if (!premium) return true;
+    if (!activeFor([...courses, ...created], premium).includes(courseId)) {
+      await giveBack();
+      res.status(402).json({ error: limitMessage("read_only", premium.limits), code: "course_read_only" });
+      return false;
+    }
+    if (!await consume(ownerId, "sets", premium.limits.sets)) {
+      await giveBack();
+      res.status(402).json({ error: limitMessage("sets", premium.limits), code: "daily_limit" });
+      return false;
+    }
+    return true;
+  };
+  const setFailed = async () => {
+    if (premium) await refund(ownerId, "sets");
+    await giveBack();
+  };
   if (plan.quiz) {
     const courseId = resolveCourse(plan.quiz);
     if (courseId) {
+      if (!await setGate(courseId)) return;
       try {
         const latestState = await latestStateFor(ownerId, state, created);
         // "All topics" on an exam with an official guide: spread the set by the guide's weights.
@@ -605,6 +652,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       } catch (error) {
         // The reply promised a set it cannot deliver: save nothing (courses created above stay), let the student retry.
         req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat quiz generation failed");
+        await setFailed();
         res.status(502).json({ error: "The coach could not write your questions just now. Try sending that again." });
         return;
       }
@@ -612,6 +660,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   } else if (plan.deck) {
     const courseId = resolveCourse(plan.deck);
     if (courseId) {
+      if (!await setGate(courseId)) return;
       try {
         const latestState = await latestStateFor(ownerId, state, created);
         const session = await startDeck(ownerId, latestState, { ...plan.deck, courseId }, sameCourse(lastQuizSession, courseId));
@@ -619,6 +668,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
         done.push({ type: "start_flashcards", sessionId: session.id, courseId, topic: plan.deck.topic, count: session.flashcards!.cards.length });
       } catch (error) {
         req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat flashcard generation failed");
+        await setFailed();
         res.status(502).json({ error: "The coach could not write your flashcards just now. Try sending that again." });
         return;
       }

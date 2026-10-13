@@ -31,6 +31,30 @@ import {
   type JsonObject, type Quiz, type Session, type SourceStatus, type StoredQuestion, type StoredQuestionFlag, type StudyQuestionFlagKind,
 } from "../lib/session-quiz";
 
+import { addsCourseBeyondPlan, limitMessage } from "../lib/premium";
+import { activeFor, consume, enforced, planFor, refund } from "../lib/premium-store";
+
+/**
+ * Premium gate for one AI use on a course (D-090, only with PREMIUM_LIMITS=on): the course must
+ * be active and the day's limit not reached. Sends the 402 and returns null when it stops the
+ * request; otherwise returns the function that gives the use back if the AI call fails.
+ */
+async function premiumGate(res: Response, ownerId: string, state: JsonObject, courseId: string, kind: "sets" | "messages"): Promise<(() => Promise<void>) | null> {
+  if (!enforced()) return async () => {};
+  const info = await planFor(ownerId);
+  const courses = Array.isArray(state.courses) ? state.courses.filter((c): c is { id: string } => jsonObject(c) && typeof c.id === "string") : [];
+  if (!activeFor(courses, info).includes(courseId)) {
+    res.status(402).json({ error: limitMessage("read_only", info.limits), code: "course_read_only" });
+    return null;
+  }
+  if (!await consume(ownerId, kind, info.limits[kind])) {
+    res.status(402).json({ error: limitMessage(kind, info.limits), code: "daily_limit" });
+    return null;
+  }
+  let done = false;
+  return async () => { if (!done) { done = true; await refund(ownerId, kind); } };
+}
+
 const router: IRouter = Router();
 const MAX_STATE_BYTES = 900_000;
 const MAX_SESSION_MESSAGES = 80;
@@ -841,6 +865,16 @@ router.put("/study/state", async (req, res): Promise<void> => {
   }
   const ownerId = owner(req);
   const version = body.version as number;
+  // The free plan has one course (D-090, only with PREMIUM_LIMITS=on): a save may not add another.
+  if (enforced()) {
+    const info = await planFor(ownerId);
+    const before = (await db.select({ state: studyStatesTable.state }).from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1))[0]?.state as JsonObject | undefined;
+    const ids = (value: unknown) => (Array.isArray(value) ? value.filter((c): c is { id: string } => jsonObject(c) && typeof c.id === "string") : []);
+    if (addsCourseBeyondPlan(ids(before?.courses), ids((body.state as JsonObject).courses), info.plan === "premium")) {
+      res.status(402).json({ error: limitMessage("course", info.limits), code: "premium_required" });
+      return;
+    }
+  }
   if (version === 0) {
     const id = randomUUID();
     const inserted = await db.insert(studyStatesTable)
@@ -1025,6 +1059,8 @@ router.post("/study/sessions/:id/messages", async (req, res): Promise<void> => {
   }
   const state = await requireConsent(res, owner(req));
   if (!state) return;
+  const giveBack = await premiumGate(res, owner(req), state, session.courseId, "messages");
+  if (!giveBack) return;
   const { chunks, status } = sourceChunks(state, session.courseId, session.topic, await reviewedLectureMaterials(owner(req), session.courseId));
   const userContent = (req.body as JsonObject).content as string;
   const history = session.messages.slice(-18).map((message) => ({
@@ -1055,6 +1091,7 @@ router.post("/study/sessions/:id/messages", async (req, res): Promise<void> => {
     res.json(safeSession(session));
   } catch (error) {
     req.log.error({ error: aiErrorMessage(error) }, "Tutoring AI request failed");
+    await giveBack();
     res.status(502).json({ error: "The AI coach could not complete this message. Please try again." });
   }
 });
@@ -1099,11 +1136,14 @@ router.post("/study/sessions/:id/quiz", async (req, res): Promise<void> => {
         ...(session.quiz?.mode === "diagnostic" ? session.quiz.questions.map((question) => question.prompt) : []),
       ]
     : [];
+  const giveBackSet = await premiumGate(res, owner(req), state, session.courseId, "sets");
+  if (!giveBackSet) return;
   const { chunks, status } = sourceChunks(state, session.courseId, session.topic, await reviewedLectureMaterials(owner(req), session.courseId));
   const sourceText = sourceTextOf(chunks);
   try {
     const quiz = await generateSessionQuiz({ courseId: session.courseId, topic: session.topic, mode, expectedCount, originalPrompts, weakConcepts, sourceText, status });
     if (!quiz) {
+      await giveBackSet();
       res.status(502).json({ error: "The coach did not return any valid questions. Please retry generation.", expectedCount, invalidItemCount: expectedCount });
       return;
     }
@@ -1116,6 +1156,7 @@ router.post("/study/sessions/:id/quiz", async (req, res): Promise<void> => {
     res.json(safeSession(session));
   } catch (error) {
     req.log.error({ error: aiErrorMessage(error) }, "Session quiz AI request failed");
+    await giveBackSet();
     res.status(502).json({ error: "Could not generate a complete quiz. Please try again." });
   }
 });

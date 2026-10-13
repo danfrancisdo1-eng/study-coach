@@ -19,6 +19,7 @@ for the App Store "App Privacy" answers. Keep all three in step. Last reviewed 2
 | Memory sheet, review schedule | `study_states.state` | what to review next | yes | delete course / account deletion |
 | Practice sets, flashcard decks, answers, scores, "Looks wrong?" flags | `study_sessions` | results history and readiness | yes (results summary) | delete course / account deletion |
 | Coach conversation (one thread per course + general) | `home_chats` | the coaching itself; reports on replies | yes (last 20 turns) | account deletion |
+| Plan status (free/premium, expiry, product id) and daily AI use counts | `entitlements`, `ai_usage` (D-090) | Premium and the daily limits | no | account deletion |
 | Lecture metadata and transcript segments | `lectures` | lecture-based study | yes (transcript when reviewed) | delete lecture / delete course / account deletion |
 | Request logs (route, status, timing, account id, errors; reported reply text) | Render logs | keep the service working; review reported replies | no | log retention (Render default) |
 
@@ -33,6 +34,7 @@ payment data (none yet), location, contacts, advertising identifiers. No analyti
 | Anthropic (Claude) | messages, course names, selected material text, question sets, answers, results summary, exam guide, memory sheet | every coach turn, set, deck, grading, flag re-check, web lookup | API terms: not used to train models |
 | OpenAI | lecture audio (for transcription only) | when the student taps Transcribe | API terms: not used to train models |
 | Web search (via Anthropic's web search tool) | the search query only (exam name/topic) | exam guide lookup; "search the web" requests | as above |
+| RevenueCat | the account id (as app user id) and Apple purchase receipts | when the student subscribes or restores | RevenueCat DPA; no payment card data reaches Study Coach |
 | Render | hosts the API and the database | always | Render DPA |
 
 Study Coach has no sharing feature (the session-report share was removed in D-088): nothing is sent to anyone beyond the providers above.
