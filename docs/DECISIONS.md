@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-13 — D-094: coach.v17: the coach calls the app RapidRecall AI
+- The live coach prompt still said "You are the study coach in the Study Coach app". coach.v17 changes only that phrase to "in the RapidRecall AI app" (plus the version and header line); routes/chat.ts and evals/run.ts now use coach.v17. Verified here: typecheck clean; tests 144/144; coach evals 38/38 twice on claude-sonnet-5-5 (judge claude-opus-5-5). Decided by Dan (rename D-092).
+
 ## 2026-10-13 — D-093: Back never dead-ends
 - Dan's screenshot: Courses & exams → Back → "The action 'GO_BACK' was not handled by any navigator" (a red dev error; in a release build the tap does nothing). The list chose Back vs the Coach button when it first drew; by the tap there was no screen behind it. Back is now decided at the tap: the course list goes back or opens the chat; the course, lectures and lecture screens use `lib/nav.ts` `goBack()` (back, or the course list). Build stamp #36. Verified here: typecheck; mobile tests; iOS bundle export. Needs real-iPhone check. Decided by Dan (bug).
 

@@ -17,7 +17,7 @@ import * as tutorPrompt from "../src/prompts/tutor.v3";
 import * as sessionQuizPrompt from "../src/prompts/session-quiz.v8";
 import * as quizCheckPrompt from "../src/prompts/quiz-check.v2";
 import * as imageOcrPrompt from "../src/prompts/image-ocr.v1";
-import * as coachPrompt from "../src/prompts/coach.v16";
+import * as coachPrompt from "../src/prompts/coach.v17";
 import * as webLookupPrompt from "../src/prompts/web-lookup.v1";
 import * as flashcardsPrompt from "../src/prompts/flashcards.v2";
 import * as examGuidePrompt from "../src/prompts/exam-guide.v1";
