@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-13 — D-092: The app is named "RapidRecall AI"
+- Dan wanted "AI" in the name and a more professional angle. Checked against the App Store and the web: ExamReady AI (an "ExamReady OU" publishes 9+ exam-prep apps), ExamMastery AI (HLT's "Mastery" exam-prep line, "Mastery: Exam Prep"), Verity AI (an exact "VerityAI" app; "Verity" is a Minecraft horror character to teens), Study Coach AI ("StudyCoachAI: AI Study Plan" exists; many "Study Coach" apps), SnapRecall AI (exact app exists) were all out. RapidRecall AI: no App Store app by that name; "Rapid Recall, Inc." and the food industry's "Rapid Recall Exchange" use the phrase outside education; "Flash Math: Rapid Recall Game" (kids' math) is the nearest. Dan chose RapidRecall AI.
+- Renamed what users see: the phone (home-screen name, permission prompts, sign-in/up, welcome tour, chat header, paywall "RapidRecall AI Premium", lectures, error sentence), the web (title, manifest, brand marks), the server (privacy page, refresh error). Unchanged: bundle ID com.danfrancis.studycoach, product IDs, repository and code names. The coach prompt still calls itself "the Study Coach app" until coach.v17 (needs evals). Build stamp #35. Verified here: typecheck; 144/144 tests. Decided by Dan.
+
 ## 2026-10-12 — D-091: Premium on the phone: RevenueCat, the paywall, the plan on the Account page, a development build
 - Dan signed off the spec (D-090) and approved RevenueCat, an EAS development build, migration 0004 and the App Store Connect steps.
 - Server (commit c651ab3): `entitlements` + `ai_usage` (migration 0004), `lib/premium.ts` rules, `lib/premium-store.ts`, `GET /premium`, `POST /premium/refresh`, `POST /premium/revenuecat` (webhook, exact Authorization match), checks in the chat (read-only course, daily messages, second course, daily sets), the tutor and quiz routes, and on state save; account deletion clears both tables. **Limits apply only with `PREMIUM_LIMITS=on`** on Render, so the Expo Go beta keeps working until purchases ship; `OWNER_ACCOUNT_IDS` lists Dan's Clerk id.

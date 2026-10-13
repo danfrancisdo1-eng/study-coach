@@ -427,7 +427,7 @@ export default function CoachHome() {
       <View style={styles.header}>
         <View style={[styles.brandMark, { backgroundColor: colors.primary }]}><Feather name="book-open" size={17} color={colors.primaryForeground} /></View>
         <View style={styles.headerCopy}>
-          <Text style={styles.brand}>Study Coach</Text>
+          <Text style={styles.brand}>RapidRecall AI</Text>
           <Text numberOfLines={1} style={styles.headerSub}>Your coach</Text>
         </View>
         {/* Dan: "need a Return to course list button" on the chat. Sign out is not here: it read as "go back" (D-065); it lives in Account. */}
@@ -547,7 +547,7 @@ export default function CoachHome() {
               </Pressable>
               <View style={styles.headerCopy}>
                 <Text style={styles.brand}>{deckSessionId ? 'Flashcards' : quizIsPractice ? 'Practice' : 'Exam'}</Text>
-                <Text numberOfLines={1} style={styles.headerSub}>{(activeDeck ?? activeQuiz)?.topic ?? 'Study Coach'}</Text>
+                <Text numberOfLines={1} style={styles.headerSub}>{(activeDeck ?? activeQuiz)?.topic ?? 'RapidRecall AI'}</Text>
               </View>
             </View>
             <ScrollView ref={quizScrollRef} style={styles.studySheet} contentContainerStyle={[styles.quizDockContent, { paddingBottom: 24 }]} keyboardShouldPersistTaps="handled" testID="dock-quiz">

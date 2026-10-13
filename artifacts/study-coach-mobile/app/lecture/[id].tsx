@@ -56,7 +56,7 @@ export default function LectureScreen() {
     }
     Alert.alert(
       'Send this recording for transcription?',
-      'The audio is sent to OpenAI to turn speech into text. It is not stored on Study Coach’s server, and the recording stays on this iPhone.',
+      'The audio is sent to OpenAI to turn speech into text. It is not stored on RapidRecall AI’s server, and the recording stays on this iPhone.',
       [{ text: 'Cancel', style: 'cancel' }, { text: 'Transcribe', onPress: () => void transcribe() }],
     );
   }
@@ -189,7 +189,7 @@ export default function LectureScreen() {
           {busy === 'transcribing' ? (
             <View style={styles.card} accessibilityLiveRegion="polite">
               <Text style={styles.cardTitle}>{progress < 1 ? `Uploading ${Math.round(progress * 100)}%` : 'Transcribing…'}</Text>
-              <Text style={styles.body}>Long lectures can take a few minutes. Keep Study Coach open.</Text>
+              <Text style={styles.body}>Long lectures can take a few minutes. Keep RapidRecall AI open.</Text>
               <Pressable accessibilityRole="button" onPress={() => abort.current?.abort()} style={styles.textButton} testID="button-cancel-transcribe"><Text style={styles.link}>Cancel</Text></Pressable>
             </View>
           ) : null}

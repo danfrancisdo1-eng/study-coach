@@ -49,7 +49,7 @@ router.post("/premium/refresh", requireStudyAuth, async (req, res): Promise<void
     await refreshFromRevenueCat(ownerId);
   } catch (error) {
     req.log.error({ error: error instanceof Error ? error.message.slice(0, 300) : "Unknown error" }, "Premium refresh failed");
-    res.status(502).json({ error: "Study Coach could not check your purchase just now. Try Restore Purchases again in a moment." });
+    res.status(502).json({ error: "RapidRecall AI could not check your purchase just now. Try Restore Purchases again in a moment." });
     return;
   }
   res.json(await status(ownerId));

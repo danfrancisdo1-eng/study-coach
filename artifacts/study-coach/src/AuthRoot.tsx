@@ -73,7 +73,7 @@ function AuthCacheInvalidator() {
 
 function PublicHome() {
   return <div className="onboard">
-    <div className="brand" style={{ width: 'fit-content' }}><span className="brand-mark">S</span> study coach<span style={{ color: '#dc6843' }}>.</span></div>
+    <div className="brand" style={{ width: 'fit-content' }}><span className="brand-mark">R</span> rapidrecall ai<span style={{ color: '#dc6843' }}>.</span></div>
     <div className="onboard-hero">
       <span className="eyebrow">A STUDY SPACE THAT REMEMBERS</span>
       <h1 className="display">Learn it. Test it. Keep it.</h1>

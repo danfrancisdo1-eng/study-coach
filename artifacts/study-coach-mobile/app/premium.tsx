@@ -77,7 +77,7 @@ export default function PremiumScreen() {
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
         <Text style={styles.kicker}>{paywallReason(reason)}</Text>
-        <Text style={styles.title}>Study Coach Premium</Text>
+        <Text style={styles.title}>RapidRecall AI Premium</Text>
         <View style={styles.compare} accessible accessibilityLabel="Free: 1 course, 3 sets and 40 coach messages a day. Premium: every course, 20 sets and 300 coach messages a day.">
           <View style={styles.compareRow}>
             <Text style={styles.compareLabel} />
@@ -91,7 +91,7 @@ export default function PremiumScreen() {
         </View>
 
         {!available ? (
-          <Text style={styles.note} testID="text-purchases-unavailable">Purchases aren't available in this preview build. They work in the Study Coach app from TestFlight or the App Store.</Text>
+          <Text style={styles.note} testID="text-purchases-unavailable">Purchases aren't available in this preview build. They work in the RapidRecall AI app from TestFlight or the App Store.</Text>
         ) : packages === null ? <ActivityIndicator color={colors.primaryText} /> : packages.length === 0 && !error ? (
           <Text style={styles.note}>Premium isn't available right now. Try again later.</Text>
         ) : packages.map((pkg) => (

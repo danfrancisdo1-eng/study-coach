@@ -16,7 +16,7 @@ export type OnboardingPage = {
 };
 
 export const ONBOARDING_PAGES: readonly OnboardingPage[] = [
-  { key: 'intro', title: 'Welcome to Study Coach', button: 'Agree and continue' },
+  { key: 'intro', title: 'Welcome to RapidRecall AI', button: 'Agree and continue' },
   { key: 'exam', title: 'Real exam format', button: 'Continue' },
   { key: 'memory', title: 'It remembers what you miss', button: 'Continue' },
   { key: 'readiness', title: 'Know when you are ready', button: 'Continue' },
