@@ -1,0 +1,48 @@
+/**
+ * Premium on the phone (D-090), the parts that are plain logic: which server refusals open the
+ * paywall, the plan line for the Account page, and the order and labels of the two packages.
+ */
+export type PremiumCode = 'premium_required' | 'daily_limit' | 'course_read_only';
+
+/** The server's 402 code, when a request was stopped by the plan; null for any other failure. */
+export function premiumCode(problem: unknown): PremiumCode | null {
+  if (!problem || typeof problem !== 'object') return null;
+  const p = problem as { status?: unknown; data?: { code?: unknown } };
+  if (p.status !== 402) return null;
+  const code = p.data?.code;
+  return code === 'premium_required' || code === 'daily_limit' || code === 'course_read_only' ? code : null;
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "Premium · renews Nov 12, 2026", "Premium · owner", or "Free plan · 1 course". */
+export function planLine(status: { plan: 'free' | 'premium'; source: string | null; expiresAt: string | null } | null | undefined): string {
+  if (!status) return 'Free plan';
+  if (status.plan === 'premium') {
+    if (status.source === 'owner') return 'Premium · owner account';
+    if (!status.expiresAt) return 'Premium';
+    const d = new Date(status.expiresAt);
+    return `Premium · renews ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  }
+  return 'Free plan · 1 course';
+}
+
+/** Yearly first (the better deal), then monthly; anything else after. */
+export function orderPackages<T extends { packageType: string }>(packages: T[]): T[] {
+  const rank = (t: string) => (t === 'ANNUAL' ? 0 : t === 'MONTHLY' ? 1 : 2);
+  return [...packages].sort((a, b) => rank(a.packageType) - rank(b.packageType));
+}
+
+export function packageLabel(packageType: string): string {
+  return packageType === 'ANNUAL' ? 'Yearly' : packageType === 'MONTHLY' ? 'Monthly' : 'Premium';
+}
+
+/** Why the paywall opened, as its first line. */
+export function paywallReason(reason: string | undefined): string {
+  switch (reason) {
+    case 'premium_required': return 'The free plan has one course or exam.';
+    case 'daily_limit': return "You've reached today's free limit.";
+    case 'course_read_only': return 'This course is read-only on the free plan.';
+    default: return 'Study every course with your coach.';
+  }
+}

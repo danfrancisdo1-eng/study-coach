@@ -13,6 +13,7 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
+import { premiumCode } from '@/lib/premium-ui';
 import { ActionButton } from '@/components/ActionButton';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
 import { defaultIntakeCourse, type IntakeCourse } from '@/lib/intake-course';
@@ -300,6 +301,9 @@ export default function CoachHome() {
       const status = (problem as { status?: number }).status;
       if (status === 409) await queryClient.invalidateQueries({ queryKey: chatKey });
       setError(readableError(problem));
+      // The plan stopped it (D-090): the sentence stays under the chat, the draft stays in the box, the paywall opens.
+      const code = premiumCode(problem);
+      if (code) router.push({ pathname: '/premium', params: { reason: code } });
     }
   };
 
