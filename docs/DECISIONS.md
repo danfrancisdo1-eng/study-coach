@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-13 — D-093: Back never dead-ends
+- Dan's screenshot: Courses & exams → Back → "The action 'GO_BACK' was not handled by any navigator" (a red dev error; in a release build the tap does nothing). The list chose Back vs the Coach button when it first drew; by the tap there was no screen behind it. Back is now decided at the tap: the course list goes back or opens the chat; the course, lectures and lecture screens use `lib/nav.ts` `goBack()` (back, or the course list). Build stamp #36. Verified here: typecheck; mobile tests; iOS bundle export. Needs real-iPhone check. Decided by Dan (bug).
+
 ## 2026-10-13 — D-092: The app is named "RapidRecall AI"
 - Dan wanted "AI" in the name and a more professional angle. Checked against the App Store and the web: ExamReady AI (an "ExamReady OU" publishes 9+ exam-prep apps), ExamMastery AI (HLT's "Mastery" exam-prep line, "Mastery: Exam Prep"), Verity AI (an exact "VerityAI" app; "Verity" is a Minecraft horror character to teens), Study Coach AI ("StudyCoachAI: AI Study Plan" exists; many "Study Coach" apps), SnapRecall AI (exact app exists) were all out. RapidRecall AI: no App Store app by that name; "Rapid Recall, Inc." and the food industry's "Rapid Recall Exchange" use the phrase outside education; "Flash Math: Rapid Recall Game" (kids' math) is the nearest. Dan chose RapidRecall AI.
 - Renamed what users see: the phone (home-screen name, permission prompts, sign-in/up, welcome tour, chat header, paywall "RapidRecall AI Premium", lectures, error sentence), the web (title, manifest, brand marks), the server (privacy page, refresh error). Unchanged: bundle ID com.danfrancis.studycoach, product IDs, repository and code names. The coach prompt still calls itself "the Study Coach app" until coach.v17 (needs evals). Build stamp #35. Verified here: typecheck; 144/144 tests. Decided by Dan.

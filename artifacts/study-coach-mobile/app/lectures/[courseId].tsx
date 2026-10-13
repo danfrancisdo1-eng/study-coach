@@ -11,6 +11,7 @@ import {
   type RecordingOptions,
 } from 'expo-audio';
 import { createLecture, getListLecturesQueryKey, useListLectures, type LectureSummary } from '@workspace/api-client-react';
+import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
 import {
   formatDuration, normalizedTitle, recordedSeconds, recordingLimitState, spokenDuration, type PendingRecording,
@@ -183,7 +184,7 @@ export default function CourseLecturesScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back to courses" onPress={() => router.back()} disabled={recording} style={styles.iconButton} testID="button-lectures-back">
+        <Pressable accessibilityRole="button" accessibilityLabel="Back to courses" onPress={() => goBack()} disabled={recording} style={styles.iconButton} testID="button-lectures-back">
           <Feather name="arrow-left" size={20} color={recording ? colors.mutedForeground : colors.foreground} />
         </Pressable>
         <View style={styles.headerCopy}>

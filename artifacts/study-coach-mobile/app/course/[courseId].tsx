@@ -10,6 +10,7 @@ import {
   deleteCourse, getGetCourseResultsQueryKey, getGetStudyStateQueryKey, getListLecturesQueryKey, getListStudySessionsQueryKey, useGetCourseResults, useGetStudyState, useListLectures, useListStudySessions, useLookupExamGuide, usePutStudyState,
   getGetPremiumStatusQueryKey, useGetPremiumStatus,
 } from '@workspace/api-client-react';
+import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
@@ -124,7 +125,7 @@ export default function CourseScreen() {
       queryClient.setQueryData(stateKey, { state: result.state, version: result.version });
       await queryClient.invalidateQueries({ queryKey: getListStudySessionsQueryKey() });
       await queryClient.invalidateQueries({ queryKey: getListLecturesQueryKey() });
-      router.back();
+      goBack();
     } catch (problem) { setError(readable(problem)); } finally { setSaving(false); }
   };
 
@@ -156,7 +157,7 @@ export default function CourseScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => goBack()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
         <View style={styles.headerCopy}>
           <Text numberOfLines={1} style={styles.title}>{typeof course?.name === 'string' ? course.name : 'Course'}</Text>
           <Text style={styles.caption}>{isExam ? `Certification exam${typeof course?.examDate === 'string' ? ` · ${describeExamDate(course.examDate)}` : ''}` : 'Course'}</Text>

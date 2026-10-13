@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   deleteLecture, getGetLectureQueryKey, getListLecturesQueryKey, updateLecture, useGetLecture, type Lecture,
 } from '@workspace/api-client-react';
+import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
 import {
   editedSegments, formatDuration, spokenDuration, transcriptHasText, transcriptionBlocker, type TranscriptSegment,
@@ -129,7 +130,7 @@ export default function LectureScreen() {
             await deleteLecture(id);
             deleteLectureAudio(id);
             await refresh();
-            router.back();
+            goBack();
           } catch {
             setMessage('Couldn’t delete the lecture. Check your connection and try again.');
             setBusy(null);
@@ -152,7 +153,7 @@ export default function LectureScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back to lectures" onPress={() => router.back()} disabled={busy === 'transcribing'} style={styles.iconButton} testID="button-lecture-back">
+        <Pressable accessibilityRole="button" accessibilityLabel="Back to lectures" onPress={() => goBack()} disabled={busy === 'transcribing'} style={styles.iconButton} testID="button-lecture-back">
           <Feather name="arrow-left" size={20} color={colors.foreground} />
         </Pressable>
         <View style={styles.headerCopy}>
