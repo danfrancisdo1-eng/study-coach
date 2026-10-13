@@ -15,6 +15,7 @@ import AccountExperience, {
 } from './AccountExperience';
 import MaterialIntake from './MaterialIntake';
 import HomeChat from './HomeChat';
+import DeleteAccount from './DeleteAccount';
 import { readLegacyStudyData } from './lib/legacy-import';
 
 type AccountState = {
@@ -201,6 +202,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
       <div className="row" style={{ flexWrap: 'wrap' }}>
         <button type="button" className="btn btn-quiet" onClick={onClassic} data-testid="button-classic-workspace">Lecture desk · browser-only</button>
         <button type="button" className="btn btn-outline" onClick={onSignOut} data-testid="button-sign-out">Sign out</button>
+        <DeleteAccount onDeleted={onSignOut} />
       </div>
     </div>
     <div className="notice" style={{ marginBottom: 18 }}>Want to record or import a lecture? Open the browser-only lecture desk above. Its audio, corrected transcripts, and source-linked practice questions are separate from this account’s courses and materials; they do not sync between devices.</div>
