@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-12 — D-090: Premium: monthly + yearly subscription, $4.99 / $29.99, read-only on lapse, daily AI caps
+- Dan, answering the open items of D-003: subscription with monthly and yearly options; $4.99 a month or $29.99 a year; when premium lapses the extra courses become read-only, never deleted (the first course added stays active); daily AI caps for both plans (proposed: free 3 sets/decks and 40 coach messages; premium 20 and 300), server-enforced.
+- Spec for sign-off: `docs/plans/2026-10-12-premium-spec.md` (who / v1 does / v1 doesn't, tests first). Open approvals before any code: RevenueCat (dependency), an Expo development build (IAP cannot run in Expo Go; adds expo-dev-client and eas.json), two new tables with a migration plan, App Store Connect products (Dan).
+- Decided by Dan.
+
 ## 2026-10-12 — D-088: The session-report sharing ("family member") feature is removed
 - Dan: "lets remove the family member function. not necessary. thats a remnant of the initial build which was supposed to be just for my son danny and I." Then "yes. trim the fat."
 - Removed: the server no longer writes `reportText` after grading (and the report-only helpers went with it); the field is gone from `openapi.yaml` and the regenerated clients; the web signed-in page's "View report" / "Preview before sharing" / Share step; the classic web report page's "Would you like to send your results to Dad?" panel (the results themselves stay); the old phone course screen's "Share report" card. The privacy page and `docs/PRIVACY_DATA.md` now say there is no sharing feature; SPEC drops the optional guardian report (this reverses the replit.md "optional guardian sharing" direction). No database change: old sessions keep a field nobody reads. No files deleted.
