@@ -205,6 +205,7 @@ export default function CourseScreen() {
               <ActionButton label="Flashcards" icon="layers" secondary onPress={() => setPicker('flashcards')} testID="button-action-flashcards" />
               <ActionButton label="Memory tricks" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
               <ActionButton label="Outline" icon="list" secondary onPress={() => startWithCoach('outline', null)} testID="button-action-outline" />
+              <ActionButton label="Review sheet (PDF)" icon="file-text" secondary onPress={() => router.push({ pathname: '/review/[courseId]', params: { courseId: courseId! } })} testID="button-action-review-sheet" />
               <ActionButton label="Questions without material" icon="help-circle" secondary onPress={() => void questionsWithoutMaterial()} testID="button-action-no-material" />
             </View>
             {noMaterialNote ? (
