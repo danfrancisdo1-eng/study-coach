@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-13 — D-095: The Account page shows the account ID
+- Dan needs his Clerk user id for OWNER_ACCOUNT_IDS on Render, and the Clerk dashboard that owns the app's instance (safe-firefly-7699) was not under any of his dashboard logins (likely created through Replit). The Account page now shows "Account ID: user_…" above the build line, selectable (press and hold to copy); no clipboard dependency added. The id is not a secret. Build stamp #37. Verified here: typecheck. Decided by Dan.
+
 ## 2026-10-13 — D-094: coach.v17: the coach calls the app RapidRecall AI
 - The live coach prompt still said "You are the study coach in the Study Coach app". coach.v17 changes only that phrase to "in the RapidRecall AI app" (plus the version and header line); routes/chat.ts and evals/run.ts now use coach.v17. Verified here: typecheck clean; tests 144/144; coach evals 38/38 twice on claude-sonnet-5-5 (judge claude-opus-5-5). Decided by Dan (rename D-092).
 

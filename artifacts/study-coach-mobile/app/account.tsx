@@ -107,6 +107,8 @@ export default function AccountScreen() {
         {row('log-out', 'Sign out', 'The next sign-in starts with the tour', () => void signOut(), 'button-sign-out')}
         <View style={styles.divider} />
         {row('trash-2', 'Delete my account', 'Removes your courses, sets, chats and sign-in. Cannot be undone.', () => { setError(''); setDeleteWord(''); setDeleteOpen(true); }, 'button-delete-account', true)}
+        {/* The account's id (D-095): Dan pastes it into OWNER_ACCOUNT_IDS on Render; press and hold to copy. Not a secret. */}
+        {userId ? <Text selectable maxFontSizeMultiplier={1} style={styles.build} testID="text-account-id">Account ID: {userId}</Text> : null}
         <Text maxFontSizeMultiplier={1} style={styles.build}>Build {BUILD}</Text>
       </ScrollView>
 
