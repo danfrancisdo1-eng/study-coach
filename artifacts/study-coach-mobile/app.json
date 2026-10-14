@@ -9,7 +9,11 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.danfrancis.studycoach"
+      "bundleIdentifier": "com.danfrancis.studycoach",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "deploymentTarget": "17.0"
     },
     "android": {
       "package": "com.danfrancis.studycoach",

@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-13 — D-096: Minimum iOS 17.0
+- The first EAS development build failed at Install pods: "@clerk/expo was not linked: requires iOS 17.0 but app targets 16.4", then a crash in React Native's SPM post-install. `app.json` sets `ios.deploymentTarget` "17.0" (Expo's built-in setting, no new package). The build also recorded `ITSAppUsesNonExemptEncryption: false` (the app only uses standard HTTPS). Dan's iPhone 15 Pro is registered (EAS device:create, UDID read over USB). Decided by Claude Code under Dan's approval of the development build (D-091).
+
 ## 2026-10-13 — D-095: The Account page shows the account ID
 - Dan needs his Clerk user id for OWNER_ACCOUNT_IDS on Render, and the Clerk dashboard that owns the app's instance (safe-firefly-7699) was not under any of his dashboard logins (likely created through Replit). The Account page now shows "Account ID: user_…" above the build line, selectable (press and hold to copy); no clipboard dependency added. The id is not a secret. Build stamp #37. Verified here: typecheck. Decided by Dan.
 
