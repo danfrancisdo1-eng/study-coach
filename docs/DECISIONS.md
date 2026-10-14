@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-12 — D-089: Delete my account on the web
+- Dan: "2 go". The web signed-in page gets "Delete my account" beside Sign out (`artifacts/study-coach/src/DeleteAccount.tsx`): type DELETE, the existing `DELETE /study/account` (D-046, tested on the server) removes the account's data and sign-in, then the page signs out. The browser-only lecture desk keeps its IndexedDB data until site data is cleared; the panel says so. No API change.
+- Verified here: web typecheck. Not verified: a browser run (no test account on the Mac) and `vite build`, which fails on this Mac before and after the change: `@rollup/rollup-darwin-arm64` is missing from node_modules (a setup gap, not code). Decided by Dan.
+
 ## 2026-10-12 — D-088: The session-report sharing ("family member") feature is removed
 - Dan: "lets remove the family member function. not necessary. thats a remnant of the initial build which was supposed to be just for my son danny and I." Then "yes. trim the fat."
 - Removed: the server no longer writes `reportText` after grading (and the report-only helpers went with it); the field is gone from `openapi.yaml` and the regenerated clients; the web signed-in page's "View report" / "Preview before sharing" / Share step; the classic web report page's "Would you like to send your results to Dad?" panel (the results themselves stay); the old phone course screen's "Share report" card. The privacy page and `docs/PRIVACY_DATA.md` now say there is no sharing feature; SPEC drops the optional guardian report (this reverses the replit.md "optional guardian sharing" direction). No database change: old sessions keep a field nobody reads. No files deleted.

@@ -35,7 +35,7 @@
 - Screenshots 10 to 15 still to take (exam bubbles seen; 11 to 13 a brand-new account: sign-up, welcome, consent card; 14 and 15 Dark and Light). Run the personas on them and add to the review.
 
 ### Next
-- PR #2 holds D-063 to D-088 (incl. coach.v16 and the reportText removal, which need the merge to reach Render).
+- PR #2 (D-063 to D-088) merged into `main` (`4a0d904`); Render deploys it.
 - Web app has no Delete my account (gap since D-046).
 - Dan: rotate the OpenAI key in `artifacts/api-server/.env` (a stray unnamed line printed it in the session) and delete that line.
 - PR #2 (draft) holds D-063 to D-070; merge when Dan says.
