@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-14 — D-100: Confetti on a perfect score (spec A)
+- `components/Confetti.tsx` (Reanimated, no new package) on both score screens (live practice card and exam sheet): 42 pieces fall for about 2 seconds with a success haptic, once per graded set on this phone (AsyncStorage). Reduce Motion: no animation, a "Perfect score" line. `lib/perfect-score.ts` (1 test): all counted questions answered and right; skipped or empty never counts. Build stamp #39.
+- UX checklist: no new targets; motion respects Reduce Motion; the layer is hidden from VoiceOver and does not block taps; colour is decoration only. Verified here: typecheck; 60/60 mobile tests; iOS bundle export. Needs real-iPhone check: a 10/10 set. Decided by Dan (D-099).
+
 ## 2026-10-14 — D-099: Signed: perfect-score confetti, timed certification exams, a PDF review sheet
 - Dan: "yes to all three" for `docs/plans/2026-10-14-specs-confetti-timed-pdf.md` (A confetti, B timed full simulations and prorated blocks with a server-kept deadline, C a grounded PDF review sheet), approved `expo-print` and `expo-sharing` (needs one new development build), and merged D-097/D-098 to main. Build order: A, then C, then B (largest). Decided by Dan.
 

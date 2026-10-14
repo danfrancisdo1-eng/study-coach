@@ -7,6 +7,8 @@ import {
   getGetStudySessionQueryKey, useFlagStudyQuestion, useGetStudySession, useGradeStudyQuiz, useSaveStudyAnswer,
   type StudyQuestionFlagInputKind, type StudySession, type StudyQuizQuestionsItem,
 } from '@workspace/api-client-react';
+import { Confetti } from '@/components/Confetti';
+import { isPerfect } from '@/lib/perfect-score';
 import { useColors } from '@/hooks/useColors';
 import { FONT, TYPE } from '@/constants/type';
 import { canGrade, scoreLine } from '@/lib/exam-sheet';
@@ -130,6 +132,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
     const misses = quiz.questions.filter((q) => q.feedback && q.feedback.selectedOptionId && (q.feedback.selectedOptionId !== q.feedback.correctOptionId || (q.flag && !counts(q))));
     return (
       <View style={styles.card} testID="panel-quiz-score">
+        <Confetti sessionId={sessionId} perfect={isPerfect(quiz.grade)} />
         <CardText style={styles.kicker}>{kindLabel} · {session.topic}</CardText>
         <View style={styles.scoreRow}><CardText style={styles.score}>{quiz.grade.correct}</CardText><CardText style={styles.scoreOf}> / {quiz.grade.answered}</CardText></View>
         {/* Dan (2026-10-12): "20% on the questions you answered" read like 20% missed. Say the score plainly. */}

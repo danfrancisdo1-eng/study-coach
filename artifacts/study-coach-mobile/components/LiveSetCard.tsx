@@ -7,6 +7,8 @@ import {
   getGetStudySessionQueryKey, useFlagStudyQuestion, useGetStudySession, useGradeStudyQuiz, useSaveStudyAnswer,
   type StudyQuestionFlagInputKind, type StudySession, type StudyQuizQuestionsItem,
 } from '@workspace/api-client-react';
+import { Confetti } from '@/components/Confetti';
+import { isPerfect } from '@/lib/perfect-score';
 import { useColors } from '@/hooks/useColors';
 import { Bone, SkeletonGroup } from '@/components/Skeleton';
 import { FONT, TYPE } from '@/constants/type';
@@ -221,6 +223,7 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
     const tallies = sectionTallies(quiz.questions.filter(counts));
     live = (
       <Animated.View entering={FadeInUp.duration(320)} style={styles.live} onLayout={liveLayout(step)} testID="panel-live-score">
+        <Confetti sessionId={sessionId} perfect={isPerfect(quiz.grade)} />
         <CardText style={styles.score}><CardText style={styles.scoreBig}>{quiz.grade.correct}</CardText><CardText style={styles.scoreOf}>/{quiz.grade.answered}</CardText></CardText>
         <CardText style={styles.body}>{scoreLine(percent)}</CardText>
         {/* Review finding 14 (D-087): the big score already says it; only skipped questions need a line. */}
