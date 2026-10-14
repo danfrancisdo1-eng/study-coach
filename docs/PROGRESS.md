@@ -1,5 +1,25 @@
 # Progress
 
+## Session 9 — 2026-10-13 (Dan at the Mac and on the phone; Claude Code driving Chrome for RevenueCat)
+
+### Done
+- **Name: RapidRecall AI** (D-092): ExamReady, ExamMastery, Verity, Study Coach AI, SnapRecall all clashed on the App Store; app/web/privacy renamed; coach.v17 (D-094, evals 38/38 twice). Bundle ID and product IDs unchanged.
+- **Back never dead-ends** (D-093); **Account ID on the Account page** (D-095).
+- **Preview anywhere:** `sh scripts/preview-anywhere.sh` (Dan's own ngrok dev domain; Expo's shared tunnel hit ERR_NGROK_108). Start it detached (nohup) so a Claude restart does not stop it.
+- **App Store Connect:** Paid Apps agreement signed (bank and agreement "Processing" at 18:00), W-9 active, DSA = not a trader (EU excluded; availability US, Canada, UK), bundle ID com.danfrancis.studycoach registered, app record **RapidRecall AI** (SKU rapidrecall), group "RapidRecall AI Premium" with studycoach.premium.monthly ($4.99, 1 month) and .yearly ($29.99, 1 year upfront), both level 1, In-App Purchase key generated, sandbox tester made.
+- **RevenueCat** (project "RapidRecall AI"): App Store app with the .p8 (valid), products, entitlement `premium` (both), offering `default` current (Monthly/Annual), secret key "Render server" V1, webhook to /api/premium/revenuecat — **test event 200**.
+- **Render:** REVENUECAT_SECRET_KEY, REVENUECAT_WEBHOOK_AUTH, OWNER_ACCOUNT_IDS set (render.yaml declares the names). PREMIUM_LIMITS unset (limits off).
+- **Expo:** EAS project @danfrancis/study-coach-mobile; EAS env EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY, EXPO_PUBLIC_DOMAIN, EXPO_PUBLIC_REVENUECAT_IOS_KEY; `.env.local` has the RevenueCat public key (Dan approved).
+- **Merged to main and live** (`2eafe17`): web delete account (D-089) and Premium + rename + fixes (D-090 to D-095). 144/144 tests on main.
+
+### Next
+- The first development build: `npx eas-cli device:create`, then `npx eas-cli build --profile development --platform ios` (Dan signs in to Apple), install, then a sandbox purchase.
+- Apply for the App Store Small Business Program once Paid Apps is Active.
+- Then: PREMIUM_LIMITS=on when purchases work on TestFlight.
+
+### Blockers
+- None. `gh` still signed out on the Mac.
+
 ## Session 8 — 2026-10-11 (Dan at the Mac; preview served from the Mac on this branch)
 
 ### Done
