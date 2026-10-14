@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-14 — D-102: coach.v18: the coach points to the review sheet
+- Dan asked the coach for "a PDF review of everything" and it said it could not. coach.v18 adds one rule: a review sheet / study guide / PDF is made by the "Review sheet (PDF)" button on the course screen; the coach says so in one line (and may summarise in the chat); never says it cannot. Evals: 1 new case; coach 39/39 twice on claude-sonnet-5-5. Decided by Dan (D-099).
+
 ## 2026-10-14 — D-101: The review sheet (spec C), server side
 - `POST /study/courses/{courseId}/review-sheet`: AI consent required; counts as one set (refunded on failure); sends the course material (14k chars, as sets), the memory sheet and the student's missed questions with their right answers (newest 40, one per question); uses the official guide's sections in order when there is one. New task `review_sheet` (claude-sonnet-5-5, effort low) and prompt `review-sheet.v1`: 3–8 key points per section (anything not from the student's material marked "(General knowledge)"), 0–3 true memory tricks, every miss placed once with its exact answer; injected instructions ignored. Output validated (`lib/review-sheet.ts`). Contract + regenerated clients.
 - Phone: `expo-print` 57.0.2 and `expo-sharing` 57.0.23 (Dan approved; pinned past the 1-day age rule); `app/review/[courseId].tsx` writes the sheet, shows it by section (points, ⚡ tricks, "You missed these"), then "Share or save as PDF" (Print.printToFileAsync → share sheet); `lib/review-html.ts` escapes every string (1 test); "Review sheet (PDF)" on the course screen. Native packages: needs a new development build. Build stamp #40.

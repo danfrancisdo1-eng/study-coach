@@ -674,6 +674,15 @@ export const coachCases: CoachCase[] = [
     expectations: ["One line about the result (7 of 10), no repeat of the corrections", "Offers the four choices as suggestions"],
     maxWords: 40,
   },
+  // coach.v18 (D-102): a PDF review sheet exists; the coach points to it.
+  {
+    name: "asks for a PDF review of everything: points to the Review sheet (PDF) button, never 'can't'",
+    courses: [{ id: "ab", name: "Microsoft AB-731", kind: "exam", materials: 2, lectures: 0 }], firstVisit: false, history: [],
+    message: "can you make me a pdf review of everything for the upcoming exam?",
+    expectedActions: [],
+    expectations: ["Says the app can make it: the \"Review sheet (PDF)\" button on the course screen builds a review from their material and misses and saves or shares it as a PDF", "Does not say it cannot make a PDF"],
+    maxWords: 80,
+  },
   // coach.v16 (D-074): suggestions answer the reply; the four after-set chips are for the first reply only.
   {
     name: "later turn after a set: chips answer the coach's own question, not the four set options (Dan's screenshot)",
