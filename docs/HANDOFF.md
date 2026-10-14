@@ -15,6 +15,11 @@
 4. **`e19f6b2` D-052 two-part sets (server):** a chat-first set of six or more is written in two parts: three questions before the reply goes out, the rest in the background (`writeRestOfSet` in `routes/chat.ts`), appended with a version-race retry. `quiz.writing = { startedAt }` meanwhile; `status: writing | ready` on `StudyQuiz` and `HomeChatActiveQuiz` (`lib/quiz-status.ts`, stale after 3 minutes = ready); answers taken while writing, grading answers 409; a failed second part leaves the set as its first part. Sets under six unchanged. No prompt change. Tests: `tests/home-chat.test.mjs` last test (the AI stub can now return a promise to hold a reply), `tests/quiz-status.test.mjs`. **Not visible to Dan until merged**, since the phone talks to Render.
 5. Everything from the 2026-10-09 section: welcome (D-047, verified by Dan), aesthetics pass (D-048; Dan saw the gold ring, "very faint"; he did not see the frosted strip), tour (D-049/D-050, unseen).
 
+### Added 2026-10-14: the development build is on Dan's iPhone; a sandbox purchase worked
+- Start the preview for it with `cd artifacts/study-coach-mobile && sh scripts/preview-anywhere.sh dev` (detached with nohup); in the RapidRecall app's launcher enter https://overfactiously-aedilitian-lettie.ngrok-free.dev. Plain `sh scripts/preview-anywhere.sh` still serves Expo Go.
+- The Claude in Chrome connection can switch to Dan's Windows PC after a reconnect; check which computer before acting in the browser.
+- Next: confirm the sandbox customer in RevenueCat, Small Business Program once Paid Apps is Active, then TestFlight prep and PREMIUM_LIMITS=on.
+
 ### Added at the end of 2026-10-13: Premium set up end to end; next is the development build
 - Read PROGRESS "Session 9". Everything is merged and live (`2eafe17`); the RevenueCat webhook test returns 200. Limits stay off until PREMIUM_LIMITS=on.
 - Preview: `cd artifacts/study-coach-mobile && sh scripts/preview-anywhere.sh` (own ngrok domain; Expo Go needs `--go`, already in the script).

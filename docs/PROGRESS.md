@@ -12,8 +12,10 @@
 - **Expo:** EAS project @danfrancis/study-coach-mobile; EAS env EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY, EXPO_PUBLIC_DOMAIN, EXPO_PUBLIC_REVENUECAT_IOS_KEY; `.env.local` has the RevenueCat public key (Dan approved).
 - **Merged to main and live** (`2eafe17`): web delete account (D-089) and Premium + rename + fixes (D-090 to D-095). 144/144 tests on main.
 
+- **Development build installed and a sandbox purchase worked (2026-10-13/14).** iPhone 15 Pro registered by UDID (read over USB; the profile route hit iOS Stolen Device Protection's 1-hour delay). First build failed at pods (Clerk needs iOS 17; D-096 sets deploymentTarget 17.0); second build FINISHED (8b8a0999). Sandbox tester `danfrancisdo1+rrsandbox@gmail.com` (two typo'd testers deleted). Preview for the dev build: `sh scripts/preview-anywhere.sh dev`, then in the app's launcher Enter URL https://overfactiously-aedilitian-lettie.ngrok-free.dev. Still to confirm: RevenueCat Customers (sandbox) shows Dan with premium active (the app shows Premium anyway because Dan is in OWNER_ACCOUNT_IDS).
+
 ### Next
-- The first development build: `npx eas-cli device:create`, then `npx eas-cli build --profile development --platform ios` (Dan signs in to Apple), install, then a sandbox purchase.
+- Confirm the sandbox customer in RevenueCat; then the first development build is done: `npx eas-cli device:create`, then `npx eas-cli build --profile development --platform ios` (Dan signs in to Apple), install, then a sandbox purchase.
 - Apply for the App Store Small Business Program once Paid Apps is Active.
 - Then: PREMIUM_LIMITS=on when purchases work on TestFlight.
 
