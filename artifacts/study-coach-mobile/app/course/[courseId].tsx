@@ -8,7 +8,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import {
   deleteCourse, getGetCourseResultsQueryKey, getGetStudyStateQueryKey, getListLecturesQueryKey, getListStudySessionsQueryKey, useGetCourseResults, useGetStudyState, useListLectures, useListStudySessions, useLookupExamGuide, usePutStudyState,
+  getGetPremiumStatusQueryKey, useGetPremiumStatus,
 } from '@workspace/api-client-react';
+import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
@@ -57,6 +59,9 @@ export default function CourseScreen() {
   const stateQuery = useGetStudyState({ query: { queryKey: stateKey, enabled: !!userId } });
   const lecturesQuery = useListLectures({ courseId }, { query: { queryKey: [...getListLecturesQueryKey({ courseId }), userId], enabled: !!userId && !!courseId } });
   const sessionsQuery = useListStudySessions({ query: { queryKey: [...getListStudySessionsQueryKey(), userId], enabled: !!userId } });
+  // Read-only after a lapse (D-090): everything stays visible; new AI work waits for Premium.
+  const premiumQuery = useGetPremiumStatus({ query: { queryKey: getGetPremiumStatusQueryKey(), enabled: !!userId } });
+  const readOnly = !!courseId && !!premiumQuery.data?.readOnlyCourseIds.includes(courseId);
   const resultsQuery = useGetCourseResults(courseId ?? '', { query: { queryKey: [...getGetCourseResultsQueryKey(courseId ?? ''), userId], enabled: !!userId && !!courseId } });
   const putState = usePutStudyState();
   const lookupGuide = useLookupExamGuide();
@@ -120,7 +125,7 @@ export default function CourseScreen() {
       queryClient.setQueryData(stateKey, { state: result.state, version: result.version });
       await queryClient.invalidateQueries({ queryKey: getListStudySessionsQueryKey() });
       await queryClient.invalidateQueries({ queryKey: getListLecturesQueryKey() });
-      router.back();
+      goBack();
     } catch (problem) { setError(readable(problem)); } finally { setSaving(false); }
   };
 
@@ -152,7 +157,7 @@ export default function CourseScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => goBack()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
         <View style={styles.headerCopy}>
           <Text numberOfLines={1} style={styles.title}>{typeof course?.name === 'string' ? course.name : 'Course'}</Text>
           <Text style={styles.caption}>{isExam ? `Certification exam${typeof course?.examDate === 'string' ? ` · ${describeExamDate(course.examDate)}` : ''}` : 'Course'}</Text>
@@ -180,6 +185,12 @@ export default function CourseScreen() {
           ) : null}
 
           <View style={styles.card} testID="panel-course-actions">
+            {readOnly ? (
+              <View style={styles.readOnly} testID="panel-read-only">
+                <Text style={[styles.body, { flex: 0 }]}>Read-only on the free plan. Your materials, results and chats are all kept; studying it with the coach needs Premium.</Text>
+                <ActionButton label="See Premium" icon="star" onPress={() => router.push({ pathname: '/premium', params: { reason: 'course_read_only' } })} testID="button-read-only-premium" />
+              </View>
+            ) : null}
             <Text style={styles.kicker}>Actions</Text>
             <View style={styles.actions}>
               <ActionButton label="Add material" icon="plus-circle" onPress={() => scrollTo(intakeY.current)} testID="button-action-material" />
@@ -351,6 +362,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   headerCopy: { flex: 1, minWidth: 0 },
   title: { color: colors.foreground, fontSize: 20, fontWeight: '700' },
   caption: { color: colors.mutedForeground, fontSize: 12 },
+  readOnly: { gap: 10, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, marginBottom: 6 },
   sheetRow: { gap: 3, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border },
   sheetTerm: { color: colors.foreground, fontSize: 14, fontWeight: '700' },
   sheetTrick: { color: colors.hookText, backgroundColor: colors.hookBg, borderRadius: 8, paddingVertical: 5, paddingHorizontal: 8, fontSize: 13, fontWeight: '600', alignSelf: 'flex-start' },

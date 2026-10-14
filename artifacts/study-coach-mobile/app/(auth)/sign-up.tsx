@@ -68,7 +68,7 @@ export default function SignUpScreen() {
       testID="screen-sign-up"
     >
       <View style={[styles.brandMark, { backgroundColor: colors.primary }]}><Feather name="book-open" size={23} color={colors.primaryForeground} /></View>
-      <Text style={[styles.eyebrow, { color: colors.primaryText }]}>Study Coach</Text>
+      <Text style={[styles.eyebrow, { color: colors.primaryText }]}>RapidRecall AI</Text>
       <Text style={[styles.title, { color: colors.foreground }]}>{verifying ? 'Check your email.' : 'Find the flaws. Fix the facts.'}</Text>
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{verifying ? `We sent a verification code to ${emailAddress}.` : 'Create an account to keep courses and study sessions in sync.'}</Text>
       {verifying ? (
@@ -90,7 +90,7 @@ export default function SignUpScreen() {
           </Pressable>
           {ageNudge ? <Text accessibilityRole="alert" style={[styles.caption, { color: colors.destructive }]} testID="status-age-nudge">Tick "I'm 13 or older" first.</Text> : null}
           <Text style={[styles.caption, { color: colors.mutedForeground }]}>
-            Study Coach is for people 13 and older. By creating an account you agree to the{' '}
+            RapidRecall AI is for people 13 and older. By creating an account you agree to the{' '}
             {PRIVACY_URL ? <Text style={[styles.link, styles.captionLink, { color: colors.primaryText }]} accessibilityRole="link" onPress={openPrivacy} testID="link-privacy">privacy policy</Text> : 'privacy policy'}.
           </Text>
           <View>

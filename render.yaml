@@ -33,6 +33,14 @@ services:
         value: anthropic
       - key: AI_PROVIDER_CLASSIC_QUIZ
         value: openai
+      # D-090/D-091 Premium: RevenueCat secret key (V1), the webhook's Authorization value, and the
+      # Clerk user ids that are always Premium. Values live only in the dashboard.
+      - key: REVENUECAT_SECRET_KEY
+        sync: false
+      - key: REVENUECAT_WEBHOOK_AUTH
+        sync: false
+      - key: OWNER_ACCOUNT_IDS
+        sync: false
 
 databases:
   - name: study-coach-db

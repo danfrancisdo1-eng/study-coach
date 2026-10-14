@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   deleteLecture, getGetLectureQueryKey, getListLecturesQueryKey, updateLecture, useGetLecture, type Lecture,
 } from '@workspace/api-client-react';
+import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
 import {
   editedSegments, formatDuration, spokenDuration, transcriptHasText, transcriptionBlocker, type TranscriptSegment,
@@ -56,7 +57,7 @@ export default function LectureScreen() {
     }
     Alert.alert(
       'Send this recording for transcription?',
-      'The audio is sent to OpenAI to turn speech into text. It is not stored on Study Coach’s server, and the recording stays on this iPhone.',
+      'The audio is sent to OpenAI to turn speech into text. It is not stored on RapidRecall AI’s server, and the recording stays on this iPhone.',
       [{ text: 'Cancel', style: 'cancel' }, { text: 'Transcribe', onPress: () => void transcribe() }],
     );
   }
@@ -129,7 +130,7 @@ export default function LectureScreen() {
             await deleteLecture(id);
             deleteLectureAudio(id);
             await refresh();
-            router.back();
+            goBack();
           } catch {
             setMessage('Couldn’t delete the lecture. Check your connection and try again.');
             setBusy(null);
@@ -152,7 +153,7 @@ export default function LectureScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back to lectures" onPress={() => router.back()} disabled={busy === 'transcribing'} style={styles.iconButton} testID="button-lecture-back">
+        <Pressable accessibilityRole="button" accessibilityLabel="Back to lectures" onPress={() => goBack()} disabled={busy === 'transcribing'} style={styles.iconButton} testID="button-lecture-back">
           <Feather name="arrow-left" size={20} color={colors.foreground} />
         </Pressable>
         <View style={styles.headerCopy}>
@@ -189,7 +190,7 @@ export default function LectureScreen() {
           {busy === 'transcribing' ? (
             <View style={styles.card} accessibilityLiveRegion="polite">
               <Text style={styles.cardTitle}>{progress < 1 ? `Uploading ${Math.round(progress * 100)}%` : 'Transcribing…'}</Text>
-              <Text style={styles.body}>Long lectures can take a few minutes. Keep Study Coach open.</Text>
+              <Text style={styles.body}>Long lectures can take a few minutes. Keep RapidRecall AI open.</Text>
               <Pressable accessibilityRole="button" onPress={() => abort.current?.abort()} style={styles.textButton} testID="button-cancel-transcribe"><Text style={styles.link}>Cancel</Text></Pressable>
             </View>
           ) : null}

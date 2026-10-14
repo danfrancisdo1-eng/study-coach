@@ -20,3 +20,4 @@
 export * from "./study";
 export * from "./lectures";
 export * from "./homeChats";
+export * from "./premium";

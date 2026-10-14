@@ -83,7 +83,7 @@ export default function SignInScreen() {
       testID="screen-sign-in"
     >
       <View style={[styles.brandMark, { backgroundColor: colors.primary }]}><Feather name="book-open" size={23} color={colors.primaryForeground} /></View>
-      <Text style={[styles.eyebrow, { color: colors.primaryText }]}>Study Coach</Text>
+      <Text style={[styles.eyebrow, { color: colors.primaryText }]}>RapidRecall AI</Text>
       <Text style={[styles.title, { color: colors.foreground }]}>{signInTitle(signedInBefore)}</Text>
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Sign in to continue your saved study sessions.</Text>
       {needsEmailCode ? (
@@ -115,7 +115,7 @@ export default function SignInScreen() {
             <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>{busy ? 'Signing in…' : 'Continue'}</Text>
           </Pressable>
           <View style={styles.linkRow}>
-            <Text style={[styles.body, { color: colors.mutedForeground }]}>New to Study Coach? </Text>
+            <Text style={[styles.body, { color: colors.mutedForeground }]}>New to RapidRecall AI? </Text>
             <Link href="/(auth)/sign-up" testID="link-sign-up"><Text style={[styles.link, { color: colors.primaryText }]}>Create account</Text></Link>
           </View>
           <Link href="/onboarding?replay=1" style={styles.textButton} testID="link-tour"><Text style={[styles.link, { color: colors.primaryText }]}>See the tour</Text></Link>

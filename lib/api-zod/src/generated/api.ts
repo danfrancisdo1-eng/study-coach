@@ -195,6 +195,54 @@ export const DeleteAccountResponse = zod.object({
 
 
 /**
+ * @summary The account's plan, limits, today's AI use and which courses are active (D-090)
+ */
+export const GetPremiumStatusResponse = zod.object({
+  "enforced": zod.boolean().describe('False until PREMIUM_LIMITS=on on the server; then limits apply'),
+  "plan": zod.enum(['free', 'premium']),
+  "source": zod.union([zod.literal('owner'),zod.literal('revenuecat'),zod.literal(null)]).nullable(),
+  "expiresAt": zod.string().nullable(),
+  "productId": zod.string().nullable(),
+  "limits": zod.object({
+  "courses": zod.number().int().nullable().describe('null = unlimited'),
+  "sets": zod.number().int(),
+  "messages": zod.number().int()
+}),
+  "usage": zod.object({
+  "sets": zod.number().int(),
+  "messages": zod.number().int(),
+  "resetAt": zod.string().nullable()
+}),
+  "activeCourseIds": zod.array(zod.string()),
+  "readOnlyCourseIds": zod.array(zod.string())
+}).describe('D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit or course_read_only.')
+
+
+/**
+ * @summary Re-check the purchase with RevenueCat (after a purchase or Restore Purchases)
+ */
+export const RefreshPremiumResponse = zod.object({
+  "enforced": zod.boolean().describe('False until PREMIUM_LIMITS=on on the server; then limits apply'),
+  "plan": zod.enum(['free', 'premium']),
+  "source": zod.union([zod.literal('owner'),zod.literal('revenuecat'),zod.literal(null)]).nullable(),
+  "expiresAt": zod.string().nullable(),
+  "productId": zod.string().nullable(),
+  "limits": zod.object({
+  "courses": zod.number().int().nullable().describe('null = unlimited'),
+  "sets": zod.number().int(),
+  "messages": zod.number().int()
+}),
+  "usage": zod.object({
+  "sets": zod.number().int(),
+  "messages": zod.number().int(),
+  "resetAt": zod.string().nullable()
+}),
+  "activeCourseIds": zod.array(zod.string()),
+  "readOnlyCourseIds": zod.array(zod.string())
+}).describe('D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit or course_read_only.')
+
+
+/**
  * @summary Report a coach reply (wrong, harmful or other)
  */
 export const reportHomeChatMessageBodyCourseIdMax = 200;

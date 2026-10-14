@@ -7,6 +7,7 @@ import coursesRouter from "./courses";
 import chatRouter from "./chat";
 import accountRouter from "./account";
 import privacyRouter from "./privacy";
+import premiumRouter from "./premium";
 
 export { requireStudyAuth } from "./study";
 
@@ -20,5 +21,6 @@ router.use(coursesRouter);
 router.use(chatRouter);
 router.use(accountRouter);
 router.use(privacyRouter);
+router.use(premiumRouter);
 
 export default router;

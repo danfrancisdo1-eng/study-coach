@@ -13,6 +13,7 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
+import { premiumCode } from '@/lib/premium-ui';
 import { ActionButton } from '@/components/ActionButton';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
 import { BUILD } from '@/constants/build';
@@ -128,6 +129,9 @@ export default function CourseListScreen() {
     } catch (problem) {
       if ((problem as { status?: number }).status === 409) await queryClient.invalidateQueries({ queryKey: stateKey });
       setError(readable(problem));
+      // A second course on the free plan (D-090): close the sheet and open the paywall.
+      const code = premiumCode(problem);
+      if (code) { setAddOpen(false); router.push({ pathname: '/premium', params: { reason: code } }); }
     }
   };
 
@@ -144,7 +148,7 @@ export default function CourseListScreen() {
         {atRoot ? (
           <Pressable accessibilityRole="button" accessibilityLabel="Talk to your coach" onPress={toCoach} style={styles.iconButton} testID="button-coach"><Feather name="message-circle" size={22} color={colors.primaryText} /></Pressable>
         ) : (
-          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => { if (router.canGoBack()) router.back(); else router.navigate('/(tabs)'); }} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
         )}
         <View style={styles.headerCopy}><Text style={styles.title}>Courses & exams</Text><Text style={styles.caption}>Tap one to open it</Text></View>
         <Pressable accessibilityRole="button" onPress={() => setAddOpen(true)} style={styles.addButton} testID="button-add-course">

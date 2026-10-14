@@ -58,7 +58,7 @@ test('DELETE /study/account removes one account, keeps the others; /privacy is p
   assert.equal(privacy.status, 200);
   assert.match(privacy.headers.get('content-type') ?? '', /text\/html/);
   const page = await privacy.text();
-  assert.match(page, /Study Coach privacy policy/);
+  assert.match(page, /RapidRecall AI privacy policy/);
   assert.match(page, /Delete your account/);
   assert.match(page, /13 and older/);
 });

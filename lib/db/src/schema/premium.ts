@@ -1,0 +1,23 @@
+import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+
+// D-090: who has Premium and until when. No row = free. Updated from RevenueCat's
+// notifications (newest event wins) and by the on-demand refresh; owner accounts come
+// from server config, not from this table.
+export const entitlementsTable = pgTable("entitlements", {
+  ownerId: text("owner_id").primaryKey(),
+  plan: text("plan").$type<"free" | "premium">().notNull().default("free"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  productId: text("product_id"),
+  source: text("source").notNull().default("revenuecat"),
+  lastEventAt: timestamp("last_event_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// D-090: daily AI use per account, a rolling 24-hour window like the lecture quota.
+export const aiUsageTable = pgTable("ai_usage", {
+  ownerId: text("owner_id").primaryKey(),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull().defaultNow(),
+  sets: integer("sets").notNull().default(0),
+  messages: integer("messages").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

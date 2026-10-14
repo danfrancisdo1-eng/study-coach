@@ -11,6 +11,7 @@ import {
   type RecordingOptions,
 } from 'expo-audio';
 import { createLecture, getListLecturesQueryKey, useListLectures, type LectureSummary } from '@workspace/api-client-react';
+import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
 import {
   formatDuration, normalizedTitle, recordedSeconds, recordingLimitState, spokenDuration, type PendingRecording,
@@ -99,7 +100,7 @@ export default function CourseLecturesScreen() {
       const permission = await requestRecordingPermissionsAsync();
       if (!permission.granted) {
         setPhase({ kind: 'idle' });
-        Alert.alert('Microphone is off', 'To record lectures, allow Study Coach to use the microphone in Settings.', [
+        Alert.alert('Microphone is off', 'To record lectures, allow RapidRecall AI to use the microphone in Settings.', [
           { text: 'Not now', style: 'cancel' },
           { text: 'Open Settings', onPress: () => void Linking.openSettings() },
         ]);
@@ -183,7 +184,7 @@ export default function CourseLecturesScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back to courses" onPress={() => router.back()} disabled={recording} style={styles.iconButton} testID="button-lectures-back">
+        <Pressable accessibilityRole="button" accessibilityLabel="Back to courses" onPress={() => goBack()} disabled={recording} style={styles.iconButton} testID="button-lectures-back">
           <Feather name="arrow-left" size={20} color={recording ? colors.mutedForeground : colors.foreground} />
         </Pressable>
         <View style={styles.headerCopy}>
@@ -244,7 +245,7 @@ export default function CourseLecturesScreen() {
             </View>
           ) : null}
           {!lectures.isLoading && !lectures.error && items.length === 0 && !pending.length ? (
-            <Text style={styles.body}>Record a lecture and Study Coach turns it into notes you can review, ask about, and be quizzed on.</Text>
+            <Text style={styles.body}>Record a lecture and RapidRecall AI turns it into notes you can review, ask about, and be quizzed on.</Text>
           ) : null}
           {items.map((item) => {
             const status = STATUS_LABEL[item.status];

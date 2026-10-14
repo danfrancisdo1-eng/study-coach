@@ -13,6 +13,7 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
+import { premiumCode } from '@/lib/premium-ui';
 import { ActionButton } from '@/components/ActionButton';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
 import { defaultIntakeCourse, type IntakeCourse } from '@/lib/intake-course';
@@ -300,6 +301,9 @@ export default function CoachHome() {
       const status = (problem as { status?: number }).status;
       if (status === 409) await queryClient.invalidateQueries({ queryKey: chatKey });
       setError(readableError(problem));
+      // The plan stopped it (D-090): the sentence stays under the chat, the draft stays in the box, the paywall opens.
+      const code = premiumCode(problem);
+      if (code) router.push({ pathname: '/premium', params: { reason: code } });
     }
   };
 
@@ -423,7 +427,7 @@ export default function CoachHome() {
       <View style={styles.header}>
         <View style={[styles.brandMark, { backgroundColor: colors.primary }]}><Feather name="book-open" size={17} color={colors.primaryForeground} /></View>
         <View style={styles.headerCopy}>
-          <Text style={styles.brand}>Study Coach</Text>
+          <Text style={styles.brand}>RapidRecall AI</Text>
           <Text numberOfLines={1} style={styles.headerSub}>Your coach</Text>
         </View>
         {/* Dan: "need a Return to course list button" on the chat. Sign out is not here: it read as "go back" (D-065); it lives in Account. */}
@@ -543,7 +547,7 @@ export default function CoachHome() {
               </Pressable>
               <View style={styles.headerCopy}>
                 <Text style={styles.brand}>{deckSessionId ? 'Flashcards' : quizIsPractice ? 'Practice' : 'Exam'}</Text>
-                <Text numberOfLines={1} style={styles.headerSub}>{(activeDeck ?? activeQuiz)?.topic ?? 'Study Coach'}</Text>
+                <Text numberOfLines={1} style={styles.headerSub}>{(activeDeck ?? activeQuiz)?.topic ?? 'RapidRecall AI'}</Text>
               </View>
             </View>
             <ScrollView ref={quizScrollRef} style={styles.studySheet} contentContainerStyle={[styles.quizDockContent, { paddingBottom: 24 }]} keyboardShouldPersistTaps="handled" testID="dock-quiz">

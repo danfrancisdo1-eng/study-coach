@@ -41,6 +41,7 @@ import type {
   ListStudySessions200,
   PlanInput,
   PlanResult,
+  PremiumStatus,
   QuizInput,
   QuizResult,
   ReportHomeChatMessage200,
@@ -755,6 +756,157 @@ export const useDeleteAccount = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteAccountMutationOptions(options));
+    }
+
+export const getGetPremiumStatusUrl = () => {
+
+
+
+
+  return `/api/premium`
+}
+
+/**
+ * @summary The account's plan, limits, today's AI use and which courses are active (D-090)
+ */
+export const getPremiumStatus = async ( options?: Parameters<typeof customFetch>[1]): Promise<PremiumStatus> => {
+
+  return customFetch<PremiumStatus>(getGetPremiumStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPremiumStatusQueryKey = () => {
+    return [
+    `/api/premium`
+    ] as const;
+    }
+
+
+export const getGetPremiumStatusQueryOptions = <TData = Awaited<ReturnType<typeof getPremiumStatus>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPremiumStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPremiumStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPremiumStatus>>> = ({ signal }) => getPremiumStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPremiumStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPremiumStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getPremiumStatus>>>
+export type GetPremiumStatusQueryError = ErrorType<void>
+
+
+/**
+ * @summary The account's plan, limits, today's AI use and which courses are active (D-090)
+ */
+
+export function useGetPremiumStatus<TData = Awaited<ReturnType<typeof getPremiumStatus>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPremiumStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPremiumStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRefreshPremiumUrl = () => {
+
+
+
+
+  return `/api/premium/refresh`
+}
+
+/**
+ * @summary Re-check the purchase with RevenueCat (after a purchase or Restore Purchases)
+ */
+export const refreshPremium = async ( options?: Parameters<typeof customFetch>[1]): Promise<PremiumStatus> => {
+
+  return customFetch<PremiumStatus>(getRefreshPremiumUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRefreshPremiumMutationKey = () => ['refreshPremium'] as const;
+
+export const getRefreshPremiumMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshPremium>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refreshPremium>>, TError,void, TContext> => {
+
+const mutationKey = getRefreshPremiumMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refreshPremium>>, void> = () => {
+
+
+          return  refreshPremium(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefreshPremiumMutationResult = NonNullable<Awaited<ReturnType<typeof refreshPremium>>>
+
+    export type RefreshPremiumMutationError = ErrorType<void>
+
+
+    /**
+ * @summary Re-check the purchase with RevenueCat (after a purchase or Restore Purchases)
+ */
+export const useRefreshPremium = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshPremium>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refreshPremium>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRefreshPremiumMutationOptions(options));
     }
 
 export const getReportHomeChatMessageUrl = () => {

@@ -10,7 +10,7 @@ const TECHNICAL = /exception|\.swift|\.java|\.kt\b|\(at |stack|undefined is not|
 export const MESSAGES = {
   network: 'No connection right now. Nothing was lost. Try again in a moment.',
   conflict: 'This was updated on another device and has been refreshed. Try that again.',
-  server: 'Study Coach had a problem on its side. Try again in a moment.',
+  server: 'RapidRecall AI had a problem on its side. Try again in a moment.',
   generic: 'Something went wrong. Try again.',
 } as const;
 

@@ -131,7 +131,7 @@ function Header({ title, subtitle, onBack, onSignOut }: {
         <View style={[styles.brandMark, { backgroundColor: colors.primary }]}><Feather name="book-open" size={17} color={colors.primaryForeground} /></View>
       )}
       <View style={styles.headerCopy}>
-        <Text style={styles.brand}>Study Coach</Text>
+        <Text style={styles.brand}>RapidRecall AI</Text>
         <Text numberOfLines={1} style={styles.headerSub}>{subtitle || title}</Text>
       </View>
       <Pressable accessibilityLabel="Sign out" accessibilityRole="button" testID="button-sign-out" onPress={onSignOut} style={styles.iconButton}>
@@ -1060,7 +1060,7 @@ function StudyCoach() {
                 )}
                 <View style={styles.consentCard} testID="panel-ai-consent">
                   <View style={styles.consentHeading}><Feather name="shield" size={19} color={colors.accentForeground} /><Text style={styles.cardTitle}>Your choice before AI</Text></View>
-                  <Text style={styles.body}>Study Coach sends the topic, your messages, selected course materials, and your quiz answers to AI to teach, generate practice, and explain results. AI may make mistakes; review explanations. You can change this choice at any time.</Text>
+                  <Text style={styles.body}>RapidRecall AI sends the topic, your messages, selected course materials, and your quiz answers to AI to teach, generate practice, and explain results. AI may make mistakes; review explanations. You can change this choice at any time.</Text>
                   <Pressable
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: savedState.aiConsent === true }}

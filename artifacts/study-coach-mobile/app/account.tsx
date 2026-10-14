@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Redirect, router } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
@@ -7,12 +7,14 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
-import { useDeleteAccount } from '@workspace/api-client-react';
+import { getGetPremiumStatusQueryKey, useDeleteAccount, useGetPremiumStatus, useRefreshPremium } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { BUILD } from '@/constants/build';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { welcomeReplayKey } from '@/lib/welcome';
+import { planLine } from '@/lib/premium-ui';
+import { MANAGE_SUBSCRIPTIONS_URL, purchasesAvailable, restore } from '@/lib/purchases';
 
 /**
  * The Account page (D-080, Dan: "we need a link to account page"): privacy, the welcome and
@@ -30,6 +32,22 @@ export default function AccountScreen() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteWord, setDeleteWord] = useState('');
   const [error, setError] = useState('');
+  // Premium (D-090): the plan line, Restore Purchases and Manage subscription.
+  const premiumQuery = useGetPremiumStatus({ query: { queryKey: getGetPremiumStatusQueryKey(), enabled: !!isSignedIn } });
+  const refresh = useRefreshPremium();
+  const [restoring, setRestoring] = useState(false);
+  const [planNote, setPlanNote] = useState('');
+  const status = premiumQuery.data;
+  const restorePurchases = async () => {
+    if (!userId || restoring) return;
+    setRestoring(true); setPlanNote('');
+    try {
+      await restore(userId);
+      const next = await refresh.mutateAsync();
+      queryClient.setQueryData(getGetPremiumStatusQueryKey(), next);
+      setPlanNote(next.plan === 'premium' ? 'Purchases restored. You have Premium.' : 'No Premium purchase was found for this Apple ID.');
+    } catch (problem) { setPlanNote(friendlyError(problem)); } finally { setRestoring(false); }
+  };
 
   if (isLoaded && !isSignedIn) return <Redirect href="/" />;
 
@@ -69,6 +87,16 @@ export default function AccountScreen() {
         <View style={styles.headerCopy}><Text style={styles.title}>Account</Text></View>
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
+        <View style={styles.planCard} testID="panel-plan">
+          <Text style={styles.rowName}>{planLine(status)}</Text>
+          {status?.plan !== 'premium' ? <Pressable accessibilityRole="button" onPress={() => router.push('/premium')} style={({ pressed }) => [styles.planButton, pressed && styles.pressed]} testID="button-see-premium"><Text style={styles.planButtonText}>See Premium</Text></Pressable> : null}
+          <View style={styles.planLinks}>
+            <Text style={styles.planLink} accessibilityRole="button" onPress={() => void restorePurchases()} testID="button-restore-purchases">{restoring ? 'Restoring…' : 'Restore Purchases'}</Text>
+            {status?.plan === 'premium' && status.source === 'revenuecat' ? <Text style={styles.planLink} accessibilityRole="link" onPress={() => void Linking.openURL(MANAGE_SUBSCRIPTIONS_URL)} testID="link-manage-subscription">Manage subscription</Text> : null}
+          </View>
+          {!purchasesAvailable() ? <Text style={styles.caption}>Purchases work in the TestFlight and App Store builds.</Text> : null}
+          {planNote ? <Text style={styles.caption} accessibilityRole="alert">{planNote}</Text> : null}
+        </View>
         {PRIVACY_URL ? row('shield', 'Privacy policy', 'What is collected, where it goes, how to delete it', openPrivacy, 'link-privacy') : null}
         {row('compass', 'See the welcome again', 'The three steps: course, material, coach', () => {
           if (!userId) return;
@@ -79,6 +107,8 @@ export default function AccountScreen() {
         {row('log-out', 'Sign out', 'The next sign-in starts with the tour', () => void signOut(), 'button-sign-out')}
         <View style={styles.divider} />
         {row('trash-2', 'Delete my account', 'Removes your courses, sets, chats and sign-in. Cannot be undone.', () => { setError(''); setDeleteWord(''); setDeleteOpen(true); }, 'button-delete-account', true)}
+        {/* The account's id (D-095): Dan pastes it into OWNER_ACCOUNT_IDS on Render; press and hold to copy. Not a secret. */}
+        {userId ? <Text selectable maxFontSizeMultiplier={1} style={styles.build} testID="text-account-id">Account ID: {userId}</Text> : null}
         <Text maxFontSizeMultiplier={1} style={styles.build}>Build {BUILD}</Text>
       </ScrollView>
 
@@ -114,6 +144,11 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, paddingHorizontal: 12 },
   rowCopy: { flex: 1, minWidth: 0, gap: 2 },
   rowName: { color: colors.foreground, fontSize: 15, fontWeight: '600' },
+  planCard: { gap: 10, padding: 14, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, marginBottom: 8 },
+  planButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.primary },
+  planButtonText: { color: colors.primaryForeground, fontSize: 15, fontWeight: '700' },
+  planLinks: { flexDirection: 'row', gap: 20 },
+  planLink: { color: colors.primaryText, fontSize: 14, fontWeight: '600', paddingVertical: 10 },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: 14 },
   build: { color: colors.mutedForeground, fontSize: 11, marginTop: 18, textAlign: 'center' },
   empty: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20, paddingVertical: 12 },

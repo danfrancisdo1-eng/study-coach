@@ -198,7 +198,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
 
   return <div className="onboard" style={{ maxWidth: 1190 }}>
     <div className="spread" style={{ gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
-      <strong className="brand" style={{ color: '#293448' }}>study coach<span style={{ color: '#d36748' }}>.</span></strong>
+      <strong className="brand" style={{ color: '#293448' }}>rapidrecall ai<span style={{ color: '#d36748' }}>.</span></strong>
       <div className="row" style={{ flexWrap: 'wrap' }}>
         <button type="button" className="btn btn-quiet" onClick={onClassic} data-testid="button-classic-workspace">Lecture desk · browser-only</button>
         <button type="button" className="btn btn-outline" onClick={onSignOut} data-testid="button-sign-out">Sign out</button>

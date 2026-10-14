@@ -1,6 +1,6 @@
 {
-  "name": "Study Coach",
-  "short_name": "Study Coach",
+  "name": "RapidRecall AI",
+  "short_name": "RapidRecall",
   "description": "A focused personal study companion.",
   "start_url": "./",
   "scope": "./",

@@ -13,7 +13,7 @@ const html = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Study Coach privacy policy</title>
+<title>RapidRecall AI privacy policy</title>
 <style>
   :root { color-scheme: light dark; }
   body { margin: 0; padding: 24px 16px 64px; font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 720px; margin-inline: auto; }
@@ -22,16 +22,17 @@ const html = `<!doctype html>
 </style>
 </head>
 <body>
-<h1>Study Coach privacy policy</h1>
+<h1>RapidRecall AI privacy policy</h1>
 <p class="muted">Last updated ${UPDATED}. This is a draft for review before the app is published.</p>
 
-<p>Study Coach is a study companion for students aged 13 and older. It is built and operated by an individual developer. This page says what the app collects, why, where it goes, and how to delete it.</p>
+<p>RapidRecall AI is a study companion for students aged 13 and older. It is built and operated by an individual developer. This page says what the app collects, why, where it goes, and how to delete it.</p>
 
 <h2>What the app collects</h2>
 <ul>
   <li><strong>Your account:</strong> the email address, and name if you share it, from the sign-in you choose (email and password, Apple, or Google). Sign-in is handled by Clerk.</li>
   <li><strong>Your study content:</strong> the courses and exams you add, the material you upload or photograph (notes, syllabi, slides, web pages), the questions and answers in your practice sets and flashcards, your memory sheet, and your conversation with the coach.</li>
   <li><strong>Lectures:</strong> audio you record stays on your phone. If you choose to transcribe a recording, the audio is sent for transcription and only the transcript is kept on our servers.</li>
+  <li><strong>Your plan:</strong> whether you have Premium, when it renews or ends, and how many question sets and coach messages you used today. Purchases are made through Apple and checked by RevenueCat; RapidRecall AI never sees your payment details.</li>
   <li><strong>Usage needed to run the app:</strong> request logs with timestamps and error reports, kept for a limited time to keep the service working.</li>
 </ul>
 <p>The app does not collect your location, contacts, photos beyond the ones you pick, or advertising identifiers, and it does not show ads.</p>
@@ -43,10 +44,10 @@ const html = `<!doctype html>
 <p>Your account data and study content are stored on servers hosted by Render in the United States. Lecture audio is stored only on your device.</p>
 
 <h2>Sharing</h2>
-<p>Study Coach has no sharing feature: nothing you create is sent to anyone other than the service providers listed above. We do not sell personal information.</p>
+<p>RapidRecall AI has no sharing feature: nothing you create is sent to anyone other than the service providers listed above. We do not sell personal information.</p>
 
 <h2>Children</h2>
-<p>Study Coach is for people aged 13 and older. You confirm your age when you create an account. If we learn that an account belongs to a child under 13, we delete it.</p>
+<p>RapidRecall AI is for people aged 13 and older. You confirm your age when you create an account. If we learn that an account belongs to a child under 13, we delete it.</p>
 
 <h2>Your choices</h2>
 <ul>
