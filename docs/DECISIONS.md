@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-14 — D-101: The review sheet (spec C), server side
+- `POST /study/courses/{courseId}/review-sheet`: AI consent required; counts as one set (refunded on failure); sends the course material (14k chars, as sets), the memory sheet and the student's missed questions with their right answers (newest 40, one per question); uses the official guide's sections in order when there is one. New task `review_sheet` (claude-sonnet-5-5, effort low) and prompt `review-sheet.v1`: 3–8 key points per section (anything not from the student's material marked "(General knowledge)"), 0–3 true memory tricks, every miss placed once with its exact answer; injected instructions ignored. Output validated (`lib/review-sheet.ts`). Contract + regenerated clients.
+- Tests: 2 unit + 1 end-to-end (consent, 404, grounded inputs, validation, 502); evals review_sheet 2/2 twice on Claude (first run 1/2: section names carried the weight and one ungrounded point was unmarked; prompt and grader tightened before release, so still v1). Decided by Dan (D-099).
+
 ## 2026-10-14 — D-100: Confetti on a perfect score (spec A)
 - `components/Confetti.tsx` (Reanimated, no new package) on both score screens (live practice card and exam sheet): 42 pieces fall for about 2 seconds with a success haptic, once per graded set on this phone (AsyncStorage). Reduce Motion: no animation, a "Perfect score" line. `lib/perfect-score.ts` (1 test): all counted questions answered and right; skipped or empty never counts. Build stamp #39.
 - UX checklist: no new targets; motion respects Reduce Motion; the layer is hidden from VoiceOver and does not block taps; colour is decoration only. Verified here: typecheck; 60/60 mobile tests; iOS bundle export. Needs real-iPhone check: a 10/10 set. Decided by Dan (D-099).

@@ -4,7 +4,7 @@
 //   AI_PROVIDER_<TASK>=openai|anthropic per-task override, e.g. AI_PROVIDER_TUTOR
 //   AI_MODEL_<TASK>=<model id>          per-task model override, e.g. AI_MODEL_TUTOR
 
-export type AiTask = "image_ocr" | "tutor" | "session_quiz" | "syllabus" | "classic_quiz" | "exam_plan" | "coach" | "flashcards" | "exam_guide" | "memory_sheet" | "quiz_check" | "flag_check" | "web_lookup";
+export type AiTask = "image_ocr" | "tutor" | "session_quiz" | "syllabus" | "classic_quiz" | "exam_plan" | "coach" | "flashcards" | "exam_guide" | "memory_sheet" | "quiz_check" | "flag_check" | "web_lookup" | "review_sheet";
 export type AiProvider = "openai" | "anthropic";
 export type Effort = "low" | "medium" | "high";
 
@@ -23,7 +23,7 @@ type ProviderDefaults = Omit<TaskConfig, "provider" | "json">;
 
 // JSON output tasks get a schema from ./schemas (TASK_SCHEMAS).
 const JSON_TASKS: Record<AiTask, boolean> = {
-  image_ocr: true, tutor: false, session_quiz: true, syllabus: true, classic_quiz: true, exam_plan: true, coach: true, flashcards: true, exam_guide: false, memory_sheet: true, quiz_check: true, flag_check: true, web_lookup: false,
+  image_ocr: true, tutor: false, session_quiz: true, syllabus: true, classic_quiz: true, exam_plan: true, coach: true, flashcards: true, exam_guide: false, memory_sheet: true, quiz_check: true, flag_check: true, web_lookup: false, review_sheet: true,
 };
 
 // Today's production settings.
@@ -41,6 +41,7 @@ const OPENAI: Record<AiTask, ProviderDefaults> = {
   quiz_check: { model: "gpt-5.4-mini", maxTokens: 4000 },
   flag_check: { model: "gpt-5.6-terra", maxTokens: 2000 },
   web_lookup: { model: "gpt-5.6-terra", maxTokens: 2000 }, // unused: the task needs web search, Anthropic only
+  review_sheet: { model: "gpt-5.6-terra", maxTokens: 8000 },
 };
 
 // Starting points from docs/AUDIT.md section 5c; confirmed or changed by evals.
@@ -67,6 +68,8 @@ const ANTHROPIC: Record<AiTask, ProviderDefaults> = {
   flag_check: { model: "claude-opus-5-5", maxTokens: 12000, effort: "high" },
   // Web lookup on request (D-045): "search the internet for…" from the chat; plain text with sources.
   web_lookup: { model: "claude-sonnet-5-5", maxTokens: 8000, effort: "low" },
+  // PDF review sheet (D-101): one grounded summary of a course by section.
+  review_sheet: { model: "claude-sonnet-5-5", maxTokens: 16000, effort: "low" },
 };
 
 function provider(value: string | undefined): AiProvider | undefined {

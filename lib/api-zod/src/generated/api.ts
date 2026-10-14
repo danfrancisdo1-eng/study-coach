@@ -326,6 +326,40 @@ export const GetCourseResultsResponse = zod.object({
 
 
 /**
+ * One AI call; counts as one set toward the daily limit. Requires AI consent. 402 with code daily_limit or course_read_only when the plan stops it.
+ * @summary A grounded review sheet of the course by section (key points, memory tricks, the student's misses), for a PDF (D-101)
+ */
+export const createReviewSheetPathCourseIdMax = 200;
+
+
+
+export const CreateReviewSheetParams = zod.object({
+  "courseId": zod.coerce.string().min(1).max(createReviewSheetPathCourseIdMax)
+})
+
+export const CreateReviewSheetResponse = zod.object({
+  "title": zod.string(),
+  "courseName": zod.string(),
+  "generatedAt": zod.string(),
+  "basedOn": zod.object({
+  "materials": zod.number().int(),
+  "misses": zod.number().int(),
+  "memoryRows": zod.number().int(),
+  "officialSections": zod.number().int()
+}),
+  "sections": zod.array(zod.object({
+  "name": zod.string(),
+  "points": zod.array(zod.string()),
+  "tricks": zod.array(zod.string()),
+  "misses": zod.array(zod.object({
+  "question": zod.string(),
+  "answer": zod.string()
+}))
+}))
+})
+
+
+/**
  * Removes the course, its saved materials, its study sessions and their review items, and its lectures and transcripts, in one transaction. Other courses and accounts are untouched.
  * @summary Permanently delete one course and everything saved for it
  */

@@ -90,7 +90,18 @@ export const quizCheckSchema = object({
   checks: { type: "array", items: object({ index: { type: "integer" }, consistent: { type: "boolean" }, correctIndex: { type: "integer" } }) },
 });
 
+export const reviewSheetSchema = object({
+  title: string,
+  sections: { type: "array", items: object({
+    name: string,
+    points: { type: "array", items: string },
+    tricks: { type: "array", items: string },
+    misses: { type: "array", items: object({ question: string, answer: string }) },
+  }) },
+});
+
 export const TASK_SCHEMAS: Partial<Record<AiTask, JsonSchema>> = {
+  review_sheet: reviewSheetSchema,
   quiz_check: quizCheckSchema,
   flag_check: flagCheckSchema,
   coach: coachSchema,

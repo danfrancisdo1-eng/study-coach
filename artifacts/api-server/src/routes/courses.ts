@@ -7,6 +7,14 @@ import { saveExamGuide } from "../lib/exam-guide-state";
 import { conceptTallies, eventsFrom, topicTallies, weakConcepts } from "../lib/results-history";
 import type { Session } from "../lib/session-quiz";
 import { desc } from "drizzle-orm";
+import { complete } from "../ai";
+import * as reviewSheetPrompt from "../prompts/review-sheet.v1";
+import { missesFrom, parseReviewSheet } from "../lib/review-sheet";
+import { sourceChunks, sourceTextOf } from "../lib/session-quiz";
+import { reviewedLectureMaterials } from "../lib/lecture-materials";
+import { rowsFromState } from "../lib/memory-sheet";
+import { activeFor, consume, enforced, planFor, refund } from "../lib/premium-store";
+import { limitMessage } from "../lib/premium";
 
 const router: IRouter = Router();
 router.use("/study/courses", requireStudyAuth);
@@ -40,6 +48,66 @@ router.get("/study/courses/:courseId/results", async (req, res): Promise<void> =
     weak: weakConcepts(events, 6),
     sets: events.length,
   });
+});
+
+// The review sheet (D-101, spec C): one grounded summary of the course by section (the exam
+// guide's sections when there is one), with key points, memory tricks and the student's own
+// misses. Counts as one set toward the daily limit. The phone turns it into a PDF.
+router.post("/study/courses/:courseId/review-sheet", async (req, res): Promise<void> => {
+  const courseId = req.params.courseId;
+  if (typeof courseId !== "string" || !courseId.trim() || courseId.length > 200) {
+    res.status(400).json({ error: "Invalid course id." });
+    return;
+  }
+  const ownerId = owner(req);
+  const state = (await db.select({ state: studyStatesTable.state }).from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1))[0]?.state as JsonObject | undefined;
+  if (!isObject(state) || state.aiConsent !== true) {
+    res.status(403).json({ error: "Persist explicit AI consent in study state (aiConsent: true) before using AI coaching." });
+    return;
+  }
+  const courses = list(state.courses).filter(isObject);
+  const course = courses.find((c) => c.id === courseId);
+  if (!course) {
+    res.status(404).json({ error: "That course was not found." });
+    return;
+  }
+  const courseName = typeof course.name === "string" ? course.name : "this course";
+  let counted = false;
+  if (enforced()) {
+    const info = await planFor(ownerId);
+    const ids = courses.filter((c): c is JsonObject & { id: string } => typeof c.id === "string");
+    if (!activeFor(ids, info).includes(courseId)) {
+      res.status(402).json({ error: limitMessage("read_only", info.limits), code: "course_read_only" });
+      return;
+    }
+    if (!await consume(ownerId, "sets", info.limits.sets)) {
+      res.status(402).json({ error: limitMessage("sets", info.limits), code: "daily_limit" });
+      return;
+    }
+    counted = true;
+  }
+  const guide = isObject(course.examGuide) && course.examGuide.found === true ? course.examGuide : null;
+  const sections = guide ? list(guide.sections).filter(isObject).map((s) => ({ name: String(s.name ?? ""), weight: typeof s.weight === "number" ? s.weight : null })).filter((s) => s.name) : [];
+  const { chunks } = sourceChunks(state, courseId, courseName, await reviewedLectureMaterials(ownerId, courseId));
+  const sessions = (await db.select({ session: studySessionsTable.session }).from(studySessionsTable)
+    .where(and(eq(studySessionsTable.ownerId, ownerId), eq(studySessionsTable.courseId, courseId)))
+    .orderBy(desc(studySessionsTable.createdAt)).limit(60)).map((r) => r.session as unknown as Session);
+  const misses = missesFrom(sessions as unknown as Parameters<typeof missesFrom>[0]);
+  const memorySheet = rowsFromState(state, courseId).slice(0, 60).map(({ term, trick, whenYouSee, think }) => ({ term, trick, whenYouSee, think }));
+  try {
+    const response = await complete("review_sheet", {
+      system: reviewSheetPrompt.systemPrompt({ courseName, sections }),
+      messages: [{ role: "user", content: JSON.stringify({ courseMaterial: sourceTextOf(chunks), memorySheet, missedQuestions: misses.map((m) => ({ concept: m.concept, question: m.question, correctAnswer: m.answer })) }) }],
+      timeoutMs: 120_000,
+    });
+    const sheet = parseReviewSheet(response.text ? JSON.parse(response.text) : null, `${courseName}: review sheet`);
+    if (!sheet) throw new Error("No usable review sheet");
+    res.json({ ...sheet, courseName, generatedAt: new Date().toISOString(), basedOn: { materials: chunks.length, misses: misses.length, memoryRows: memorySheet.length, officialSections: sections.length } });
+  } catch (error) {
+    if (counted) await refund(ownerId, "sets");
+    req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Review sheet failed");
+    res.status(502).json({ error: "The coach could not write your review sheet just now. Try again in a moment." });
+  }
 });
 
 // Deletes one course and everything saved for it, atomically: the course entry, its

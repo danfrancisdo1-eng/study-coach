@@ -5,6 +5,33 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type ReviewSheetBasedOn = {
+  materials: number;
+  misses: number;
+  memoryRows: number;
+  officialSections: number;
+};
+
+export type ReviewSheetSectionsItemMissesItem = {
+  question: string;
+  answer: string;
+};
+
+export type ReviewSheetSectionsItem = {
+  name: string;
+  points: string[];
+  tricks: string[];
+  misses: ReviewSheetSectionsItemMissesItem[];
+};
+
+export interface ReviewSheet {
+  title: string;
+  courseName: string;
+  generatedAt: string;
+  basedOn: ReviewSheetBasedOn;
+  sections: ReviewSheetSectionsItem[];
+}
+
 export type PremiumStatusPlan = typeof PremiumStatusPlan[keyof typeof PremiumStatusPlan];
 
 

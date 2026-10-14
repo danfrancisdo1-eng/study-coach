@@ -22,10 +22,11 @@ import * as webLookupPrompt from "../src/prompts/web-lookup.v1";
 import * as flashcardsPrompt from "../src/prompts/flashcards.v2";
 import * as examGuidePrompt from "../src/prompts/exam-guide.v1";
 import * as memorySheetPrompt from "../src/prompts/memory-sheet.v2";
+import * as reviewSheetPrompt from "../src/prompts/review-sheet.v1";
 import * as flagCheckPrompt from "../src/prompts/flag-check.v1";
 import { taskConfig, type AiTask } from "../src/ai/tasks";
-import { classicQuizCases, coachCases, examGuideCases, flagCheckCases, flashcardsCases, memorySheetCases, ocrCaseNames, planCases, quizCheckCases, sessionQuizCases, syllabusCases, tutorCases, webLookupCases, type Source } from "./fixtures";
-import { gradeClassicQuiz, gradeCoach, gradeExamGuide, gradeFlagCheck, gradeFlashcards, gradeMemorySheet, gradeOcr, gradePlan, gradeQuizCheck, gradeSessionQuiz, gradeSyllabus, gradeTutor, gradeWebLookup, type Score } from "./graders";
+import { classicQuizCases, coachCases, examGuideCases, flagCheckCases, flashcardsCases, memorySheetCases, reviewSheetCases, ocrCaseNames, planCases, quizCheckCases, sessionQuizCases, syllabusCases, tutorCases, webLookupCases, type Source } from "./fixtures";
+import { gradeClassicQuiz, gradeCoach, gradeExamGuide, gradeFlagCheck, gradeFlashcards, gradeMemorySheet, gradeOcr, gradePlan, gradeQuizCheck, gradeReviewSheet, gradeSessionQuiz, gradeSyllabus, gradeTutor, gradeWebLookup, type Score } from "./graders";
 
 const evalDir = path.resolve(process.argv[1] ? path.dirname(process.argv[1]) : ".", "..");
 const serverDir = path.resolve(evalDir, "..");
@@ -42,7 +43,7 @@ const option = (name: string) => args.flatMap((a, i) => (a === `--${name}` && ar
 const dryRun = args.includes("--dry-run");
 const providerArg = option("provider")[0] ?? "both";
 const providers = providerArg === "both" ? ["openai", "anthropic"] : [providerArg];
-const allTasks: AiTask[] = ["syllabus", "classic_quiz", "exam_plan", "session_quiz", "tutor", "image_ocr", "coach", "flashcards", "exam_guide", "memory_sheet", "quiz_check", "flag_check", "web_lookup"];
+const allTasks: AiTask[] = ["syllabus", "classic_quiz", "exam_plan", "session_quiz", "tutor", "image_ocr", "coach", "flashcards", "exam_guide", "memory_sheet", "quiz_check", "flag_check", "web_lookup", "review_sheet"];
 const tasks = option("task").length ? (option("task") as AiTask[]) : allTasks;
 
 // USD per million tokens (input, output). Unknown models show no cost.
@@ -153,6 +154,11 @@ async function main() {
       run: () => complete("memory_sheet", { system: memorySheetPrompt.systemPrompt({ courseName: c.courseName, existingTerms: c.existingTerms }), messages: [{ role: "user", content: JSON.stringify({ items: c.items }) }] }),
       grade: (text) => gradeMemorySheet(c, text),
     });
+    if (tasks.includes("review_sheet")) for (const c of reviewSheetCases) jobs.push({
+      task: "review_sheet", name: c.name,
+      run: () => complete("review_sheet", { system: reviewSheetPrompt.systemPrompt({ courseName: c.courseName, sections: c.sections }), messages: [{ role: "user", content: JSON.stringify(c.input) }], timeoutMs: 120_000 }),
+      grade: (text) => gradeReviewSheet(c, text),
+    });
     if (tasks.includes("exam_guide")) for (const c of examGuideCases) jobs.push({
       task: "exam_guide", name: c.name,
       run: () => complete("exam_guide", { system: examGuidePrompt.systemPrompt(today), messages: [{ role: "user", content: JSON.stringify({ examName: c.examName }) }], webSearch: { maxUses: 5 }, timeoutMs: 120_000 }),
@@ -212,7 +218,7 @@ async function main() {
   const outDir = path.join(evalDir, "results");
   mkdirSync(outDir, { recursive: true });
   const file = path.join(outDir, `${new Date().toISOString().replace(/[:.]/g, "-")}.json`);
-  writeFileSync(file, JSON.stringify({ today, providers, tasks, prompts: { syllabus: syllabusPrompt.version, classicQuiz: classicQuizPrompt.version, examPlan: examPlanPrompt.version, tutor: tutorPrompt.version, sessionQuiz: sessionQuizPrompt.version, imageOcr: imageOcrPrompt.version, coach: coachPrompt.version, flashcards: flashcardsPrompt.version, examGuide: examGuidePrompt.version, memorySheet: memorySheetPrompt.version, quizCheck: quizCheckPrompt.version, flagCheck: flagCheckPrompt.version, webLookup: webLookupPrompt.version }, results }, null, 2));
+  writeFileSync(file, JSON.stringify({ today, providers, tasks, prompts: { syllabus: syllabusPrompt.version, classicQuiz: classicQuizPrompt.version, examPlan: examPlanPrompt.version, tutor: tutorPrompt.version, sessionQuiz: sessionQuizPrompt.version, imageOcr: imageOcrPrompt.version, coach: coachPrompt.version, flashcards: flashcardsPrompt.version, examGuide: examGuidePrompt.version, memorySheet: memorySheetPrompt.version, quizCheck: quizCheckPrompt.version, flagCheck: flagCheckPrompt.version, webLookup: webLookupPrompt.version, reviewSheet: reviewSheetPrompt.version }, results }, null, 2));
   console.log(`\nFull results: ${path.relative(process.cwd(), file)} (judge model: ${process.env.EVAL_JUDGE_MODEL || "claude-opus-5-5"}; judge cost not included)`);
 }
 

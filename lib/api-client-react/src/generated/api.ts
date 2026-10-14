@@ -45,6 +45,7 @@ import type {
   QuizInput,
   QuizResult,
   ReportHomeChatMessage200,
+  ReviewSheet,
   StudyAnswerInput,
   StudyCheckIn,
   StudyMaterialExtraction,
@@ -1149,6 +1150,81 @@ export function useGetCourseResults<TData = Awaited<ReturnType<typeof getCourseR
 
 
 
+
+export const getCreateReviewSheetUrl = (courseId: string,) => {
+
+
+
+
+  return `/api/study/courses/${courseId}/review-sheet`
+}
+
+/**
+ * One AI call; counts as one set toward the daily limit. Requires AI consent. 402 with code daily_limit or course_read_only when the plan stops it.
+ * @summary A grounded review sheet of the course by section (key points, memory tricks, the student's misses), for a PDF (D-101)
+ */
+export const createReviewSheet = async (courseId: string, options?: Parameters<typeof customFetch>[1]): Promise<ReviewSheet> => {
+
+  return customFetch<ReviewSheet>(getCreateReviewSheetUrl(courseId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCreateReviewSheetMutationKey = () => ['createReviewSheet'] as const;
+
+export const getCreateReviewSheetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReviewSheet>>, TError,CreateReviewSheetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createReviewSheet>>, TError,CreateReviewSheetMutationVariables, TContext> => {
+
+const mutationKey = getCreateReviewSheetMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createReviewSheet>>, CreateReviewSheetMutationVariables> = (props) => {
+          const {courseId} = props ?? {};
+
+          return  createReviewSheet(courseId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateReviewSheetMutationResult = NonNullable<Awaited<ReturnType<typeof createReviewSheet>>>
+
+    export type CreateReviewSheetMutationError = ErrorType<void>
+    export type CreateReviewSheetMutationVariables = {courseId: string}
+
+    /**
+ * @summary A grounded review sheet of the course by section (key points, memory tricks, the student's misses), for a PDF (D-101)
+ */
+export const useCreateReviewSheet = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReviewSheet>>, TError,CreateReviewSheetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createReviewSheet>>,
+        TError,
+        CreateReviewSheetMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateReviewSheetMutationOptions(options));
+    }
 
 export const getDeleteCourseUrl = (courseId: string,) => {
 

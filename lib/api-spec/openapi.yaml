@@ -225,6 +225,24 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CourseResults" }
+  /study/courses/{courseId}/review-sheet:
+    parameters:
+      - { name: courseId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
+    post:
+      operationId: createReviewSheet
+      tags: [study]
+      summary: A grounded review sheet of the course by section (key points, memory tricks, the student's misses), for a PDF (D-101)
+      description: One AI call; counts as one set toward the daily limit. Requires AI consent. 402 with code daily_limit or course_read_only when the plan stops it.
+      responses:
+        "200":
+          description: The review sheet
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReviewSheet" }
+        "402": { description: Stopped by the plan }
+        "403": { description: AI consent required }
+        "404": { description: Course not found }
+        "502": { description: The AI could not write it }
   /study/courses/{courseId}:
     parameters:
       - { name: courseId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
@@ -625,6 +643,38 @@ paths:
               schema: { $ref: "#/components/schemas/StudySession" }
 components:
   schemas:
+    ReviewSheet:
+      type: object
+      required: [title, sections, courseName, generatedAt, basedOn]
+      properties:
+        title: { type: string }
+        courseName: { type: string }
+        generatedAt: { type: string }
+        basedOn:
+          type: object
+          required: [materials, misses, memoryRows, officialSections]
+          properties:
+            materials: { type: integer }
+            misses: { type: integer }
+            memoryRows: { type: integer }
+            officialSections: { type: integer }
+        sections:
+          type: array
+          items:
+            type: object
+            required: [name, points, tricks, misses]
+            properties:
+              name: { type: string }
+              points: { type: array, items: { type: string } }
+              tricks: { type: array, items: { type: string } }
+              misses:
+                type: array
+                items:
+                  type: object
+                  required: [question, answer]
+                  properties:
+                    question: { type: string }
+                    answer: { type: string }
     PremiumStatus:
       type: object
       description: "D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit or course_read_only."
