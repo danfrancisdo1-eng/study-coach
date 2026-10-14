@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { blocksOf, type Span } from './lib/coach-text';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetHomeChatQueryKey, useGetHomeChat, useOpenHomeChat, useSendHomeChatMessage, type HomeChat as HomeChatData } from '@workspace/api-client-react';
 import QuizCard from './QuizCard';
@@ -97,9 +98,13 @@ export default function HomeChat({ aiConsent, busy, courseId, onCoursesChanged, 
             <span className="ae-turn-badge">{turn.role === 'user' ? 'YOU' : 'AI'}</span>
             <div className="ae-turn-content">
               {turn.role === 'assistant'
-                ? turn.content.split(/\n+/).map(l => l.trim()).filter(Boolean).map((line, i) => {
-                  const numbered = /^(\d+)[.)]\s+(.*)$/.exec(line);
-                  return numbered ? <p key={i} className="sc-miss-hook sc-trick">⚡ {numbered[2]}</p> : <p key={i}>{line}</p>;
+                ? blocksOf(turn.content).map((block, i) => {
+                  // D-098: bold section headings with space above, bullets, inline bold.
+                  const inline = (spans: Span[]) => spans.map((sp, k) => sp.bold ? <strong key={k}>{sp.text}</strong> : <span key={k}>{sp.text}</span>);
+                  if (block.kind === 'heading') return <p key={i} style={{ fontWeight: 700, marginTop: i > 0 ? '1em' : 0 }}>{block.spans[0]?.text}</p>;
+                  if (block.kind === 'bullet') return <p key={i} style={{ paddingLeft: '1em', textIndent: '-.8em' }}>• {inline(block.spans)}</p>;
+                  if (block.kind === 'trick') return <p key={i} className="sc-miss-hook sc-trick">⚡ {block.label ? <strong>{block.label}: </strong> : null}{inline(block.spans)}</p>;
+                  return <p key={i}>{inline(block.spans)}</p>;
                 })
                 : <p>{turn.content}</p>}
               {turn.actions?.map(action => action.type === 'update_memory_sheet' ? (

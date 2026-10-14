@@ -13,6 +13,7 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
+import { blocksOf, type Span } from '@/lib/coach-text';
 import { premiumCode } from '@/lib/premium-ui';
 import { ActionButton } from '@/components/ActionButton';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
@@ -341,25 +342,27 @@ export default function CoachHome() {
   // Coach replies: blank line between paragraphs; "1. Label: trick" lines become their own
   // hook chips (same ⚡ style as the question hooks; Dan: tricks ran together as one paragraph).
   const renderCoachText = (content: string) => {
-    const blocks = content.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+    // D-098: headings bold with room above them, bullets, inline **bold** (lib/coach-text.ts).
+    const inline = (spans: Span[]) => spans.map((sp, k) => sp.bold
+      ? <Text key={k} style={styles.bold}>{withLinks(sp.text)}</Text>
+      : <React.Fragment key={k}>{withLinks(sp.text)}</React.Fragment>);
     return (
       <View style={styles.coachBlocks}>
-        {blocks.map((line, i) => {
-          const numbered = /^(\d+)[.)]\s+(.*)$/.exec(line);
-          if (numbered) {
-            const [, n, rest] = numbered;
-            const split = /^([^:]{2,40}):\s*(.*)$/.exec(rest!);
-            return (
-              <View key={i} style={styles.trickCard} testID="chat-trick">
-                <Feather name="zap" size={15} color={colors.hookText} />
-                <Text style={styles.trickText}>
-                  {split ? <><Text style={styles.trickLabel}>{split[1]}: </Text>{split[2]}</> : rest}
-                  <Text style={styles.trickNumber}>  {n}</Text>
-                </Text>
-              </View>
-            );
-          }
-          return <Text key={i} style={styles.body}>{withLinks(line)}</Text>;
+        {blocksOf(content).map((block, i) => {
+          if (block.kind === 'heading') return <Text key={i} style={[styles.heading, i > 0 && styles.headingGap]} accessibilityRole="header">{block.spans[0]?.text}</Text>;
+          if (block.kind === 'bullet') return (
+            <View key={i} style={styles.bulletRow}><Text style={styles.body}>•</Text><Text style={[styles.body, styles.bulletText]}>{inline(block.spans)}</Text></View>
+          );
+          if (block.kind === 'trick') return (
+            <View key={i} style={styles.trickCard} testID="chat-trick">
+              <Feather name="zap" size={15} color={colors.hookText} />
+              <Text style={styles.trickText}>
+                {block.label ? <Text style={styles.trickLabel}>{block.label}: </Text> : null}{inline(block.spans)}
+                <Text style={styles.trickNumber}>  {block.n}</Text>
+              </Text>
+            </View>
+          );
+          return <Text key={i} style={styles.body}>{inline(block.spans)}</Text>;
         })}
       </View>
     );
@@ -663,6 +666,11 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   coachTurn: { alignSelf: 'stretch', paddingHorizontal: 2, paddingVertical: 4 },
   turnRole: { color: colors.mutedForeground, fontSize: 12, fontWeight: '600' },
   coachBlocks: { gap: 8 },
+  bold: { fontWeight: '700' },
+  heading: { color: colors.foreground, fontSize: 16, lineHeight: 22, fontWeight: '700' },
+  headingGap: { marginTop: 12 },
+  bulletRow: { flexDirection: 'row', gap: 8, paddingLeft: 2 },
+  bulletText: { flex: 1 },
   trickCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, padding: 11, borderRadius: 14, backgroundColor: colors.hookBg },
   trickText: { flex: 1, color: colors.hookText, fontSize: 13.5, lineHeight: 19.5 },
   trickLabel: { fontWeight: '700', color: colors.reviewText },

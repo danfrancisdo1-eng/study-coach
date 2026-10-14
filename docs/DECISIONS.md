@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-14 — D-098: Coach replies show headings, bullets and bold
+- Dan (AB-731 cheat sheet screenshot): "The page is too jumbled. The title of the section bold it and put an extra line between sections." The chat printed **bold** markers as asterisks. `lib/coach-text.ts` (phone; the web has a copy) parses each line into a heading (an all-bold or # line), a bullet, a numbered trick (the existing ⚡ card) or text, with inline bold spans. Headings are bold with space above; bullets get a dot. Phone and web. Build stamp #38.
+- UX checklist (code review): reading order clearer; headings marked as headers for VoiceOver; theme tokens; no new targets or motion; paywall N/A. Verified here: typecheck; 150/150 tests (2 new); iOS bundle export. Needs real-iPhone check. Decided by Dan (bug).
+
 ## 2026-10-14 — D-097: A set never holds the same question twice, even reworded
 - Dan: "Last exam I took had two of the same questions in it." Exact repeats were already dropped; a reworded repeat slipped through, most likely across the two separately written parts of a set (D-052), which only asked the writer to avoid earlier prompts. `lib/near-duplicate.ts`: two prompts with 5+ content words are the same question at ≥0.75 word overlap (numbers count, so "port 443" vs "port 80" stay distinct; shorter prompts only match exactly). Used when a set is written and when the second part and carried questions are appended. Tests: 4 new; 148/148. Server change; reaches the phone after a merge. Decided by Dan (bug).
 
