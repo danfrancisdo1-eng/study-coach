@@ -12,7 +12,14 @@
       "bundleIdentifier": "com.danfrancis.studycoach"
     },
     "android": {
-      "package": "com.danfrancis.studycoach"
+      "package": "com.danfrancis.studycoach",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MICROPHONE"
+      ]
     },
     "web": {
       "favicon": "./assets/images/icon.png"
@@ -39,6 +46,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bb322c0a-8bad-4eee-ba73-67efc3f3df5a"
+      }
+    },
+    "owner": "danfrancis"
   }
 }
