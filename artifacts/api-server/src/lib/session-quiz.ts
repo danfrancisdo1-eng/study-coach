@@ -121,6 +121,7 @@ import { countsInScore, excludedByReport } from "./question-counts";
 export { countsInScore, excludedByReport };
 
 import { quizStatus, WRITING_TIMEOUT_MS, type QuizStatus } from "./quiz-status";
+import { isNearDuplicate } from "./near-duplicate";
 export { quizStatus, WRITING_TIMEOUT_MS, type QuizStatus };
 
 export type QuizScore = { correct: number; answered: number; excluded: number; invalidItems: number; unanswered: number; total: number; percent: number; gradedAt: string };
@@ -319,7 +320,8 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
     }
     const normalizedPrompt = value.prompt.trim().toLowerCase().replace(/\s+/g, " ");
     const normalizedOptions = (value.options as string[]).map((option) => option.trim().toLowerCase().replace(/\s+/g, " "));
-    if (usedPrompts.has(normalizedPrompt) || new Set(normalizedOptions).size !== normalizedOptions.length) {
+    // Exact or reworded repeats of an earlier question in this set or the last one (D-097).
+    if (usedPrompts.has(normalizedPrompt) || isNearDuplicate(normalizedPrompt, usedPrompts) || new Set(normalizedOptions).size !== normalizedOptions.length) {
       invalidItemCount += 1;
       continue;
     }

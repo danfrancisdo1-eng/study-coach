@@ -23,6 +23,7 @@ import { getSession, requireStudyAuth, saveSession } from "./study";
 import { logger } from "../lib/logger";
 import { activeFor, consume, enforced, planFor, refund } from "../lib/premium-store";
 import { limitMessage } from "../lib/premium";
+import { withoutNearDuplicates } from "../lib/near-duplicate";
 
 const router: IRouter = Router();
 router.use("/study/chat", requireStudyAuth);
@@ -375,7 +376,10 @@ async function writeRestOfSet(ownerId: string, sessionId: string, input: Generat
     const quiz = session?.quiz;
     if (!session || !quiz || !quiz.writing) return; // deleted with its course, or already finished
     if (quiz.grade) { log.warn("Home chat: the rest of the set arrived after grading; dropped"); return; }
-    quiz.questions.push(...added, ...carried);
+    // The second part was written separately: drop anything that repeats a question already in the set (D-097).
+    const fresh = withoutNearDuplicates(added, quiz.questions.map((q) => q.prompt));
+    const extra = withoutNearDuplicates(carried, [...quiz.questions, ...fresh].map((q) => q.prompt));
+    quiz.questions.push(...fresh, ...extra);
     quiz.invalidItemCount += invalid;
     quiz.writing = null;
     if (await saveSession(session, ownerId)) {

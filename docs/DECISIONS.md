@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-14 — D-097: A set never holds the same question twice, even reworded
+- Dan: "Last exam I took had two of the same questions in it." Exact repeats were already dropped; a reworded repeat slipped through, most likely across the two separately written parts of a set (D-052), which only asked the writer to avoid earlier prompts. `lib/near-duplicate.ts`: two prompts with 5+ content words are the same question at ≥0.75 word overlap (numbers count, so "port 443" vs "port 80" stay distinct; shorter prompts only match exactly). Used when a set is written and when the second part and carried questions are appended. Tests: 4 new; 148/148. Server change; reaches the phone after a merge. Decided by Dan (bug).
+
 ## 2026-10-13 — D-096: Minimum iOS 17.0
 - The first EAS development build failed at Install pods: "@clerk/expo was not linked: requires iOS 17.0 but app targets 16.4", then a crash in React Native's SPM post-install. `app.json` sets `ios.deploymentTarget` "17.0" (Expo's built-in setting, no new package). The build also recorded `ITSAppUsesNonExemptEncryption: false` (the app only uses standard HTTPS). Dan's iPhone 15 Pro is registered (EAS device:create, UDID read over USB). Decided by Claude Code under Dan's approval of the development build (D-091).
 
