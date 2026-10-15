@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-15 — D-112: Timed exams, step 2: the server keeps the clock
+- Spec B. A timed set stores quiz.timer {startedAt, limitMinutes, deadline} in the session (no database change). Wall-clock time, so closing the app doesn't stop it.
+- Answers after the deadline plus a 15-second grace (network lag) get 409 {timeUp: true}. From the deadline on, the set can be graded even while the rest is still being written; it is graded with the questions that arrived. The client grades at 0:00, or on reopening if the app was closed (step 4).
+- A timed set is scored like the real exam: percent = right of all counted questions (unanswered count as wrong); the grade adds timeUsedSeconds (at most the limit) and limitMinutes. Untimed sets are unchanged (right of answered).
+- proratedMinutes(limit, realCount, block) = round(limit × block ÷ realCount), at least 1 (50 questions in 100 minutes → 20-question block = 40 minutes), for step 3.
+- Nothing starts a timed set yet (step 3). Tests 168/168 (3 new).
+
 ## 2026-10-15 — D-111: Timed exams, step 1b: the student can type or correct the real exam's numbers
 - Spec B: "If the official page gives no number, the course screen asks the student to type them in (they can also correct a wrong one)." CISSP (adaptive, 100–150 questions) is the obvious case.
 - PUT /study/courses/:courseId/exam-facts saves course.examFacts apart from the guide, so a Refresh never wipes a correction; a typed value wins field by field (effectiveExamFacts; same rule on phone and web in lib/exam-facts.ts). All empty removes the correction. Exams only; nothing goes to the AI, so no consent check. Whole numbers 1–400 questions, 1–600 minutes; passing score up to 60 characters.

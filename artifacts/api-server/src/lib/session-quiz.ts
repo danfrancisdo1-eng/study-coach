@@ -78,6 +78,8 @@ export type Quiz = {
   sourceStatus: SourceStatus;
   invalidItemCount: number;
   grade: Record<string, unknown> | null;
+  /** Timed exams (spec B, D-112): the clock the server keeps. Absent on untimed sets. */
+  timer?: ExamTimer | null;
 };
 // Flashcard deck (D-021): front/back cards reviewed with "got it" / "again"; a card is
 // done once its latest result is "got". Completing the deck schedules review items.
@@ -122,9 +124,10 @@ export { countsInScore, excludedByReport };
 
 import { quizStatus, WRITING_TIMEOUT_MS, type QuizStatus } from "./quiz-status";
 import { isNearDuplicate } from "./near-duplicate";
+import { timeUsedSeconds, type ExamTimer } from "./exam-timer";
 export { quizStatus, WRITING_TIMEOUT_MS, type QuizStatus };
 
-export type QuizScore = { correct: number; answered: number; excluded: number; invalidItems: number; unanswered: number; total: number; percent: number; gradedAt: string };
+export type QuizScore = { correct: number; answered: number; excluded: number; invalidItems: number; unanswered: number; total: number; percent: number; gradedAt: string; timeUsedSeconds?: number; limitMinutes?: number };
 
 /** The score of a set as it stands: used at grading and again when a report changes what counts. */
 export function scoreQuiz(quiz: Quiz, now: Date): { score: QuizScore; valid: StoredQuestion[]; answered: StoredQuestion[]; correct: StoredQuestion[]; learnerReportedCount: number } {
@@ -147,6 +150,12 @@ export function scoreQuiz(quiz: Quiz, now: Date): { score: QuizScore; valid: Sto
     percent: answered.length ? Math.round((correct.length / answered.length) * 100) : 0,
     gradedAt: now.toISOString(),
   };
+  // A timed set is scored like the real exam (D-112): unanswered questions count as wrong.
+  if (quiz.timer) {
+    score.percent = valid.length ? Math.round((correct.length / valid.length) * 100) : 0;
+    score.timeUsedSeconds = timeUsedSeconds(quiz.timer, now);
+    score.limitMinutes = quiz.timer.limitMinutes;
+  }
   return { score, valid, answered, correct, learnerReportedCount };
 }
 
@@ -173,6 +182,7 @@ export function safeSession(session: Session): Record<string, unknown> {
         : value.kind === "practice" && question.answers.length ? { feedback: practiceFeedback(question) } : {}),
     })),
     grade: value.grade,
+    timer: value.timer ?? null,
   });
   const { _version, attempts = [], quiz: currentQuiz, flashcards, ...publicSession } = session;
   return {

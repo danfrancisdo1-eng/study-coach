@@ -16,6 +16,11 @@ export interface StudyScore {
   invalidItems: number;
   unanswered: number;
   total: number;
+  /** Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong) */
   percent: number;
   gradedAt: Date;
+  /** Timed exams only: time used, at most the limit */
+  timeUsedSeconds?: number;
+  /** Timed exams only: the time limit */
+  limitMinutes?: number;
 }

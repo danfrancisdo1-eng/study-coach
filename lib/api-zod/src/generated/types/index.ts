@@ -20,6 +20,7 @@ export * from './examFacts';
 export * from './examFactsInput';
 export * from './examGuide';
 export * from './examGuideSectionsItem';
+export * from './examTimer';
 export * from './flashcardReviewInput';
 export * from './flashcardReviewInputResult';
 export * from './getHomeChatParams';

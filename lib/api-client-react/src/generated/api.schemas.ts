@@ -354,8 +354,13 @@ export interface StudyScore {
   invalidItems: number;
   unanswered: number;
   total: number;
+  /** Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong) */
   percent: number;
   gradedAt: string;
+  /** Timed exams only: time used, at most the limit */
+  timeUsedSeconds?: number;
+  /** Timed exams only: the time limit */
+  limitMinutes?: number;
 }
 
 export type StudySessionScores = {
@@ -458,6 +463,13 @@ export interface StudyQuestionFeedback {
   assisted: boolean;
 }
 
+export interface ExamTimer {
+  startedAt: string;
+  /** @minimum 1 */
+  limitMinutes: number;
+  deadline: string;
+}
+
 export type StudyQuizQuestionsItemOptionsItem = {
   id: string;
   text: string;
@@ -494,6 +506,8 @@ export interface StudyQuiz {
   sourceStatus: StudySourceStatus;
   questions: StudyQuizQuestionsItem[];
   grade?: StudyScore | null;
+  /** Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets. */
+  timer?: ExamTimer | null;
 }
 
 export type StudyFlashcardDeckCardsItemResultsItem = typeof StudyFlashcardDeckCardsItemResultsItem[keyof typeof StudyFlashcardDeckCardsItemResultsItem];

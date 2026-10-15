@@ -30,6 +30,7 @@ import {
   generateSessionQuiz, jsonObject, quizStatus, safeSession, scoreQuiz, excludedByReport, sourceChunks, sourceTextOf,
   type JsonObject, type Quiz, type Session, type SourceStatus, type StoredQuestion, type StoredQuestionFlag, type StudyQuestionFlagKind,
 } from "../lib/session-quiz";
+import { timeIsUp } from "../lib/exam-timer";
 
 import { addsCourseBeyondPlan, limitMessage } from "../lib/premium";
 import { activeFor, consume, enforced, planFor, refund } from "../lib/premium-store";
@@ -1173,6 +1174,11 @@ router.put("/study/sessions/:id/answers", async (req, res): Promise<void> => {
     res.status(409).json({ error: "There is no ungraded quiz to answer." });
     return;
   }
+  // Timed exams (D-112): no answers after the deadline (plus a short grace for network lag).
+  if (timeIsUp(session.quiz.timer, new Date(), { grace: true })) {
+    res.status(409).json({ error: "Time's up. This exam is being graded with the answers you gave.", timeUp: true });
+    return;
+  }
   const body = req.body as JsonObject;
   const question = session.quiz.questions.find((candidate) => candidate.id === body.questionId);
   if (!question || !question.options.some((option) => option.id === body.optionId)) {
@@ -1338,7 +1344,8 @@ router.post("/study/sessions/:id/grade", async (req, res): Promise<void> => {
     return;
   }
   // The rest of a two-part set (D-052) is still on its way: grading now would score a partial set.
-  if (quizStatus(session.quiz) === "writing") {
+  // Unless a timed exam is out of time (D-112): it is graded with the questions that arrived.
+  if (quizStatus(session.quiz) === "writing" && !timeIsUp(session.quiz.timer, new Date())) {
     res.status(409).json({ error: "The coach is still writing the rest of this set. Try again in a moment." });
     return;
   }

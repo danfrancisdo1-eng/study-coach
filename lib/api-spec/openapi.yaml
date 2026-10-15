@@ -1136,6 +1136,18 @@ components:
                   - $ref: "#/components/schemas/StudyQuestionFeedback"
                   - { type: "null" }
         grade: { oneOf: [{ $ref: "#/components/schemas/StudyScore" }, { type: "null" }] }
+        timer:
+          description: "Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets."
+          oneOf:
+            - $ref: "#/components/schemas/ExamTimer"
+            - { type: "null" }
+    ExamTimer:
+      type: object
+      required: [startedAt, limitMinutes, deadline]
+      properties:
+        startedAt: { type: string, format: date-time }
+        limitMinutes: { type: integer, minimum: 1 }
+        deadline: { type: string, format: date-time }
     StudyQuestionFlagInput:
       type: object
       required: [kind]
@@ -1186,8 +1198,10 @@ components:
         invalidItems: { type: integer }
         unanswered: { type: integer }
         total: { type: integer }
-        percent: { type: number }
+        percent: { type: number, description: "Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)" }
         gradedAt: { type: string, format: date-time }
+        timeUsedSeconds: { type: integer, description: "Timed exams only: time used, at most the limit" }
+        limitMinutes: { type: integer, description: "Timed exams only: the time limit" }
     AnalyzeInput:
       type: object
       required: [course, filename, text]

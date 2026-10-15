@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ExamTimer } from './examTimer';
 import type { StudyQuizKind } from './studyQuizKind';
 import type { StudyQuizMode } from './studyQuizMode';
 import type { StudyQuizQuestionsItem } from './studyQuizQuestionsItem';
@@ -27,4 +28,6 @@ export interface StudyQuiz {
   sourceStatus: StudySourceStatus;
   questions: StudyQuizQuestionsItem[];
   grade?: StudyScore | null;
+  /** Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets. */
+  timer?: ExamTimer | null;
 }

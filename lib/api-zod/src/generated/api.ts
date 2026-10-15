@@ -568,9 +568,11 @@ export const createStudySessionResponseQuizOneInvalidItemCountMin = 0;
 export const createStudySessionResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
+
 export const createStudySessionResponseAttemptsItemInvalidItemCountMin = 0;
 
 export const createStudySessionResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
+
 
 
 
@@ -661,9 +663,16 @@ export const CreateStudySessionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
@@ -725,9 +734,16 @@ export const CreateStudySessionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 })).describe('Completed diagnostic and retest attempts, including post-grade question feedback.'),
   "scores": zod.object({
   "diagnostic": zod.union([zod.object({
@@ -737,8 +753,10 @@ export const CreateStudySessionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]),
   "targeted": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -747,8 +765,10 @@ export const CreateStudySessionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
@@ -807,9 +827,11 @@ export const getStudySessionResponseQuizOneInvalidItemCountMin = 0;
 export const getStudySessionResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
+
 export const getStudySessionResponseAttemptsItemInvalidItemCountMin = 0;
 
 export const getStudySessionResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
+
 
 
 
@@ -900,9 +922,16 @@ export const GetStudySessionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
@@ -964,9 +993,16 @@ export const GetStudySessionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 })).describe('Completed diagnostic and retest attempts, including post-grade question feedback.'),
   "scores": zod.object({
   "diagnostic": zod.union([zod.object({
@@ -976,8 +1012,10 @@ export const GetStudySessionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]),
   "targeted": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -986,8 +1024,10 @@ export const GetStudySessionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
@@ -1412,9 +1452,11 @@ export const checkInStudySessionResponseQuizOneInvalidItemCountMin = 0;
 export const checkInStudySessionResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
+
 export const checkInStudySessionResponseAttemptsItemInvalidItemCountMin = 0;
 
 export const checkInStudySessionResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
+
 
 
 
@@ -1505,9 +1547,16 @@ export const CheckInStudySessionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
@@ -1569,9 +1618,16 @@ export const CheckInStudySessionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 })).describe('Completed diagnostic and retest attempts, including post-grade question feedback.'),
   "scores": zod.object({
   "diagnostic": zod.union([zod.object({
@@ -1581,8 +1637,10 @@ export const CheckInStudySessionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]),
   "targeted": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -1591,8 +1649,10 @@ export const CheckInStudySessionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
@@ -1632,9 +1692,11 @@ export const sendStudyMessageResponseQuizOneInvalidItemCountMin = 0;
 export const sendStudyMessageResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
+
 export const sendStudyMessageResponseAttemptsItemInvalidItemCountMin = 0;
 
 export const sendStudyMessageResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
+
 
 
 
@@ -1725,9 +1787,16 @@ export const SendStudyMessageResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
@@ -1789,9 +1858,16 @@ export const SendStudyMessageResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 })).describe('Completed diagnostic and retest attempts, including post-grade question feedback.'),
   "scores": zod.object({
   "diagnostic": zod.union([zod.object({
@@ -1801,8 +1877,10 @@ export const SendStudyMessageResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]),
   "targeted": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -1811,8 +1889,10 @@ export const SendStudyMessageResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
@@ -1848,9 +1928,11 @@ export const generateStudyQuizResponseQuizOneInvalidItemCountMin = 0;
 export const generateStudyQuizResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
+
 export const generateStudyQuizResponseAttemptsItemInvalidItemCountMin = 0;
 
 export const generateStudyQuizResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
+
 
 
 
@@ -1941,9 +2023,16 @@ export const GenerateStudyQuizResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
@@ -2005,9 +2094,16 @@ export const GenerateStudyQuizResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 })).describe('Completed diagnostic and retest attempts, including post-grade question feedback.'),
   "scores": zod.object({
   "diagnostic": zod.union([zod.object({
@@ -2017,8 +2113,10 @@ export const GenerateStudyQuizResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]),
   "targeted": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -2027,8 +2125,10 @@ export const GenerateStudyQuizResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
@@ -2065,9 +2165,11 @@ export const saveStudyAnswerResponseQuizOneInvalidItemCountMin = 0;
 export const saveStudyAnswerResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
+
 export const saveStudyAnswerResponseAttemptsItemInvalidItemCountMin = 0;
 
 export const saveStudyAnswerResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
+
 
 
 
@@ -2158,9 +2260,16 @@ export const SaveStudyAnswerResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
@@ -2222,9 +2331,16 @@ export const SaveStudyAnswerResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 })).describe('Completed diagnostic and retest attempts, including post-grade question feedback.'),
   "scores": zod.object({
   "diagnostic": zod.union([zod.object({
@@ -2234,8 +2350,10 @@ export const SaveStudyAnswerResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]),
   "targeted": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -2244,8 +2362,10 @@ export const SaveStudyAnswerResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
@@ -2287,9 +2407,11 @@ export const flagStudyQuestionResponseQuizOneInvalidItemCountMin = 0;
 export const flagStudyQuestionResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
+
 export const flagStudyQuestionResponseAttemptsItemInvalidItemCountMin = 0;
 
 export const flagStudyQuestionResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
+
 
 
 
@@ -2380,9 +2502,16 @@ export const FlagStudyQuestionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
@@ -2444,9 +2573,16 @@ export const FlagStudyQuestionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 })).describe('Completed diagnostic and retest attempts, including post-grade question feedback.'),
   "scores": zod.object({
   "diagnostic": zod.union([zod.object({
@@ -2456,8 +2592,10 @@ export const FlagStudyQuestionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]),
   "targeted": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -2466,8 +2604,10 @@ export const FlagStudyQuestionResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
@@ -2503,9 +2643,11 @@ export const reviewFlashcardResponseQuizOneInvalidItemCountMin = 0;
 export const reviewFlashcardResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
+
 export const reviewFlashcardResponseAttemptsItemInvalidItemCountMin = 0;
 
 export const reviewFlashcardResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
+
 
 
 
@@ -2596,9 +2738,16 @@ export const ReviewFlashcardResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
@@ -2660,9 +2809,16 @@ export const ReviewFlashcardResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 })).describe('Completed diagnostic and retest attempts, including post-grade question feedback.'),
   "scores": zod.object({
   "diagnostic": zod.union([zod.object({
@@ -2672,8 +2828,10 @@ export const ReviewFlashcardResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]),
   "targeted": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -2682,8 +2840,10 @@ export const ReviewFlashcardResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
@@ -2714,9 +2874,11 @@ export const gradeStudyQuizResponseQuizOneInvalidItemCountMin = 0;
 export const gradeStudyQuizResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
+
 export const gradeStudyQuizResponseAttemptsItemInvalidItemCountMin = 0;
 
 export const gradeStudyQuizResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
+
 
 
 
@@ -2807,9 +2969,16 @@ export const GradeStudyQuizResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 }),zod.null()]),
   "attempts": zod.array(zod.object({
   "mode": zod.enum(['diagnostic', 'targeted']),
@@ -2871,9 +3040,16 @@ export const GradeStudyQuizResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
-}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
+}).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]).optional(),
+  "timer": zod.union([zod.object({
+  "startedAt": zod.coerce.date(),
+  "limitMinutes": zod.number().int().min(1),
+  "deadline": zod.coerce.date()
+}),zod.null()]).optional().describe('Timed exams (D-112): the clock the server keeps (wall-clock, so it runs while the app is closed). Answers after the deadline plus a short grace get 409 with timeUp true; from the deadline on the set can be graded even while it is still being written. Null on untimed sets.')
 })).describe('Completed diagnostic and retest attempts, including post-grade question feedback.'),
   "scores": zod.object({
   "diagnostic": zod.union([zod.object({
@@ -2883,8 +3059,10 @@ export const GradeStudyQuizResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()]),
   "targeted": zod.union([zod.object({
   "correct": zod.number().int(),
@@ -2893,8 +3071,10 @@ export const GradeStudyQuizResponse = zod.object({
   "invalidItems": zod.number().int(),
   "unanswered": zod.number().int(),
   "total": zod.number().int(),
-  "percent": zod.number(),
-  "gradedAt": zod.coerce.date()
+  "percent": zod.number().describe('Right of answered; on a timed exam, right of all counted questions (unanswered count as wrong)'),
+  "gradedAt": zod.coerce.date(),
+  "timeUsedSeconds": zod.number().int().optional().describe('Timed exams only: time used, at most the limit'),
+  "limitMinutes": zod.number().int().optional().describe('Timed exams only: the time limit')
 }).describe('Invalid item count includes AI-rejected items and learner-flagged invalid or ambiguous questions reported before grading.'),zod.null()])
 }),
   "reviewSchedule": zod.array(zod.record(zod.string(), zod.unknown())),
