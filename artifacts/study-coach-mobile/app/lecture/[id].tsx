@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -78,8 +78,9 @@ export default function LectureScreen() {
       const updated = await updateLecture(id, { version: lecture.version, segments });
       await refresh(updated);
       setEdits({});
-      setEditing(true);
-      setMessage('Transcript ready. Read it through and fix anything that sounds wrong, then save it.');
+      // D-104: read-only first (scrolling over text boxes kept opening the keyboard); "Edit text" turns editing on.
+      setEditing(false);
+      setMessage('Transcript ready. Read it through; tap Edit text to fix anything, then save it.');
     } catch (error) {
       if (abort.current?.signal.aborted) setMessage('Transcription cancelled. The recording is still saved on this iPhone.');
       else if (error instanceof TranscriptionError) setMessage(error.message);
@@ -142,12 +143,14 @@ export default function LectureScreen() {
 
   const segments: TranscriptSegment[] = lecture?.segments ?? [];
   const stepIndex = lecture ? STEPS.findIndex((step) => step.status === lecture.status) : 0;
-  const showEditor = lecture && segments.length > 0 && (editing || lecture.status === 'transcribed');
+  // The transcript is read first and edited only on request (D-104); saving is still an explicit step.
+  const showEditor = lecture && segments.length > 0 && editing;
+  const needsSave = lecture && segments.length > 0 && (editing || lecture.status === 'transcribed');
 
   let primary: { label: string; onPress: () => void; testID: string } | null = null;
   if (lecture && busy === null) {
     if (!segments.length && hasAudio) primary = { label: 'Transcribe recording', onPress: confirmTranscribe, testID: 'button-transcribe' };
-    else if (showEditor) primary = { label: 'Save and use for studying', onPress: () => void saveTranscript(), testID: 'button-save-transcript' };
+    else if (needsSave) primary = { label: 'Save and use for studying', onPress: () => void saveTranscript(), testID: 'button-save-transcript' };
   }
 
   return (
@@ -171,7 +174,7 @@ export default function LectureScreen() {
       ) : null}
 
       {lecture ? (
-        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 130 }]} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 130 }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <Text style={styles.caption} accessibilityLabel={`Recorded ${new Date(lecture.recordedAt).toLocaleDateString()}, ${spokenDuration(lecture.durationSeconds)}`}>
             {new Date(lecture.recordedAt).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} · {formatDuration(lecture.durationSeconds)}
           </Text>
@@ -203,9 +206,11 @@ export default function LectureScreen() {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Transcript</Text>
-                {lecture.status === 'reviewed' && !editing ? (
-                  <Pressable accessibilityRole="button" accessibilityLabel="Edit transcript" onPress={() => setEditing(true)} style={styles.textButton} testID="button-edit-transcript"><Text style={styles.link}>Edit</Text></Pressable>
-                ) : null}
+                {!editing ? (
+                  <Pressable accessibilityRole="button" accessibilityLabel="Edit transcript" onPress={() => setEditing(true)} style={styles.textButton} testID="button-edit-transcript"><Text style={styles.link}>{lecture.status === 'reviewed' ? 'Edit' : 'Edit text'}</Text></Pressable>
+                ) : (
+                  <Pressable accessibilityRole="button" accessibilityLabel="Done editing" onPress={() => { Keyboard.dismiss(); setEditing(false); }} style={styles.textButton} testID="button-done-editing"><Text style={styles.link}>Done</Text></Pressable>
+                )}
               </View>
               {lecture.status === 'reviewed' && !editing ? <Text style={styles.caption}>Used as course material for tutoring and quizzes.</Text> : null}
               {segments.map((segment, index) => (
@@ -216,7 +221,7 @@ export default function LectureScreen() {
                       multiline value={edits[index] ?? segment.text} onChangeText={(text) => setEdits((current) => ({ ...current, [index]: text }))}
                       accessibilityLabel={`Transcript passage at ${formatDuration(segment.start)}`} style={styles.passageInput} testID={`input-passage-${index}`}
                     />
-                  ) : <Text style={styles.body} selectable>{segment.text}</Text>}
+                  ) : <Text style={styles.body} selectable>{edits[index] ?? segment.text}</Text>}
                 </View>
               ))}
             </View>

@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-14 — D-104: The transcript is read first, edited on request
+- Dan: reviewing a fresh transcript, scrolling down "the keyboard pops up and blocks you; makes it think you want to modify the text." Every passage was an editable text box right after transcription, so a scroll that started on one focused it. Now the transcript shows as text; "Edit text" turns the boxes on and "Done" (or a drag) puts the keyboard away; edits stay visible after Done; "Save and use for studying" is still the explicit save (CLAUDE.md §8). Build stamp #42. Verified here: typecheck; mobile tests; iOS bundle export. Needs real-iPhone check. Decided by Dan (bug).
+
 ## 2026-10-14 — D-103: Pause and resume a lecture recording
 - Dan: "We also need a pause button on the lecture." While recording, a Pause button sits above Stop; Resume continues the same file (expo-audio `pause()` / `record()`); the timer is the recorder's own duration, so paused time is not counted; "Paused. Tap Resume…" shows while paused. Stopping while paused still stops and saves the file (the old code only stopped a recorder that was actively recording). Build stamp #41. Verified here: typecheck. Needs real-iPhone check (record, pause, lock, resume, stop). Decided by Dan.
 
