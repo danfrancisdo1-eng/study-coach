@@ -23,7 +23,7 @@ export function reviewHtml(sheet: ReviewSheetData): string {
   const glance = sheet.glance.length ? `
     <h2 class="band">Skills at a Glance</h2>
     <table class="glance"><thead><tr><th>Domain</th><th>Weight</th><th>Core focus</th></tr></thead><tbody>
-      ${sheet.glance.map((g, i) => `<tr><td><b>${i + 1}. ${e(g.name)}</b></td><td class="w">${e(g.weight)}</td><td>${e(g.focus)}</td></tr>`).join('')}
+      ${sheet.glance.map((g, i) => `<tr><td>${i + 1}. ${e(g.name)}</td><td class="w">${e(g.weight)}</td><td>${e(g.focus)}</td></tr>`).join('')}
     </tbody></table>
     ${sheet.priorityNote ? `<p class="note">${e(sheet.priorityNote)}</p>` : ''}` : '';
   const sections = sheet.sections.map((s, i) => `
@@ -44,35 +44,41 @@ export function reviewHtml(sheet: ReviewSheetData): string {
   const sources = sheet.sources.length ? `<div class="sources"><h4>Sources</h4>${sheet.sources.map((s) => `<p>${e(s.title)} — ${e(s.url)}</p>`).join('')}</div>` : '';
   return `<!doctype html><html><head><meta charset="utf-8"/><title>${e(sheet.title)}</title>
 <style>
-  @page { margin: 16mm 14mm; }
-  body { font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif; color: #1a1d24; font-size: 10.5pt; line-height: 1.42; margin: 0; }
-  .running { color: #6b7280; font-size: 8.5pt; border-bottom: 1px solid #d9dde3; padding-bottom: 4px; margin-bottom: 14px; }
-  h1 { font-size: 21pt; line-height: 1.15; margin: 0 0 4px; color: #0b2a4a; }
-  .subtitle { color: #374151; font-size: 11pt; margin: 0 0 12px; }
+  @page { margin: 14mm 13mm 16mm; }
+  body { font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif; color: #1f2937; font-size: 10pt; line-height: 1.38; margin: 0; }
+  .running { display: flex; justify-content: space-between; color: #1a73c9; font-size: 8pt; font-weight: 600; margin-bottom: 14px; }
+  .running span:last-child { color: #6b7280; font-weight: 400; }
+  .titleblock { text-align: center; margin: 4px 0 14px; }
+  h1 { font-size: 20pt; line-height: 1.15; margin: 0 0 4px; color: #1a73c9; font-weight: 700; }
+  .subtitle { color: #4b5563; font-size: 10.5pt; margin: 2px 0 0; }
   table { border-collapse: collapse; width: 100%; margin: 6px 0 10px; }
-  .facts th { text-align: left; width: 28%; background: #f3f5f8; color: #374151; font-weight: 600; }
-  .facts th, .facts td, .glance th, .glance td, .triggers th, .triggers td { border: 1px solid #d9dde3; padding: 5px 8px; vertical-align: top; font-size: 9.5pt; }
-  .glance thead th, .triggers th { background: #0b2a4a; color: #fff; text-align: left; font-weight: 600; }
-  .glance .w, .w { white-space: nowrap; color: #0b6b4f; font-weight: 600; }
-  .audience { font-size: 9.5pt; color: #374151; margin: 6px 0 10px; }
-  .note { font-size: 9.5pt; background: #eef6ff; border-left: 3px solid #2f6fd6; padding: 6px 10px; margin: 4px 0 10px; }
-  h2.band { font-size: 13pt; color: #0b2a4a; border-bottom: 2px solid #0b2a4a; padding-bottom: 3px; margin: 18px 0 8px; }
-  h3 { font-size: 11pt; color: #1f3b63; margin: 10px 0 4px; }
-  h4 { font-size: 8.5pt; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; margin: 0 0 4px; }
-  ul { margin: 0 0 6px; padding-left: 16px; } li { margin: 3px 0; }
-  .tricks { background: #fff8e8; border: 1px solid #f0dca8; border-radius: 6px; padding: 8px 10px; margin: 8px 0; }
+  .facts { width: 94%; margin: 0 auto 10px; }
+  .facts th { text-align: left; width: 30%; background: #eef4fb; color: #111827; font-weight: 700; }
+  .facts th, .facts td, .glance th, .glance td, .triggers th, .triggers td { border: 1px solid #d6dbe1; padding: 4px 8px; vertical-align: top; font-size: 9pt; }
+  .glance thead th, .triggers th { background: #1a73c9; color: #fff; text-align: left; font-weight: 700; }
+  .glance tbody tr:nth-child(odd) td { background: #eef4fb; }
+  .glance .w, .w { white-space: nowrap; }
+  .audience { font-size: 9pt; color: #374151; margin: 6px 0 10px; }
+  .note { font-size: 8.5pt; color: #6b7280; margin: 2px 0 10px; }
+  h2.band { font-size: 13.5pt; color: #1a73c9; margin: 16px 0 6px; font-weight: 700; }
+  h3 { font-size: 11pt; color: #1a73c9; margin: 10px 0 4px; font-weight: 700; }
+  h4 { font-size: 8pt; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; margin: 0 0 4px; }
+  ul { margin: 0 0 6px; padding-left: 14px; } li { margin: 2px 0; }
+  .tricks { background: #fff8e6; border-left: 3px solid #e3a520; padding: 6px 10px; margin: 8px 0; }
   .tricks p { margin: 3px 0; } .analogy { font-style: italic; }
   .misses { border-left: 3px solid #d64550; padding-left: 10px; margin: 8px 0; }
-  .misses p { margin: 5px 0; } .q { font-weight: 600; } .a { color: #0b6b4f; } .g { color: #6b7280; font-size: 9pt; }
-  .decoder { background: #0b2a4a; color: #fff; border-radius: 6px; padding: 10px 12px; margin: 14px 0; }
-  .decoder h4 { color: #c7d2e0; } .decoder p { margin: 0; line-height: 1.7; }
-  .sources p { font-size: 8.5pt; color: #4b5563; margin: 2px 0; word-break: break-all; }
-  section { break-inside: auto; } h2, h3, h4 { break-after: avoid; } tr, li { break-inside: avoid; }
-  footer { margin-top: 16px; color: #9ca3af; font-size: 8pt; border-top: 1px solid #e5e7eb; padding-top: 6px; }
+  .misses p { margin: 4px 0; } .q { font-weight: 600; } .a { color: #0b6b4f; } .g { color: #6b7280; font-size: 8.5pt; }
+  .decoder { border: 1.5px solid #1a73c9; border-radius: 6px; padding: 8px 12px; margin: 14px 0; background: #f5f9fe; }
+  .decoder p { margin: 0; line-height: 1.75; }
+  .sources p { font-size: 8pt; color: #4b5563; margin: 2px 0; word-break: break-all; }
+  h2, h3, h4 { break-after: avoid; } tr, li, .tricks p { break-inside: avoid; } .tricks, .misses, .decoder, table { break-inside: avoid; }
+  footer { margin-top: 14px; color: #9ca3af; font-size: 7.5pt; border-top: 1px solid #e5e7eb; padding-top: 6px; text-align: center; }
 </style></head><body>
-<div class="running">${e(sheet.title)}${date ? ` • ${date}` : ''}</div>
+<div class="running"><span>${e(sheet.courseName)}</span><span>Quick Review${date ? ` • ${date}` : ''}</span></div>
+<div class="titleblock">
 <h1>${e(sheet.title)}</h1>
 ${sheet.subtitle ? `<p class="subtitle">${e(sheet.subtitle)}</p>` : ''}
+</div>
 ${facts}
 ${sheet.audience ? `<p class="audience"><b>Audience:</b> ${e(sheet.audience)}</p>` : ''}
 ${glance}

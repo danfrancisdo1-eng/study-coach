@@ -1,40 +1,46 @@
 <!doctype html><html><head><meta charset="utf-8"/><title>Microsoft AB-731: AI Transformation Leader — Quick Review</title>
 <style>
-  @page { margin: 16mm 14mm; }
-  body { font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif; color: #1a1d24; font-size: 10.5pt; line-height: 1.42; margin: 0; }
-  .running { color: #6b7280; font-size: 8.5pt; border-bottom: 1px solid #d9dde3; padding-bottom: 4px; margin-bottom: 14px; }
-  h1 { font-size: 21pt; line-height: 1.15; margin: 0 0 4px; color: #0b2a4a; }
-  .subtitle { color: #374151; font-size: 11pt; margin: 0 0 12px; }
+  @page { margin: 14mm 13mm 16mm; }
+  body { font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif; color: #1f2937; font-size: 10pt; line-height: 1.38; margin: 0; }
+  .running { display: flex; justify-content: space-between; color: #1a73c9; font-size: 8pt; font-weight: 600; margin-bottom: 14px; }
+  .running span:last-child { color: #6b7280; font-weight: 400; }
+  .titleblock { text-align: center; margin: 4px 0 14px; }
+  h1 { font-size: 20pt; line-height: 1.15; margin: 0 0 4px; color: #1a73c9; font-weight: 700; }
+  .subtitle { color: #4b5563; font-size: 10.5pt; margin: 2px 0 0; }
   table { border-collapse: collapse; width: 100%; margin: 6px 0 10px; }
-  .facts th { text-align: left; width: 28%; background: #f3f5f8; color: #374151; font-weight: 600; }
-  .facts th, .facts td, .glance th, .glance td, .triggers th, .triggers td { border: 1px solid #d9dde3; padding: 5px 8px; vertical-align: top; font-size: 9.5pt; }
-  .glance thead th, .triggers th { background: #0b2a4a; color: #fff; text-align: left; font-weight: 600; }
-  .glance .w, .w { white-space: nowrap; color: #0b6b4f; font-weight: 600; }
-  .audience { font-size: 9.5pt; color: #374151; margin: 6px 0 10px; }
-  .note { font-size: 9.5pt; background: #eef6ff; border-left: 3px solid #2f6fd6; padding: 6px 10px; margin: 4px 0 10px; }
-  h2.band { font-size: 13pt; color: #0b2a4a; border-bottom: 2px solid #0b2a4a; padding-bottom: 3px; margin: 18px 0 8px; }
-  h3 { font-size: 11pt; color: #1f3b63; margin: 10px 0 4px; }
-  h4 { font-size: 8.5pt; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; margin: 0 0 4px; }
-  ul { margin: 0 0 6px; padding-left: 16px; } li { margin: 3px 0; }
-  .tricks { background: #fff8e8; border: 1px solid #f0dca8; border-radius: 6px; padding: 8px 10px; margin: 8px 0; }
+  .facts { width: 94%; margin: 0 auto 10px; }
+  .facts th { text-align: left; width: 30%; background: #eef4fb; color: #111827; font-weight: 700; }
+  .facts th, .facts td, .glance th, .glance td, .triggers th, .triggers td { border: 1px solid #d6dbe1; padding: 4px 8px; vertical-align: top; font-size: 9pt; }
+  .glance thead th, .triggers th { background: #1a73c9; color: #fff; text-align: left; font-weight: 700; }
+  .glance tbody tr:nth-child(odd) td { background: #eef4fb; }
+  .glance .w, .w { white-space: nowrap; }
+  .audience { font-size: 9pt; color: #374151; margin: 6px 0 10px; }
+  .note { font-size: 8.5pt; color: #6b7280; margin: 2px 0 10px; }
+  h2.band { font-size: 13.5pt; color: #1a73c9; margin: 16px 0 6px; font-weight: 700; }
+  h3 { font-size: 11pt; color: #1a73c9; margin: 10px 0 4px; font-weight: 700; }
+  h4 { font-size: 8pt; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; margin: 0 0 4px; }
+  ul { margin: 0 0 6px; padding-left: 14px; } li { margin: 2px 0; }
+  .tricks { background: #fff8e6; border-left: 3px solid #e3a520; padding: 6px 10px; margin: 8px 0; }
   .tricks p { margin: 3px 0; } .analogy { font-style: italic; }
   .misses { border-left: 3px solid #d64550; padding-left: 10px; margin: 8px 0; }
-  .misses p { margin: 5px 0; } .q { font-weight: 600; } .a { color: #0b6b4f; } .g { color: #6b7280; font-size: 9pt; }
-  .decoder { background: #0b2a4a; color: #fff; border-radius: 6px; padding: 10px 12px; margin: 14px 0; }
-  .decoder h4 { color: #c7d2e0; } .decoder p { margin: 0; line-height: 1.7; }
-  .sources p { font-size: 8.5pt; color: #4b5563; margin: 2px 0; word-break: break-all; }
-  section { break-inside: auto; } h2, h3, h4 { break-after: avoid; } tr, li { break-inside: avoid; }
-  footer { margin-top: 16px; color: #9ca3af; font-size: 8pt; border-top: 1px solid #e5e7eb; padding-top: 6px; }
+  .misses p { margin: 4px 0; } .q { font-weight: 600; } .a { color: #0b6b4f; } .g { color: #6b7280; font-size: 8.5pt; }
+  .decoder { border: 1.5px solid #1a73c9; border-radius: 6px; padding: 8px 12px; margin: 14px 0; background: #f5f9fe; }
+  .decoder p { margin: 0; line-height: 1.75; }
+  .sources p { font-size: 8pt; color: #4b5563; margin: 2px 0; word-break: break-all; }
+  h2, h3, h4 { break-after: avoid; } tr, li, .tricks p { break-inside: avoid; } .tricks, .misses, .decoder, table { break-inside: avoid; }
+  footer { margin-top: 14px; color: #9ca3af; font-size: 7.5pt; border-top: 1px solid #e5e7eb; padding-top: 6px; text-align: center; }
 </style></head><body>
-<div class="running">Microsoft AB-731: AI Transformation Leader — Quick Review • Oct 2026</div>
+<div class="running"><span>Microsoft AB-731</span><span>Quick Review • Oct 2026</span></div>
+<div class="titleblock">
 <h1>Microsoft AB-731: AI Transformation Leader — Quick Review</h1>
 <p class="subtitle">45 minutes • 700/1000 to pass • business decision-maker focus, no coding</p>
+</div>
 <table class="facts"><tr><th>Exam code</th><td>AB-731</td></tr><tr><th>Credential</th><td>Microsoft Certified: AI Transformation Leader</td></tr><tr><th>Duration</th><td>45 minutes</td></tr><tr><th>Passing score</th><td>700 out of 1000</td></tr><tr><th>Skills outline</th><td>Skills measured as of July 22, 2026</td></tr></table>
 <p class="audience"><b>Audience:</b> Business decision-makers at all levels who guide AI transformation and innovation in their teams or organisations. You are expected to show AI fluency, strategic vision and change-management experience, and you are not expected to write code.</p>
 
     <h2 class="band">Skills at a Glance</h2>
     <table class="glance"><thead><tr><th>Domain</th><th>Weight</th><th>Core focus</th></tr></thead><tbody>
-      <tr><td><b>1. Identify the business value of generative AI solutions</b></td><td class="w">37.5%</td><td>Generative vs other AI, pretrained vs fine-tuned models, tokens and cost, ROI, fabrications and bias, prompting, grounding and RAG, data quality, secure AI.</td></tr><tr><td><b>2. Identify benefits, capabilities, and opportunities for Microsoft&#39;s AI apps and services</b></td><td class="w">37.5%</td><td>Microsoft 365 Copilot and its agents (Researcher, Analyst), Copilot Studio and agents, Microsoft Foundry and its tools, picking the right Microsoft AI service for a business need.</td></tr><tr><td><b>3. Identify an implementation and adoption strategy</b></td><td class="w">22.5%</td><td>Responsible AI principles and governance, AI council, adoption team and champions, barriers to adoption, impacts on data, security, privacy and cost, Copilot and Azure AI licensing.</td></tr>
+      <tr><td>1. Identify the business value of generative AI solutions</td><td class="w">37.5%</td><td>Generative vs other AI, pretrained vs fine-tuned models, tokens and cost, ROI, fabrications and bias, prompting, grounding and RAG, data quality, secure AI.</td></tr><tr><td>2. Identify benefits, capabilities, and opportunities for Microsoft&#39;s AI apps and services</td><td class="w">37.5%</td><td>Microsoft 365 Copilot and its agents (Researcher, Analyst), Copilot Studio and agents, Microsoft Foundry and its tools, picking the right Microsoft AI service for a business need.</td></tr><tr><td>3. Identify an implementation and adoption strategy</td><td class="w">22.5%</td><td>Responsible AI principles and governance, AI council, adoption team and champions, barriers to adoption, impacts on data, security, privacy and cost, Copilot and Azure AI licensing.</td></tr>
     </tbody></table>
     <p class="note">The first two domains are about 75% of the exam. The official outline gives ranges (35–40%, 35–40%, 20–25%); the weights here are the midpoints. Know which Copilot or Foundry tool fits a scenario, and the governance vocabulary.</p>
 
