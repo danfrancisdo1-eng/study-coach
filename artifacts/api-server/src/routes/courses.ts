@@ -8,8 +8,8 @@ import { conceptTallies, eventsFrom, topicTallies, weakConcepts } from "../lib/r
 import type { Session } from "../lib/session-quiz";
 import { desc } from "drizzle-orm";
 import { complete } from "../ai";
-import * as reviewSheetPrompt from "../prompts/review-sheet.v1";
-import { missesFrom, parseReviewSheet } from "../lib/review-sheet";
+import * as reviewSheetPrompt from "../prompts/review-sheet.v2";
+import { jsonFromReply, missesFrom, parseReviewSheet } from "../lib/review-sheet";
 import { sourceChunks, sourceTextOf } from "../lib/session-quiz";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { rowsFromState } from "../lib/memory-sheet";
@@ -49,6 +49,16 @@ router.get("/study/courses/:courseId/results", async (req, res): Promise<void> =
     sets: events.length,
   });
 });
+
+// Exam facts the guide lookup saved (D-106; filled by the timed-exams work, spec B): shown in the review sheet's facts block.
+function examFactsOf(guide: JsonObject | null): { label: string; value: string }[] {
+  if (!guide) return [];
+  const out: { label: string; value: string }[] = [];
+  if (typeof guide.durationMinutes === "number" && guide.durationMinutes > 0) out.push({ label: "Duration", value: `${guide.durationMinutes} minutes` });
+  if (typeof guide.questionCount === "number" && guide.questionCount > 0) out.push({ label: "Questions", value: String(guide.questionCount) });
+  if (typeof guide.passingScore === "string" && guide.passingScore.trim()) out.push({ label: "Passing score", value: guide.passingScore.trim().slice(0, 80) });
+  return out;
+}
 
 // The review sheet (D-101, spec C): one grounded summary of the course by section (the exam
 // guide's sections when there is one), with key points, memory tricks and the student's own
@@ -95,12 +105,15 @@ router.post("/study/courses/:courseId/review-sheet", async (req, res): Promise<v
   const misses = missesFrom(sessions as unknown as Parameters<typeof missesFrom>[0]);
   const memorySheet = rowsFromState(state, courseId).slice(0, 60).map(({ term, trick, whenYouSee, think }) => ({ term, trick, whenYouSee, think }));
   try {
+    // Certification exams: the official outline and vendor docs are the primary source (D-106), so the writer searches the web.
+    const isExam = course.kind === "exam" || !!guide;
     const response = await complete("review_sheet", {
-      system: reviewSheetPrompt.systemPrompt({ courseName, sections }),
+      system: reviewSheetPrompt.systemPrompt({ courseName, kind: isExam ? "exam" : "course", today: new Date().toISOString().slice(0, 10), sections, guideUrl: guide && typeof guide.sourceUrl === "string" ? guide.sourceUrl : null, examFacts: examFactsOf(guide) }),
       messages: [{ role: "user", content: JSON.stringify({ courseMaterial: sourceTextOf(chunks), memorySheet, missedQuestions: misses.map((m) => ({ concept: m.concept, question: m.question, correctAnswer: m.answer })) }) }],
-      timeoutMs: 120_000,
+      ...(isExam ? { webSearch: { maxUses: 10 } } : {}),
+      timeoutMs: 240_000,
     });
-    const sheet = parseReviewSheet(response.text ? JSON.parse(response.text) : null, `${courseName}: review sheet`);
+    const sheet = parseReviewSheet(jsonFromReply(response.text), `${courseName}: review sheet`);
     if (!sheet) throw new Error("No usable review sheet");
     res.json({ ...sheet, courseName, generatedAt: new Date().toISOString(), basedOn: { materials: chunks.length, misses: misses.length, memoryRows: memorySheet.length, officialSections: sections.length } });
   } catch (error) {

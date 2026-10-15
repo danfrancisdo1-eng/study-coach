@@ -22,7 +22,7 @@ import * as webLookupPrompt from "../src/prompts/web-lookup.v1";
 import * as flashcardsPrompt from "../src/prompts/flashcards.v2";
 import * as examGuidePrompt from "../src/prompts/exam-guide.v1";
 import * as memorySheetPrompt from "../src/prompts/memory-sheet.v2";
-import * as reviewSheetPrompt from "../src/prompts/review-sheet.v1";
+import * as reviewSheetPrompt from "../src/prompts/review-sheet.v2";
 import * as flagCheckPrompt from "../src/prompts/flag-check.v1";
 import { taskConfig, type AiTask } from "../src/ai/tasks";
 import { classicQuizCases, coachCases, examGuideCases, flagCheckCases, flashcardsCases, memorySheetCases, reviewSheetCases, ocrCaseNames, planCases, quizCheckCases, sessionQuizCases, syllabusCases, tutorCases, webLookupCases, type Source } from "./fixtures";
@@ -156,7 +156,7 @@ async function main() {
     });
     if (tasks.includes("review_sheet")) for (const c of reviewSheetCases) jobs.push({
       task: "review_sheet", name: c.name,
-      run: () => complete("review_sheet", { system: reviewSheetPrompt.systemPrompt({ courseName: c.courseName, sections: c.sections }), messages: [{ role: "user", content: JSON.stringify(c.input) }], timeoutMs: 120_000 }),
+      run: () => complete("review_sheet", { system: reviewSheetPrompt.systemPrompt({ courseName: c.courseName, kind: c.kind, today, sections: c.sections, guideUrl: c.guideUrl, examFacts: c.examFacts }), messages: [{ role: "user", content: JSON.stringify(c.input) }], ...(c.kind === "exam" ? { webSearch: { maxUses: 10 } } : {}), timeoutMs: 300_000 }),
       grade: (text) => gradeReviewSheet(c, text),
     });
     if (tasks.includes("exam_guide")) for (const c of examGuideCases) jobs.push({

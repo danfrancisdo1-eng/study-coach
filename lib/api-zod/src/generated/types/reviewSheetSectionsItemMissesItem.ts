@@ -9,4 +9,5 @@
 export type ReviewSheetSectionsItemMissesItem = {
   question: string;
   answer: string;
+  giveaway: string;
 };

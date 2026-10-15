@@ -5,11 +5,17 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ReviewSheetSectionsItemContrastsItem } from './reviewSheetSectionsItemContrastsItem';
 import type { ReviewSheetSectionsItemMissesItem } from './reviewSheetSectionsItemMissesItem';
+import type { ReviewSheetSectionsItemSubsectionsItem } from './reviewSheetSectionsItemSubsectionsItem';
+import type { ReviewSheetSectionsItemTriggersItem } from './reviewSheetSectionsItemTriggersItem';
 
 export type ReviewSheetSectionsItem = {
   name: string;
-  points: string[];
-  tricks: string[];
+  weight: string;
+  analogy: string;
+  subsections: ReviewSheetSectionsItemSubsectionsItem[];
+  contrasts: ReviewSheetSectionsItemContrastsItem[];
+  triggers: ReviewSheetSectionsItemTriggersItem[];
   misses: ReviewSheetSectionsItemMissesItem[];
 };

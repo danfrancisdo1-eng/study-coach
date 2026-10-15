@@ -339,8 +339,29 @@ export const CreateReviewSheetParams = zod.object({
 
 export const CreateReviewSheetResponse = zod.object({
   "title": zod.string(),
+  "subtitle": zod.string(),
   "courseName": zod.string(),
   "generatedAt": zod.string(),
+  "audience": zod.string(),
+  "priorityNote": zod.string(),
+  "facts": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string()
+})),
+  "glance": zod.array(zod.object({
+  "name": zod.string(),
+  "weight": zod.string(),
+  "focus": zod.string()
+})),
+  "tips": zod.array(zod.string()),
+  "decoder": zod.array(zod.object({
+  "cue": zod.string(),
+  "answer": zod.string()
+})),
+  "sources": zod.array(zod.object({
+  "title": zod.string(),
+  "url": zod.string()
+})),
   "basedOn": zod.object({
   "materials": zod.number().int(),
   "misses": zod.number().int(),
@@ -349,14 +370,30 @@ export const CreateReviewSheetResponse = zod.object({
 }),
   "sections": zod.array(zod.object({
   "name": zod.string(),
-  "points": zod.array(zod.string()),
-  "tricks": zod.array(zod.string()),
+  "weight": zod.string(),
+  "analogy": zod.string(),
+  "subsections": zod.array(zod.object({
+  "title": zod.string(),
+  "items": zod.array(zod.object({
+  "term": zod.string(),
+  "detail": zod.string()
+}))
+})),
+  "contrasts": zod.array(zod.object({
+  "pair": zod.string(),
+  "trick": zod.string()
+})),
+  "triggers": zod.array(zod.object({
+  "whenYouSee": zod.string(),
+  "think": zod.string()
+})),
   "misses": zod.array(zod.object({
   "question": zod.string(),
-  "answer": zod.string()
+  "answer": zod.string(),
+  "giveaway": zod.string()
 }))
 }))
-})
+}).describe('D-106 v2: a professional quick-review guide. Arrays may be empty for a college course.')
 
 
 /**

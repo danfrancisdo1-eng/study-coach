@@ -23,7 +23,7 @@ type ProviderDefaults = Omit<TaskConfig, "provider" | "json">;
 
 // JSON output tasks get a schema from ./schemas (TASK_SCHEMAS).
 const JSON_TASKS: Record<AiTask, boolean> = {
-  image_ocr: true, tutor: false, session_quiz: true, syllabus: true, classic_quiz: true, exam_plan: true, coach: true, flashcards: true, exam_guide: false, memory_sheet: true, quiz_check: true, flag_check: true, web_lookup: false, review_sheet: true,
+  image_ocr: true, tutor: false, session_quiz: true, syllabus: true, classic_quiz: true, exam_plan: true, coach: true, flashcards: true, exam_guide: false, memory_sheet: true, quiz_check: true, flag_check: true, web_lookup: false, review_sheet: false,
 };
 
 // Today's production settings.
@@ -68,8 +68,9 @@ const ANTHROPIC: Record<AiTask, ProviderDefaults> = {
   flag_check: { model: "claude-opus-5-5", maxTokens: 12000, effort: "high" },
   // Web lookup on request (D-045): "search the internet for…" from the chat; plain text with sources.
   web_lookup: { model: "claude-sonnet-5-5", maxTokens: 8000, effort: "low" },
-  // PDF review sheet (D-101): one grounded summary of a course by section.
-  review_sheet: { model: "claude-sonnet-5-5", maxTokens: 16000, effort: "low" },
+  // Review sheet (D-101, v2 D-106): a professional quick-review guide; web search for certification
+  // exams, so the reply is text containing JSON (no schema). Medium effort for depth.
+  review_sheet: { model: "claude-sonnet-5-5", maxTokens: 32000, effort: "medium" },
 };
 
 function provider(value: string | undefined): AiProvider | undefined {

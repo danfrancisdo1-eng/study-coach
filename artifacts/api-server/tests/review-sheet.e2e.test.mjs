@@ -11,12 +11,13 @@ const reply = (content) => ({ status: 200, body: { id: 'x', object: 'chat.comple
 test('review sheet: grounded inputs, validated output, consent and failure handling', async (t) => {
   buildServer();
   const database = await startDatabase(t);
-  let next = () => reply(JSON.stringify({ title: 'AZ-900: review sheet', sections: [
-    { name: 'Cloud concepts', points: ['Elasticity scales with demand'], tricks: ['IaaS: I manage the OS'], misses: [{ question: 'What is PaaS?', answer: 'Platform as a service' }] },
-    { name: 'Empty', points: [] },
-  ] }));
+  let next = () => reply('Here is the guide:\n' + JSON.stringify({ title: 'AZ-900 Quick Review', subtitle: '45 minutes', facts: [{ label: 'Duration', value: '45 minutes' }],
+    glance: [{ name: 'Cloud concepts', weight: '25%', focus: 'Elasticity' }], sections: [
+    { name: 'Cloud concepts', weight: '25%', subsections: [{ title: 'Basics', items: [{ term: 'Elasticity', detail: 'Scales with demand.' }] }], contrasts: [{ pair: 'IaaS vs PaaS', trick: 'IaaS: I manage the OS' }], triggers: [], analogy: '', misses: [{ question: 'What is PaaS?', answer: 'Platform as a service', giveaway: 'managed platform' }] },
+    { name: 'Empty', subsections: [] },
+  ], tips: ['Flag and return'], decoder: [{ cue: 'CACHE', answer: 'Memorystore' }], sources: [{ title: 'Study guide', url: 'https://learn.microsoft.com/az-900' }] }));
   const ai = await startAiStub(t, () => next());
-  const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url });
+  const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url, AI_ALLOW_SEARCHLESS_LOOKUP: '1' });
   const post = (user, id) => fetch(`${base}/api/study/courses/${id}/review-sheet`, { method: 'POST', headers: { Authorization: `Bearer ${signToken(user)}` } });
   const course = { id: 'az', name: 'AZ-900', kind: 'exam', examGuide: { found: true, sections: [{ name: 'Cloud concepts', weight: 25 }, { name: 'Azure architecture', weight: 35 }] } };
   const state = { aiConsent: true, courses: [course], materials: [{ id: 'm1', courseId: 'az', name: 'notes.txt', text: 'Elasticity means scaling out and in with demand.' }], memorySheet: [{ id: 'r1', courseId: 'az', term: 'IaaS', trick: 'I manage the OS', whenYouSee: 'virtual machines', think: 'IaaS' }] };
@@ -37,6 +38,10 @@ test('review sheet: grounded inputs, validated output, consent and failure handl
   assert.deepEqual(sheet.basedOn, { materials: 1, misses: 1, memoryRows: 1, officialSections: 2 });
   const sent = JSON.stringify(ai.requests.at(-1).body);
   assert.match(sent, /Cloud concepts \(25%\); Azure architecture \(35%\)/, 'the guide sections, in order');
+  assert.match(sent, /certification exam/, 'an exam: the official outline is the primary source');
+  assert.equal(sheet.facts[0].value, '45 minutes');
+  assert.equal(sheet.sources[0].url, 'https://learn.microsoft.com/az-900');
+  assert.equal(sheet.sections[0].misses[0].giveaway, 'managed platform');
   assert.match(sent, /Elasticity means scaling/, 'the course material');
   assert.match(sent, /I manage the OS/, 'the memory sheet');
   assert.match(sent, /Platform as a service/, 'the miss with its right answer');

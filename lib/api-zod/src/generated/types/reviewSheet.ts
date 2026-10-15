@@ -6,12 +6,27 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ReviewSheetBasedOn } from './reviewSheetBasedOn';
+import type { ReviewSheetDecoderItem } from './reviewSheetDecoderItem';
+import type { ReviewSheetFactsItem } from './reviewSheetFactsItem';
+import type { ReviewSheetGlanceItem } from './reviewSheetGlanceItem';
 import type { ReviewSheetSectionsItem } from './reviewSheetSectionsItem';
+import type { ReviewSheetSourcesItem } from './reviewSheetSourcesItem';
 
+/**
+ * D-106 v2: a professional quick-review guide. Arrays may be empty for a college course.
+ */
 export interface ReviewSheet {
   title: string;
+  subtitle: string;
   courseName: string;
   generatedAt: string;
+  audience: string;
+  priorityNote: string;
+  facts: ReviewSheetFactsItem[];
+  glance: ReviewSheetGlanceItem[];
+  tips: string[];
+  decoder: ReviewSheetDecoderItem[];
+  sources: ReviewSheetSourcesItem[];
   basedOn: ReviewSheetBasedOn;
   sections: ReviewSheetSectionsItem[];
 }

@@ -5,6 +5,27 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type ReviewSheetFactsItem = {
+  label: string;
+  value: string;
+};
+
+export type ReviewSheetGlanceItem = {
+  name: string;
+  weight: string;
+  focus: string;
+};
+
+export type ReviewSheetDecoderItem = {
+  cue: string;
+  answer: string;
+};
+
+export type ReviewSheetSourcesItem = {
+  title: string;
+  url: string;
+};
+
 export type ReviewSheetBasedOn = {
   materials: number;
   misses: number;
@@ -12,22 +33,57 @@ export type ReviewSheetBasedOn = {
   officialSections: number;
 };
 
+export type ReviewSheetSectionsItemSubsectionsItemItemsItem = {
+  term: string;
+  detail: string;
+};
+
+export type ReviewSheetSectionsItemSubsectionsItem = {
+  title: string;
+  items: ReviewSheetSectionsItemSubsectionsItemItemsItem[];
+};
+
+export type ReviewSheetSectionsItemContrastsItem = {
+  pair: string;
+  trick: string;
+};
+
+export type ReviewSheetSectionsItemTriggersItem = {
+  whenYouSee: string;
+  think: string;
+};
+
 export type ReviewSheetSectionsItemMissesItem = {
   question: string;
   answer: string;
+  giveaway: string;
 };
 
 export type ReviewSheetSectionsItem = {
   name: string;
-  points: string[];
-  tricks: string[];
+  weight: string;
+  analogy: string;
+  subsections: ReviewSheetSectionsItemSubsectionsItem[];
+  contrasts: ReviewSheetSectionsItemContrastsItem[];
+  triggers: ReviewSheetSectionsItemTriggersItem[];
   misses: ReviewSheetSectionsItemMissesItem[];
 };
 
+/**
+ * D-106 v2: a professional quick-review guide. Arrays may be empty for a college course.
+ */
 export interface ReviewSheet {
   title: string;
+  subtitle: string;
   courseName: string;
   generatedAt: string;
+  audience: string;
+  priorityNote: string;
+  facts: ReviewSheetFactsItem[];
+  glance: ReviewSheetGlanceItem[];
+  tips: string[];
+  decoder: ReviewSheetDecoderItem[];
+  sources: ReviewSheetSourcesItem[];
   basedOn: ReviewSheetBasedOn;
   sections: ReviewSheetSectionsItem[];
 }

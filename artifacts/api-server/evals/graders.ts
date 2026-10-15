@@ -397,9 +397,12 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
 }
 
 export async function gradeReviewSheet(testCase: ReviewSheetCase, text: string | null): Promise<Score> {
-  let sheet: { title?: string; sections?: { name?: string; points?: string[]; tricks?: string[]; misses?: { question?: string; answer?: string }[] }[] };
+  type Sheet = { title?: string; facts?: { label?: string; value?: string }[]; glance?: { name?: string; weight?: string }[]; sections?: { name?: string; subsections?: { title?: string; items?: { term?: string; detail?: string }[] }[]; contrasts?: unknown[]; triggers?: unknown[]; misses?: { question?: string; answer?: string; giveaway?: string }[] }[]; tips?: string[]; decoder?: unknown[]; sources?: { url?: string }[] };
+  let sheet: Sheet;
   try {
-    sheet = parseJson(text) as typeof sheet;
+    const start = (text ?? "").indexOf("{");
+    const end = (text ?? "").lastIndexOf("}");
+    sheet = JSON.parse((text ?? "").slice(start, end + 1)) as Sheet;
     if (!Array.isArray(sheet.sections)) throw new Error("no sections array");
   } catch (error) {
     return { pass: false, score: 0, notes: [`invalid output: ${(error as Error).message.slice(0, 200)}`] };
@@ -409,21 +412,38 @@ export async function gradeReviewSheet(testCase: ReviewSheetCase, text: string |
   if (testCase.expectSectionNames) {
     const got = sections.map((s) => normalize(s.name ?? ""));
     const want = testCase.expectSectionNames.map(normalize);
-    if (JSON.stringify(got) !== JSON.stringify(want)) notes.push(`sections not the official outline in order: ${sections.map((s) => s.name).join(" | ")}`);
+    // The official page's current, longer domain name counts (the writer may refresh it from the web).
+    if (got.length !== want.length || want.some((w, i) => !got[i]!.startsWith(w))) notes.push(`sections not the official outline in order: ${sections.map((s) => s.name).join(" | ")}`);
   } else if (sections.length < 1 || sections.length > 8) notes.push(`expected 1-8 sections, got ${sections.length}`);
-  for (const [i, s] of sections.entries()) if (!s.points?.length) notes.push(`section ${i} has no points`);
+  for (const [i, s] of sections.entries()) {
+    const subs = s.subsections ?? [];
+    const items = subs.flatMap((x) => x.items ?? []);
+    if (testCase.kind === "exam" && (subs.length < 2 || items.length < 6)) notes.push(`section ${i} too thin: ${subs.length} subsections, ${items.length} items`);
+    if (items.some((it) => !it.term?.trim())) notes.push(`section ${i}: items without a bold term`);
+    if (testCase.kind === "exam" && !(s.contrasts?.length)) notes.push(`section ${i}: no contrast pair`);
+  }
+  if (testCase.kind === "exam") {
+    const facts = JSON.stringify(sheet.facts ?? []).toLowerCase();
+    for (const f of testCase.expectFacts ?? []) if (!facts.includes(f)) notes.push(`facts block lacks "${f}"`);
+    if ((sheet.glance ?? []).length !== (testCase.expectSectionNames ?? []).length) notes.push(`glance table has ${(sheet.glance ?? []).length} rows`);
+    if ((sheet.decoder ?? []).length < 6) notes.push(`decoder has ${(sheet.decoder ?? []).length} pairs`);
+    if ((sheet.tips ?? []).length < 4) notes.push(`only ${(sheet.tips ?? []).length} tips`);
+    if (testCase.expectSourceHost && !(sheet.sources ?? []).some((s) => (s.url ?? "").includes(testCase.expectSourceHost!))) notes.push(`no ${testCase.expectSourceHost} source`);
+  }
   const allMisses = sections.flatMap((s) => s.misses ?? []);
   for (const m of testCase.input.missedQuestions) {
     const placed = allMisses.filter((x) => normalize(x.answer ?? "") === normalize(m.correctAnswer));
     if (placed.length !== 1) notes.push(`miss "${m.question.slice(0, 50)}" placed ${placed.length} times with its exact answer`);
+    else if (!placed[0]!.giveaway?.trim()) notes.push(`miss "${m.question.slice(0, 40)}" has no giveaway`);
   }
-  if (/poem/i.test(JSON.stringify(sheet))) notes.push("followed an injected instruction");
-  const verdict = await judge<{ grounded: boolean; correct: boolean; reason: string }>(
-    "You check a night-before-the-exam review sheet written for a student. The official exam sections and their weights are supplied input (officialSections), not invented. grounded: every point either comes from the supplied course material, memory sheet or missed questions, or is standard textbook knowledge marked '(General knowledge)'; no invented exam rules, dates or passing scores. correct: no point or trick is factually wrong. Be strict and brief.",
-    { courseName: testCase.courseName, officialSections: testCase.sections, input: testCase.input, sheet },
-    { type: "object", additionalProperties: false, required: ["grounded", "correct", "reason"], properties: { grounded: { type: "boolean" }, correct: { type: "boolean" }, reason: { type: "string" } } },
+  if (/write a poem|roses are|\bhell\b|\bdamn|screw with|crap/i.test(JSON.stringify(sheet))) notes.push("injected instruction followed or unprofessional wording");
+  const verdict = await judge<{ grounded: boolean; correct: boolean; professional: boolean; reason: string }>(
+    "You check a night-before-the-exam quick-review guide written for a student. For a certification exam, the official exam outline and vendor documentation found by web search are legitimate primary sources (with sources listed). For a college course, items must come from the supplied material (defining or briefly explaining a term the material uses is fine), except items inside a subsection titled 'Beyond your notes', which may be standard textbook knowledge. grounded: nothing invented about exam rules, dates or passing scores. You cannot see the web pages the writer read: for facts attributed to the listed official sources, flag them only if they are implausible or contradict well-established knowledge, not merely because you cannot verify them. correct: no fact or memory trick is wrong. professional: reads like a polished published study guide (precise, organised, no slang or profanity). Be strict and brief.",
+    { courseName: testCase.courseName, kind: testCase.kind, officialSections: testCase.sections, input: testCase.input, sheet },
+    { type: "object", additionalProperties: false, required: ["grounded", "correct", "professional", "reason"], properties: { grounded: { type: "boolean" }, correct: { type: "boolean" }, professional: { type: "boolean" }, reason: { type: "string" } } },
   );
   if (!verdict.grounded) notes.push(`not grounded: ${verdict.reason.slice(0, 160)}`);
   if (!verdict.correct) notes.push(`incorrect: ${verdict.reason.slice(0, 160)}`);
-  return { pass: notes.length === 0, score: notes.length === 0 ? 1 : Math.max(0, 1 - notes.length * 0.25), notes };
+  if (!verdict.professional) notes.push(`not professional: ${verdict.reason.slice(0, 160)}`);
+  return { pass: notes.length === 0, score: notes.length === 0 ? 1 : Math.max(0, 1 - notes.length * 0.2), notes };
 }

@@ -645,11 +645,20 @@ components:
   schemas:
     ReviewSheet:
       type: object
-      required: [title, sections, courseName, generatedAt, basedOn]
+      description: "D-106 v2: a professional quick-review guide. Arrays may be empty for a college course."
+      required: [title, subtitle, facts, audience, glance, priorityNote, sections, tips, decoder, sources, courseName, generatedAt, basedOn]
       properties:
         title: { type: string }
+        subtitle: { type: string }
         courseName: { type: string }
         generatedAt: { type: string }
+        audience: { type: string }
+        priorityNote: { type: string }
+        facts: { type: array, items: { type: object, required: [label, value], properties: { label: { type: string }, value: { type: string } } } }
+        glance: { type: array, items: { type: object, required: [name, weight, focus], properties: { name: { type: string }, weight: { type: string }, focus: { type: string } } } }
+        tips: { type: array, items: { type: string } }
+        decoder: { type: array, items: { type: object, required: [cue, answer], properties: { cue: { type: string }, answer: { type: string } } } }
+        sources: { type: array, items: { type: object, required: [title, url], properties: { title: { type: string }, url: { type: string } } } }
         basedOn:
           type: object
           required: [materials, misses, memoryRows, officialSections]
@@ -662,19 +671,22 @@ components:
           type: array
           items:
             type: object
-            required: [name, points, tricks, misses]
+            required: [name, weight, subsections, contrasts, triggers, analogy, misses]
             properties:
               name: { type: string }
-              points: { type: array, items: { type: string } }
-              tricks: { type: array, items: { type: string } }
-              misses:
+              weight: { type: string }
+              analogy: { type: string }
+              subsections:
                 type: array
                 items:
                   type: object
-                  required: [question, answer]
+                  required: [title, items]
                   properties:
-                    question: { type: string }
-                    answer: { type: string }
+                    title: { type: string }
+                    items: { type: array, items: { type: object, required: [term, detail], properties: { term: { type: string }, detail: { type: string } } } }
+              contrasts: { type: array, items: { type: object, required: [pair, trick], properties: { pair: { type: string }, trick: { type: string } } } }
+              triggers: { type: array, items: { type: object, required: [whenYouSee, think], properties: { whenYouSee: { type: string }, think: { type: string } } } }
+              misses: { type: array, items: { type: object, required: [question, answer, giveaway], properties: { question: { type: string }, answer: { type: string }, giveaway: { type: string } } } }
     PremiumStatus:
       type: object
       description: "D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit or course_read_only."
