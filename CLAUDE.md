@@ -71,7 +71,7 @@
 
 ## 8. Product constraints already decided (from HANDOFF / replit.md)
 - Material intake stays simple: the persistent corner + opens Photos, Files, OneDrive, Website link. No permanent explanatory text beside +.
-- Extracted text is always editable before an explicit save; duplicates in the same course are skipped.
+- Uploads (D-120): every upload (photo, PDF, slides, website, syllabus, lecture) is turned by the coach into Markdown notes (typos fixed, bullets; a syllabus keeps every date, quiz and grading line). The student reviews the notes read-only and corrects them by telling the coach; no hand editing. The raw extracted text (and full lecture transcripts) is kept in storage and only searched when the notes don't cover something, never sent with every question. Photos themselves stay on the phone. Duplicates in the same course are skipped.
 - Opening/closing intake preserves conversation, quiz answers, and drafts.
 - The OneDrive button currently opens Apple's Files picker. Never describe it as a direct OneDrive integration until that's built.
 - Each course is a Project (D-119): the course's chat answers from that course's material only; uploads must belong to a course.

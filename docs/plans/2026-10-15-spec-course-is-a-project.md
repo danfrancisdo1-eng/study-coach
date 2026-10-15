@@ -38,8 +38,13 @@ Every student, every course: high school, college and certification.
 **v1 doesn't:** notes for unreviewed transcripts; keep audio on the server (recordings stay on the phone).
 **Tests:** notes are a fraction of the transcript's length and keep flagged exam hints (eval); the coach reads notes, not transcripts, until a search needs one.
 
+## F. Every upload becomes notes (Dan, D-120)
+**v1 does:** the same as E for every upload: photos (OCR typos fixed), PDFs, slides, websites and syllabi become Markdown bullet notes the coach reads; a syllabus's notes keep every date, quiz, exam and grading line. Reviewed read-only, corrected by telling the coach, then filed. The raw extracted text is kept in storage and only searched when the notes don't cover something. Photos themselves stay on the phone (only their text reaches the server, as today).
+**v1 doesn't:** let the student edit extracted text by hand (replaces the old "extracted text is always editable before an explicit save").
+**Tests and evals:** notes keep every date and grading line of Dan's BIO 101 syllabus; OCR typos fixed without changing facts; the coach reads notes, not raw text, until a search needs it.
+
 ## Order
-A (small, first: a data leak) → B (the core promise) → C → E → D. Phone needs no new build for any of it; the server changes go live on merge. Web gets the matching changes (Account page uploads without a course; course memory list).
+A (small, first: a data leak) → B (the core promise) → C → E and F (notes) → D. Phone needs no new build for any of it; the server changes go live on merge. Web gets the matching changes (Account page uploads without a course; course memory list).
 
 ## Also noted, not in this spec
 All of a student's uploads live in one account record the app downloads on open; fine for now, to be moved into their own storage before heavy use.

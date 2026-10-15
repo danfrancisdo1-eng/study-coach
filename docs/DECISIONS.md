@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-15 — D-120: Every upload becomes coach-written notes; no hand editing of extracted text
+- Dan: "You fix the typos and make a bulleted Md file for you. You can tuck the raw [text] in memory but not to read it every time." Every upload (photo, PDF, slides, website, syllabus, lecture) becomes Markdown notes written by the coach; the student reviews them read-only and corrects them by telling the coach; the raw extracted text is kept in storage and only searched when needed. Photos themselves stay on the phone. Replaces the CLAUDE.md constraint "Extracted text is always editable before an explicit save". Spec part F.
+
 ## 2026-10-15 — D-119: Each course is a Project; only the coach edits course notes
 - Dan's vision from the start: every course works like a Claude/ChatGPT Project. Found with a synthetic BIO 101: the coach couldn't give the final date that the uploaded syllabus states, because the coach chat gets only a 1,500-character preview of one outline per course (SCOPE_EXCERPT_CHARS, D-019) and every course's summary. Audit of all 14 AI call sites: the coach never reads uploads; uploads without a course leak into every course's sets, decks, review sheet and tutor; nothing the student tells the coach is kept; syllabus dates are never used.
 - Decided by Dan: uploads must belong to a course; a course's chat gets that course only (general chat: course names only); the coach reads the whole course while it fits, searches it when it doesn't; lecture transcripts become CliffsNotes in Markdown, the full transcript is kept in storage and searched only when needed, never sent with every question; the coach writes and maintains notes, students review them read-only and correct them by telling the coach; every change is announced and can be undone; original uploads and transcripts are never edited; PDF copies only on request.
