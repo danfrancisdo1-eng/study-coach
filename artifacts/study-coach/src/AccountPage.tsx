@@ -18,6 +18,7 @@ import HomeChat from './HomeChat';
 import DeleteAccount from './DeleteAccount';
 import { readLegacyStudyData } from './lib/legacy-import';
 import { courseExamFacts, timedChoices } from './lib/exam-facts';
+import { passMarkLine } from './lib/exam-sheet';
 
 type AccountState = {
   aiConsent: boolean;
@@ -216,6 +217,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
     </label> : null}
     {sessionId && sessionQuery.isLoading ? <div className="notice">Restoring your saved session…</div> : sessionId && sessionQuery.error ? <div className="error" role="alert">{message(sessionQuery.error)} <button type="button" onClick={() => void sessionQuery.refetch()} data-testid="button-retry-load-session">Try again</button></div> : <>
       {!current && <HomeChat aiConsent={state.aiConsent === true} busy={busy} courseId={selectedCourseId}
+        passMark={(() => { const c = (state.courses ?? []).find(item => item?.id === selectedCourseId) as unknown as Record<string, unknown> | undefined; return passMarkLine(courseExamFacts(c ?? {}).passingScore); })()}
         timedChoices={(() => { const c = (state.courses ?? []).find(item => item?.id === selectedCourseId) as unknown as Record<string, unknown> | undefined; return c && c.kind === 'exam' ? timedChoices(courseExamFacts(c)) : []; })()}
         onCoursesChanged={() => void client.invalidateQueries({ queryKey: stateKey })}
         onOpenSession={id => { setIntakeFiles([]); setSessionId(id); setAdding(false); void client.invalidateQueries({ queryKey: listKey }); }} />}

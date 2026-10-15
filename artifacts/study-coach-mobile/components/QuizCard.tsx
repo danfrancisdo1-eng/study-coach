@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
@@ -11,7 +11,7 @@ import { Confetti } from '@/components/Confetti';
 import { isPerfect } from '@/lib/perfect-score';
 import { useColors } from '@/hooks/useColors';
 import { FONT, TYPE } from '@/constants/type';
-import { canGrade, scoreLine } from '@/lib/exam-sheet';
+import { canGrade, clockText, clockTone, scoreLine, secondsLeft, timeUsedLine } from '@/lib/exam-sheet';
 
 /**
  * One question at a time inside the chat (SPEC §6 steps 4–5). Practice sets show the
@@ -25,9 +25,11 @@ import { canGrade, scoreLine } from '@/lib/exam-sheet';
  * unanswered question is a white bubble with a red ring, and a marked answered one is green
  * with a red ring. Marks live on this phone per set.
  */
-export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }: {
+export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onStepChange }: {
   sessionId: string;
   userId: string | null | undefined;
+  /** The real exam's pass mark line, shown on a timed exam's score (D-115). */
+  passMark?: string;
   /** Called once when the student taps Grade and the server has graded the set. */
   onGraded: (session: StudySession) => void;
   onError: (problem: unknown) => void;
@@ -67,6 +69,45 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   const counts = (q: StudyQuizQuestionsItem) => !q.flag || q.flag.recheck?.verdict === 'key_holds';
   const step = !quiz ? 'loading' : quiz.grade ? 'score' : reviewingId ? `feedback:${reviewingId}` : `question:${currentId ?? quiz.questions.find((q) => counts(q) && !q.answer)?.id ?? 'grade'}`;
   useEffect(() => { onStepChange?.(step); }, [step]);
+
+  // Timed exams (D-115): the clock ticks every second from the server's deadline (wall-clock, so
+  // it is right after the app was closed). At 0:00 the set is graded with what was answered; if
+  // the server isn't there yet (phone clock a little fast), it tries again a few seconds later.
+  const timer = quiz && !quiz.grade ? quiz.timer ?? null : null;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!timer) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [timer?.deadline]);
+  const left = timer ? secondsLeft(timer.deadline, now) : null;
+  const autoGrading = useRef(false);
+  const gradeNow = async (): Promise<boolean> => {
+    try {
+      const graded = await grade.mutateAsync({ id: sessionId });
+      queryClient.setQueryData(key, graded);
+      clearMarks();
+      onGraded(graded);
+      return true;
+    } catch (problem) { onError(problem); return false; }
+  };
+  useEffect(() => {
+    if (left !== 0 || autoGrading.current || grade.isPending) return;
+    autoGrading.current = true;
+    void (async () => {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        try {
+          const graded = await grade.mutateAsync({ id: sessionId });
+          queryClient.setQueryData(key, graded);
+          clearMarks();
+          onGraded(graded);
+          return;
+        } catch { await new Promise((r) => setTimeout(r, 3000)); }
+      }
+      autoGrading.current = false;
+      void sessionQuery.refetch();
+    })();
+  }, [left]);
 
   if (sessionQuery.isLoading) return <View style={styles.card}><ActivityIndicator color={colors.primaryText} /><CardText style={styles.muted}>Loading your questions…</CardText></View>;
   if (!session || !quiz) {
@@ -127,6 +168,17 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
     </View>
   );
 
+  // The clock, at the top of every exam panel (spec B): mm:ss, amber at 5 minutes, red at 1, never colour alone.
+  const tone = left === null ? 'normal' : clockTone(left);
+  const clock = left === null ? null : (
+    <View style={[styles.clock, tone !== 'normal' && { borderColor: tone === 'red' ? colors.wrong : colors.timerAmber }]} accessibilityRole="timer"
+      accessibilityLabel={`${clockText(left)} left`} testID="text-exam-clock">
+      <Feather name="clock" size={16} color={tone === 'red' ? colors.wrong : tone === 'amber' ? colors.timerAmber : colors.mutedForeground} />
+      <CardText style={[styles.clockText, tone === 'red' ? { color: colors.wrong } : tone === 'amber' ? { color: colors.timerAmber } : null]}>{clockText(left)}</CardText>
+      <CardText style={styles.clockNote}>{left === 0 ? 'Time is up. Grading…' : tone === 'red' ? 'Under a minute left' : tone === 'amber' ? 'Under 5 minutes left' : `of ${clockText((timer?.limitMinutes ?? 0) * 60)}`}</CardText>
+    </View>
+  );
+
   if (quiz.grade) {
     // Misses, plus reported questions (with their verdict) so the student sees what happened to them.
     const misses = quiz.questions.filter((q) => q.feedback && q.feedback.selectedOptionId && (q.feedback.selectedOptionId !== q.feedback.correctOptionId || (q.flag && !counts(q))));
@@ -134,9 +186,11 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
       <View style={styles.card} testID="panel-quiz-score">
         <Confetti sessionId={sessionId} perfect={isPerfect(quiz.grade)} />
         <CardText style={styles.kicker}>{kindLabel} · {session.topic}</CardText>
-        <View style={styles.scoreRow}><CardText style={styles.score}>{quiz.grade.correct}</CardText><CardText style={styles.scoreOf}> / {quiz.grade.answered}</CardText></View>
+        <View style={styles.scoreRow}><CardText style={styles.score}>{quiz.grade.correct}</CardText><CardText style={styles.scoreOf}> / {quiz.grade.limitMinutes ? quiz.grade.answered + quiz.grade.unanswered : quiz.grade.answered}</CardText></View>
         {/* Dan (2026-10-12): "20% on the questions you answered" read like 20% missed. Say the score plainly. */}
         <CardText style={styles.body}>{scoreLine(quiz.grade)}</CardText>
+        {timeUsedLine(quiz.grade) ? <CardText style={styles.muted} testID="text-time-used">{timeUsedLine(quiz.grade)}</CardText> : null}
+        {quiz.grade.limitMinutes && passMark ? <CardText style={styles.muted} testID="text-pass-mark">{passMark}</CardText> : null}
         {misses.length ? <CardText style={styles.cardTitle}>Questions you missed</CardText> : <CardText style={styles.cardTitle}>Nothing missed. Nice.</CardText>}
         {misses.map((q, i) => (
           // Grok's review layout (D-070): concept, question, the trick first, then your answer and the best answer as labelled lines.
@@ -211,6 +265,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
     // The first part is answered and the rest has not landed yet: the card waits (polling above), no Grade yet.
     return (
       <View style={styles.card} testID="panel-quiz-writing">
+        {clock}
         <CardText style={styles.kicker}>{kindLabel} · {session.topic}</CardText>
         {progress}
         {bubbles}
@@ -224,14 +279,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   const gradeBlock = allAnswered ? (
     <View style={styles.gradeBlock}>
       {marked.length ? <CardText style={styles.muted}>{marked.length} still marked for review. Grading counts the answers you have now.</CardText> : null}
-      <Pressable accessibilityRole="button" disabled={busy} onPress={async () => {
-        try {
-          const graded = await grade.mutateAsync({ id: sessionId });
-          queryClient.setQueryData(key, graded);
-          clearMarks();
-          onGraded(graded);
-        } catch (problem) { onError(problem); }
-      }} style={[styles.primaryButton, busy && styles.disabled]} testID="button-quiz-grade">
+      <Pressable accessibilityRole="button" disabled={busy} onPress={() => void gradeNow()} style={[styles.primaryButton, busy && styles.disabled]} testID="button-quiz-grade">
         {busy ? <ActivityIndicator color={colors.primaryForeground} /> : <CardText style={styles.primaryText}>Grade exam</CardText>}
       </Pressable>
     </View>
@@ -239,6 +287,7 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
   if (!current) {
     return (
       <View style={styles.card} testID="panel-quiz-grade">
+        {clock}
         <CardText style={styles.kicker}>{kindLabel} · {session.topic}</CardText>
         <CardText style={styles.cardTitle}>All {questions.length} answered.</CardText>
         {bubbles}
@@ -259,12 +308,17 @@ export function QuizCard({ sessionId, userId, onGraded, onError, onStepChange }:
       const at = list.findIndex((q) => q.id === current.id);
       const next = [...list.slice(at + 1), ...list.slice(0, at)].find((q) => !q.answer);
       setCurrentId(next?.id ?? null);
-    } catch (problem) { onError(problem); }
+    } catch (problem) {
+      // Out of time (D-112): the server took no more answers; grade what is there instead of showing an error.
+      if ((problem as { data?: { timeUp?: unknown } }).data?.timeUp === true) { void gradeNow(); return; }
+      onError(problem);
+    }
   };
 
   const chosen = isExam ? current.answer?.optionId ?? null : null;
   return (
     <View style={styles.card} testID="panel-quiz-question">
+      {clock}
       <CardText style={styles.kicker}>{kindLabel} · Question {questions.indexOf(current) + 1} of {total}</CardText>
       {progress}
       {bubbles}
@@ -303,6 +357,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   body: { ...TYPE.body, color: colors.foreground },
   muted: { ...TYPE.small, color: colors.mutedForeground },
   progress: { gap: 4 },
+  clock: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 2, borderColor: colors.border, backgroundColor: colors.background },
+  clockText: { fontFamily: FONT.sansBold, fontSize: 20, color: colors.foreground, fontVariant: ['tabular-nums'] },
+  clockNote: { ...TYPE.small, color: colors.mutedForeground },
   progressTrack: { height: 5, borderRadius: 3, backgroundColor: colors.secondary, overflow: 'hidden' },
   progressFill: { height: 5, backgroundColor: colors.primary },
   progressText: { ...TYPE.small, color: colors.mutedForeground },

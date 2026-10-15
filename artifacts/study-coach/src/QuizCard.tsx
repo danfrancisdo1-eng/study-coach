@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { clockText, clockTone, scoreLine, secondsLeft, timeUsedLine } from './lib/exam-sheet';
 import { getGetStudySessionQueryKey, useFlagStudyQuestion, useGetStudySession, useGradeStudyQuiz, useSaveStudyAnswer, type StudyQuestionFlagInputKind, type StudySession, type StudyQuizQuestionsItem } from '@workspace/api-client-react';
 
 /**
@@ -7,14 +8,17 @@ import { getGetStudySessionQueryKey, useFlagStudyQuestion, useGetStudySession, u
  * iPhone QuizCard. Practice sets show feedback after each answer; exam sets after Grade.
  * "Looks wrong?" (D-034) reports a question; the server re-checks it and the verdict shows in place.
  */
-export default function QuizCard({ sessionId, onGraded, onError }: {
+export default function QuizCard({ sessionId, passMark, onGraded, onError }: {
   sessionId: string;
+  /** The real exam's pass mark line, shown on a timed exam's score (D-115). */
+  passMark?: string;
   onGraded: (session: StudySession) => void;
   onError: (problem: unknown) => void;
 }) {
   const client = useQueryClient();
   const key = getGetStudySessionQueryKey(sessionId);
-  const sessionQuery = useGetStudySession(sessionId, { query: { queryKey: key } });
+  // Polled while the rest of the set is still being written (D-052, D-114), like the phone.
+  const sessionQuery = useGetStudySession(sessionId, { query: { queryKey: key, refetchInterval: query => (query.state.data?.quiz?.status === 'writing' ? 1500 : false) } });
   const saveAnswer = useSaveStudyAnswer();
   const grade = useGradeStudyQuiz();
   const flag = useFlagStudyQuestion();
@@ -31,12 +35,48 @@ export default function QuizCard({ sessionId, onGraded, onError }: {
   // Each new question / feedback / score starts at the top of the card, not at the end of the chat.
   useEffect(() => { topRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, [step]);
 
+  // Timed exams (D-115): the clock from the server's deadline; at 0:00 the set is graded with what was answered.
+  const timer = quiz && !quiz.grade ? quiz.timer ?? null : null;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!timer) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [timer?.deadline]);
+  const left = timer ? secondsLeft(timer.deadline, now) : null;
+  const autoGrading = useRef(false);
+  const gradeNow = async () => {
+    try { const graded = await grade.mutateAsync({ id: sessionId }); client.setQueryData(key, graded); onGraded(graded); } catch (problem) { onError(problem); }
+  };
+  useEffect(() => {
+    if (left !== 0 || autoGrading.current || grade.isPending) return;
+    autoGrading.current = true;
+    void (async () => {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        try { const graded = await grade.mutateAsync({ id: sessionId }); client.setQueryData(key, graded); onGraded(graded); return; }
+        catch { await new Promise(r => setTimeout(r, 3000)); }
+      }
+      autoGrading.current = false;
+      void sessionQuery.refetch();
+    })();
+  }, [left]);
+
   if (sessionQuery.isLoading) return <div className="ae-card ae-card--compact" ref={topRef}><p className="ae-muted">Loading your questions…</p></div>;
   if (!session || !quiz) return <div className="ae-card ae-card--compact"><p className="ae-muted">Couldn’t load this set. <button type="button" className="ae-button ae-button--quiet" onClick={() => void sessionQuery.refetch()}>Retry</button></p></div>;
 
   const questions = quiz.questions.filter(counts);
   const answered = questions.filter(q => q.answer);
   const kindLabel = quiz.kind === 'practice' ? 'PRACTICE' : 'EXAM';
+  const writing = quiz.status === 'writing';
+  const total = writing ? Math.max(quiz.expectedCount, questions.length) : questions.length;
+  const tone = left === null ? 'normal' : clockTone(left);
+  const toneColor = tone === 'red' ? '#d6453a' : tone === 'amber' ? '#a35c00' : undefined;
+  const clock = left === null ? null : (
+    <p role="timer" aria-label={`${clockText(left)} left`} data-testid="text-exam-clock" style={{ display: 'inline-flex', gap: 10, alignItems: 'baseline', padding: '4px 12px', borderRadius: 12, border: `2px solid ${toneColor ?? 'currentColor'}`, margin: '0 0 8px' }}>
+      <strong style={{ fontSize: '1.25rem', fontVariantNumeric: 'tabular-nums', color: toneColor }}>{clockText(left)}</strong>
+      <span className="ae-muted" style={{ fontSize: '.85rem' }}>{left === 0 ? 'Time is up. Grading…' : tone === 'red' ? 'Under a minute left' : tone === 'amber' ? 'Under 5 minutes left' : `of ${clockText((timer?.limitMinutes ?? 0) * 60)}`}</span>
+    </p>
+  );
 
   const send = async (question: StudyQuizQuestionsItem, kind: StudyQuestionFlagInputKind) => {
     setAskingId(null); setReportingId(question.id);
@@ -71,8 +111,10 @@ export default function QuizCard({ sessionId, onGraded, onError }: {
     return (
       <div className="ae-card ae-card--compact" data-testid="panel-quiz-score" ref={topRef}>
         <span className="ae-kicker">{kindLabel} · {session.topic}</span>
-        <p style={{ fontSize: '2rem', fontWeight: 700, margin: '6px 0' }}>{quiz.grade.correct} / {quiz.grade.answered}</p>
-        <p>{quiz.grade.percent}% on the questions you answered{quiz.grade.unanswered ? ` · ${quiz.grade.unanswered} skipped` : ''}.</p>
+        <p style={{ fontSize: '2rem', fontWeight: 700, margin: '6px 0' }}>{quiz.grade.correct} / {quiz.grade.limitMinutes ? quiz.grade.answered + quiz.grade.unanswered : quiz.grade.answered}</p>
+        <p>{scoreLine(quiz.grade)}</p>
+        {timeUsedLine(quiz.grade) && <p className="ae-muted" data-testid="text-time-used">{timeUsedLine(quiz.grade)}</p>}
+        {quiz.grade.limitMinutes && passMark ? <p className="ae-muted" data-testid="text-pass-mark">{passMark}</p> : null}
         <h3 className="ae-heading" style={{ fontSize: '1.05rem' }}>{misses.length ? 'What you missed' : 'Nothing missed. Nice.'}</h3>
         {misses.map((q, i) => (
           <div key={q.id} data-testid={`quiz-miss-${i}`} className="sc-miss">
@@ -109,22 +151,31 @@ export default function QuizCard({ sessionId, onGraded, onError }: {
   }
 
   const current = questions.find(q => !q.answer);
+  if (!current && writing) {
+    return (
+      <div className="ae-card ae-card--compact" data-testid="panel-quiz-writing" ref={topRef}>
+        {clock}
+        <span className="ae-kicker">{kindLabel} · {session.topic}</span>
+        <p className="ae-muted">Writing question {answered.length + 1} of {total}…</p>
+      </div>
+    );
+  }
   if (!current) {
     return (
       <div className="ae-card ae-card--compact" data-testid="panel-quiz-grade" ref={topRef}>
+        {clock}
         <span className="ae-kicker">{kindLabel} · {session.topic}</span>
         <p>All {questions.length} answered.</p>
-        <button type="button" className="ae-button ae-button--ink" disabled={busy} data-testid="button-quiz-grade" onClick={async () => {
-          try { const graded = await grade.mutateAsync({ id: sessionId }); client.setQueryData(key, graded); onGraded(graded); } catch (problem) { onError(problem); }
-        }}>Grade</button>
+        <button type="button" className="ae-button ae-button--ink" disabled={busy} data-testid="button-quiz-grade" onClick={() => void gradeNow()}>Grade</button>
       </div>
     );
   }
 
   return (
     <div className="ae-card ae-card--compact" data-testid="panel-quiz-question" ref={topRef}>
-      <span className="ae-kicker">{kindLabel} · QUESTION {questions.indexOf(current) + 1} OF {questions.length}</span>
-      <progress value={answered.length} max={questions.length} style={{ width: '100%' }} aria-label="Answered" /><p className="ae-muted" style={{ fontSize: '.8rem' }}>{answered.length} of {questions.length} answered</p>
+      {clock}
+      <span className="ae-kicker">{kindLabel} · QUESTION {questions.indexOf(current) + 1} OF {total}</span>
+      <progress value={answered.length} max={total} style={{ width: '100%' }} aria-label="Answered" /><p className="ae-muted" style={{ fontSize: '.8rem' }}>{answered.length} of {total} answered</p>
       <p style={{ fontWeight: 600 }}>{current.prompt}</p>
       <div style={{ display: 'grid', gap: 8 }}>
         {current.options.map((option, i) => (
@@ -134,7 +185,11 @@ export default function QuizCard({ sessionId, onGraded, onError }: {
                 const updated = await saveAnswer.mutateAsync({ id: sessionId, data: { questionId: current.id, optionId: option.id, assisted: false } });
                 client.setQueryData(key, updated);
                 if (quiz.kind === 'practice') setReviewingId(current.id);
-              } catch (problem) { onError(problem); }
+              } catch (problem) {
+                // Out of time (D-112): grade what is there instead of showing an error.
+                if ((problem as { data?: { timeUp?: unknown } }).data?.timeUp === true) { void gradeNow(); return; }
+                onError(problem);
+              }
             }}>
             <strong style={{ marginRight: 10 }}>{'ABCDE'[i]}</strong>{option.text}
           </button>

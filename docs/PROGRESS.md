@@ -1,5 +1,28 @@
 # Progress
 
+## Session 10 — 2026-10-15 (Dan on the phone; Claude Code at the Mac)
+
+### Done
+- **Review sheet:** web search always on; vendor sources only (D-107); **4 pages at most**, enforced in code, only the latest 8 misses (D-108); prompt v3 never contradicts itself, vendor docs win on certification facts (D-109). Live on main.
+- **Timed exams (spec B), all four steps:** the guide lookup saves the real question count, time limit and passing score (exam-guide.v2, D-110); the student can type or correct them (pencil form, D-111); the server keeps the clock (deadline, late answers refused, graded at time-up, unanswered count as wrong, D-112); "Simulated exam" offers the full exam or 10/20/40 blocks with prorated time, written in weighted batches (D-114); the clock on screen, auto-grade at 0:00, time used and pass mark on the score (D-115). Phone and web.
+- **New app icon and launch screen** (D-113): Dan's R-with-AI icon and the brain poster.
+- Verified here: typecheck; 175/175 tests; evals (review sheet 3/3 then 2/3; exam guide 4/4); iOS bundle export.
+
+### Needs real-iPhone check
+- Exam course → pencil: the three Real exam boxes save; the course screen shows "Real exam: …".
+- Simulated exam → Block of 10: the clock shows, turns amber/red, grades itself at 0:00; close the app mid-exam and reopen: the clock kept running. Score shows time used and the pass mark.
+- A review sheet PDF is 4 pages or fewer.
+- The new icon and launch screen: only after a new EAS development build (not through the preview).
+
+### Next
+- One EAS development build with the icon/launch screen (needs Dan's OK).
+- Chat file card spec (awaiting Dan's sign-off); coach upgrade with Dan's few-shot examples; "About you" field.
+- Synthetic materials for Dan's 15 Grok persona testers when he says go.
+- The web app does not build on this Mac (Rollup's macOS native package is missing; installing it needs Dan's OK).
+
+### Blockers
+- None.
+
 ## Session 9 — 2026-10-13 (Dan at the Mac and on the phone; Claude Code driving Chrome for RevenueCat)
 
 ### Done

@@ -43,6 +43,8 @@ const light = {
   destructiveForeground: '#ffffff',
   correct: '#2f9e5b',
   wrong: '#d6453a',
+  // The exam clock at 5 minutes left (D-115); 4.5:1 on the card in each mode. Red at 1 minute uses wrong.
+  timerAmber: '#a35c00',
 
   chipBg: '#fff6df',
   chipBorder: '#e9cf8a',
@@ -76,6 +78,7 @@ const dark: typeof light = {
   destructiveForeground: '#15192a',
   correct: '#4cd964',
   wrong: '#ff6b61',
+  timerAmber: '#ffb340',
 
   chipBg: '#1c2740',
   chipBorder: '#3a4a6a',

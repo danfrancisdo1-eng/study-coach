@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-15 — D-115: Timed exams, step 4: the clock on screen, auto-grade at 0:00, time and pass mark on the score
+- Spec B, last step. The exam card (phone and web) shows the clock at the top of every exam panel: mm:ss (h:mm:ss for long exams) of the limit, amber from 5 minutes left, red from 1, always with words ("Under 5 minutes left", "Under a minute left"), never colour alone. It ticks from the server's deadline, so it is right after the app was closed.
+- At 0:00 the card grades the set with what was answered ("Time is up. Grading…"), retrying a few times if the phone's clock is a little ahead of the server's; reopening an expired exam grades it the same way. An answer the server refuses as late (timeUp) grades instead of showing an error.
+- Score: "You scored 40%: 4 of 10 right. 2 unanswered count as wrong."; the big number is right / all questions; "Time used: 34:12 of 40:00"; and, when the official page gives one, "Pass mark on the real exam: 700 out of 1000. Your percentage here is only a rough guide; the real exam is scored differently."
+- Web QuizCard now polls while the rest of a set is being written, like the phone (it had no "writing" state before), and counts "Question 3 of 20" against the whole set.
+- New colour token timerAmber (#a35c00 light, #ffb340 dark; 4.5:1 or better on the card). Tests 175/175 (clock, tones, timed score lines). Steps 2–4 merged together.
+
 ## 2026-10-15 — D-114: Timed exams, step 3: starting a full simulation or a 10/20/40 block
 - Spec B. On an exam course with the real question count and time limit, "Simulated exam" opens a short list: "Full exam: 50 questions · 100 min", "Block of 10 · 20 min", "Block of 20 · 40 min", "Block of 40 · 80 min" (only blocks smaller than the exam), and "No timer: ask the coach for a set" (the old path). Web: the same choices as buttons in the chat on the selected exam.
 - The choice goes to POST /study/chat as timedExam {size}. The server sizes and times it from the effective facts (timedExamPlan; a block is prorated, a full exam over 180 questions is capped with the time prorated), with no coach AI call (the app writes the reply), and refuses with a clear 400 when the course isn't an exam or the numbers are missing. It still counts as a set for the free-tier limit.

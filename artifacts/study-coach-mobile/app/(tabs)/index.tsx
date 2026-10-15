@@ -28,7 +28,8 @@ import { GlowRing } from '@/components/GlowRing';
 import { HomeSkeleton } from '@/components/Skeleton';
 import { LiveSetCard } from '@/components/LiveSetCard';
 import { liveSetAction } from '@/lib/live-set';
-import type { TimedSize } from '@/lib/exam-facts';
+import { courseExamFacts, type TimedSize } from '@/lib/exam-facts';
+import { passMarkLine } from '@/lib/exam-sheet';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.'; // sent for the student after Grade so the coach can respond to the result
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
@@ -143,6 +144,10 @@ export default function CoachHome() {
   const courses = coursesFrom(stateQuery.data?.state);
   const intakeCourse = courses.find((course) => course.id === intakeCourseId) ?? null;
   const focusCourse = courses.find((course) => course.id === focusCourseId) ?? null;
+  // The real exam's pass mark for a timed exam's score (D-115), from the focused course's facts.
+  const focusRaw = (Array.isArray((stateQuery.data?.state as { courses?: unknown } | undefined)?.courses) ? (stateQuery.data!.state as { courses: unknown[] }).courses : [])
+    .find((c): c is Record<string, unknown> => !!c && typeof c === 'object' && (c as { id?: unknown }).id === focusCourseId);
+  const focusPassMark = passMarkLine(courseExamFacts(focusRaw).passingScore);
   // Remember the selected course per account (the course list page writes the same key, so
   // it is re-read whenever this screen comes back into view); fall back to the most recent one.
   useFocusEffect(useCallback(() => {
@@ -569,7 +574,7 @@ export default function CoachHome() {
                   onGraded={(graded) => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
                   onError={(problem) => setError(readableError(problem))} />
               ) : quizSessionId ? (
-                <QuizCard key={quizSessionId} sessionId={quizSessionId} userId={userId}
+                <QuizCard key={quizSessionId} sessionId={quizSessionId} userId={userId} passMark={focusPassMark}
                   onStepChange={() => quizScrollRef.current?.scrollTo({ y: 0, animated: false })}
                   onGraded={(graded) => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
                   onError={(problem) => setError(readableError(problem))} />

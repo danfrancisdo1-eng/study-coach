@@ -13,13 +13,15 @@ const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
  * Chat-first home (SPEC §7, D-016), web version of the iPhone Coach tab. The coach can
  * create a course or start a study session; the parent opens the session.
  */
-export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [], onCoursesChanged, onOpenSession }: {
+export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [], passMark, onCoursesChanged, onOpenSession }: {
   aiConsent: boolean;
   busy?: boolean;
   /** The course/exam selected on the page; the coach assumes it when a message does not name one. */
   courseId?: string | null;
   /** Timed exam choices for the selected certification exam (D-114); empty hides them. */
   timedChoices?: { size: TimedSize; label: string }[];
+  /** The real exam's pass mark line for a timed exam's score (D-115). */
+  passMark?: string;
   onCoursesChanged: () => void;
   onOpenSession: (sessionId: string) => void;
 }) {
@@ -134,7 +136,7 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
         {deckSessionId && <FlashcardDeck key={deckSessionId} sessionId={deckSessionId}
           onFinished={finished => { setFinishedDeckId(finished.id); void sendText(FINISHED_DECK_MESSAGE); }}
           onError={problem => { const data = (problem as { data?: { error?: unknown } }).data; setError(data && typeof data.error === 'string' ? data.error : 'Something went wrong. Try again.'); }} />}
-        {!deckSessionId && quizSessionId && <QuizCard key={quizSessionId} sessionId={quizSessionId}
+        {!deckSessionId && quizSessionId && <QuizCard key={quizSessionId} sessionId={quizSessionId} passMark={passMark}
           onGraded={graded => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
           onError={problem => { const data = (problem as { data?: { error?: unknown } }).data; setError(data && typeof data.error === 'string' ? data.error : 'Something went wrong. Try again.'); }} />}
         {sending && <p className="ae-muted">Coach is working… writing questions can take up to a minute.</p>}
