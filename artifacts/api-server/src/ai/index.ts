@@ -11,6 +11,8 @@ export type AiResult = ChatResult;
 
 export interface AiInput {
   system: string;
+  /** Long material (a course's uploads) sent ahead of the instructions; cached on Anthropic (D-122). */
+  context?: string;
   messages: AiMessage[];
   timeoutMs?: number;
   maxRetries?: number;
@@ -22,6 +24,11 @@ export function complete(task: AiTask, input: AiInput): Promise<AiResult> {
   const config = taskConfig(task);
   if (config.provider === "anthropic") {
     return anthropicCompletion({ ...config, ...input, jsonSchema: TASK_SCHEMAS[task] });
+  }
+  // Other providers: the material simply goes in front of the instructions.
+  if (input.context) {
+    const { context, ...rest } = input;
+    input = { ...rest, system: `${context}\n\n${rest.system}` };
   }
   if (input.webSearch) {
     // Tests only: the OpenAI-speaking stub answers a lookup without searching. Never set in production.

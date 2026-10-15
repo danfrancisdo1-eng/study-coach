@@ -50,10 +50,10 @@ test('lookup_exam_guide from a course thread: guide saved, course becomes an exa
   assert.deepEqual(last.actions, [{ type: 'lookup_exam_guide', courseId: 'ms103', found: true, sections: 3 }], 'the follow-up turn\'s own actions are not applied');
   assert.equal(chat.body.activeQuiz, null);
   // The second coach prompt listed the sections under the course and said the guide was just looked up.
-  const secondSystem = ai.requests.filter((r) => r.body.messages[0].content.startsWith('You are the study coach')).at(-1).body.messages[0].content;
+  const secondSystem = ai.requests.filter((r) => r.body.messages[0].content.includes('You are the study coach')).at(-1).body.messages[0].content;
   assert.match(secondSystem, /Official exam guide sections: Implement generative AI and agentic solutions \(32%\)/);
   assert.match(secondSystem, /official exam guide for Microsoft 103 was just looked up this turn: found, 3 sections/);
-  assert.match(secondSystem, /This conversation belongs to Microsoft 103/);
+  assert.match(secondSystem, /This conversation belongs to one course; it is the only course you know about here:\n- Microsoft 103/);
   // State: the guide is saved and the course is now a certification exam.
   const state = (await call('GET', '/study/state')).body.state;
   const course = state.courses.find((c) => c.id === 'ms103');

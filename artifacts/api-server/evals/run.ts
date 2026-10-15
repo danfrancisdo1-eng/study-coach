@@ -17,7 +17,8 @@ import * as tutorPrompt from "../src/prompts/tutor.v3";
 import * as sessionQuizPrompt from "../src/prompts/session-quiz.v8";
 import * as quizCheckPrompt from "../src/prompts/quiz-check.v2";
 import * as imageOcrPrompt from "../src/prompts/image-ocr.v1";
-import * as coachPrompt from "../src/prompts/coach.v18";
+import * as coachPrompt from "../src/prompts/coach.v19";
+import { courseContext } from "../src/lib/course-context";
 import * as webLookupPrompt from "../src/prompts/web-lookup.v1";
 import * as flashcardsPrompt from "../src/prompts/flashcards.v2";
 import * as examGuidePrompt from "../src/prompts/exam-guide.v2";
@@ -120,8 +121,10 @@ async function main() {
     });
     if (tasks.includes("coach")) for (const c of coachCases) jobs.push({
       task: "coach", name: c.name,
+      // As routes/chat.ts does (D-122): a course's chat knows that course only and reads its uploads.
       run: () => complete("coach", {
-        system: coachPrompt.systemPrompt({ today, courses: c.courses, firstVisit: c.firstVisit, quiz: c.quiz ?? null, deck: c.deck ?? null, focusCourseId: c.focusCourseId ?? null, results: c.results ?? null, guideJustLookedUp: c.guideJustLookedUp ?? null, webFindings: c.webFindings ?? null }),
+        ...(c.focusCourseId && c.uploads ? { context: courseContext({ courseName: c.courses.find((x) => x.id === c.focusCourseId)?.name ?? c.focusCourseId, uploads: c.uploads, lectures: [], memorySheet: "", query: c.message }).text } : {}),
+        system: coachPrompt.systemPrompt({ today: c.today ?? today, courses: c.focusCourseId ? c.courses.filter((x) => x.id === c.focusCourseId) : c.courses, firstVisit: c.firstVisit, quiz: c.quiz ?? null, deck: c.deck ?? null, focusCourseId: c.focusCourseId ?? null, results: c.results ?? null, guideJustLookedUp: c.guideJustLookedUp ?? null, webFindings: c.webFindings ?? null }),
         messages: [...c.history, { role: "user", content: c.message }],
       }),
       grade: (text) => gradeCoach(c, text),

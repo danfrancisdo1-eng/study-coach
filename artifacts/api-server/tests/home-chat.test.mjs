@@ -465,10 +465,11 @@ test('home chat: memory sheet fills itself from a graded set; a set from the she
   await call('POST', `/study/sessions/${started.sessionId}/grade`);
   assert.equal(sheetRequests().length, 1);
 
-  // The coach sees the row count; the finished-set turn carries no sheet action.
+  // The finished-set turn carries no sheet action. This is the general conversation, which knows
+  // course names only (D-122); the sheet itself reaches the coach in the course's own chat.
   coach = { reply: '2 of 4.', suggestions: ['Memory tricks for the misses'], actions: [] };
   chat = await call('POST', '/study/chat', { content: 'I finished the set.', version: 1 });
-  assert.match(ai.requests.at(-1).body.messages[0].content, /memory sheet: 2 rows/);
+  assert.doesNotMatch(ai.requests.at(-1).body.messages[0].content, /memory sheet: 2 rows/);
   assert.deepEqual(chat.body.messages.at(-1).actions, []);
 
   // A student request adds a row from the chat (scope "all": no misses are sent).

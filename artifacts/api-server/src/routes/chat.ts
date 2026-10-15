@@ -13,7 +13,8 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v18";
+import * as coachPrompt from "../prompts/coach.v19";
+import { courseContext } from "../lib/course-context";
 import * as webLookupPrompt from "../prompts/web-lookup.v1";
 import { lookupExamGuide } from "../lib/exam-guide";
 import { saveExamGuide } from "../lib/exam-guide-state";
@@ -38,8 +39,6 @@ const DEFAULT_SESSION_MINUTES = 20;
 // (SPEC §7 "resume where you left off"; the original guide's once-per-session check-in).
 const SESSION_GAP_MS = Number(process.env.HOME_CHAT_SESSION_GAP_MINUTES ?? "30") * 60_000;
 const OLD_MATERIAL_QUESTIONS = 2;
-const SCOPE_MATERIAL = /outline|syllabus|schedule|course description|reading list|contents/i; // a map of topics, not content
-const SCOPE_EXCERPT_CHARS = 1500;
 const SHEET_TOPIC = /memory sheet/i; // "Quiz me from my memory sheet": the sheet is the only source (D-025) // "missed topics" sets add 1–2 questions from earlier material (SPEC §6 step 7)
 
 type JsonObject = Record<string, unknown>;
@@ -502,7 +501,6 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const buildSummary = (courseList: KnownCourse[]) => courseList.map((course) => {
     const own = materials.filter((m): m is JsonObject => isObject(m) && m.courseId === course.id);
     const materialNames = own.map((m) => (typeof m.name === "string" ? m.name : "material"));
-    const scope = own.find((m) => typeof m.name === "string" && SCOPE_MATERIAL.test(m.name) && typeof m.text === "string");
     return {
       id: course.id,
       name: course.code ? `${course.name} (${course.code})` : course.name,
@@ -514,10 +512,21 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       materials: own.length,
       lectures: lectureRows.filter((l) => l.courseId === course.id).length,
       ...(materialNames.length ? { materialNames } : {}),
-      ...(scope ? { scopeExcerpt: (scope.text as string).replace(/\s+/g, " ").slice(0, SCOPE_EXCERPT_CHARS) } : {}),
     };
   });
-  const summary = buildSummary(courses);
+  // Each course is a Project (D-122): a course's conversation knows that course only, and reads
+  // everything uploaded to it; the general conversation gets course names only.
+  const visible = (courseList: KnownCourse[]) => (threadId ? courseList.filter((c) => c.id === threadId) : courseList);
+  const summary = buildSummary(visible(courses));
+  const threadCourseName = threadId ? courses.find((c) => c.id === threadId)?.name ?? "this course" : null;
+  const material = threadId ? courseContext({
+    courseName: threadCourseName!,
+    uploads: materials.flatMap((m) => (isObject(m) && m.courseId === threadId && typeof m.text === "string" ? [{ name: typeof m.name === "string" ? m.name : "Upload", text: m.text }] : [])),
+    lectures: await reviewedLectureMaterials(ownerId, threadId),
+    memorySheet: rowsFromState(state, threadId).length ? sheetAsText(rowsFromState(state, threadId)) : "",
+    query: content,
+  }) : null;
+  if (material) req.log.info({ courseId: threadId, mode: material.mode, uploads: material.uploads, chars: material.chars }, "Coach course material");
   const history = messages.slice(-HISTORY_TURNS).map((m) => ({ role: m.role, content: m.content }));
   // Results so far for this thread's course (D-042): past sets and decks as facts for the coach.
   const courseSessions = threadId
@@ -540,6 +549,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     coach = { reply: `Timed exam: ${timed.count} questions in ${timed.minutes} minutes, spread over the official sections by weight. The clock is running now and keeps running if you leave the app. Unanswered questions count as wrong, like the real exam, and at 0:00 it is graded with what you answered. Good luck.`, suggestions: [], actions: [] };
   } else try {
     const response = await complete("coach", {
+      ...(material ? { context: material.text } : {}),
       system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null }),
       messages: [...history, { role: "user", content }],
     });
@@ -591,6 +601,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     done.push({ type: "web_search", courseId: threadId ?? "general", query: plan.search.query, found: text.length > 0 });
     try {
       const followUp = await complete("coach", {
+        ...(material ? { context: material.text } : {}),
         system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: summary, firstVisit: false, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, webFindings: { query: plan.search.query, text: text || "Nothing reliable was found." } }),
         messages: [...history, { role: "user", content }],
       });
@@ -623,7 +634,8 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       const refreshed = knownCourses(await latestStateFor(ownerId, state, created));
       try {
         const followUp = await complete("coach", {
-          system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: buildSummary(refreshed), firstVisit: false, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, guideJustLookedUp: { courseName: course.name, found, sections } }),
+          ...(material ? { context: material.text } : {}),
+          system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: buildSummary(visible(refreshed)), firstVisit: false, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, guideJustLookedUp: { courseName: course.name, found, sections } }),
           messages: [...history, { role: "user", content }],
         });
         const second = parseCoachReply(followUp.text);

@@ -23,6 +23,8 @@ function anthropic(): Anthropic {
 
 export interface AnthropicRequest extends TaskConfig {
   system: string;
+  /** Long material sent before the instructions in its own cached block (D-122: a course's uploads). */
+  context?: string;
   messages: AiMessage[];
   jsonSchema?: JsonSchema;
   webSearch?: { maxUses: number };
@@ -52,9 +54,13 @@ export function anthropicBody(request: AnthropicRequest): Anthropic.Beta.Message
     model: request.model,
     max_tokens: request.maxTokens,
     ...(request.webSearch ? { tools: [{ type: WEB_SEARCH_TOOL, name: "web_search" as const, max_uses: request.webSearch.maxUses }] } : {}),
-    system: request.cache
-      ? [{ type: "text", text: request.system, cache_control: { type: "ephemeral" } }]
-      : request.system,
+    // The course's material comes first in its own cached block, so it is reused across a conversation
+    // even when the instructions change from turn to turn (D-122).
+    system: request.context
+      ? [{ type: "text", text: request.context, cache_control: { type: "ephemeral" } }, { type: "text", text: request.system, ...(request.cache ? { cache_control: { type: "ephemeral" as const } } : {}) }]
+      : request.cache
+        ? [{ type: "text", text: request.system, cache_control: { type: "ephemeral" } }]
+        : request.system,
     messages,
     ...(Object.keys(outputConfig).length ? { output_config: outputConfig } : {}),
     ...(fallback ? { betas: [FALLBACK_BETA], fallbacks: "default" as const } : {}),

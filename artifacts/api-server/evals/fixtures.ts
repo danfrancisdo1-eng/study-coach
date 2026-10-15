@@ -1,3 +1,4 @@
+import { bio101Outline, bio101Syllabus } from "./bio101";
 // Synthetic eval cases. No student data. Add real (consented, de-identified) cases later.
 
 export interface SyllabusCase {
@@ -364,6 +365,10 @@ export interface CoachCase {
   /** What a good reply must do, for the judge. */
   expectations: string[];
   maxWords: number;
+  /** D-122: what was uploaded to the focused course (the coach reads it as COURSE MATERIAL). */
+  uploads?: { name: string; text: string }[];
+  /** A fixed "today" for date questions ("when is my next quiz"). */
+  today?: string;
 }
 
 const bioResults = `Sets and decks (3 total):
@@ -398,6 +403,38 @@ export const webLookupCases: WebLookupCase[] = [
 ];
 
 export const coachCases: CoachCase[] = [
+  // D-122, "each course is a Project": Dan's synthetic BIO 101. The coach reads the course's uploads.
+  {
+    name: "BIO 101: when are my finals? answered from the uploaded syllabus",
+    courses: [{ id: "bio", name: "bio 101", materials: 2, lectures: 0, materialNames: ["Bio_101_Course_Outline", "Bio_101_Fall_Syllabus"] }],
+    firstVisit: false, focusCourseId: "bio", history: [], today: "2026-10-15",
+    uploads: [{ name: "Bio_101_Course_Outline", text: bio101Outline }, { name: "Bio_101_Fall_Syllabus", text: bio101Syllabus }],
+    message: "When are my finals",
+    expectedActions: [],
+    expectations: ["Gives the final exam date as Tuesday, December 1, 2026", "Says it is cumulative (heavier on the material after the midterm is fine)", "Says or implies it comes from their syllabus", "Does not say it cannot see the date or ask the student for the date"],
+    maxWords: 90,
+  },
+  {
+    name: "BIO 101: when is my next quiz? worked out from today and the syllabus",
+    courses: [{ id: "bio", name: "bio 101", materials: 2, lectures: 0, materialNames: ["Bio_101_Course_Outline", "Bio_101_Fall_Syllabus"] }],
+    firstVisit: false, focusCourseId: "bio", history: [], today: "2026-10-15",
+    uploads: [{ name: "Bio_101_Course_Outline", text: bio101Outline }, { name: "Bio_101_Fall_Syllabus", text: bio101Syllabus }],
+    message: "When is my next quiz and what's it on?",
+    expectedActions: [],
+    expectations: ["Says the next quiz is Quiz 8 in Week 9 (Oct 20–23)", "Says it covers genetics and DNA", "Does not claim there is a quiz this week (Week 8 is midterm week, no weekly quiz)", "Does not invent a specific day of the week the syllabus does not give"],
+    maxWords: 90,
+  },
+  {
+    name: "a course whose uploads give no midterm date: gives what the outline says, invents no date",
+    courses: [{ id: "bio", name: "bio 101", materials: 1, lectures: 0, materialNames: ["Bio_101_Course_Outline"] }],
+    firstVisit: false, focusCourseId: "bio", history: [], today: "2026-10-15",
+    uploads: [{ name: "Bio_101_Course_Outline", text: bio101Outline }],
+    message: "When is my midterm?",
+    expectedActions: [],
+    // The outline says "Two midterms, after Units 3 and 5" (Unit 3 ends Week 6, Unit 5 Week 10) but gives no calendar dates.
+    expectations: ["Says the outline has two midterms, after Units 3 and 5 (around the end of Weeks 6 and 10 is fine)", "Says the outline gives no calendar date and does not state or guess a calendar date", "Points to where the date is usually found (the syllabus or the course page) or offers to keep it if they tell it"],
+    maxWords: 70,
+  },
   // D-045: "search the internet" is a web_search action, never "I can't".
   {
     name: "search the internet for sample questions: web_search with a query, no refusal",
@@ -595,7 +632,7 @@ export const coachCases: CoachCase[] = [
   // coach.v4: topic step before a set.
   {
     name: "set requested without a topic, outline uploaded: proposes topics from the outline plus All topics",
-    courses: [{ id: "bio-1", name: "Bio 101", materials: 1, lectures: 0, materialNames: ["Bio_101_Course_Outline.pdf"], scopeExcerpt: "BIO 101 Introductory Biology - Fall 2026. Week 1: The chemistry of life (atoms, water, macromolecules). Week 2: Cell structure and organelles. Week 3: Membranes and transport (diffusion, osmosis, active transport). Week 4: Energy and enzymes. Week 5: Cellular respiration. Week 6: Photosynthesis. Exam 1 covers weeks 1-6." }], firstVisit: false,
+    courses: [{ id: "bio-1", name: "Bio 101", materials: 1, lectures: 0, materialNames: ["Bio_101_Course_Outline.pdf"] }], firstVisit: false, focusCourseId: "bio-1", uploads: [{ name: "Bio_101_Course_Outline.pdf", text: "BIO 101 Introductory Biology - Fall 2026. Week 1: The chemistry of life (atoms, water, macromolecules). Week 2: Cell structure and organelles. Week 3: Membranes and transport (diffusion, osmosis, active transport). Week 4: Energy and enzymes. Week 5: Cellular respiration. Week 6: Photosynthesis. Exam 1 covers weeks 1-6." }],
     history: [{ role: "assistant", content: "Got it, Bio 101 now has your outline. Want to start a quick set of questions based on it, or add more material first?" }],
     message: "Sure",
     expectedActions: [], expectedSuggestions: ["All topics"],
@@ -689,7 +726,7 @@ export const coachCases: CoachCase[] = [
   // coach.v16 (D-074): suggestions answer the reply; the four after-set chips are for the first reply only.
   {
     name: "later turn after a set: chips answer the coach's own question, not the four set options (Dan's screenshot)",
-    courses: [{ id: "chem-1", name: "Chem 102", materials: 0, lectures: 0 }], firstVisit: false, history: [
+    courses: [{ id: "chem-1", name: "Chem 102", materials: 0, lectures: 0 }], firstVisit: false, focusCourseId: "chem-1", history: [
       { role: "user", content: "I finished the set." },
       { role: "assistant", content: "2 of 9 on Kinetics. What next?" },
       { role: "user", content: "Memory tricks for the misses" },

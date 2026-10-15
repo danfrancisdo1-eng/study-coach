@@ -43,7 +43,7 @@ test('web_search from the chat: findings reach the follow-up turn, the action is
   assert.deepEqual(last.actions, [{ type: 'web_search', courseId: 'ab731', query: 'Microsoft AB731 exam sample questions', found: true }], 'the follow-up turn\'s own actions are not applied');
   const lookup = ai.requests.find((r) => r.body.messages[0].content.startsWith("You answer a student's request using web search"));
   assert.deepEqual(JSON.parse(lookup.body.messages[1].content), { request: 'Microsoft AB731 exam sample questions', course: 'Microsoft AB731' });
-  const second = ai.requests.filter((r) => r.body.messages[0].content.startsWith('You are the study coach')).at(-1).body.messages[0].content;
+  const second = ai.requests.filter((r) => r.body.messages[0].content.includes('You are the study coach')).at(-1).body.messages[0].content;
   assert.match(second, /query: "Microsoft AB731 exam sample questions"/);
   assert.match(second, /free practice assessment/);
 
@@ -52,6 +52,6 @@ test('web_search from the chat: findings reach the follow-up turn, the action is
   const again = await call('POST', '/study/chat', { content: 'search again', version: 1, courseId: 'ab731' });
   assert.equal(again.status, 200, JSON.stringify(again.body));
   assert.deepEqual(again.body.messages.at(-1).actions, [{ type: 'web_search', courseId: 'ab731', query: 'Microsoft AB731 exam sample questions', found: false }]);
-  const third = ai.requests.filter((r) => r.body.messages[0].content.startsWith('You are the study coach')).at(-1).body.messages[0].content;
+  const third = ai.requests.filter((r) => r.body.messages[0].content.includes('You are the study coach')).at(-1).body.messages[0].content;
   assert.match(third, /Nothing reliable was found/);
 });

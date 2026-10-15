@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-15 — D-122: Each course is a Project, part B: the coach reads the course (coach.v19)
+- Dan's BIO 101 (synthetic syllabus + outline): "When are my finals?" got "I don't have a finals date" because the coach saw only a 1,500-character preview of one outline. Now, in a course's chat, the coach gets everything uploaded to that course (uploads, reviewed lecture transcripts, memory sheet) as a COURSE MATERIAL block sent before its instructions in its own prompt-cache block (cheap across a conversation). Over 150,000 characters (lib/course-context.ts COURSE_CONTEXT_BUDGET) it switches to the planning documents whole plus the passages matching the question (part D will improve the matching).
+- A course's chat knows that course only (no other course's name, uploads, dates); the general chat gets course names (with kind and exam date) only. The 1,500-character scope excerpt is gone.
+- coach.v19: answer course questions (dates, quizzes, exams, deadlines, grading, policies, content) from the material first and name the upload; "next/upcoming" worked out from today; if the material doesn't say, say so and never guess; anything from outside is labelled as not from their notes; exam dates show for every course kind; another course named in a course chat → switch with the course bar; the topic step takes topics from the course material; the four after-set chips are never repeated as a group after the first reply.
+- Evals: 3 new BIO 101 cases with Dan's real synthetic files (final = Tuesday, December 1, 2026; next quiz on Oct 15 = Quiz 8, Week 9, Oct 20–23, genetics and DNA; the outline's "two midterms after Units 3 and 5" with no calendar date invented). Two old cases moved into course chats, where they happen in the app. Coach 42/42 twice (~$0.52 per run). Tests 182/182, incl. an end-to-end check that the Bio chat reads the Bio syllabus and nothing of Chemistry, and the general chat reads no material.
+
 ## 2026-10-15 — D-121: Each course is a Project, part A: every upload belongs to a course
 - The server refuses a save that adds an upload without a course that exists (400: "Every upload must belong to a course. Pick a course for: …"). Uploads already saved are left alone, so older accounts keep saving. All phone and web upload paths already attach the course.
 - Sets, flashcards, the review sheet and the tutor (sourceChunks) use only uploads whose course is that course; an upload with no course reaches no course (before: it reached every course).

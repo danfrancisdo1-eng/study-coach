@@ -36,7 +36,7 @@ test('results history reaches the coach and drives missed-scope sets', async (t)
     const text = await res.text();
     return { status: res.status, body: text ? JSON.parse(text) : null };
   };
-  const coachSystem = () => ai.requests.filter((r) => r.body.messages[0].content.startsWith('You are the study coach')).at(-1).body.messages[0].content;
+  const coachSystem = () => ai.requests.filter((r) => r.body.messages[0].content.includes('You are the study coach')).at(-1).body.messages[0].content;
 
   // Before any set: the coach is told there is no graded set yet.
   let chat = await call('POST', '/study/chat', { content: 'hi', version: 0, courseId: 'bio' });
