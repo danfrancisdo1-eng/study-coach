@@ -418,17 +418,20 @@ export async function gradeReviewSheet(testCase: ReviewSheetCase, text: string |
   for (const [i, s] of sections.entries()) {
     const subs = s.subsections ?? [];
     const items = subs.flatMap((x) => x.items ?? []);
-    if (testCase.kind === "exam" && (subs.length < 2 || items.length < 6)) notes.push(`section ${i} too thin: ${subs.length} subsections, ${items.length} items`);
+    if ((testCase.kind === "exam" || testCase.treatAsExam) && (subs.length < 2 || items.length < 5)) notes.push(`section ${i} too thin: ${subs.length} subsections, ${items.length} items`);
     if (items.some((it) => !it.term?.trim())) notes.push(`section ${i}: items without a bold term`);
-    if (testCase.kind === "exam" && !(s.contrasts?.length)) notes.push(`section ${i}: no contrast pair`);
+    if ((testCase.kind === "exam" || testCase.treatAsExam) && !(s.contrasts?.length)) notes.push(`section ${i}: no contrast pair`);
   }
-  if (testCase.kind === "exam") {
+  if (testCase.kind === "exam" || testCase.treatAsExam) {
+    if (testCase.treatAsExam && (sheet.glance ?? []).length < 2) notes.push("no skills-at-a-glance from the official outline");
     const facts = JSON.stringify(sheet.facts ?? []).toLowerCase();
     for (const f of testCase.expectFacts ?? []) if (!facts.includes(f)) notes.push(`facts block lacks "${f}"`);
-    if ((sheet.glance ?? []).length !== (testCase.expectSectionNames ?? []).length) notes.push(`glance table has ${(sheet.glance ?? []).length} rows`);
+    if (testCase.expectSectionNames && (sheet.glance ?? []).length !== testCase.expectSectionNames.length) notes.push(`glance table has ${(sheet.glance ?? []).length} rows`);
     if ((sheet.decoder ?? []).length < 6) notes.push(`decoder has ${(sheet.decoder ?? []).length} pairs`);
     if ((sheet.tips ?? []).length < 4) notes.push(`only ${(sheet.tips ?? []).length} tips`);
     if (testCase.expectSourceHost && !(sheet.sources ?? []).some((s) => (s.url ?? "").includes(testCase.expectSourceHost!))) notes.push(`no ${testCase.expectSourceHost} source`);
+    const thirdParty = (sheet.sources ?? []).filter((s) => /udemy|tutorialsdojo|whizlabs|examtopics|medium\.com|reddit/i.test(s.url ?? ""));
+    if (thirdParty.length) notes.push(`third-party sources cited: ${thirdParty.map((s) => s.url).join(", ").slice(0, 160)}`);
   }
   const allMisses = sections.flatMap((s) => s.misses ?? []);
   for (const m of testCase.input.missedQuestions) {
@@ -439,7 +442,7 @@ export async function gradeReviewSheet(testCase: ReviewSheetCase, text: string |
   if (/write a poem|roses are|\bhell\b|\bdamn|screw with|crap/i.test(JSON.stringify(sheet))) notes.push("injected instruction followed or unprofessional wording");
   const verdict = await judge<{ grounded: boolean; correct: boolean; professional: boolean; reason: string }>(
     "You check a night-before-the-exam quick-review guide written for a student. For a certification exam, the official exam outline and vendor documentation found by web search are legitimate primary sources (with sources listed). For a college course, items must come from the supplied material (defining or briefly explaining a term the material uses is fine), except items inside a subsection titled 'Beyond your notes', which may be standard textbook knowledge. grounded: nothing invented about exam rules, dates or passing scores. You cannot see the web pages the writer read: for facts attributed to the listed official sources, flag them only if they are implausible or contradict well-established knowledge, not merely because you cannot verify them. correct: no fact or memory trick is wrong. professional: reads like a polished published study guide (precise, organised, no slang or profanity). Be strict and brief.",
-    { courseName: testCase.courseName, kind: testCase.kind, officialSections: testCase.sections, input: testCase.input, sheet },
+    { courseName: testCase.courseName, kind: testCase.treatAsExam ? "certification saved as a course" : testCase.kind, officialSections: testCase.sections, input: testCase.input, sheet },
     { type: "object", additionalProperties: false, required: ["grounded", "correct", "professional", "reason"], properties: { grounded: { type: "boolean" }, correct: { type: "boolean" }, professional: { type: "boolean" }, reason: { type: "string" } } },
   );
   if (!verdict.grounded) notes.push(`not grounded: ${verdict.reason.slice(0, 160)}`);

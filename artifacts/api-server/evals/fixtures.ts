@@ -793,6 +793,8 @@ export interface ReviewSheetCase {
   expectFacts?: string[];
   /** Exam cases: a source URL must contain this. */
   expectSourceHost?: string;
+  /** A certification saved as a plain course (D-107): graded like an exam. */
+  treatAsExam?: boolean;
 }
 
 export const reviewSheetCases: ReviewSheetCase[] = [
@@ -813,6 +815,21 @@ export const reviewSheetCases: ReviewSheetCase[] = [
         { concept: "Microsoft 365 Copilot", question: "A team needs a cited market scan across web and internal files. Which Copilot agent fits?", correctAnswer: "Researcher" },
         { concept: "Responsible AI", question: "Which group guides AI strategy, prioritises use cases and provides oversight?", correctAnswer: "An AI council" },
       ],
+    },
+  },
+  {
+    name: "a certification saved as a plain course (Dan's AI-103): still uses the official outline and Microsoft sources",
+    courseName: "Microsoft AI-103",
+    kind: "course",
+    treatAsExam: true,
+    sections: [],
+    guideUrl: null,
+    examFacts: [],
+    expectSourceHost: "microsoft.com",
+    input: {
+      courseMaterial: "[SOURCE: lecture 4 transcript]\nToday: publishing Foundry agents. When you publish, you get an agent application with its own endpoint and identity. We also covered testing the agent in Teams and monitoring. Next week: Work IQ and MCP.",
+      memorySheet: [],
+      missedQuestions: [{ concept: "Agents vs completions", question: "A task needs multi-step tool use and memory across turns. Agent or a single completion?", correctAnswer: "An agent" }],
     },
   },
   {

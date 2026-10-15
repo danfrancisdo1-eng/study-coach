@@ -156,7 +156,7 @@ async function main() {
     });
     if (tasks.includes("review_sheet")) for (const c of reviewSheetCases) jobs.push({
       task: "review_sheet", name: c.name,
-      run: () => complete("review_sheet", { system: reviewSheetPrompt.systemPrompt({ courseName: c.courseName, kind: c.kind, today, sections: c.sections, guideUrl: c.guideUrl, examFacts: c.examFacts }), messages: [{ role: "user", content: JSON.stringify(c.input) }], ...(c.kind === "exam" ? { webSearch: { maxUses: 10 } } : {}), timeoutMs: 300_000 }),
+      run: () => complete("review_sheet", { system: reviewSheetPrompt.systemPrompt({ courseName: c.courseName, kind: c.kind, today, sections: c.sections, guideUrl: c.guideUrl, examFacts: c.examFacts }), messages: [{ role: "user", content: JSON.stringify(c.input) }], webSearch: { maxUses: 10 }, timeoutMs: 300_000 }),
       grade: (text) => gradeReviewSheet(c, text),
     });
     if (tasks.includes("exam_guide")) for (const c of examGuideCases) jobs.push({

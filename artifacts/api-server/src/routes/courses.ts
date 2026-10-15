@@ -105,12 +105,12 @@ router.post("/study/courses/:courseId/review-sheet", async (req, res): Promise<v
   const misses = missesFrom(sessions as unknown as Parameters<typeof missesFrom>[0]);
   const memorySheet = rowsFromState(state, courseId).slice(0, 60).map(({ term, trick, whenYouSee, think }) => ({ term, trick, whenYouSee, think }));
   try {
-    // Certification exams: the official outline and vendor docs are the primary source (D-106), so the writer searches the web.
+    // Web search is always available (D-107); the writer decides from the name and material whether this is a public certification.
     const isExam = course.kind === "exam" || !!guide;
     const response = await complete("review_sheet", {
       system: reviewSheetPrompt.systemPrompt({ courseName, kind: isExam ? "exam" : "course", today: new Date().toISOString().slice(0, 10), sections, guideUrl: guide && typeof guide.sourceUrl === "string" ? guide.sourceUrl : null, examFacts: examFactsOf(guide) }),
       messages: [{ role: "user", content: JSON.stringify({ courseMaterial: sourceTextOf(chunks), memorySheet, missedQuestions: misses.map((m) => ({ concept: m.concept, question: m.question, correctAnswer: m.answer })) }) }],
-      ...(isExam ? { webSearch: { maxUses: 10 } } : {}),
+      webSearch: { maxUses: 10 },
       timeoutMs: 240_000,
     });
     const sheet = parseReviewSheet(jsonFromReply(response.text), `${courseName}: review sheet`);
