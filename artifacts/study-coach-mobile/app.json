@@ -4,7 +4,7 @@
     "slug": "study-coach-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/app-icon.png",
     "scheme": "study-coach-mobile",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -26,10 +26,23 @@
       ]
     },
     "web": {
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/app-icon.png"
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-brain.png",
+          "imageWidth": 320,
+          "resizeMode": "contain",
+          "backgroundColor": "#E2E6F0",
+          "dark": {
+            "image": "./assets/images/splash-brain.png",
+            "backgroundColor": "#E2E6F0"
+          }
+        }
+      ],
       [
         "expo-image-picker",
         {

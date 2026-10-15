@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-15 — D-113: New app icon (the blue-and-gold R with "AI") and the brain launch screen
+- Dan's new artwork: the R mark with "AI" is the app icon (assets/images/app-icon.png, 1024×1024, no transparency; web favicon and PWA icons app-icon-64/192/512.png); the RapidRecall AI brain poster is the launch screen (expo-splash-screen, image 320 pt wide on #E2E6F0, the poster's own edge colour, in light and dark mode).
+- Old icon files are left in place (not deleted). The icon and launch screen are native: they show only after a new build of the app (EAS), not through the preview. The full visual redesign is still deferred.
+
 ## 2026-10-15 — D-112: Timed exams, step 2: the server keeps the clock
 - Spec B. A timed set stores quiz.timer {startedAt, limitMinutes, deadline} in the session (no database change). Wall-clock time, so closing the app doesn't stop it.
 - Answers after the deadline plus a 15-second grace (network lag) get 409 {timeUp: true}. From the deadline on, the set can be graded even while the rest is still being written; it is graded with the questions that arrived. The client grades at 0:00, or on reopening if the app was closed (step 4).
