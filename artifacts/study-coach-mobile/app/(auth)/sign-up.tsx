@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Link, Redirect, useRouter } from 'expo-router';
 import { useAuth, useSignUp } from '@clerk/expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -67,7 +67,7 @@ export default function SignUpScreen() {
       keyboardShouldPersistTaps="handled"
       testID="screen-sign-up"
     >
-      <View style={[styles.brandMark, { backgroundColor: colors.primary }]}><Feather name="book-open" size={23} color={colors.primaryForeground} /></View>
+      <Image source={require('@/assets/images/app-icon.png')} style={styles.brandMark} accessibilityLabel="RapidRecall AI logo" />
       <Text style={[styles.eyebrow, { color: colors.primaryText }]}>RapidRecall AI</Text>
       <Text style={[styles.title, { color: colors.foreground }]}>{verifying ? 'Check your email.' : 'Find the flaws. Fix the facts.'}</Text>
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{verifying ? `We sent a verification code to ${emailAddress}.` : 'Create an account to keep courses and study sessions in sync.'}</Text>

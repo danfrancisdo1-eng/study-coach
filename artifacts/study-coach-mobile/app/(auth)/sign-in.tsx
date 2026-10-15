@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Link, Redirect, useRouter } from 'expo-router';
 import { useAuth, useSignIn } from '@clerk/expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -82,7 +82,7 @@ export default function SignInScreen() {
       keyboardShouldPersistTaps="handled"
       testID="screen-sign-in"
     >
-      <View style={[styles.brandMark, { backgroundColor: colors.primary }]}><Feather name="book-open" size={23} color={colors.primaryForeground} /></View>
+      <Image source={require('@/assets/images/app-icon.png')} style={styles.brandMark} accessibilityLabel="RapidRecall AI logo" />
       <Text style={[styles.eyebrow, { color: colors.primaryText }]}>RapidRecall AI</Text>
       <Text style={[styles.title, { color: colors.foreground }]}>{signInTitle(signedInBefore)}</Text>
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Sign in to continue your saved study sessions.</Text>

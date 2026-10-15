@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-15 — D-116: The new artwork inside the app (no rebuild needed)
+- Dan: "replace the front screen with the brain". The first page of the welcome tour shows the brain poster instead of the book icon; sign-in and sign-up show the R-with-AI icon. These are in the app's own screens, so they arrive through the preview; the home-screen icon and the launch screen (D-113) still need a new build.
+
 ## 2026-10-15 — D-115: Timed exams, step 4: the clock on screen, auto-grade at 0:00, time and pass mark on the score
 - Spec B, last step. The exam card (phone and web) shows the clock at the top of every exam panel: mm:ss (h:mm:ss for long exams) of the limit, amber from 5 minutes left, red from 1, always with words ("Under 5 minutes left", "Under a minute left"), never colour alone. It ticks from the server's deadline, so it is right after the app was closed.
 - At 0:00 the card grades the set with what was answered ("Time is up. Grading…"), retrying a few times if the phone's clock is a little ahead of the server's; reopening an expired exam grades it the same way. An answer the server refuses as late (timeUp) grades instead of showing an error.

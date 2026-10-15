@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -43,7 +43,8 @@ export default function OnboardingScreen() {
 
   const hero = current.key === 'intro' ? (
     <Animated.View entering={ZoomIn.delay(120).springify().damping(15)} style={styles.brandWrap} testID="hero-intro">
-      <View style={[styles.brandMark, { backgroundColor: colors.primary }]}><Feather name="book-open" size={38} color={colors.primaryForeground} /></View>
+      {/* Dan's RapidRecall AI artwork (D-113): the brain poster on the first page of the tour. */}
+      <Image source={require('@/assets/images/splash-brain.png')} style={styles.brandPoster} resizeMode="cover" accessibilityLabel="RapidRecall AI" testID="image-brand-poster" />
     </Animated.View>
   ) : current.key === 'exam' ? <QuestionHero />
     : current.key === 'memory' ? <MemoryHero />
@@ -92,6 +93,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   heroArea: { flex: 1, justifyContent: 'center', paddingBottom: 12 },
   brandWrap: { alignItems: 'center', gap: 14 },
   brandMark: { width: 84, height: 84, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  brandPoster: { width: 240, height: 360, borderRadius: 24 },
   title: { color: colors.foreground, fontSize: 27, lineHeight: 33, letterSpacing: -0.5, fontWeight: '700' },
   dots: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingVertical: 14 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.border },
