@@ -74,7 +74,8 @@
 - Extracted text is always editable before an explicit save; duplicates in the same course are skipped.
 - Opening/closing intake preserves conversation, quiz answers, and drafts.
 - The OneDrive button currently opens Apple's Files picker. Never describe it as a direct OneDrive integration until that's built.
-- Extracted course details (schedules, syllabi) are drafts until the student approves each one.
+- Each course is a Project (D-119): the course's chat answers from that course's material only; uploads must belong to a course.
+- Course notes (D-119): the coach writes and maintains each course's notes as Markdown (lecture notes, course facts such as dates). The student reviews them read-only and corrects them by telling the coach in the course chat; the coach updates the notes, says what it changed, and the change can be undone. Only the coach edits notes; students never edit them by hand. Original uploads and transcripts are never edited. A PDF copy is made only on request.
 - Guardian reports are never sent automatically.
 
 ## 9. Session routine

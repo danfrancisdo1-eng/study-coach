@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-15 — D-119: Each course is a Project; only the coach edits course notes
+- Dan's vision from the start: every course works like a Claude/ChatGPT Project. Found with a synthetic BIO 101: the coach couldn't give the final date that the uploaded syllabus states, because the coach chat gets only a 1,500-character preview of one outline per course (SCOPE_EXCERPT_CHARS, D-019) and every course's summary. Audit of all 14 AI call sites: the coach never reads uploads; uploads without a course leak into every course's sets, decks, review sheet and tutor; nothing the student tells the coach is kept; syllabus dates are never used.
+- Decided by Dan: uploads must belong to a course; a course's chat gets that course only (general chat: course names only); the coach reads the whole course while it fits, searches it when it doesn't; lecture transcripts become CliffsNotes in Markdown, the full transcript is kept in storage and searched only when needed, never sent with every question; the coach writes and maintains notes, students review them read-only and correct them by telling the coach; every change is announced and can be undone; original uploads and transcripts are never edited; PDF copies only on request.
+- Replaces the CLAUDE.md constraint "Extracted course details (schedules, syllabi) are drafts until the student approves each one." Spec: docs/plans/2026-10-15-spec-course-is-a-project.md (A–E).
+
 ## 2026-10-15 — D-118: Old exam guides fetch the real exam's numbers by themselves
 - Dan: "Why did we decide to make the person ask to look them up?" We shouldn't. Opening an exam course whose found guide predates exam-guide.v2 (no questionCount field) refreshes the guide once, automatically (phone course screen; web on selecting the exam). A v2 guide that found no numbers is never re-fetched (no loops, no repeated AI cost); then the timed sheet says the official page doesn't list them and offers typing them in. While the refresh runs, the sheet says "Looking up the real exam's number of questions and time limit…".
 - needsFactsLookup in lib/exam-facts.ts (phone and web), 1 test. Tests 176/176.
