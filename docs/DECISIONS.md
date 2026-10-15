@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-15 — D-121: Each course is a Project, part A: every upload belongs to a course
+- The server refuses a save that adds an upload without a course that exists (400: "Every upload must belong to a course. Pick a course for: …"). Uploads already saved are left alone, so older accounts keep saving. All phone and web upload paths already attach the course.
+- Sets, flashcards, the review sheet and the tutor (sourceChunks) use only uploads whose course is that course; an upload with no course reaches no course (before: it reached every course).
+- Not built: listing old loose uploads on the Account page to file them (spec A). No client can create one, so it is left until one is seen in a real account.
+- Tests 178/178 (2 new: the rule, and an end-to-end check that a Bio set never sees a loose or a Chemistry upload).
+
 ## 2026-10-15 — D-120: Every upload becomes coach-written notes; no hand editing of extracted text
 - Dan: "You fix the typos and make a bulleted Md file for you. You can tuck the raw [text] in memory but not to read it every time." Every upload (photo, PDF, slides, website, syllabus, lecture) becomes Markdown notes written by the coach; the student reviews them read-only and corrects them by telling the coach; the raw extracted text is kept in storage and only searched when needed. Photos themselves stay on the phone. Replaces the CLAUDE.md constraint "Extracted text is always editable before an explicit save". Spec part F.
 

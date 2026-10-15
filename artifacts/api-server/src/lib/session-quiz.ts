@@ -233,7 +233,8 @@ export function sourceChunks(state: JsonObject | null, courseId: string, topic: 
   const queryWords = `${topic} ${courseId}`.toLowerCase().split(/\W+/).filter((word) => word.length > 2);
   const all: Array<{ label: string; text: string; score: number }> = [];
   for (const item of materials) {
-    if (!jsonObject(item) || (item.courseId != null && item.courseId !== courseId) || typeof item.text !== "string") continue;
+    // Only this course's uploads (D-121): one that belongs to no course reaches no course.
+    if (!jsonObject(item) || item.courseId !== courseId || typeof item.text !== "string") continue;
     const text = item.text;
     const label = typeof item.name === "string" ? item.name : typeof item.filename === "string" ? item.filename : "Course material";
     for (let offset = 0; offset < text.length; offset += SOURCE_CHUNK_LENGTH) {

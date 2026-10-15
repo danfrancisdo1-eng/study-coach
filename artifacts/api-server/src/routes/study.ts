@@ -31,6 +31,7 @@ import {
   type JsonObject, type Quiz, type Session, type SourceStatus, type StoredQuestion, type StoredQuestionFlag, type StudyQuestionFlagKind,
 } from "../lib/session-quiz";
 import { timeIsUp } from "../lib/exam-timer";
+import { newUploadsWithoutCourse } from "../lib/course-materials";
 
 import { addsCourseBeyondPlan, limitMessage } from "../lib/premium";
 import { activeFor, consume, enforced, planFor, refund } from "../lib/premium-store";
@@ -866,10 +867,16 @@ router.put("/study/state", async (req, res): Promise<void> => {
   }
   const ownerId = owner(req);
   const version = body.version as number;
+  const before = (await db.select({ state: studyStatesTable.state }).from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1))[0]?.state as JsonObject | undefined;
+  // Each course is a Project (D-121): every new upload must belong to a course that exists.
+  const loose = newUploadsWithoutCourse(before, body.state as JsonObject);
+  if (loose.length) {
+    res.status(400).json({ error: `Every upload must belong to a course. Pick a course for: ${loose.join(", ")}.` });
+    return;
+  }
   // The free plan has one course (D-090, only with PREMIUM_LIMITS=on): a save may not add another.
   if (enforced()) {
     const info = await planFor(ownerId);
-    const before = (await db.select({ state: studyStatesTable.state }).from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1))[0]?.state as JsonObject | undefined;
     const ids = (value: unknown) => (Array.isArray(value) ? value.filter((c): c is { id: string } => jsonObject(c) && typeof c.id === "string") : []);
     if (addsCourseBeyondPlan(ids(before?.courses), ids((body.state as JsonObject).courses), info.plan === "premium")) {
       res.status(402).json({ error: limitMessage("course", info.limits), code: "premium_required" });
