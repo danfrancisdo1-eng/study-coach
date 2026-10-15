@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-15 — D-117: "Simulated exam" always explains a missing clock; the R icon in the app headers
+- Dan on #49: "No timer." His exam had no question count or time limit yet (looked up before exam-guide.v2), so the button silently fell back to an untimed coach set. Now on any exam course it opens the timed sheet; without the numbers the sheet says so, with "Look them up" (refreshes the official guide) and "Type them in" (opens the pencil form), plus "No timer".
+- The chat and Courses headers show the R-with-AI icon instead of the book. Home-screen icon and launch screen still need a new build (D-113).
+
 ## 2026-10-15 — D-116: The new artwork inside the app (no rebuild needed)
 - Dan: "replace the front screen with the brain". The first page of the welcome tour shows the brain poster instead of the book icon; sign-in and sign-up show the R-with-AI icon. These are in the app's own screens, so they arrive through the preview; the home-screen icon and the launch screen (D-113) still need a new build.
 

@@ -90,6 +90,15 @@ export default function CourseScreen() {
   const busy = saving || putState.isPending || lookupGuide.isPending || saveFacts.isPending;
   const facts = courseExamFacts(course);
   const choices = isExam ? timedChoices(facts) : [];
+  const openEditor = () => {
+    setName(typeof course?.name === 'string' ? course.name : '');
+    setExamDate(typeof course?.examDate === 'string' ? describeExamDate(course.examDate) : '');
+    setFactQuestions(facts.questionCount ? String(facts.questionCount) : '');
+    setFactMinutes(facts.durationMinutes ? String(facts.durationMinutes) : '');
+    setFactPassing(facts.passingScore);
+    setEditing(true);
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  };
   const guide = isExam && course?.examGuide && typeof course.examGuide === 'object' ? record(course.examGuide) : null;
   const guideSections = Array.isArray(guide?.sections) ? (guide!.sections as unknown[]).map(record) : [];
   const memoryRows = (Array.isArray(state.memorySheet) ? state.memorySheet.map(record) : []).filter((r) => r.courseId === courseId && typeof r.term === 'string');
@@ -188,7 +197,7 @@ export default function CourseScreen() {
           <Text numberOfLines={1} style={styles.title}>{typeof course?.name === 'string' ? course.name : 'Course'}</Text>
           <Text style={styles.caption}>{isExam ? `Certification exam${typeof course?.examDate === 'string' ? ` · ${describeExamDate(course.examDate)}` : ''}` : 'Course'}</Text>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Edit name and date" onPress={() => { setName(typeof course?.name === 'string' ? course.name : ''); setExamDate(typeof course?.examDate === 'string' ? describeExamDate(course.examDate) : ''); setFactQuestions(facts.questionCount ? String(facts.questionCount) : ''); setFactMinutes(facts.durationMinutes ? String(facts.durationMinutes) : ''); setFactPassing(facts.passingScore); setEditing(true); scrollRef.current?.scrollTo({ y: 0, animated: true }); }} style={styles.iconButton} testID="button-edit-course"><Feather name="edit-2" size={20} color={colors.foreground} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Edit name and date" onPress={openEditor} style={styles.iconButton} testID="button-edit-course"><Feather name="edit-2" size={20} color={colors.foreground} /></Pressable>
       </View>
       {stateQuery.isLoading ? <CourseSkeleton /> : !course ? (
         <View style={styles.center}><Text style={styles.body}>This course isn’t in your account anymore.</Text></View>
@@ -234,7 +243,7 @@ export default function CourseScreen() {
             <View style={styles.actions}>
               <ActionButton label="Practice questions" icon="edit-3" onPress={() => startWithCoach('practice', null)} testID="button-action-practice" />
               <ActionButton label="Talk to the coach" icon="message-circle" secondary onPress={talkToCoach} testID="button-action-chat" />
-              <ActionButton label="Simulated exam" icon="clock" secondary onPress={() => (choices.length ? setTimedPicker(true) : startWithCoach('exam', null))} testID="button-action-exam" />
+              <ActionButton label="Simulated exam" icon="clock" secondary onPress={() => (isExam ? setTimedPicker(true) : startWithCoach('exam', null))} testID="button-action-exam" />
               <ActionButton label="Flashcards" icon="layers" secondary onPress={() => setPicker('flashcards')} testID="button-action-flashcards" />
               <ActionButton label="Memory tricks" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
               <ActionButton label="Outline" icon="list" secondary onPress={() => startWithCoach('outline', null)} testID="button-action-outline" />
@@ -395,6 +404,16 @@ export default function CourseScreen() {
             <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setTimedPicker(false)} style={styles.iconButton} testID="button-close-timed"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
           </View>
           <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
+            {!choices.length ? (
+              // No question count or time limit yet (Dan saw an untimed set with no idea why): say so and offer both ways in.
+              <View style={styles.card} testID="panel-timed-needs-facts">
+                <Text style={styles.body}>To time it like the real exam, the app needs the exam's number of questions and time limit.</Text>
+                <View style={styles.actions}>
+                  <ActionButton label="Look them up" icon="search" disabled={busy} onPress={() => { setTimedPicker(false); void refreshGuide(); }} testID="button-timed-lookup" />
+                  <ActionButton label="Type them in" icon="edit-2" secondary onPress={() => { setTimedPicker(false); openEditor(); }} testID="button-timed-type" />
+                </View>
+              </View>
+            ) : null}
             {choices.map((choice) => (
               <Pressable key={choice.size} accessibilityRole="button" accessibilityLabel={`Start timed ${choice.label}`} onPress={() => startTimed(choice.size, choice.label)} style={({ pressed }) => [styles.topicChoice, choice.size === 'full' && styles.topicChoiceAll, pressed && styles.pressed]} testID={`button-timed-${choice.size}`}>
                 <Feather name="clock" size={16} color={choice.size === 'full' ? colors.primaryForeground : colors.primaryText} />

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
+import { Image,
   ActivityIndicator,
   Alert,
   FlatList,
@@ -128,7 +128,7 @@ function Header({ title, subtitle, onBack, onSignOut }: {
           <Feather name="arrow-left" size={19} color={colors.foreground} />
         </Pressable>
       ) : (
-        <View style={[styles.brandMark, { backgroundColor: colors.primary }]}><Feather name="book-open" size={17} color={colors.primaryForeground} /></View>
+        <Image source={require('@/assets/images/app-icon.png')} style={styles.brandMark} accessibilityLabel="RapidRecall AI logo" />
       )}
       <View style={styles.headerCopy}>
         <Text style={styles.brand}>RapidRecall AI</Text>
