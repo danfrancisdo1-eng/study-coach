@@ -297,6 +297,40 @@ export const LookupExamGuideResponse = zod.object({
 
 
 /**
+ * Saved apart from the looked-up guide, so a guide refresh keeps it; a typed value wins over the guide's, field by field. All empty removes the correction. Nothing is sent to the AI.
+ * @summary Type or correct the real exam's question count, time limit and passing score (certification exams)
+ */
+export const saveExamFactsPathCourseIdMax = 200;
+
+
+
+export const SaveExamFactsParams = zod.object({
+  "courseId": zod.coerce.string().min(1).max(saveExamFactsPathCourseIdMax)
+})
+
+export const saveExamFactsBodyQuestionCountMax = 400;
+
+export const saveExamFactsBodyDurationMinutesMax = 600;
+
+export const saveExamFactsBodyPassingScoreMax = 60;
+
+
+
+export const SaveExamFactsBody = zod.object({
+  "questionCount": zod.number().int().min(1).max(saveExamFactsBodyQuestionCountMax).nullish(),
+  "durationMinutes": zod.number().int().min(1).max(saveExamFactsBodyDurationMinutesMax).nullish(),
+  "passingScore": zod.string().max(saveExamFactsBodyPassingScoreMax).nullish()
+})
+
+export const SaveExamFactsResponse = zod.object({
+  "questionCount": zod.number().int().nullable(),
+  "durationMinutes": zod.number().int().nullable(),
+  "passingScore": zod.string(),
+  "typed": zod.boolean().describe('True when at least one value was typed by the student')
+})
+
+
+/**
  * No AI call. Topics are the topics sets were asked for; concepts come from the questions. An account with nothing graded gets empty lists.
  * @summary What the course's graded sets and finished decks say, per topic and per concept, plus the concepts to drill next
  */

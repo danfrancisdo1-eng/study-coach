@@ -211,6 +211,28 @@ paths:
         "403": { description: Explicit persisted AI consent required }
         "404": { description: Course not found }
         "502": { description: The lookup failed; nothing was saved }
+  /study/courses/{courseId}/exam-facts:
+    parameters:
+      - { name: courseId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
+    put:
+      operationId: saveExamFacts
+      tags: [study]
+      summary: Type or correct the real exam's question count, time limit and passing score (certification exams)
+      description: Saved apart from the looked-up guide, so a guide refresh keeps it; a typed value wins over the guide's, field by field. All empty removes the correction. Nothing is sent to the AI.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExamFactsInput" }
+      responses:
+        "200":
+          description: The facts the app now uses (typed values first, then the guide's)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExamFacts" }
+        "400": { description: "Not a certification exam, or invalid numbers" }
+        "404": { description: Course not found }
+        "409": { description: Courses changed on another device }
   /study/courses/{courseId}/results:
     parameters:
       - { name: courseId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
@@ -886,6 +908,20 @@ components:
         questionCount: { type: ["integer", "null"], description: "The real exam's number of questions, when the official page states one" }
         durationMinutes: { type: ["integer", "null"], description: "The real exam's time limit in minutes, when the official page states one" }
         passingScore: { type: string, description: "The passing score as the official page states it (e.g. 700 out of 1000), or empty" }
+    ExamFactsInput:
+      type: object
+      properties:
+        questionCount: { type: ["integer", "null"], minimum: 1, maximum: 400 }
+        durationMinutes: { type: ["integer", "null"], minimum: 1, maximum: 600 }
+        passingScore: { type: ["string", "null"], maxLength: 60 }
+    ExamFacts:
+      type: object
+      required: [questionCount, durationMinutes, passingScore, typed]
+      properties:
+        questionCount: { type: ["integer", "null"] }
+        durationMinutes: { type: ["integer", "null"] }
+        passingScore: { type: string }
+        typed: { type: boolean, description: "True when at least one value was typed by the student" }
     FlashcardReviewInput:
       type: object
       required: [result]

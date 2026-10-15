@@ -25,6 +25,8 @@ import type {
   CourseDeletion,
   CourseResults,
   DeleteAccount200,
+  ExamFacts,
+  ExamFactsInput,
   ExamGuide,
   FlashcardReviewInput,
   GetHomeChatParams,
@@ -1071,6 +1073,96 @@ export const useLookupExamGuide = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getLookupExamGuideMutationOptions(options));
+    }
+
+export const getSaveExamFactsUrl = (courseId: string,) => {
+
+
+
+
+  return `/api/study/courses/${courseId}/exam-facts`
+}
+
+/**
+ * Saved apart from the looked-up guide, so a guide refresh keeps it; a typed value wins over the guide's, field by field. All empty removes the correction. Nothing is sent to the AI.
+ * @summary Type or correct the real exam's question count, time limit and passing score (certification exams)
+ */
+export const saveExamFacts = async (courseId: string,
+    examFactsInput: ExamFactsInput, options?: Parameters<typeof customFetch>[1]): Promise<ExamFacts> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ExamFacts>(getSaveExamFactsUrl(courseId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(examFactsInput)
+  }
+);}
+
+
+
+
+
+export const getSaveExamFactsMutationKey = () => ['saveExamFacts'] as const;
+
+export const getSaveExamFactsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveExamFacts>>, TError,SaveExamFactsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveExamFacts>>, TError,SaveExamFactsMutationVariables, TContext> => {
+
+const mutationKey = getSaveExamFactsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveExamFacts>>, SaveExamFactsMutationVariables> = (props) => {
+          const {courseId,data} = props ?? {};
+
+          return  saveExamFacts(courseId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveExamFactsMutationResult = NonNullable<Awaited<ReturnType<typeof saveExamFacts>>>
+    export type SaveExamFactsMutationBody = BodyType<ExamFactsInput>
+    export type SaveExamFactsMutationError = ErrorType<void>
+    export type SaveExamFactsMutationVariables = {courseId: string;data: BodyType<ExamFactsInput>}
+
+    /**
+ * @summary Type or correct the real exam's question count, time limit and passing score (certification exams)
+ */
+export const useSaveExamFacts = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveExamFacts>>, TError,SaveExamFactsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveExamFacts>>,
+        TError,
+        SaveExamFactsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveExamFactsMutationOptions(options));
     }
 
 export const getGetCourseResultsUrl = (courseId: string,) => {

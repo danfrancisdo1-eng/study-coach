@@ -601,6 +601,36 @@ export interface ExamGuide {
   passingScore?: string;
 }
 
+export interface ExamFactsInput {
+  /**
+     * @minimum 1
+     * @maximum 400
+     * @nullable
+     */
+  questionCount?: number | null;
+  /**
+     * @minimum 1
+     * @maximum 600
+     * @nullable
+     */
+  durationMinutes?: number | null;
+  /**
+     * @maxLength 60
+     * @nullable
+     */
+  passingScore?: string | null;
+}
+
+export interface ExamFacts {
+  /** @nullable */
+  questionCount: number | null;
+  /** @nullable */
+  durationMinutes: number | null;
+  passingScore: string;
+  /** True when at least one value was typed by the student */
+  typed: boolean;
+}
+
 export type FlashcardReviewInputResult = typeof FlashcardReviewInputResult[keyof typeof FlashcardReviewInputResult];
 
 

@@ -16,6 +16,8 @@ export * from './courseResultsTopicsItem';
 export * from './deadline';
 export * from './deadlineKind';
 export * from './deleteAccount200';
+export * from './examFacts';
+export * from './examFactsInput';
 export * from './examGuide';
 export * from './examGuideSectionsItem';
 export * from './flashcardReviewInput';

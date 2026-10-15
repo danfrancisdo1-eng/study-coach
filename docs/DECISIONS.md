@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-15 — D-111: Timed exams, step 1b: the student can type or correct the real exam's numbers
+- Spec B: "If the official page gives no number, the course screen asks the student to type them in (they can also correct a wrong one)." CISSP (adaptive, 100–150 questions) is the obvious case.
+- PUT /study/courses/:courseId/exam-facts saves course.examFacts apart from the guide, so a Refresh never wipes a correction; a typed value wins field by field (effectiveExamFacts; same rule on phone and web in lib/exam-facts.ts). All empty removes the correction. Exams only; nothing goes to the AI, so no consent check. Whole numbers 1–400 questions, 1–600 minutes; passing score up to 60 characters.
+- Phone: three boxes (Questions, Minutes, Passing score) in the pencil edit form under the exam date; the guide panel says which number is missing and points to the pencil. Web: the same boxes under the guide. The review sheet's facts block uses the typed values too.
+- Tests: 3 server (merge, validation, route), 2 phone helpers. 165/165.
+
 ## 2026-10-15 — D-110: Timed exams, step 1: the guide lookup saves the real exam's question count, time limit and passing score
 - Spec B (signed D-099), step 1 of 4. exam-guide.v2 also asks for "questionCount", "durationMinutes" and "passingScore" exactly as the vendor's own exam page states them; a range of questions ("40-60") is not a count (null, range in notes); answering time, not total seat time; nothing estimated from third-party sites.
 - The parser keeps only whole numbers in range (1–400 questions, 1–600 minutes) and only when a guide was found; the review sheet's facts block now gets them through examFactsOf. The course screen (phone and web) shows "Real exam: 50 questions · 100 minutes · pass 700 out of 1000" (lib/exam-facts.ts, same on both; 1 test).

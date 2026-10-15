@@ -4,7 +4,7 @@ import {
   useGetStudyState, usePutStudyState, useImportStudyState, useListStudySessions,
   useCreateStudySession, useGetStudySession, useCheckInStudySession,
   useSendStudyMessage, useGenerateStudyQuiz, useSaveStudyAnswer, useGradeStudyQuiz,
-  useFlagStudyQuestion, useLookupExamGuide,
+  useFlagStudyQuestion, useLookupExamGuide, useSaveExamFacts,
   getGetStudyStateQueryKey, getGetStudySessionQueryKey, getListStudySessionsQueryKey,
   deleteCourse, getListLecturesQueryKey,
   type StudyMaterialExtraction, type StudySession, type StudyState, type StudyStateEnvelope,
@@ -17,6 +17,7 @@ import MaterialIntake from './MaterialIntake';
 import HomeChat from './HomeChat';
 import DeleteAccount from './DeleteAccount';
 import { readLegacyStudyData } from './lib/legacy-import';
+import { courseExamFacts } from './lib/exam-facts';
 
 type AccountState = {
   aiConsent: boolean;
@@ -69,6 +70,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
   const grade = useGradeStudyQuiz();
   const flagQuestion = useFlagStudyQuestion();
   const lookupGuide = useLookupExamGuide();
+  const saveExamFacts = useSaveExamFacts();
   const [selectedCourseId, selectCourse] = useState<string | null>(null);
   const [topic, setTopic] = useState('');
   const [minutes, setMinutes] = useState(35);
@@ -261,6 +263,8 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
         savedMaterialsByCourse={savedMaterialsByCourse}
         examGuides={Object.fromEntries((state.courses ?? []).filter((c): c is AccountCourse & { examGuide?: unknown } => !!c && typeof (c as { id?: unknown }).id === 'string').map(c => [c.id, (c as { examGuide?: { found?: boolean; sections?: { name: string; weight: number | null }[]; sourceUrl?: string | null } }).examGuide ?? null]))}
         onRefreshExamGuide={courseId => void act(async () => { await lookupGuide.mutateAsync({ courseId }); await stateQuery.refetch(); })}
+        examFacts={Object.fromEntries((state.courses ?? []).filter(c => !!c && typeof (c as { id?: unknown }).id === 'string').map(c => [c.id, courseExamFacts(c as unknown as Record<string, unknown>)]))}
+        onSaveExamFacts={(courseId, facts) => void act(async () => { await saveExamFacts.mutateAsync({ courseId, data: facts }); await stateQuery.refetch(); })}
         memorySheets={memorySheetsByCourse((state as { memorySheet?: unknown }).memorySheet)}
         onDeleteMaterial={materialId => void act(() => updateState(previous => ({
           ...previous, materials: (previous.materials ?? []).filter(item => item.id !== materialId),

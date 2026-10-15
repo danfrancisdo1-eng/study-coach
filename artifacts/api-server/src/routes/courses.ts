@@ -3,7 +3,8 @@ import { and, eq, TransactionRollbackError } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable } from "@workspace/db";
 import { requireStudyAuth } from "./study";
 import { lookupExamGuide, type ExamGuide } from "../lib/exam-guide";
-import { saveExamGuide } from "../lib/exam-guide-state";
+import { saveExamFacts, saveExamGuide } from "../lib/exam-guide-state";
+import { effectiveExamFacts, parseExamFactsInput } from "../lib/exam-facts";
 import { conceptTallies, eventsFrom, topicTallies, weakConcepts } from "../lib/results-history";
 import type { Session } from "../lib/session-quiz";
 import { desc } from "drizzle-orm";
@@ -50,13 +51,13 @@ router.get("/study/courses/:courseId/results", async (req, res): Promise<void> =
   });
 });
 
-// Exam facts the guide lookup saved (D-106; filled by the timed-exams work, spec B): shown in the review sheet's facts block.
-function examFactsOf(guide: JsonObject | null): { label: string; value: string }[] {
-  if (!guide) return [];
+// Exam facts for the review sheet's facts block (D-106): typed by the student or found by the guide lookup (D-110, D-111).
+function examFactsOf(course: JsonObject): { label: string; value: string }[] {
+  const f = effectiveExamFacts(course);
   const out: { label: string; value: string }[] = [];
-  if (typeof guide.durationMinutes === "number" && guide.durationMinutes > 0) out.push({ label: "Duration", value: `${guide.durationMinutes} minutes` });
-  if (typeof guide.questionCount === "number" && guide.questionCount > 0) out.push({ label: "Questions", value: String(guide.questionCount) });
-  if (typeof guide.passingScore === "string" && guide.passingScore.trim()) out.push({ label: "Passing score", value: guide.passingScore.trim().slice(0, 80) });
+  if (f.durationMinutes) out.push({ label: "Duration", value: `${f.durationMinutes} minutes` });
+  if (f.questionCount) out.push({ label: "Questions", value: String(f.questionCount) });
+  if (f.passingScore) out.push({ label: "Passing score", value: f.passingScore });
   return out;
 }
 
@@ -109,7 +110,7 @@ router.post("/study/courses/:courseId/review-sheet", async (req, res): Promise<v
     // Web search is always available (D-107); the writer decides from the name and material whether this is a public certification.
     const isExam = course.kind === "exam" || !!guide;
     const response = await complete("review_sheet", {
-      system: reviewSheetPrompt.systemPrompt({ courseName, kind: isExam ? "exam" : "course", today: new Date().toISOString().slice(0, 10), sections, guideUrl: guide && typeof guide.sourceUrl === "string" ? guide.sourceUrl : null, examFacts: examFactsOf(guide) }),
+      system: reviewSheetPrompt.systemPrompt({ courseName, kind: isExam ? "exam" : "course", today: new Date().toISOString().slice(0, 10), sections, guideUrl: guide && typeof guide.sourceUrl === "string" ? guide.sourceUrl : null, examFacts: examFactsOf(course) }),
       messages: [{ role: "user", content: JSON.stringify({ courseMaterial: sourceTextOf(chunks), memorySheet, missedQuestions: misses.map((m) => ({ concept: m.concept, question: m.question, correctAnswer: m.answer })) }) }],
       webSearch: { maxUses: 10 },
       timeoutMs: 240_000,
@@ -233,4 +234,38 @@ router.post("/study/courses/:courseId/exam-guide", async (req, res): Promise<voi
     return;
   }
   res.status(409).json({ error: "Your courses changed on another device. Reload and try again." });
+});
+
+// Typed exam facts (spec B, D-111): the student enters or corrects the real exam's question
+// count, time limit and passing score. Nothing goes to the AI, so no consent is needed.
+router.put("/study/courses/:courseId/exam-facts", async (req, res): Promise<void> => {
+  const courseId = req.params.courseId;
+  if (typeof courseId !== "string" || !courseId.trim() || courseId.length > 200) {
+    res.status(400).json({ error: "Invalid course id." });
+    return;
+  }
+  const ownerId = owner(req);
+  const rows = await db.select({ state: studyStatesTable.state }).from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
+  const state = isObject(rows[0]?.state) ? rows[0]!.state as JsonObject : null;
+  const course = list(state?.courses).find((c): c is JsonObject => isObject(c) && c.id === courseId);
+  if (!course) {
+    res.status(404).json({ error: "Course not found." });
+    return;
+  }
+  if (course.kind !== "exam") {
+    res.status(400).json({ error: "Exam facts are for certification exams only." });
+    return;
+  }
+  const facts = parseExamFactsInput(req.body);
+  if (!facts) {
+    res.status(400).json({ error: `Questions must be a whole number from 1 to 400, minutes from 1 to 600, and the passing score 60 characters at most.` });
+    return;
+  }
+  if (!(await saveExamFacts(ownerId, courseId, facts))) {
+    res.status(409).json({ error: "Your courses changed on another device. Reload and try again." });
+    return;
+  }
+  const empty = facts.questionCount === null && facts.durationMinutes === null && !facts.passingScore;
+  const { examFacts: _old, ...rest } = course;
+  res.json(effectiveExamFacts(empty ? rest : { ...rest, examFacts: facts }));
 });

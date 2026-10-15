@@ -7,14 +7,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import {
-  deleteCourse, getGetCourseResultsQueryKey, getGetStudyStateQueryKey, getListLecturesQueryKey, getListStudySessionsQueryKey, useGetCourseResults, useGetStudyState, useListLectures, useListStudySessions, useLookupExamGuide, usePutStudyState,
+  deleteCourse, getGetCourseResultsQueryKey, getGetStudyStateQueryKey, getListLecturesQueryKey, getListStudySessionsQueryKey, useGetCourseResults, useGetStudyState, useListLectures, useListStudySessions, useLookupExamGuide, usePutStudyState, useSaveExamFacts,
   getGetPremiumStatusQueryKey, useGetPremiumStatus,
 } from '@workspace/api-client-react';
 import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
-import { realExamLine } from '@/lib/exam-facts';
+import { courseExamFacts, factsFromInputs, realExamLine } from '@/lib/exam-facts';
 import { whenLabel } from '@/lib/when';
 import { ActionButton } from '@/components/ActionButton';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
@@ -66,9 +66,13 @@ export default function CourseScreen() {
   const resultsQuery = useGetCourseResults(courseId ?? '', { query: { queryKey: [...getGetCourseResultsQueryKey(courseId ?? ''), userId], enabled: !!userId && !!courseId } });
   const putState = usePutStudyState();
   const lookupGuide = useLookupExamGuide();
+  const saveFacts = useSaveExamFacts();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
   const [examDate, setExamDate] = useState('');
+  const [factQuestions, setFactQuestions] = useState('');
+  const [factMinutes, setFactMinutes] = useState('');
+  const [factPassing, setFactPassing] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -82,7 +86,8 @@ export default function CourseScreen() {
     .filter((m) => m.courseId === courseId && typeof m.id === 'string' && typeof m.name === 'string' && typeof m.text === 'string')
     .map((m) => ({ id: m.id as string, courseId: courseId!, name: m.name as string, text: m.text as string, extractionFormat: m.extractionFormat as SavedMaterial['extractionFormat'] }));
   const isExam = course?.kind === 'exam';
-  const busy = saving || putState.isPending || lookupGuide.isPending;
+  const busy = saving || putState.isPending || lookupGuide.isPending || saveFacts.isPending;
+  const facts = courseExamFacts(course);
   const guide = isExam && course?.examGuide && typeof course.examGuide === 'object' ? record(course.examGuide) : null;
   const guideSections = Array.isArray(guide?.sections) ? (guide!.sections as unknown[]).map(record) : [];
   const memoryRows = (Array.isArray(state.memorySheet) ? state.memorySheet.map(record) : []).filter((r) => r.courseId === courseId && typeof r.term === 'string');
@@ -106,9 +111,20 @@ export default function CourseScreen() {
     if (!trimmed || busy) return;
     const iso = parseExamDate(examDate);
     if (examDate.trim() && !iso) { setError('Try the exam date like Nov 14 or 11/14/2026.'); return; }
+    const typed = isExam ? factsFromInputs(factQuestions, factMinutes, factPassing) : null;
+    if (typed && 'error' in typed) { setError(typed.error); return; }
     setError(''); setSaving(true);
     try {
       await persist({ courses: courses.map((c) => c.id === courseId ? { ...c, name: trimmed, ...(isExam ? { examDate: iso ?? undefined } : {}) } : c) });
+      // Typed exam facts (D-111): only what differs from what the app already uses is saved as a correction.
+      if (typed && 'facts' in typed) {
+        const t = typed.facts;
+        const changed = t.questionCount !== facts.questionCount || t.durationMinutes !== facts.durationMinutes || t.passingScore !== facts.passingScore;
+        if (changed) {
+          await saveFacts.mutateAsync({ courseId: courseId!, data: t });
+          await queryClient.invalidateQueries({ queryKey: stateKey });
+        }
+      }
       setEditing(false);
     } catch (problem) { setError(readable(problem)); } finally { setSaving(false); }
   };
@@ -163,7 +179,7 @@ export default function CourseScreen() {
           <Text numberOfLines={1} style={styles.title}>{typeof course?.name === 'string' ? course.name : 'Course'}</Text>
           <Text style={styles.caption}>{isExam ? `Certification exam${typeof course?.examDate === 'string' ? ` · ${describeExamDate(course.examDate)}` : ''}` : 'Course'}</Text>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Edit name and date" onPress={() => { setName(typeof course?.name === 'string' ? course.name : ''); setExamDate(typeof course?.examDate === 'string' ? describeExamDate(course.examDate) : ''); setEditing(true); scrollRef.current?.scrollTo({ y: 0, animated: true }); }} style={styles.iconButton} testID="button-edit-course"><Feather name="edit-2" size={20} color={colors.foreground} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Edit name and date" onPress={() => { setName(typeof course?.name === 'string' ? course.name : ''); setExamDate(typeof course?.examDate === 'string' ? describeExamDate(course.examDate) : ''); setFactQuestions(facts.questionCount ? String(facts.questionCount) : ''); setFactMinutes(facts.durationMinutes ? String(facts.durationMinutes) : ''); setFactPassing(facts.passingScore); setEditing(true); scrollRef.current?.scrollTo({ y: 0, animated: true }); }} style={styles.iconButton} testID="button-edit-course"><Feather name="edit-2" size={20} color={colors.foreground} /></Pressable>
       </View>
       {stateQuery.isLoading ? <CourseSkeleton /> : !course ? (
         <View style={styles.center}><Text style={styles.body}>This course isn’t in your account anymore.</Text></View>
@@ -177,7 +193,14 @@ export default function CourseScreen() {
               <TextInput value={name} onChangeText={setName} maxLength={120} style={styles.input} accessibilityLabel="Course name" testID="input-course-name" />
               {isExam ? <><Text style={styles.kicker}>Exam date</Text>
                 <TextInput value={examDate} onChangeText={setExamDate} placeholder="e.g. Nov 14" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-exam-date" />
-                {examDate.trim() ? <Text style={styles.caption} testID="text-exam-date-hint">{examDateHint(examDate)}</Text> : null}</> : null}
+                {examDate.trim() ? <Text style={styles.caption} testID="text-exam-date-hint">{examDateHint(examDate)}</Text> : null}
+                <Text style={styles.kicker}>Real exam</Text>
+                <View style={styles.row}>
+                  <TextInput value={factQuestions} onChangeText={setFactQuestions} placeholder="Questions" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={3} style={[styles.input, { flex: 1 }]} accessibilityLabel="Number of questions on the real exam" testID="input-exam-questions" />
+                  <TextInput value={factMinutes} onChangeText={setFactMinutes} placeholder="Minutes" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={3} style={[styles.input, { flex: 1 }]} accessibilityLabel="Time limit of the real exam in minutes" testID="input-exam-minutes" />
+                </View>
+                <TextInput value={factPassing} onChangeText={setFactPassing} placeholder="Passing score, e.g. 700 out of 1000" placeholderTextColor={colors.mutedForeground} maxLength={60} style={styles.input} accessibilityLabel="Passing score of the real exam" testID="input-exam-passing" />
+                <Text style={styles.caption}>From the official exam page. Used to time full exam simulations.</Text></> : null}
               <View style={styles.row}>
                 <ActionButton label="Save" icon="check" onPress={() => void saveDetails()} disabled={busy || !name.trim()} testID="button-save-course" />
                 <ActionButton label="Cancel" secondary onPress={() => setEditing(false)} testID="button-cancel-edit" />
@@ -255,10 +278,11 @@ export default function CourseScreen() {
                 <Text style={styles.kicker}>Official exam guide</Text>
                 <ActionButton label={guide ? 'Refresh' : 'Look up'} icon="refresh-cw" secondary disabled={busy} onPress={() => void refreshGuide()} testID="button-refresh-guide" />
               </View>
+              {realExamLine(facts) ? <Text style={styles.body} testID="text-real-exam">{realExamLine(facts)}</Text> : null}
+              {!lookupGuide.isPending && guide && (!facts.questionCount || !facts.durationMinutes) ? <Text style={styles.caption} testID="text-exam-facts-missing">The official page didn't give the {!facts.questionCount && !facts.durationMinutes ? 'number of questions or the time limit' : !facts.questionCount ? 'number of questions' : 'time limit'}. Tap the pencil above to type {!facts.questionCount && !facts.durationMinutes ? 'them' : 'it'} in.</Text> : null}
               {lookupGuide.isPending ? <View style={styles.row}><ActivityIndicator color={colors.primaryText} /><Text style={styles.caption}>Searching for the official guide…</Text></View> : null}
               {guide?.found === true ? (
                 <>
-                  {realExamLine(guide) ? <Text style={styles.body} testID="text-real-exam">{realExamLine(guide)}</Text> : null}
                   {guideSections.map((s, i) => (
                     <View key={i} style={styles.rowBetween}><Text style={styles.body}>{String(s.name)}</Text><Text style={styles.caption}>{typeof s.weight === 'number' ? `${s.weight}%` : ''}</Text></View>
                   ))}

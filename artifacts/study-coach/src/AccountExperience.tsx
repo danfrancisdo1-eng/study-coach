@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { ArrowLeft, ArrowRight, BookOpen, Check, FileText, Pencil, Plus, Send, ShieldCheck, UploadCloud, X } from 'lucide-react';
 import './account-experience.css';
-import { realExamLine } from './lib/exam-facts';
+import { factsFromInputs, realExamLine, type ExamFacts } from './lib/exam-facts';
 
 /** Exact once-per-session materials questions; the parent persists when it has been answered. */
 export const MATERIALS_CHECK_PROMPT = 'Do you have any course materials you want to add?';
@@ -79,6 +79,9 @@ export type AccountExperienceProps = {
   /** Memory-sheet rows per course (D-025). */
   memorySheets?: Record<string, { id: string; term: string; trick: string; whenYouSee: string; think: string }[]>;
   onRefreshExamGuide?: (courseId: string) => void;
+  /** The real exam's facts per course (typed first, then the guide's; D-111), and saving a correction. */
+  examFacts?: Record<string, ExamFacts>;
+  onSaveExamFacts?: (courseId: string, facts: ExamFacts) => void;
   onDeleteMaterial?: (materialId: string) => void;
   onDeleteCourse?: (courseId: string) => void;
   onStartSession: (courseId: string) => void;
@@ -109,7 +112,7 @@ export function AccountExperience(props: AccountExperienceProps) {
     courses, selectedCourseId, phase, sessionStarted, materialsCheck, aiConsent, materials,
     turns, questions, answers, assistedAnswers, qualityNotice, invalidItemCount = 0, flaggedQuestionIds = [],
     quizTutorReply, feedback, reviewSchedule, resultSummary, isRetest,
-    busy = false, error, onSelectCourse, onCreateCourse, onRenameCourse, onStartSession, examGuides = {}, onRefreshExamGuide, memorySheets = {},
+    busy = false, error, onSelectCourse, onCreateCourse, onRenameCourse, onStartSession, examGuides = {}, onRefreshExamGuide, examFacts = {}, onSaveExamFacts, memorySheets = {},
     savedMaterialsByCourse = {}, onDeleteMaterial, onDeleteCourse,
     onMaterialsChoice, onUploadMaterials, onContinueMaterials, onConsentChange, onSendTurn,
     onReadyForQuiz, onSelectAnswer, onFlagQuestion, onAskDuringQuiz, onMarkAssisted, onSubmitQuiz, onRequestRetest,
@@ -198,10 +201,11 @@ export function AccountExperience(props: AccountExperienceProps) {
                   {(course as { kind?: string }).kind === 'exam' && <div className="ae-course-manage" style={{ width: '100%', marginTop: 10 }} data-testid={`panel-exam-guide-${course.id}`}>
                     <p className="ae-kicker">Official exam guide {onRefreshExamGuide && <button type="button" className="ae-button ae-button--quiet" disabled={busy} onClick={() => onRefreshExamGuide(course.id)} data-testid={`button-refresh-guide-${course.id}`}>{examGuides[course.id] ? 'Refresh' : 'Look up'}</button>}</p>
                     {examGuides[course.id]?.found ? <>
-                      {realExamLine(examGuides[course.id]) && <p data-testid={`text-real-exam-${course.id}`}>{realExamLine(examGuides[course.id])}</p>}
                       {(examGuides[course.id]?.sections ?? []).map((s, i) => <div className="ae-row" key={i} style={{ justifyContent: 'space-between' }}><span>{s.name}</span><span className="ae-muted">{s.weight !== null ? `${s.weight}%` : ''}</span></div>)}
                       {examGuides[course.id]?.sourceUrl && <p className="ae-muted" style={{ fontSize: '.8rem' }}>Source: {examGuides[course.id]?.sourceUrl}</p>}
                     </> : examGuides[course.id] ? <p className="ae-muted">No official guide found; the coach uses its own knowledge of the exam.</p> : <p className="ae-muted">Not looked up yet.</p>}
+                    {realExamLine(examFacts[course.id]) && <p data-testid={`text-real-exam-${course.id}`}>{realExamLine(examFacts[course.id])}</p>}
+                    {onSaveExamFacts && <ExamFactsForm key={JSON.stringify(examFacts[course.id] ?? null)} courseId={course.id} facts={examFacts[course.id]} busy={busy} onSave={facts => onSaveExamFacts(course.id, facts)} />}
                   </div>}
                   {(memorySheets[course.id] ?? []).length > 0 && <div className="ae-course-manage" style={{ width: '100%', marginTop: 10 }} data-testid={`panel-memory-sheet-${course.id}`}>
                     <p className="ae-kicker">Memory sheet · {memorySheets[course.id]!.length}</p>
@@ -431,3 +435,30 @@ export function AccountExperience(props: AccountExperienceProps) {
 }
 
 export default AccountExperience;
+/** Type or correct the real exam's question count, time limit and passing score (spec B, D-111). */
+function ExamFactsForm({ courseId, facts, busy, onSave }: { courseId: string; facts?: ExamFacts; busy: boolean; onSave: (facts: ExamFacts) => void }) {
+  const [questions, setQuestions] = useState(facts?.questionCount ? String(facts.questionCount) : '');
+  const [minutes, setMinutes] = useState(facts?.durationMinutes ? String(facts.durationMinutes) : '');
+  const [passing, setPassing] = useState(facts?.passingScore ?? '');
+  const [problem, setProblem] = useState('');
+  const missing = !facts?.questionCount || !facts?.durationMinutes;
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const read = factsFromInputs(questions, minutes, passing);
+    if ('error' in read) { setProblem(read.error); return; }
+    setProblem('');
+    onSave(read.facts);
+  };
+  return (
+    <form onSubmit={submit} style={{ marginTop: 8 }} data-testid={`form-exam-facts-${courseId}`}>
+      <p className="ae-muted" style={{ fontSize: '.85rem' }}>{missing ? 'Real exam: type the number of questions and the time limit from the official page (used to time full simulations).' : 'Real exam (correct it if the official page says otherwise):'}</p>
+      <div className="ae-row" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <input className="ae-input" inputMode="numeric" placeholder="Questions" aria-label="Number of questions on the real exam" value={questions} onChange={event => setQuestions(event.target.value)} maxLength={3} style={{ width: 110 }} data-testid={`input-exam-questions-${courseId}`} />
+        <input className="ae-input" inputMode="numeric" placeholder="Minutes" aria-label="Time limit of the real exam in minutes" value={minutes} onChange={event => setMinutes(event.target.value)} maxLength={3} style={{ width: 110 }} data-testid={`input-exam-minutes-${courseId}`} />
+        <input className="ae-input" placeholder="Passing score, e.g. 700 out of 1000" aria-label="Passing score of the real exam" value={passing} onChange={event => setPassing(event.target.value)} maxLength={60} style={{ flex: 1, minWidth: 180 }} data-testid={`input-exam-passing-${courseId}`} />
+        <button type="submit" className="ae-button" disabled={busy} data-testid={`button-save-exam-facts-${courseId}`}>Save</button>
+      </div>
+      {problem && <p className="ae-muted" role="alert">{problem}</p>}
+    </form>
+  );
+}
