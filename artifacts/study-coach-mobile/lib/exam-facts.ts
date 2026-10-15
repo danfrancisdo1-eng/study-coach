@@ -57,3 +57,16 @@ export function timedChoices(facts: ExamFacts): { size: TimedSize; label: string
   }
   return out;
 }
+
+/**
+ * A found guide saved before the lookup also read the exam's numbers (D-118): refresh it once,
+ * without asking. A v2 guide carries questionCount even when null, so a page that gives no
+ * numbers is never looked up again (the student types them instead).
+ */
+export function needsFactsLookup(course: O | null | undefined): boolean {
+  if (!course || course.kind !== 'exam') return false;
+  const g = obj(course.examGuide);
+  if (!g || g.found !== true || 'questionCount' in g) return false;
+  const facts = courseExamFacts(course);
+  return !facts.questionCount || !facts.durationMinutes;
+}

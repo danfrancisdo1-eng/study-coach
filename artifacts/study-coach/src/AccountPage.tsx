@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   useGetStudyState, usePutStudyState, useImportStudyState, useListStudySessions,
@@ -17,7 +17,7 @@ import MaterialIntake from './MaterialIntake';
 import HomeChat from './HomeChat';
 import DeleteAccount from './DeleteAccount';
 import { readLegacyStudyData } from './lib/legacy-import';
-import { courseExamFacts, timedChoices } from './lib/exam-facts';
+import { courseExamFacts, needsFactsLookup, timedChoices } from './lib/exam-facts';
 import { passMarkLine } from './lib/exam-sheet';
 
 type AccountState = {
@@ -72,6 +72,8 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
   const flagQuestion = useFlagStudyQuestion();
   const lookupGuide = useLookupExamGuide();
   const saveExamFacts = useSaveExamFacts();
+  // A guide saved before the lookup read the exam's numbers is refreshed once, without asking (D-118).
+  const autoLookedUp = useRef<string | null>(null);
   const [selectedCourseId, selectCourse] = useState<string | null>(null);
   const [topic, setTopic] = useState('');
   const [minutes, setMinutes] = useState(35);
@@ -196,6 +198,12 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
     ? `${current.quiz.grade.correct} correct of ${current.quiz.grade.answered} answered; ${current.quiz.grade.excluded} excluded, including ${current.quiz.grade.invalidItems} invalid items. ${current.quiz.grade.percent}% of answered valid questions.`
     : undefined;
 
+  useEffect(() => {
+    const course = (state.courses ?? []).find(item => item?.id === selectedCourseId) as unknown as Record<string, unknown> | undefined;
+    if (!selectedCourseId || autoLookedUp.current === selectedCourseId || lookupGuide.isPending || !needsFactsLookup(course)) return;
+    autoLookedUp.current = selectedCourseId;
+    lookupGuide.mutateAsync({ courseId: selectedCourseId }).then(() => stateQuery.refetch()).catch(() => {});
+  });
   if (stateQuery.isLoading || sessionsQuery.isLoading) return <div className="onboard"><p className="notice">Opening your private study space…</p></div>;
   if (stateQuery.error || sessionsQuery.error) return <div className="onboard"><div className="error" role="alert">{message(stateQuery.error ?? sessionsQuery.error)}</div><button type="button" className="btn btn-outline" onClick={() => { void stateQuery.refetch(); void sessionsQuery.refetch(); }} data-testid="button-retry-account">Try again</button></div>;
 

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@clerk/expo';
@@ -14,7 +14,7 @@ import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
-import { courseExamFacts, factsFromInputs, realExamLine, timedChoices, type TimedSize } from '@/lib/exam-facts';
+import { courseExamFacts, factsFromInputs, needsFactsLookup, realExamLine, timedChoices, type TimedSize } from '@/lib/exam-facts';
 import { whenLabel } from '@/lib/when';
 import { ActionButton } from '@/components/ActionButton';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
@@ -76,6 +76,17 @@ export default function CourseScreen() {
   const [factPassing, setFactPassing] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // A guide saved before the lookup read the exam's numbers is refreshed once, without asking (D-118; Dan: why make the person ask?).
+  const autoLookedUp = useRef<string | null>(null);
+  const rawCourse = (Array.isArray(record(stateQuery.data?.state).courses) ? (record(stateQuery.data?.state).courses as unknown[]).map(record) : []).find((c) => c.id === courseId);
+  useEffect(() => {
+    if (!courseId || autoLookedUp.current === courseId || lookupGuide.isPending || !needsFactsLookup(rawCourse)) return;
+    autoLookedUp.current = courseId;
+    lookupGuide.mutateAsync({ courseId })
+      .then(() => queryClient.invalidateQueries({ queryKey: stateKey }))
+      .catch(() => {}); // a failed refresh leaves the old guide; the timed sheet still offers typing the numbers
+  });
 
   if (!isLoaded) return null;
   if (!isSignedIn) return <Redirect href="/" />;
@@ -407,7 +418,9 @@ export default function CourseScreen() {
             {!choices.length ? (
               // No question count or time limit yet (Dan saw an untimed set with no idea why): say so and offer both ways in.
               <View style={styles.card} testID="panel-timed-needs-facts">
-                <Text style={styles.body}>To time it like the real exam, the app needs the exam's number of questions and time limit.</Text>
+                {lookupGuide.isPending
+                  ? <View style={styles.row}><ActivityIndicator color={colors.primaryText} /><Text style={styles.body}>Looking up the real exam's number of questions and time limit…</Text></View>
+                  : <Text style={styles.body}>{guide && 'questionCount' in guide ? "The official exam page doesn't list the number of questions or the time limit. Type them in from the exam page and the clock is ready." : "To time it like the real exam, the app needs the exam's number of questions and time limit."}</Text>}
                 <View style={styles.actions}>
                   <ActionButton label="Look them up" icon="search" disabled={busy} onPress={() => { setTimedPicker(false); void refreshGuide(); }} testID="button-timed-lookup" />
                   <ActionButton label="Type them in" icon="edit-2" secondary onPress={() => { setTimedPicker(false); openEditor(); }} testID="button-timed-type" />

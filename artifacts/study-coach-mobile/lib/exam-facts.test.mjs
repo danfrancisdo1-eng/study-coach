@@ -40,3 +40,15 @@ test('the timed exam choices on the course screen (D-114): full + blocks that fi
   assert.deepEqual(timedChoices({ questionCount: 20, durationMinutes: 30, passingScore: '' }).map((c) => c.size), ['full', '10'], 'a block the size of the exam is the full exam');
   assert.deepEqual(timedChoices({ questionCount: null, durationMinutes: 100, passingScore: '' }), [], 'nothing without both numbers');
 });
+
+test('a guide from before the exam facts existed is refreshed once, by itself (D-118)', async () => {
+  const { needsFactsLookup } = await import('./exam-facts.ts');
+  const old = { found: true, sections: [{ name: 'A', weight: 50 }] };
+  assert.equal(needsFactsLookup({ kind: 'exam', examGuide: old }), true, 'looked up before exam-guide.v2');
+  assert.equal(needsFactsLookup({ kind: 'exam', examGuide: { ...old, questionCount: null, durationMinutes: null, passingScore: '' } }), false, 'v2 found none: ask the student, never loop');
+  assert.equal(needsFactsLookup({ kind: 'exam', examGuide: { ...old, questionCount: 50, durationMinutes: 100 } }), false);
+  assert.equal(needsFactsLookup({ kind: 'exam', examGuide: old, examFacts: { questionCount: 50, durationMinutes: 100 } }), false, 'typed already');
+  assert.equal(needsFactsLookup({ kind: 'exam', examGuide: { found: false } }), false);
+  assert.equal(needsFactsLookup({ kind: 'course', examGuide: old }), false);
+  assert.equal(needsFactsLookup(undefined), false);
+});

@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-15 — D-118: Old exam guides fetch the real exam's numbers by themselves
+- Dan: "Why did we decide to make the person ask to look them up?" We shouldn't. Opening an exam course whose found guide predates exam-guide.v2 (no questionCount field) refreshes the guide once, automatically (phone course screen; web on selecting the exam). A v2 guide that found no numbers is never re-fetched (no loops, no repeated AI cost); then the timed sheet says the official page doesn't list them and offers typing them in. While the refresh runs, the sheet says "Looking up the real exam's number of questions and time limit…".
+- needsFactsLookup in lib/exam-facts.ts (phone and web), 1 test. Tests 176/176.
+
 ## 2026-10-15 — D-117: "Simulated exam" always explains a missing clock; the R icon in the app headers
 - Dan on #49: "No timer." His exam had no question count or time limit yet (looked up before exam-guide.v2), so the button silently fell back to an untimed coach set. Now on any exam course it opens the timed sheet; without the numbers the sheet says so, with "Look them up" (refreshes the official guide) and "Type them in" (opens the pencil form), plus "No timer".
 - The chat and Courses headers show the R-with-AI icon instead of the book. Home-screen icon and launch screen still need a new build (D-113).
