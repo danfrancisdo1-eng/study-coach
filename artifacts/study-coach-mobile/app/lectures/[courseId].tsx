@@ -35,7 +35,7 @@ const STATUS_LABEL: Record<LectureSummary['status'], { label: string; icon: Reac
   reviewed: { label: 'Used for studying', icon: 'check-circle' },
 };
 
-type Phase = { kind: 'idle' } | { kind: 'starting' } | { kind: 'recording'; startedAt: Date } | { kind: 'naming'; pending: PendingRecording } | { kind: 'saving' };
+type Phase = { kind: 'idle' } | { kind: 'starting' } | { kind: 'recording'; startedAt: Date; paused?: boolean } | { kind: 'naming'; pending: PendingRecording } | { kind: 'saving' };
 
 export default function CourseLecturesScreen() {
   const colors = useColors();
@@ -109,10 +109,23 @@ export default function CourseLecturesScreen() {
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true, allowsBackgroundRecording: true });
       await recorder.prepareToRecordAsync();
       recorder.record();
-      setPhase({ kind: 'recording', startedAt: new Date() });
+      setPhase({ kind: 'recording', startedAt: new Date(), paused: false });
     } catch {
       setPhase({ kind: 'idle' });
       setMessage('Recording couldn’t start. Check that no other app is using the microphone, then try again.');
+    }
+  }
+
+  // Pause and resume (D-103, Dan: "we also need a pause button on the lecture"): the same file
+  // continues; the timer (the recorder's own duration) stops while paused.
+  function togglePause() {
+    const current = phaseRef.current;
+    if (current.kind !== 'recording') return;
+    try {
+      if (current.paused) recorder.record(); else recorder.pause();
+      setPhase({ ...current, paused: !current.paused });
+    } catch {
+      setMessage(current.paused ? 'Recording couldn’t resume. Stop to keep what you have.' : 'Recording couldn’t pause. It is still recording.');
     }
   }
 
@@ -122,7 +135,8 @@ export default function CourseLecturesScreen() {
     setPhase({ kind: 'saving' });
     const durationMillis = recorder.getStatus().durationMillis || recorderState.durationMillis;
     try {
-      if (recorder.isRecording) await recorder.stop();
+      // A paused recorder is not "isRecording" but still has to be stopped to finish its file.
+      if (recorder.isRecording || (current.kind === 'recording' && current.paused)) await recorder.stop();
     } catch {
       // Already stopped by iOS; the file written so far is still kept below.
     }
@@ -178,6 +192,7 @@ export default function CourseLecturesScreen() {
   }
 
   const recording = phase.kind === 'recording';
+  const paused = phase.kind === 'recording' && !!phase.paused;
   const busy = phase.kind === 'starting' || phase.kind === 'saving';
   const items = lectures.data?.lectures ?? [];
 
@@ -210,7 +225,8 @@ export default function CourseLecturesScreen() {
         {recording ? (
           <View style={styles.card} testID="panel-recording">
             <Text style={styles.timer} accessibilityLabel={`Recording, ${spokenDuration(elapsedSeconds)}`} accessibilityLiveRegion="polite">{formatDuration(elapsedSeconds)}</Text>
-            <Text style={styles.body}>Recording keeps going if you lock your iPhone. Stop when the lecture ends.</Text>
+            {paused ? <Text style={styles.warning} accessibilityRole="alert" testID="text-recording-paused">Paused. Tap Resume to continue the same recording.</Text>
+              : <Text style={styles.body}>Recording keeps going if you lock your iPhone. Stop when the lecture ends.</Text>}
             {limit === 'warning' ? <Text style={styles.warning} accessibilityRole="alert">Recording stops automatically at 2 hours.</Text> : null}
           </View>
         ) : null}
@@ -279,6 +295,13 @@ export default function CourseLecturesScreen() {
         ) : (
           <>
             {!recording ? <Text style={styles.caption}>Only record where your instructor and classmates allow it.</Text> : null}
+            {recording ? (
+              <Pressable accessibilityRole="button" accessibilityLabel={paused ? 'Resume recording' : 'Pause recording'} onPress={togglePause}
+                style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]} testID="button-pause-recording">
+                <Feather name={paused ? 'mic' : 'pause'} size={18} color={colors.foreground} />
+                <Text style={styles.secondaryText}>{paused ? 'Resume' : 'Pause'}</Text>
+              </Pressable>
+            ) : null}
             <Pressable
               accessibilityRole="button" accessibilityLabel={recording ? 'Stop recording' : 'Record lecture'} disabled={busy}
               onPress={() => void (recording ? finishRecording() : startRecording())}
@@ -318,7 +341,9 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     textButton: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
     link: { color: colors.primaryText, fontSize: 15, fontWeight: '600' },
     bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 18, paddingTop: 10, gap: 8, backgroundColor: colors.background, borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth },
-    primaryButton: { minHeight: 54, borderRadius: 14, backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  secondaryButton: { minHeight: 48, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: colors.border, marginBottom: 8 },
+  secondaryText: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
+  primaryButton: { minHeight: 54, borderRadius: 14, backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
     primaryText: { color: colors.primaryForeground, fontSize: 19, fontWeight: '700' }, // 19pt bold = large text; brand orange passes 3:1 only for large text
     disabled: { opacity: 0.55 },
     pressed: { opacity: 0.8 },

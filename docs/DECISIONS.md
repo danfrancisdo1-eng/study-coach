@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-14 — D-103: Pause and resume a lecture recording
+- Dan: "We also need a pause button on the lecture." While recording, a Pause button sits above Stop; Resume continues the same file (expo-audio `pause()` / `record()`); the timer is the recorder's own duration, so paused time is not counted; "Paused. Tap Resume…" shows while paused. Stopping while paused still stops and saves the file (the old code only stopped a recorder that was actively recording). Build stamp #41. Verified here: typecheck. Needs real-iPhone check (record, pause, lock, resume, stop). Decided by Dan.
+
 ## 2026-10-14 — D-102: coach.v18: the coach points to the review sheet
 - Dan asked the coach for "a PDF review of everything" and it said it could not. coach.v18 adds one rule: a review sheet / study guide / PDF is made by the "Review sheet (PDF)" button on the course screen; the coach says so in one line (and may summarise in the chat); never says it cannot. Evals: 1 new case; coach 39/39 twice on claude-sonnet-5-5. Decided by Dan (D-099).
 
