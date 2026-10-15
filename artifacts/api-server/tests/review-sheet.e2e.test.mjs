@@ -38,7 +38,8 @@ test('review sheet: grounded inputs, validated output, consent and failure handl
   assert.deepEqual(sheet.basedOn, { materials: 1, misses: 1, memoryRows: 1, officialSections: 2 });
   const sent = JSON.stringify(ai.requests.at(-1).body);
   assert.match(sent, /Cloud concepts \(25%\); Azure architecture \(35%\)/, 'the guide sections, in order');
-  assert.match(sent, /certification exam/, 'an exam: the official outline is the primary source');
+  assert.match(sent, /public certification or standardised exam/, 'the writer decides certification vs course (D-107)');
+  assert.match(sent, /it is saved as one/, 'a course saved as an exam is flagged');
   assert.equal(sheet.facts[0].value, '45 minutes');
   assert.equal(sheet.sources[0].url, 'https://learn.microsoft.com/az-900');
   assert.equal(sheet.sections[0].misses[0].giveaway, 'managed platform');
