@@ -43,7 +43,11 @@ export function jsonFromReply(text: string | null): unknown {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
   if (start < 0 || end <= start) return null;
-  try { return JSON.parse(text.slice(start, end + 1)); } catch { return null; }
+  const body = text.slice(start, end + 1);
+  try { return JSON.parse(body); } catch { /* try the tolerant pass */ }
+  // Tolerant pass: line comments (outside strings) and trailing commas, which the writer sometimes copies from the shape.
+  const cleaned = body.replace(/("(?:[^"\\]|\\.)*")|\/\/[^\n]*/g, (m, str) => str ?? "").replace(/,(\s*[}\]])/g, "$1");
+  try { return JSON.parse(cleaned); } catch { return null; }
 }
 
 const safeUrl = (u: string) => (/^https:\/\/[^\s"'<>]+$/i.test(u) ? u : "");
@@ -90,6 +94,40 @@ export function parseReviewSheet(raw: unknown, fallbackTitle: string): ReviewShe
     tips: strs(r.tips, 400, 12),
     decoder: pairs(r.decoder, ["cue", "answer"], 80, 16),
     sources: arr(r.sources, 10).flatMap((s) => { const o = obj(s); const url = safeUrl(str(o.url, 400)); return url ? [{ title: str(o.title, 200) || url, url }] : []; }),
+  };
+}
+
+/**
+ * The 4-page budget (D-108, Dan: "4 pages tops… not 20 pages of the entire history"). Enforced
+ * here, whatever the writer produced: at most 6 sections, 45 items in total (shared out in
+ * order, at least 4 per section), 2 tricks and 3 triggers per section, 8 misses, 5 tips, 10
+ * decoder pairs, 5 sources.
+ */
+export const BUDGET = { sections: 6, items: 45, minItemsPerSection: 4, contrasts: 2, triggers: 3, misses: 8, tips: 5, decoder: 10, sources: 5 };
+
+export function trimToBudget(sheet: ReviewSheet): ReviewSheet {
+  const sections = sheet.sections.slice(0, BUDGET.sections);
+  const perSection = Math.max(BUDGET.minItemsPerSection, Math.floor(BUDGET.items / Math.max(1, sections.length)));
+  let missesLeft = BUDGET.misses;
+  const trimmed = sections.map((s) => {
+    let left = perSection;
+    const subsections = s.subsections.flatMap((sub) => {
+      if (left <= 0) return [];
+      const items = sub.items.slice(0, left);
+      left -= items.length;
+      return items.length ? [{ ...sub, items }] : [];
+    });
+    const misses = s.misses.slice(0, Math.max(0, missesLeft));
+    missesLeft -= misses.length;
+    return { ...s, subsections, contrasts: s.contrasts.slice(0, BUDGET.contrasts), triggers: s.triggers.slice(0, BUDGET.triggers), misses };
+  });
+  return {
+    ...sheet,
+    glance: sheet.glance.slice(0, BUDGET.sections),
+    sections: trimmed,
+    tips: sheet.tips.slice(0, BUDGET.tips),
+    decoder: sheet.decoder.slice(0, BUDGET.decoder),
+    sources: sheet.sources.slice(0, BUDGET.sources),
   };
 }
 

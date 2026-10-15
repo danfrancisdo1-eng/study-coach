@@ -9,7 +9,7 @@ import type { Session } from "../lib/session-quiz";
 import { desc } from "drizzle-orm";
 import { complete } from "../ai";
 import * as reviewSheetPrompt from "../prompts/review-sheet.v2";
-import { jsonFromReply, missesFrom, parseReviewSheet } from "../lib/review-sheet";
+import { BUDGET, jsonFromReply, missesFrom, parseReviewSheet, trimToBudget } from "../lib/review-sheet";
 import { sourceChunks, sourceTextOf } from "../lib/session-quiz";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { rowsFromState } from "../lib/memory-sheet";
@@ -102,7 +102,8 @@ router.post("/study/courses/:courseId/review-sheet", async (req, res): Promise<v
   const sessions = (await db.select({ session: studySessionsTable.session }).from(studySessionsTable)
     .where(and(eq(studySessionsTable.ownerId, ownerId), eq(studySessionsTable.courseId, courseId)))
     .orderBy(desc(studySessionsTable.createdAt)).limit(60)).map((r) => r.session as unknown as Session);
-  const misses = missesFrom(sessions as unknown as Parameters<typeof missesFrom>[0]);
+  // Only the latest misses (D-108): a same-day review, not the whole history.
+  const misses = missesFrom(sessions as unknown as Parameters<typeof missesFrom>[0], BUDGET.misses);
   const memorySheet = rowsFromState(state, courseId).slice(0, 60).map(({ term, trick, whenYouSee, think }) => ({ term, trick, whenYouSee, think }));
   try {
     // Web search is always available (D-107); the writer decides from the name and material whether this is a public certification.
@@ -113,8 +114,9 @@ router.post("/study/courses/:courseId/review-sheet", async (req, res): Promise<v
       webSearch: { maxUses: 10 },
       timeoutMs: 240_000,
     });
-    const sheet = parseReviewSheet(jsonFromReply(response.text), `${courseName}: review sheet`);
-    if (!sheet) throw new Error("No usable review sheet");
+    const parsed = parseReviewSheet(jsonFromReply(response.text), `${courseName}: review sheet`);
+    if (!parsed) throw new Error("No usable review sheet");
+    const sheet = trimToBudget(parsed);
     res.json({ ...sheet, courseName, generatedAt: new Date().toISOString(), basedOn: { materials: chunks.length, misses: misses.length, memoryRows: memorySheet.length, officialSections: sections.length } });
   } catch (error) {
     if (counted) await refund(ownerId, "sets");

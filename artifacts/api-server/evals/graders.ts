@@ -418,7 +418,7 @@ export async function gradeReviewSheet(testCase: ReviewSheetCase, text: string |
   for (const [i, s] of sections.entries()) {
     const subs = s.subsections ?? [];
     const items = subs.flatMap((x) => x.items ?? []);
-    if ((testCase.kind === "exam" || testCase.treatAsExam) && (subs.length < 2 || items.length < 5)) notes.push(`section ${i} too thin: ${subs.length} subsections, ${items.length} items`);
+    if ((testCase.kind === "exam" || testCase.treatAsExam) && (subs.length < 1 || items.length < 4)) notes.push(`section ${i} too thin: ${subs.length} subsections, ${items.length} items`);
     if (items.some((it) => !it.term?.trim())) notes.push(`section ${i}: items without a bold term`);
     if ((testCase.kind === "exam" || testCase.treatAsExam) && !(s.contrasts?.length)) notes.push(`section ${i}: no contrast pair`);
   }
@@ -433,6 +433,9 @@ export async function gradeReviewSheet(testCase: ReviewSheetCase, text: string |
     const thirdParty = (sheet.sources ?? []).filter((s) => /udemy|tutorialsdojo|whizlabs|examtopics|medium\.com|reddit/i.test(s.url ?? ""));
     if (thirdParty.length) notes.push(`third-party sources cited: ${thirdParty.map((s) => s.url).join(", ").slice(0, 160)}`);
   }
+  // The 4-page budget (D-108): about 45 items, 6 sections.
+  const totalItems = sections.reduce((n, s) => n + (s.subsections ?? []).reduce((m, x) => m + (x.items ?? []).length, 0), 0);
+  if (sections.length > 6 || totalItems > 55) notes.push(`over the 4-page budget: ${sections.length} sections, ${totalItems} items`);
   const allMisses = sections.flatMap((s) => s.misses ?? []);
   for (const m of testCase.input.missedQuestions) {
     const placed = allMisses.filter((x) => normalize(x.answer ?? "") === normalize(m.correctAnswer));
