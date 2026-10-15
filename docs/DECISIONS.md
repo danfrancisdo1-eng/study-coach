@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-14 — D-105: render.yaml autoDeploy true (restores Dan's Auto-Deploy)
+- The review sheet returned "404 Cannot POST" on the phone: Render had not deployed since 2eafe17. Declaring the Premium secrets in render.yaml made Render re-apply the Blueprint, whose `autoDeploy: false` (from the Replit move) switched off the Auto-Deploy Dan had turned on in the dashboard (Session 3). render.yaml now says `autoDeploy: true`, matching his setting; pushing to main syncs the Blueprint and deploys D-097 onward. Lesson: a Blueprint file change re-applies every field in it. Decided by Claude Code (restoring Dan's own setting; reported to him).
+
 ## 2026-10-14 — D-104: The transcript is read first, edited on request
 - Dan: reviewing a fresh transcript, scrolling down "the keyboard pops up and blocks you; makes it think you want to modify the text." Every passage was an editable text box right after transcription, so a scroll that started on one focused it. Now the transcript shows as text; "Edit text" turns the boxes on and "Done" (or a drag) puts the keyboard away; edits stay visible after Done; "Save and use for studying" is still the explicit save (CLAUDE.md §8). Build stamp #42. Verified here: typecheck; mobile tests; iOS bundle export. Needs real-iPhone check. Decided by Dan (bug).
 

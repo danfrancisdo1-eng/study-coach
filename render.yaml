@@ -9,7 +9,7 @@ services:
     region: virginia
     plan: starter
     healthCheckPath: /api/healthz
-    autoDeploy: false
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
