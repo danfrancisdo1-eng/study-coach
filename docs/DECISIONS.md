@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-15 — D-109: Review sheet prompt v3: never contradict itself; vendor docs win on certification facts
+- An eval AI-103 sheet said two different things about agent identity. Dan: "Definitely make that rule."
+- review-sheet.v3 adds a consistency pass: check every item, trick, trigger, tip, decoder pair and miss against the others and fix or drop the wrong one. When the student's material and the vendor's current docs disagree on a certification fact, follow the vendor; for a college course, the instructor's material wins.
+- Eval judge now also fails a sheet whose parts contradict each other. Runs: 3/3, then 2/3 (the one fail was a loose claim, "better prompts at the same cost", not a contradiction). Decided by Dan.
+
 ## 2026-10-15 — D-108: The review sheet is a same-day review, 4 pages at most, enforced in code
 - Dan: "when I want a review sheet I want it on the topics and maybe a few tips on memory recall of what I missed. 4 pages tops… Not 20 pages of the entire history on the app." The prompt only asked for ~4 pages and the route sent up to 40 misses from every set, so a long course produced ~20 pages.
 - Now `trimToBudget` (lib/review-sheet.ts, 1 test) cuts whatever the writer produced to: 6 sections, 45 items in total (shared out, at least 4 per section), 2 contrasts and 3 triggers per section, 8 misses, 5 tips, 10 decoder pairs, 5 sources. Only the latest 8 misses are sent. The prompt frames it as "a same-day review read in the hours before the exam: the topics and memory tips for what they recently missed; four printed pages at most". JSON reading tolerates comments and trailing commas (the writer once copied a comment from the shape); the shape has no comments now.

@@ -8,7 +8,7 @@ import { conceptTallies, eventsFrom, topicTallies, weakConcepts } from "../lib/r
 import type { Session } from "../lib/session-quiz";
 import { desc } from "drizzle-orm";
 import { complete } from "../ai";
-import * as reviewSheetPrompt from "../prompts/review-sheet.v2";
+import * as reviewSheetPrompt from "../prompts/review-sheet.v3";
 import { BUDGET, jsonFromReply, missesFrom, parseReviewSheet, trimToBudget } from "../lib/review-sheet";
 import { sourceChunks, sourceTextOf } from "../lib/session-quiz";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";

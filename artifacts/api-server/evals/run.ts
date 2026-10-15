@@ -22,7 +22,7 @@ import * as webLookupPrompt from "../src/prompts/web-lookup.v1";
 import * as flashcardsPrompt from "../src/prompts/flashcards.v2";
 import * as examGuidePrompt from "../src/prompts/exam-guide.v1";
 import * as memorySheetPrompt from "../src/prompts/memory-sheet.v2";
-import * as reviewSheetPrompt from "../src/prompts/review-sheet.v2";
+import * as reviewSheetPrompt from "../src/prompts/review-sheet.v3";
 import * as flagCheckPrompt from "../src/prompts/flag-check.v1";
 import { taskConfig, type AiTask } from "../src/ai/tasks";
 import { classicQuizCases, coachCases, examGuideCases, flagCheckCases, flashcardsCases, memorySheetCases, reviewSheetCases, ocrCaseNames, planCases, quizCheckCases, sessionQuizCases, syllabusCases, tutorCases, webLookupCases, type Source } from "./fixtures";
