@@ -1,6 +1,6 @@
 // Exam-guide lookup (D-024): one web-search-enabled AI call, then strict validation.
 import { complete } from "../ai";
-import * as examGuidePrompt from "../prompts/exam-guide.v1";
+import * as examGuidePrompt from "../prompts/exam-guide.v2";
 
 import { parseExamGuideReply, type ExamGuide } from "./exam-guide-parse";
 export { parseExamGuideReply, type ExamGuide, type ExamGuideSection } from "./exam-guide-parse";

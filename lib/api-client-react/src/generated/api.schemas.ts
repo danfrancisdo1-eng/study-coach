@@ -587,6 +587,18 @@ export interface ExamGuide {
   sourceUrl: string | null;
   notes: string;
   fetchedAt: string;
+  /**
+     * The real exam's number of questions, when the official page states one
+     * @nullable
+     */
+  questionCount?: number | null;
+  /**
+     * The real exam's time limit in minutes, when the official page states one
+     * @nullable
+     */
+  durationMinutes?: number | null;
+  /** The passing score as the official page states it (e.g. 700 out of 1000), or empty */
+  passingScore?: string;
 }
 
 export type FlashcardReviewInputResult = typeof FlashcardReviewInputResult[keyof typeof FlashcardReviewInputResult];

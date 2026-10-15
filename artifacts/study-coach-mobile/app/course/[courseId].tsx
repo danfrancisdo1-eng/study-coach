@@ -14,6 +14,7 @@ import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
+import { realExamLine } from '@/lib/exam-facts';
 import { whenLabel } from '@/lib/when';
 import { ActionButton } from '@/components/ActionButton';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
@@ -257,6 +258,7 @@ export default function CourseScreen() {
               {lookupGuide.isPending ? <View style={styles.row}><ActivityIndicator color={colors.primaryText} /><Text style={styles.caption}>Searching for the official guide…</Text></View> : null}
               {guide?.found === true ? (
                 <>
+                  {realExamLine(guide) ? <Text style={styles.body} testID="text-real-exam">{realExamLine(guide)}</Text> : null}
                   {guideSections.map((s, i) => (
                     <View key={i} style={styles.rowBetween}><Text style={styles.body}>{String(s.name)}</Text><Text style={styles.caption}>{typeof s.weight === 'number' ? `${s.weight}%` : ''}</Text></View>
                   ))}

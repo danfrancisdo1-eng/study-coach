@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { ArrowLeft, ArrowRight, BookOpen, Check, FileText, Pencil, Plus, Send, ShieldCheck, UploadCloud, X } from 'lucide-react';
 import './account-experience.css';
+import { realExamLine } from './lib/exam-facts';
 
 /** Exact once-per-session materials questions; the parent persists when it has been answered. */
 export const MATERIALS_CHECK_PROMPT = 'Do you have any course materials you want to add?';
@@ -74,7 +75,7 @@ export type AccountExperienceProps = {
   /** Saved materials per course id, shown while a course is being edited. */
   savedMaterialsByCourse?: Record<string, { id: string; name: string }[]>;
   /** Official exam-guide per course id (certification exams), shown while editing. */
-  examGuides?: Record<string, { found?: boolean; sections?: { name: string; weight: number | null }[]; sourceUrl?: string | null } | null>;
+  examGuides?: Record<string, { found?: boolean; sections?: { name: string; weight: number | null }[]; sourceUrl?: string | null; questionCount?: number | null; durationMinutes?: number | null; passingScore?: string } | null>;
   /** Memory-sheet rows per course (D-025). */
   memorySheets?: Record<string, { id: string; term: string; trick: string; whenYouSee: string; think: string }[]>;
   onRefreshExamGuide?: (courseId: string) => void;
@@ -197,6 +198,7 @@ export function AccountExperience(props: AccountExperienceProps) {
                   {(course as { kind?: string }).kind === 'exam' && <div className="ae-course-manage" style={{ width: '100%', marginTop: 10 }} data-testid={`panel-exam-guide-${course.id}`}>
                     <p className="ae-kicker">Official exam guide {onRefreshExamGuide && <button type="button" className="ae-button ae-button--quiet" disabled={busy} onClick={() => onRefreshExamGuide(course.id)} data-testid={`button-refresh-guide-${course.id}`}>{examGuides[course.id] ? 'Refresh' : 'Look up'}</button>}</p>
                     {examGuides[course.id]?.found ? <>
+                      {realExamLine(examGuides[course.id]) && <p data-testid={`text-real-exam-${course.id}`}>{realExamLine(examGuides[course.id])}</p>}
                       {(examGuides[course.id]?.sections ?? []).map((s, i) => <div className="ae-row" key={i} style={{ justifyContent: 'space-between' }}><span>{s.name}</span><span className="ae-muted">{s.weight !== null ? `${s.weight}%` : ''}</span></div>)}
                       {examGuides[course.id]?.sourceUrl && <p className="ae-muted" style={{ fontSize: '.8rem' }}>Source: {examGuides[course.id]?.sourceUrl}</p>}
                     </> : examGuides[course.id] ? <p className="ae-muted">No official guide found; the coach uses its own knowledge of the exam.</p> : <p className="ae-muted">Not looked up yet.</p>}

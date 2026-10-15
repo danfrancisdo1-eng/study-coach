@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-15 — D-110: Timed exams, step 1: the guide lookup saves the real exam's question count, time limit and passing score
+- Spec B (signed D-099), step 1 of 4. exam-guide.v2 also asks for "questionCount", "durationMinutes" and "passingScore" exactly as the vendor's own exam page states them; a range of questions ("40-60") is not a count (null, range in notes); answering time, not total seat time; nothing estimated from third-party sites.
+- The parser keeps only whole numbers in range (1–400 questions, 1–600 minutes) and only when a guide was found; the review sheet's facts block now gets them through examFactsOf. The course screen (phone and web) shows "Real exam: 50 questions · 100 minutes · pass 700 out of 1000" (lib/exam-facts.ts, same on both; 1 test).
+- Evals: AWS SAA-C03 must return 65 questions / 130 minutes, Security+ 90 minutes: 4/4. Tests 160/160.
+- Not yet: typing the numbers in by hand when the page gives none (next), the timer itself (steps 2–4).
+
 ## 2026-10-15 — D-109: Review sheet prompt v3: never contradict itself; vendor docs win on certification facts
 - An eval AI-103 sheet said two different things about agent identity. Dan: "Definitely make that rule."
 - review-sheet.v3 adds a consistency pass: check every item, trick, trigger, tip, decoder pair and miss against the others and fix or drop the wrong one. When the student's material and the vendor's current docs disagree on a certification fact, follow the vendor; for a college course, the instructor's material wins.

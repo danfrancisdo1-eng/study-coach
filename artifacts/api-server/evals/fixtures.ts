@@ -153,12 +153,15 @@ export interface ExamGuideCase {
   expectSections: string[];
   /** Expect found=false (made-up or ambiguous exam). */
   expectNotFound?: boolean;
+  /** The official question count / minutes when the vendor publishes fixed ones (spec B). */
+  expectQuestions?: number;
+  expectMinutes?: number;
 }
 
 export const examGuideCases: ExamGuideCase[] = [
-  { name: "AWS Solutions Architect Associate", examName: "AWS Certified Solutions Architect - Associate (SAA-C03)", expectSections: ["secure", "resilient", "performing", "cost"] },
+  { name: "AWS Solutions Architect Associate", examName: "AWS Certified Solutions Architect - Associate (SAA-C03)", expectSections: ["secure", "resilient", "performing", "cost"], expectQuestions: 65, expectMinutes: 130 },
   { name: "Microsoft AZ-900", examName: "Microsoft Azure Fundamentals AZ-900", expectSections: ["cloud concepts", "architecture", "management"] },
-  { name: "CompTIA Security+", examName: "CompTIA Security+", expectSections: ["threats", "architecture", "operations"] },
+  { name: "CompTIA Security+", examName: "CompTIA Security+", expectSections: ["threats", "architecture", "operations"], expectMinutes: 90 },
   { name: "made-up exam code", examName: "Zorblax Certified Widget Engineer ZX-999", expectSections: [], expectNotFound: true },
 ];
 

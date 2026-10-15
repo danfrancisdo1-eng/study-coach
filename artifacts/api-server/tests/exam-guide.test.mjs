@@ -37,6 +37,30 @@ test('parseExamGuideReply: valid guide, fenced JSON, bad shapes', () => {
   assert.equal(parseExamGuideReply(null, now), null);
 });
 
+test('parseExamGuideReply: the real exam\'s question count, time limit and passing score (spec B, D-110)', () => {
+  const base = { found: true, examName: 'AB-731', examCode: 'AB-731', vendor: 'Microsoft', sections: [{ name: 'A', weight: 50 }, { name: 'B', weight: 50 }], sourceUrl: 'https://learn.microsoft.com/x', notes: '' };
+  const g = parseExamGuideReply(JSON.stringify({ ...base, questionCount: 50, durationMinutes: 100, passingScore: '700 out of 1000' }), now);
+  assert.equal(g.questionCount, 50);
+  assert.equal(g.durationMinutes, 100);
+  assert.equal(g.passingScore, '700 out of 1000');
+  // Missing, made-up or absurd numbers are null, never guessed; a fraction rounds.
+  const none = parseExamGuideReply(JSON.stringify(base), now);
+  assert.equal(none.questionCount, null);
+  assert.equal(none.durationMinutes, null);
+  assert.equal(none.passingScore, '');
+  const bad = parseExamGuideReply(JSON.stringify({ ...base, questionCount: 0, durationMinutes: 9999, passingScore: 700 }), now);
+  assert.equal(bad.questionCount, null);
+  assert.equal(bad.durationMinutes, null);
+  assert.equal(bad.passingScore, '700');
+  const str = parseExamGuideReply(JSON.stringify({ ...base, questionCount: '40-60', durationMinutes: 99.6 }), now);
+  assert.equal(str.questionCount, null, 'a range is not a count');
+  assert.equal(str.durationMinutes, 100);
+  // Not found: no facts either.
+  const nf = parseExamGuideReply(JSON.stringify({ ...base, found: false, questionCount: 50, durationMinutes: 100 }), now);
+  assert.equal(nf.questionCount, null);
+  assert.equal(nf.durationMinutes, null);
+});
+
 test('exam-guide route: exams only, consent required, guide saved on the exam, failures save nothing', async (t) => {
   buildServer();
   const database = await startDatabase(t);

@@ -10,6 +10,10 @@ export type ExamGuide = {
   sourceUrl: string | null;
   notes: string;
   fetchedAt: string;
+  /** The real exam's facts from the official page (spec B, D-110); null / "" when not stated. */
+  questionCount: number | null;
+  durationMinutes: number | null;
+  passingScore: string;
 };
 
 const MAX_SECTIONS = 15;
@@ -40,9 +44,14 @@ export function parseExamGuideReply(text: string | null, now = new Date()): Exam
   const url = str(r.sourceUrl, 500);
   const sourceUrl = /^https?:\/\/[^\s]+$/i.test(url) ? url : null;
   const found = r.found === true && sections.length >= 2;
+  const whole = (v: unknown, max: number) => (typeof v === "number" && Number.isFinite(v) && Math.round(v) >= 1 && Math.round(v) <= max ? Math.round(v) : null);
+  const pass = typeof r.passingScore === "number" ? String(r.passingScore) : str(r.passingScore, 60);
   return {
     found, examName: str(r.examName), examCode: str(r.examCode, 60), vendor: str(r.vendor, 80),
     sections: found ? sections : [], sourceUrl: found ? sourceUrl : null, notes: str(r.notes, 300), fetchedAt: now.toISOString(),
+    questionCount: found ? whole(r.questionCount, 400) : null,
+    durationMinutes: found ? whole(r.durationMinutes, 600) : null,
+    passingScore: found ? pass : "",
   };
 }
 

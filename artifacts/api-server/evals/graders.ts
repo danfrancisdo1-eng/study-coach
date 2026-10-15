@@ -238,6 +238,8 @@ export function gradeExamGuide(testCase: ExamGuideCase, text: string | null): Sc
     if (sum < 90 || sum > 110) notes.push(`weights sum to ${sum}`);
   } else notes.push(`${guide.sections.length - weights.length} section(s) without a weight`);
   if (!guide.sourceUrl) notes.push("no source url");
+  if (testCase.expectQuestions && guide.questionCount !== testCase.expectQuestions) notes.push(`question count ${guide.questionCount}, expected ${testCase.expectQuestions}`);
+  if (testCase.expectMinutes && guide.durationMinutes !== testCase.expectMinutes) notes.push(`minutes ${guide.durationMinutes}, expected ${testCase.expectMinutes}`);
   const score = Math.max(0, 1 - notes.length * 0.25);
   return { pass: notes.every((n) => n.startsWith("no source") || n.includes("without a weight")) && score >= 0.5, score, notes };
 }

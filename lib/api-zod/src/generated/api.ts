@@ -289,7 +289,10 @@ export const LookupExamGuideResponse = zod.object({
 })),
   "sourceUrl": zod.string().nullable(),
   "notes": zod.string(),
-  "fetchedAt": zod.coerce.date()
+  "fetchedAt": zod.coerce.date(),
+  "questionCount": zod.number().int().nullish().describe('The real exam\'s number of questions, when the official page states one'),
+  "durationMinutes": zod.number().int().nullish().describe('The real exam\'s time limit in minutes, when the official page states one'),
+  "passingScore": zod.string().optional().describe('The passing score as the official page states it (e.g. 700 out of 1000), or empty')
 })
 
 

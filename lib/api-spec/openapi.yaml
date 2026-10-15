@@ -883,6 +883,9 @@ components:
         sourceUrl: { type: ["string", "null"] }
         notes: { type: string }
         fetchedAt: { type: string, format: date-time }
+        questionCount: { type: ["integer", "null"], description: "The real exam's number of questions, when the official page states one" }
+        durationMinutes: { type: ["integer", "null"], description: "The real exam's time limit in minutes, when the official page states one" }
+        passingScore: { type: string, description: "The passing score as the official page states it (e.g. 700 out of 1000), or empty" }
     FlashcardReviewInput:
       type: object
       required: [result]
