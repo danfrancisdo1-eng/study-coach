@@ -43,3 +43,18 @@ export function factsFromInputs(questions: string, minutes: string, passing: str
   if (durationMinutes === undefined) return { error: 'Minutes: a whole number from 1 to 600, or leave it blank.' };
   return { facts: { questionCount, durationMinutes, passingScore: passing.trim().slice(0, 60) } };
 }
+
+export type TimedSize = 'full' | '10' | '20' | '40';
+
+/** The timed exam choices (D-114): the full exam, then the 10/20/40 blocks smaller than it, each with its prorated time (same math as the server). */
+export function timedChoices(facts: ExamFacts): { size: TimedSize; label: string }[] {
+  const real = facts.questionCount;
+  const limit = facts.durationMinutes;
+  if (!real || !limit) return [];
+  const out: { size: TimedSize; label: string }[] = [{ size: 'full', label: `Full exam: ${real} questions · ${limit} min` }];
+  for (const n of [10, 20, 40] as const) {
+    if (n >= real) break;
+    out.push({ size: String(n) as TimedSize, label: `Block of ${n} · ${Math.max(1, Math.round((limit * n) / real))} min` });
+  }
+  return out;
+}

@@ -5,6 +5,9 @@
 // practice/exam question set, generated with lib/session-quiz) and start_session.
 // Nothing is written when the AI fails or returns junk.
 import { randomUUID } from "node:crypto";
+import { newTimer } from "../lib/exam-timer";
+import { examBatches, timedExamPlan, type Batch } from "../lib/timed-exam";
+import { effectiveExamFacts } from "../lib/exam-facts";
 import { Router, type IRouter, type Request } from "express";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
@@ -319,7 +322,11 @@ const FIRST_PART = 3;
 const SPLIT_FROM = 6;
 const WRITE_RETRIES = 3; // saves that lose a version race with the student's answers
 
-async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { courseId: string }, previous: Session | null, sectionWeights?: { name: string; weight: number | null }[], pastWeak: string[] = []): Promise<Session | null> {
+/** A timed exam (D-114): its limit and the batches it is written in (one guide section each). */
+type TimedStart = { minutes: number; batches: Batch[] };
+const batchWeights = (batch: Batch) => (batch.section ? [{ name: batch.section, weight: null }] : undefined);
+
+async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { courseId: string }, previous: Session | null, sectionWeights?: { name: string; weight: number | null }[], pastWeak: string[] = [], timed?: TimedStart): Promise<Session | null> {
   const session = newSession(plan.courseId, plan.topic, true);
   const { chunks, status } = await sourcesFor(ownerId, state, plan.courseId, plan.topic);
   const previousQuiz = previous?.quiz;
@@ -340,17 +347,22 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
     ? previousQuiz.questions.filter((q) => q.answers.length && q.answers.at(-1)?.optionId === q.correctOptionId).slice(0, OLD_MATERIAL_QUESTIONS)
       .map((q) => ({ ...q, id: randomUUID(), answers: [], feedback: undefined, flag: undefined, invalid: undefined }))
     : [];
-  const firstCount = plan.count >= SPLIT_FROM ? FIRST_PART : plan.count;
-  const quiz: Quiz | null = await generateSessionQuiz({ ...input, expectedCount: firstCount });
+  // A timed exam is written section by section in batches (D-114); other sets in two parts (D-052).
+  const firstBatch = timed?.batches[0];
+  const firstCount = firstBatch ? firstBatch.count : plan.count >= SPLIT_FROM ? FIRST_PART : plan.count;
+  const quiz: Quiz | null = await generateSessionQuiz({ ...input, expectedCount: firstCount, ...(firstBatch ? { sectionWeights: batchWeights(firstBatch) } : {}) });
   if (!quiz) return null;
   const rest = plan.count - firstCount;
   quiz.expectedCount = plan.count + carried.length;
   if (rest > 0) quiz.writing = { startedAt: new Date().toISOString() };
   else quiz.questions.push(...carried);
+  // The clock starts once the first questions are in hand.
+  if (timed) quiz.timer = newTimer(timed.minutes);
   session.quiz = quiz;
   await insertSession(ownerId, session);
   if (rest > 0) {
-    void writeRestOfSet(ownerId, session.id, { ...input, expectedCount: rest, originalPrompts: [...originalPrompts, ...quiz.questions.map((q) => q.prompt)] }, carried);
+    const batches = timed ? timed.batches.slice(1) : [{ section: null, count: rest }];
+    void writeRestOfSet(ownerId, session.id, { ...input, expectedCount: rest, originalPrompts: [...originalPrompts, ...quiz.questions.map((q) => q.prompt)] }, carried, timed ? batches : undefined);
   }
   return session;
 }
@@ -361,33 +373,47 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
  * student may be answering the first part meanwhile, so the save retries on a version race.
  * A failed writer leaves the set as its first part (the missing questions count as invalid).
  */
-async function writeRestOfSet(ownerId: string, sessionId: string, input: GenerateQuizInput, carried: StoredQuestion[]): Promise<void> {
+async function writeRestOfSet(ownerId: string, sessionId: string, input: GenerateQuizInput, carried: StoredQuestion[], batches?: Batch[]): Promise<void> {
   const log = logger.child({ ownerId, sessionId });
-  let part: Quiz | null = null;
-  try {
-    part = await generateSessionQuiz(input);
-  } catch (error) {
-    log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat: the rest of the set failed; keeping the first part");
-  }
-  const added = part?.questions ?? [];
-  const invalid = part ? part.invalidItemCount : input.expectedCount;
-  for (let attempt = 0; attempt < WRITE_RETRIES; attempt += 1) {
-    const session = await getSession(sessionId, ownerId);
-    const quiz = session?.quiz;
-    if (!session || !quiz || !quiz.writing) return; // deleted with its course, or already finished
-    if (quiz.grade) { log.warn("Home chat: the rest of the set arrived after grading; dropped"); return; }
-    // The second part was written separately: drop anything that repeats a question already in the set (D-097).
-    const fresh = withoutNearDuplicates(added, quiz.questions.map((q) => q.prompt));
-    const extra = withoutNearDuplicates(carried, [...quiz.questions, ...fresh].map((q) => q.prompt));
-    quiz.questions.push(...fresh, ...extra);
-    quiz.invalidItemCount += invalid;
-    quiz.writing = null;
-    if (await saveSession(session, ownerId)) {
-      log.info({ added: added.length, carried: carried.length, invalid }, "Home chat: the rest of the set is in");
+  // One part (D-052), or a timed exam's batches, one guide section each (D-114): each batch is
+  // saved as it lands, so the student never waits long for the next question.
+  const parts = batches ?? [{ section: null, count: input.expectedCount }];
+  const prompts = [...input.originalPrompts];
+  for (let index = 0; index < parts.length; index += 1) {
+    const batch = parts[index]!;
+    const last = index === parts.length - 1;
+    let part: Quiz | null = null;
+    try {
+      part = await generateSessionQuiz({ ...input, expectedCount: batch.count, originalPrompts: prompts, ...(batches ? { sectionWeights: batchWeights(batch) } : {}) });
+    } catch (error) {
+      log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat: part of the set failed; keeping what arrived");
+    }
+    const added = part?.questions ?? [];
+    const invalid = part ? part.invalidItemCount : batch.count;
+    let saved = false;
+    for (let attempt = 0; attempt < WRITE_RETRIES; attempt += 1) {
+      const session = await getSession(sessionId, ownerId);
+      const quiz = session?.quiz;
+      if (!session || !quiz || !quiz.writing) return; // deleted with its course, or already finished
+      if (quiz.grade) { log.warn("Home chat: part of the set arrived after grading; dropped"); return; }
+      // Each part was written separately: drop anything that repeats a question already in the set (D-097).
+      const fresh = withoutNearDuplicates(added, quiz.questions.map((q) => q.prompt));
+      const extra = last ? withoutNearDuplicates(carried, [...quiz.questions, ...fresh].map((q) => q.prompt)) : [];
+      quiz.questions.push(...fresh, ...extra);
+      quiz.invalidItemCount += invalid;
+      if (last) quiz.writing = null;
+      if (await saveSession(session, ownerId)) {
+        prompts.push(...fresh.map((q) => q.prompt));
+        log.info({ added: added.length, carried: extra.length, invalid, part: index + 1, of: parts.length }, "Home chat: part of the set is in");
+        saved = true;
+        break;
+      }
+    }
+    if (!saved) {
+      log.error("Home chat: could not save part of the set after retries; the set keeps what it has");
       return;
     }
   }
-  log.error("Home chat: could not save the rest of the set after retries; the set keeps its first part");
 }
 
 /** Builds and stores a flashcard deck; null when no valid card came back. Throws on AI failure. */
@@ -439,6 +465,21 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   }
   const messages = existing?.messages ?? [];
   const courses = knownCourses(state);
+  // Timed exams (D-114): sized and timed from the real exam's facts; checked before anything is counted.
+  let timed: { count: number; minutes: number } | null = null;
+  if (parsed.data.timedExam) {
+    const raw = list(state.courses).find((c): c is JsonObject => isObject(c) && c.id === threadId);
+    if (!raw || raw.kind !== "exam") {
+      res.status(400).json({ error: "Timed exams are for certification exams." });
+      return;
+    }
+    const sized = timedExamPlan(effectiveExamFacts(raw), parsed.data.timedExam.size);
+    if ("error" in sized) {
+      res.status(400).json({ error: sized.error });
+      return;
+    }
+    timed = sized;
+  }
   // Premium (D-090), only with PREMIUM_LIMITS=on: a read-only course takes no AI work, and every
   // coach message counts toward the day's limit. Anything that stops the request gives it back.
   const premium = enforced() ? await planFor(ownerId) : null;
@@ -494,7 +535,10 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const deck = lastDeckAction ? deckContext(courses, lastDeckSession) : null;
 
   let coach;
-  try {
+  if (timed) {
+    // No coach AI call: the app writes the reply (D-114).
+    coach = { reply: `Timed exam: ${timed.count} questions in ${timed.minutes} minutes, spread over the official sections by weight. The clock is running now and keeps running if you leave the app. Unanswered questions count as wrong, like the real exam, and at 0:00 it is graded with what you answered. Good luck.`, suggestions: [], actions: [] };
+  } else try {
     const response = await complete("coach", {
       system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null }),
       messages: [...history, { role: "user", content }],
@@ -509,6 +553,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   }
 
   const plan = planActions(courses, coach.actions);
+  if (timed && threadId) plan.quiz = { courseId: threadId, topic: "All topics", count: timed.count, scope: "all", kind: "exam" };
   if (plan.notes.length) req.log.info({ notes: plan.notes }, "Home chat actions skipped");
   // The free plan has one course (D-090): a coach reply that would add another is not applied.
   if (premium && premium.limits.courses !== null && plan.creates.length && courses.length + plan.creates.length > premium.limits.courses) {
@@ -650,7 +695,8 @@ router.post("/study/chat", async (req, res): Promise<void> => {
         // Past results for a missed-scope set with no graded set in this chat (same course only).
         const pastWeak = courseId === threadId ? weakConcepts(courseEvents) : weakConcepts(eventsFrom((await db.select({ session: studySessionsTable.session }).from(studySessionsTable)
           .where(and(eq(studySessionsTable.ownerId, ownerId), eq(studySessionsTable.courseId, courseId))).orderBy(desc(studySessionsTable.createdAt)).limit(40)).map((r) => r.session as Session)));
-        const session = await startQuiz(ownerId, latestState, { ...plan.quiz, courseId }, sameCourse(lastQuizSession, courseId), allTopics ? guideSections : undefined, pastWeak);
+        const timedStart = timed ? { minutes: timed.minutes, batches: examBatches(guideSections ?? [], timed.count) } : undefined;
+        const session = await startQuiz(ownerId, latestState, { ...plan.quiz, courseId }, sameCourse(lastQuizSession, courseId), allTopics && !timed ? guideSections : undefined, pastWeak, timedStart);
         if (!session) throw new Error("No valid questions were generated");
         done.push({ type: "start_quiz", sessionId: session.id, courseId, topic: plan.quiz.topic, kind: plan.quiz.kind, count: session.quiz!.writing ? session.quiz!.expectedCount : session.quiz!.questions.length });
       } catch (error) {

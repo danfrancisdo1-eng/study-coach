@@ -36,6 +36,8 @@ export * from './homeChatActiveQuiz';
 export * from './homeChatActiveQuizKind';
 export * from './homeChatActiveQuizStatus';
 export * from './homeChatInput';
+export * from './homeChatInputTimedExam';
+export * from './homeChatInputTimedExamSize';
 export * from './homeChatMessage';
 export * from './homeChatMessageReported';
 export * from './homeChatMessageReportedReason';

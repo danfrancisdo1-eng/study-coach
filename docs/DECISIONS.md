@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-15 — D-114: Timed exams, step 3: starting a full simulation or a 10/20/40 block
+- Spec B. On an exam course with the real question count and time limit, "Simulated exam" opens a short list: "Full exam: 50 questions · 100 min", "Block of 10 · 20 min", "Block of 20 · 40 min", "Block of 40 · 80 min" (only blocks smaller than the exam), and "No timer: ask the coach for a set" (the old path). Web: the same choices as buttons in the chat on the selected exam.
+- The choice goes to POST /study/chat as timedExam {size}. The server sizes and times it from the effective facts (timedExamPlan; a block is prorated, a full exam over 180 questions is capped with the time prorated), with no coach AI call (the app writes the reply), and refuses with a clear 400 when the course isn't an exam or the numbers are missing. It still counts as a set for the free-tier limit.
+- Weighting: spreadByWeights gives whole questions per guide section (largest remainder); examBatches writes 3 first (the exam starts in seconds), then batches of at most 12, one section each, sections taking turns. Each batch uses the existing prompt with that one section as its weight, so concepts are prefixed with the section name (the score screen's per-section tallies keep working); no prompt change. writeRestOfSet now saves each batch as it lands (untimed sets: one part, as before).
+- The clock starts when the first questions are in hand. Tests 173/173 (spreading, batching, sizing; an e2e: a 20-question block of an 80-minute 40-question exam is 40 minutes, 12 + 8 by weight, batches of at most 12, no coach call).
+- Not yet: the timer on screen, auto-grade at 0:00 and the score screen's time (step 4). Not merged to main until step 4, so nobody gets a clock they can't see.
+
 ## 2026-10-15 — D-113: New app icon (the blue-and-gold R with "AI") and the brain launch screen
 - Dan's new artwork: the R mark with "AI" is the app icon (assets/images/app-icon.png, 1024×1024, no transparency; web favicon and PWA icons app-icon-64/192/512.png); the RapidRecall AI brain poster is the launch screen (expo-splash-screen, image 320 pt wide on #E2E6F0, the poster's own edge colour, in light and dark mode).
 - Old icon files are left in place (not deleted). The icon and launch screen are native: they show only after a new build of the app (EAS), not through the preview. The full visual redesign is still deferred.

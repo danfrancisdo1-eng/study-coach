@@ -14,7 +14,7 @@ import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
-import { courseExamFacts, factsFromInputs, realExamLine } from '@/lib/exam-facts';
+import { courseExamFacts, factsFromInputs, realExamLine, timedChoices, type TimedSize } from '@/lib/exam-facts';
 import { whenLabel } from '@/lib/when';
 import { ActionButton } from '@/components/ActionButton';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
@@ -50,6 +50,7 @@ export default function CourseScreen() {
     scrollTo(intakeY.current);
   };
   const [picker, setPicker] = useState<StudyAction | null>(null); // "Which topics?" for flashcards and hooks (D-058)
+  const [timedPicker, setTimedPicker] = useState(false); // full exam or a block, timed (D-114)
   const [noMaterialNote, setNoMaterialNote] = useState(false); // the one-time note under "Questions without material" (D-060)
   const { isLoaded, isSignedIn, userId } = useAuth();
   const colors = useColors();
@@ -88,6 +89,7 @@ export default function CourseScreen() {
   const isExam = course?.kind === 'exam';
   const busy = saving || putState.isPending || lookupGuide.isPending || saveFacts.isPending;
   const facts = courseExamFacts(course);
+  const choices = isExam ? timedChoices(facts) : [];
   const guide = isExam && course?.examGuide && typeof course.examGuide === 'object' ? record(course.examGuide) : null;
   const guideSections = Array.isArray(guide?.sections) ? (guide!.sections as unknown[]).map(record) : [];
   const memoryRows = (Array.isArray(state.memorySheet) ? state.memorySheet.map(record) : []).filter((r) => r.courseId === courseId && typeof r.term === 'string');
@@ -151,8 +153,15 @@ export default function CourseScreen() {
   const topics = topicChoices(guideSections.map((sec) => String(sec.name ?? '')), (results?.topics ?? []).map((t) => t.topic));
 
   // Practice, exam, flashcards, hooks (D-058): this course becomes the coach's focus and the chat sends the request.
+  // A timed exam (D-114): the chat sends it with timedExam, so the server sizes and times it from the real exam's facts.
+  const startTimed = (size: TimedSize, label: string) => {
+    setTimedPicker(false);
+    if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, courseId!).catch(() => {});
+    router.replace({ pathname: '/(tabs)', params: { send: `Timed exam: ${label}`, courseId: courseId!, timed: size } });
+  };
   const startWithCoach = (action: StudyAction, topic: string | null) => {
     setPicker(null);
+    setTimedPicker(false);
     if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, courseId!).catch(() => {});
     router.replace({ pathname: '/(tabs)', params: { send: studyRequest(action, topic), courseId: courseId! } });
   };
@@ -225,7 +234,7 @@ export default function CourseScreen() {
             <View style={styles.actions}>
               <ActionButton label="Practice questions" icon="edit-3" onPress={() => startWithCoach('practice', null)} testID="button-action-practice" />
               <ActionButton label="Talk to the coach" icon="message-circle" secondary onPress={talkToCoach} testID="button-action-chat" />
-              <ActionButton label="Simulated exam" icon="clock" secondary onPress={() => startWithCoach('exam', null)} testID="button-action-exam" />
+              <ActionButton label="Simulated exam" icon="clock" secondary onPress={() => (choices.length ? setTimedPicker(true) : startWithCoach('exam', null))} testID="button-action-exam" />
               <ActionButton label="Flashcards" icon="layers" secondary onPress={() => setPicker('flashcards')} testID="button-action-flashcards" />
               <ActionButton label="Memory tricks" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
               <ActionButton label="Outline" icon="list" secondary onPress={() => startWithCoach('outline', null)} testID="button-action-outline" />
@@ -376,6 +385,26 @@ export default function CourseScreen() {
                 <Text style={[styles.topicChoiceText, topic === ALL_TOPICS && styles.topicChoiceAllText]}>{topic}</Text>
               </Pressable>
             ))}
+          </ScrollView>
+        </View>
+      </Modal>
+      <Modal visible={timedPicker} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setTimedPicker(false)}>
+        <View style={[styles.screen, { paddingTop: 20 }]}>
+          <View style={styles.header}>
+            <View style={styles.headerCopy}><Text style={styles.title}>Simulated exam</Text><Text style={styles.caption}>Timed like the real exam. The clock keeps running if you leave the app.</Text></View>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setTimedPicker(false)} style={styles.iconButton} testID="button-close-timed"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
+          </View>
+          <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
+            {choices.map((choice) => (
+              <Pressable key={choice.size} accessibilityRole="button" accessibilityLabel={`Start timed ${choice.label}`} onPress={() => startTimed(choice.size, choice.label)} style={({ pressed }) => [styles.topicChoice, choice.size === 'full' && styles.topicChoiceAll, pressed && styles.pressed]} testID={`button-timed-${choice.size}`}>
+                <Feather name="clock" size={16} color={choice.size === 'full' ? colors.primaryForeground : colors.primaryText} />
+                <Text style={[styles.topicChoiceText, choice.size === 'full' && styles.topicChoiceAllText]}>{choice.label}</Text>
+              </Pressable>
+            ))}
+            <Pressable accessibilityRole="button" onPress={() => startWithCoach('exam', null)} style={({ pressed }) => [styles.topicChoice, pressed && styles.pressed]} testID="button-timed-none">
+              <Feather name="edit-3" size={16} color={colors.primaryText} />
+              <Text style={styles.topicChoiceText}>No timer: ask the coach for a set</Text>
+            </Pressable>
           </ScrollView>
         </View>
       </Modal>

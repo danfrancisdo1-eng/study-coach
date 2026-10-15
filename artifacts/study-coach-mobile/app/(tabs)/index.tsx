@@ -28,6 +28,7 @@ import { GlowRing } from '@/components/GlowRing';
 import { HomeSkeleton } from '@/components/Skeleton';
 import { LiveSetCard } from '@/components/LiveSetCard';
 import { liveSetAction } from '@/lib/live-set';
+import type { TimedSize } from '@/lib/exam-facts';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.'; // sent for the student after Grade so the coach can respond to the result
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
@@ -95,7 +96,7 @@ export default function CoachHome() {
   const [intakeBusy, setIntakeBusy] = useState(false);
   const [replayWelcome, setReplayWelcome] = useState(false); // "See the welcome again" on the courses page
   // A request handed over by the course screen (D-058: practice, exam, flashcards, hooks), sent once the chat is on that course.
-  const { send: handoff, courseId: handoffCourseId } = useLocalSearchParams<{ send?: string; courseId?: string }>();
+  const { send: handoff, courseId: handoffCourseId, timed: handoffTimed } = useLocalSearchParams<{ send?: string; courseId?: string; timed?: string }>();
   const handoffSentRef = useRef<string | null>(null);
   const [welcomeBusy, setWelcomeBusy] = useState(false);
 
@@ -205,15 +206,17 @@ export default function CoachHome() {
   };
 
   // The course screen's handoff (D-058) goes out once the chat is loaded, consented and on that course. Before the early returns: hooks keep their order.
-  const sendTextRef = useRef<(text: string) => Promise<void>>(async () => {});
+  const sendTextRef = useRef<(text: string, timed?: TimedSize) => Promise<void>>(async () => {});
   useEffect(() => {
     if (!handoff || stateQuery.isLoading || chatQuery.isLoading || stateQuery.error || chatQuery.error || !consented || busy) return;
     if (handoffCourseId && focusCourseId !== handoffCourseId) return;
     const key = `${handoffCourseId ?? ''}|${handoff}`;
     if (handoffSentRef.current === key) return;
     handoffSentRef.current = key;
-    router.setParams({ send: undefined, courseId: undefined });
-    void sendTextRef.current(handoff);
+    router.setParams({ send: undefined, courseId: undefined, timed: undefined });
+    // A timed exam from the course screen (D-114): the server sizes and times it.
+    const timed = (['full', '10', '20', '40'] as const).find((size) => size === handoffTimed);
+    void sendTextRef.current(handoff, timed);
   });
 
   if (!isLoaded) return null;
@@ -278,12 +281,12 @@ export default function CoachHome() {
     ]);
   };
 
-  const sendText = async (text: string) => {
+  const sendText = async (text: string, timed?: TimedSize) => {
     const content = text.trim();
     if (!content || busy || !consented) return;
     setError('');
     try {
-      const result: HomeChat = await send.mutateAsync({ data: { content, version, ...(focusCourseId ? { courseId: focusCourseId } : {}) } });
+      const result: HomeChat = await send.mutateAsync({ data: { content, version, ...(focusCourseId ? { courseId: focusCourseId } : {}), ...(timed ? { timedExam: { size: timed } } : {}) } });
       queryClient.setQueryData(chatKey, result);
       if (result.activeQuiz) { setGradedSessionId(null); setFinishedDeckId(null); } // a new set replaces the old cards
       if (result.activeDeck) { setFinishedDeckId(null); setGradedSessionId(null); }

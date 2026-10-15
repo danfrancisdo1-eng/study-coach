@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { HomeChatInputTimedExam } from './homeChatInputTimedExam';
 
 export interface HomeChatInput {
   /**
@@ -22,4 +23,6 @@ export interface HomeChatInput {
      * @maxLength 200
      */
   courseId?: string;
+  /** Timed exams (D-114): start a full exam simulation or a 10/20/40-question block on this thread's certification exam, sized and timed from the real exam's facts. No coach AI call; the reply is written by the app. 400 when the course is not an exam or the question count / time limit are unknown. */
+  timedExam?: HomeChatInputTimedExam;
 }

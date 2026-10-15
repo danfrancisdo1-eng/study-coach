@@ -669,6 +669,23 @@ export interface StudyMessageInput {
   content: string;
 }
 
+export type HomeChatInputTimedExamSize = typeof HomeChatInputTimedExamSize[keyof typeof HomeChatInputTimedExamSize];
+
+
+export const HomeChatInputTimedExamSize = {
+  full: 'full',
+  NUMBER_10: '10',
+  NUMBER_20: '20',
+  NUMBER_40: '40',
+} as const;
+
+/**
+ * Timed exams (D-114): start a full exam simulation or a 10/20/40-question block on this thread's certification exam, sized and timed from the real exam's facts. No coach AI call; the reply is written by the app. 400 when the course is not an exam or the question count / time limit are unknown.
+ */
+export type HomeChatInputTimedExam = {
+  size: HomeChatInputTimedExamSize;
+};
+
 export interface HomeChatInput {
   /**
      * @minLength 1
@@ -685,6 +702,8 @@ export interface HomeChatInput {
      * @maxLength 200
      */
   courseId?: string;
+  /** Timed exams (D-114): start a full exam simulation or a 10/20/40-question block on this thread's certification exam, sized and timed from the real exam's facts. No coach AI call; the reply is written by the app. 400 when the course is not an exam or the question count / time limit are unknown. */
+  timedExam?: HomeChatInputTimedExam;
 }
 
 export type HomeChatReportInputReason = typeof HomeChatReportInputReason[keyof typeof HomeChatReportInputReason];

@@ -1303,7 +1303,10 @@ export const sendHomeChatMessageBodyCourseIdMax = 200;
 export const SendHomeChatMessageBody = zod.object({
   "content": zod.string().min(1).max(sendHomeChatMessageBodyContentMax),
   "version": zod.number().int().min(sendHomeChatMessageBodyVersionMin).describe('Conversation version from the last GET/POST; 0 for a new conversation.'),
-  "courseId": zod.string().max(sendHomeChatMessageBodyCourseIdMax).optional().describe('The course or exam the student is focused on: selects that course\'s thread (one per course; omitted or unknown = the general thread), and the coach assumes it when a message does not name one.')
+  "courseId": zod.string().max(sendHomeChatMessageBodyCourseIdMax).optional().describe('The course or exam the student is focused on: selects that course\'s thread (one per course; omitted or unknown = the general thread), and the coach assumes it when a message does not name one.'),
+  "timedExam": zod.object({
+  "size": zod.enum(['full', '10', '20', '40'])
+}).optional().describe('Timed exams (D-114): start a full exam simulation or a 10/20/40-question block on this thread\'s certification exam, sized and timed from the real exam\'s facts. No coach AI call; the reply is written by the app. 400 when the course is not an exam or the question count / time limit are unknown.')
 })
 
 export const sendHomeChatMessageResponseMessagesItemActionsItemCountMax = 50;

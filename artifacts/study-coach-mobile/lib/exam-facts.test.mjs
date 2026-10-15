@@ -27,3 +27,16 @@ test('reading what the student typed in the edit form (D-111)', async () => {
     assert.ok('error' in factsFromInputs(q, m, ''), `${q}/${m}`);
   }
 });
+
+test('the timed exam choices on the course screen (D-114): full + blocks that fit, with prorated minutes', async () => {
+  const { timedChoices } = await import('./exam-facts.ts');
+  assert.deepEqual(timedChoices({ questionCount: 50, durationMinutes: 100, passingScore: '' }), [
+    { size: 'full', label: 'Full exam: 50 questions · 100 min' },
+    { size: '10', label: 'Block of 10 · 20 min' },
+    { size: '20', label: 'Block of 20 · 40 min' },
+    { size: '40', label: 'Block of 40 · 80 min' },
+  ]);
+  assert.deepEqual(timedChoices({ questionCount: 30, durationMinutes: 45, passingScore: '' }).map((c) => c.size), ['full', '10', '20'], 'no block bigger than the exam');
+  assert.deepEqual(timedChoices({ questionCount: 20, durationMinutes: 30, passingScore: '' }).map((c) => c.size), ['full', '10'], 'a block the size of the exam is the full exam');
+  assert.deepEqual(timedChoices({ questionCount: null, durationMinutes: 100, passingScore: '' }), [], 'nothing without both numbers');
+});

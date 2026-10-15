@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getGetHomeChatQueryKey, useGetHomeChat, useOpenHomeChat, useSendHomeChatMessage, type HomeChat as HomeChatData } from '@workspace/api-client-react';
 import QuizCard from './QuizCard';
 import FlashcardDeck from './FlashcardDeck';
+import type { TimedSize } from './lib/exam-facts';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.';
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
@@ -12,11 +13,13 @@ const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
  * Chat-first home (SPEC §7, D-016), web version of the iPhone Coach tab. The coach can
  * create a course or start a study session; the parent opens the session.
  */
-export default function HomeChat({ aiConsent, busy, courseId, onCoursesChanged, onOpenSession }: {
+export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [], onCoursesChanged, onOpenSession }: {
   aiConsent: boolean;
   busy?: boolean;
   /** The course/exam selected on the page; the coach assumes it when a message does not name one. */
   courseId?: string | null;
+  /** Timed exam choices for the selected certification exam (D-114); empty hides them. */
+  timedChoices?: { size: TimedSize; label: string }[];
   onCoursesChanged: () => void;
   onOpenSession: (sessionId: string) => void;
 }) {
@@ -57,12 +60,12 @@ export default function HomeChat({ aiConsent, busy, courseId, onCoursesChanged, 
   }, [aiConsent, courseId]);
   useEffect(() => { setGradedSessionId(null); setFinishedDeckId(null); }, [courseId]);
 
-  const sendText = async (text: string) => {
+  const sendText = async (text: string, timed?: TimedSize) => {
     const content = text.trim();
     if (!content || sending || busy || !aiConsent) return;
     setError('');
     try {
-      const result: HomeChatData = await send.mutateAsync({ data: { content, version, ...(courseId ? { courseId } : {}) } });
+      const result: HomeChatData = await send.mutateAsync({ data: { content, version, ...(courseId ? { courseId } : {}), ...(timed ? { timedExam: { size: timed } } : {}) } });
       client.setQueryData(chatKey, result);
       if (result.activeQuiz) { setGradedSessionId(null); setFinishedDeckId(null); }
       if (result.activeDeck) { setFinishedDeckId(null); setGradedSessionId(null); }
@@ -123,6 +126,10 @@ export default function HomeChat({ aiConsent, busy, courseId, onCoursesChanged, 
         ))}
         {chips.length > 0 && <div className="ae-row" data-testid="row-suggestions">
           {chips.map(chip => <button key={chip} type="button" className="ae-button ae-button--outline" disabled={sending || busy} onClick={() => void sendText(chip)} data-testid="button-suggestion">{chip}</button>)}
+        </div>}
+        {timedChoices.length > 0 && !activeQuiz && !activeDeck && <div className="ae-row" style={{ flexWrap: 'wrap', gap: 8 }} data-testid="row-timed-exam">
+          <span className="ae-muted">Simulated exam, timed:</span>
+          {timedChoices.map(choice => <button key={choice.size} type="button" className="ae-button ae-button--outline" disabled={sending || busy} onClick={() => void sendText(`Timed exam: ${choice.label}`, choice.size)} data-testid={`button-timed-${choice.size}`}>{choice.label}</button>)}
         </div>}
         {deckSessionId && <FlashcardDeck key={deckSessionId} sessionId={deckSessionId}
           onFinished={finished => { setFinishedDeckId(finished.id); void sendText(FINISHED_DECK_MESSAGE); }}
