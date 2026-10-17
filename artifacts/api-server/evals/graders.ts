@@ -492,6 +492,7 @@ export function gradeUploadNotes(testCase: UploadNotesCase, text: string | null)
     if (!forms.some((f) => body.includes(norm(f)))) problems.push(`missing "${forms.join('" or "')}"`);
   }
   for (const bad of testCase.mustNotContain) if (body.includes(norm(bad))) problems.push(`contains "${bad}"`);
-  const checks = testCase.mustContain.length + testCase.mustNotContain.length;
+  if (testCase.maxRatio && notes.length > testCase.maxRatio * testCase.text.length) problems.push(`notes are ${Math.round((100 * notes.length) / testCase.text.length)}% of the transcript (max ${Math.round(testCase.maxRatio * 100)}%)`);
+  const checks = testCase.mustContain.length + testCase.mustNotContain.length + (testCase.maxRatio ? 1 : 0);
   return { pass: problems.length === 0, score: Math.max(0, 1 - problems.length / checks), notes: [...problems, `${notes.length} chars of notes from ${testCase.text.length} chars of raw text`] };
 }

@@ -17,7 +17,7 @@ import * as coachPrompt from "../prompts/coach.v21";
 import { courseContext } from "../lib/course-context";
 import { notesOf } from "../lib/course-notes";
 import { undoCourseNotes, updateCourseNotes } from "../lib/course-notes-writer";
-import { materialsNeedingNotes, uploadDocs } from "../lib/upload-notes";
+import { lecturesWithNotes, materialsNeedingNotes, uploadDocs } from "../lib/upload-notes";
 import { backfillUploadNotes, fixUploadNotes } from "../lib/upload-notes-writer";
 import * as webLookupPrompt from "../prompts/web-lookup.v1";
 import { lookupExamGuide } from "../lib/exam-guide";
@@ -524,18 +524,22 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const visible = (courseList: KnownCourse[]) => (threadId ? courseList.filter((c) => c.id === threadId) : courseList);
   const summary = buildSummary(visible(courses));
   const threadCourseName = threadId ? courses.find((c) => c.id === threadId)?.name ?? "this course" : null;
+  // Part E (D-125): reviewed lectures are read as their notes; a transcript only until its notes exist.
+  const threadLectures = threadId ? await reviewedLectureMaterials(ownerId, threadId) : [];
+  const lectureNotesDone = threadId ? lecturesWithNotes(state, threadId) : new Set<string>();
+  const lecturesWithoutNotes = threadLectures.filter((l) => !lectureNotesDone.has(l.lectureId));
   const material = threadId ? courseContext({
     courseName: threadCourseName!,
     // D-124: each upload's notes; the raw text only until its notes exist.
     uploads: uploadDocs(state, threadId),
-    lectures: await reviewedLectureMaterials(ownerId, threadId),
+    lectures: lecturesWithoutNotes.map((l) => ({ name: l.name, text: l.text })),
     memorySheet: rowsFromState(state, threadId).length ? sheetAsText(rowsFromState(state, threadId)) : "",
     notes: notesOf(state, threadId)?.text ?? "",
     query: content,
   }) : null;
   if (material) req.log.info({ courseId: threadId, mode: material.mode, uploads: material.uploads, chars: material.chars }, "Coach course material");
   // D-124: older uploads (or ones whose notes failed) get notes in the background; the coach reads their raw text meanwhile.
-  if (threadId && materialsNeedingNotes(state, threadId).length) backfillUploadNotes(ownerId, threadId);
+  if (threadId && (materialsNeedingNotes(state, threadId).length || lecturesWithoutNotes.length)) backfillUploadNotes(ownerId, threadId);
   const history = messages.slice(-HISTORY_TURNS).map((m) => ({ role: m.role, content: m.content }));
   // Results so far for this thread's course (D-042): past sets and decks as facts for the coach.
   const courseSessions = threadId

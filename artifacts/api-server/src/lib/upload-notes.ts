@@ -60,3 +60,23 @@ export function withUploadNotes(state: JsonObject, materialId: string, notes: st
     return { ...m, notes, notesChange: change, notesUpdatedAt: at, notesHistory: [...history, previous].slice(-MAX_UPLOAD_NOTES_HISTORY) };
   });
 }
+
+// Lectures become bullet notes (spec part E, D-125). A lecture's notes live with the course's
+// uploads as a notes-only entry (text "", lectureId set): the transcript itself stays in the
+// lectures table. Saving the transcript again replaces the notes.
+export const lectureNotesId = (lectureId: string) => `lecture-notes-${lectureId}`;
+
+export function withLectureNotes(state: JsonObject, input: { lectureId: string; courseId: string; title: string; notes: string; at: string }): JsonObject {
+  const entry = { id: lectureNotesId(input.lectureId), courseId: input.courseId, lectureId: input.lectureId, name: `Lecture notes: ${input.title}`, text: "", extractionFormat: "lecture", notes: input.notes, notesUpdatedAt: input.at };
+  const rest = materialList(state).filter((m) => !(isObject(m) && m.lectureId === input.lectureId));
+  return { ...state, materials: [...rest, entry] };
+}
+
+export function withoutLectureNotes(state: JsonObject, lectureId: string): JsonObject {
+  return { ...state, materials: materialList(state).filter((m) => !(isObject(m) && m.lectureId === lectureId)) };
+}
+
+/** Lectures of this course that already have notes. */
+export function lecturesWithNotes(state: JsonObject, courseId: string): Set<string> {
+  return new Set(materialList(state).flatMap((m) => (isObject(m) && m.courseId === courseId && typeof m.lectureId === "string" && typeof m.notes === "string" ? [m.lectureId] : [])));
+}

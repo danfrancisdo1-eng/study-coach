@@ -199,6 +199,9 @@ export const memorySheetCases: MemorySheetCase[] = [
 /** Upload notes (upload-notes.v1, D-124): an upload's raw text becomes Markdown notes. Each mustContain entry is a string or a list of accepted forms. */
 export interface UploadNotesCase {
   name: string;
+  /** "lecture": the lecture-notes.v1 prompt (part E, D-125); notes must be at most maxRatio of the transcript's length. */
+  kind?: "lecture";
+  maxRatio?: number;
   uploadName: string;
   format: string;
   text: string;
@@ -207,6 +210,12 @@ export interface UploadNotesCase {
 }
 
 export const uploadNotesCases: UploadNotesCase[] = [
+  {
+    name: "lecture transcript: definition, PMAT, the exam flag and the quiz announcement kept; filler and side talk dropped", kind: "lecture", maxRatio: 1, // a short, dense sample: never longer than the transcript (real hour-long lectures shrink far more)
+    uploadName: "Cell division: mitosis", format: "lecture", text: "Okay, um, can everyone hear me in the back? Yeah? Okay good. So, uh, before we start, quick announcement: the quiz on Thursday, October 22nd, covers chapters 4 and 5, so, um, cell membranes and transport, and also the stuff from today. Okay. So today we're doing cell division. And, uh, the first kind is my toast is, mitosis, sorry, the mic is doing that thing again. Mitosis is how a somatic cell divides into two genetically identical daughter cells. Write that down, that's the definition I want. Okay so the phases. I always tell people PMAT. P M A T. Prophase, metaphase, anaphase, telophase. And this will be on the exam, I promise you, you need to know the order and what happens in each one. Prophase, chromosomes condense, the spindle starts forming, nuclear envelope breaks down. Metaphase, the chromosomes line up at the middle, the metaphase plate. Anaphase, sister chromatids get pulled apart to opposite poles. Telophase, two new nuclei form. And then cytokinesis splits the cytoplasm, which, technically, is separate from mitosis itself, people lose points on that every year. Um, somebody asked last time about, uh, the parking situation, I don't know, talk to the front office. Anyway. So the example I like is, uh, your skin. When you get a cut, the cells around it divide by mitosis to fill it in, and the new cells are identical to the old ones, which is, um, which is the whole point. Compare that to meiosis, which we'll do next week, that makes gametes with half the chromosomes, so, haploid. Don't mix them up. Okay, um, that's it, see you Thursday.",
+    mustContain: ["likely on the exam", "prophase", "metaphase", "anaphase", "telophase", "pmat", "identical", ["october 22", "oct 22"], "chapters 4 and 5", "cytokinesis", "skin"],
+    mustNotContain: ["my toast is", "parking", "um,", "uh,"],
+  },
   {
     name: "BIO 101 syllabus: every date, quiz, exam and grading line kept", uploadName: "Bio_101_Fall_Syllabus", format: "pdf", text: bio101Syllabus,
     mustContain: ["aug 25", "sep 29", "oct 13", "oct 20", "nov 24", ["december 1", "dec 1"], "quiz 1", "quiz 8", "quiz 9", "quiz 13", "20%", "25%", "10%", ["lowest quiz", "lowest one dropped", "lowest score dropped"], ["closed-book", "closed book"], ["weeks 8", "week 8"]],

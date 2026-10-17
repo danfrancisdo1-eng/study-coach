@@ -3,6 +3,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db, lecturesTable, studyStatesTable, type LectureSegment } from "@workspace/db";
 import { CreateLectureBody, ListLecturesQueryParams, UpdateLectureBody } from "@workspace/api-zod";
+import { rememberLectureNotes, removeLectureNotes } from "../lib/upload-notes-writer";
 import { requireStudyAuth } from "./study";
 
 const router: IRouter = Router();
@@ -150,12 +151,17 @@ router.put("/study/lectures/:id", async (req, res): Promise<void> => {
     return;
   }
   res.json(full(updated));
+  // Part E (D-125): a reviewed transcript becomes the lecture's notes (again, when it is saved again).
+  if (updated.status === "reviewed" && (row.status !== "reviewed" || parsed.data.segments || parsed.data.title)) {
+    rememberLectureNotes(owner(req), { lectureId: updated.id, courseId: updated.courseId, title: updated.title, recordedAt: updated.recordedAt, text: updated.segments.map((s) => s.text).join("\n") });
+  }
 });
 
 router.delete("/study/lectures/:id", async (req, res): Promise<void> => {
   const row = await findLecture(req, res);
   if (!row) return;
   await db.delete(lecturesTable).where(and(eq(lecturesTable.id, row.id), eq(lecturesTable.ownerId, owner(req))));
+  await removeLectureNotes(owner(req), row.id);
   res.sendStatus(204);
 });
 

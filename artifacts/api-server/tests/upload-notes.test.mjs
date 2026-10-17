@@ -50,3 +50,21 @@ test('a fix keeps the previous notes; undoLatest takes back the newest change, u
   assert.equal(undoLatest(undone.state, 'bio', 'x').restored, false, 'first notes written at upload are not undoable');
   assert.equal(undoLatest(base(), 'chem', 'x').restored, false);
 });
+
+// Part E (D-125): a lecture's notes are a notes-only entry in the course's uploads (no raw text:
+// the transcript stays in the lectures table), replaced when the transcript is saved again.
+import { lectureNotesId, lecturesWithNotes, withLectureNotes, withoutLectureNotes } from '../src/lib/upload-notes.ts';
+
+test('lecture notes: added, replaced, read by the coach, never treated as an upload needing notes, removed', () => {
+  let s = withLectureNotes(base(), { lectureId: 'L1', courseId: 'bio', title: 'Mitosis', notes: '# Mitosis\n- PMAT', at: 'a' });
+  const entry = s.materials.find((m) => m.id === lectureNotesId('L1'));
+  assert.deepEqual({ ...entry }, { id: 'lecture-notes-L1', courseId: 'bio', lectureId: 'L1', name: 'Lecture notes: Mitosis', text: '', extractionFormat: 'lecture', notes: '# Mitosis\n- PMAT', notesUpdatedAt: 'a' });
+  s = withLectureNotes(s, { lectureId: 'L1', courseId: 'bio', title: 'Mitosis and meiosis', notes: '# v2', at: 'b' });
+  assert.equal(s.materials.filter((m) => m.lectureId === 'L1').length, 1, 'replaced, not duplicated');
+  assert.equal(s.materials.find((m) => m.lectureId === 'L1').name, 'Lecture notes: Mitosis and meiosis');
+  assert.deepEqual([...lecturesWithNotes(s, 'bio')], ['L1']);
+  assert.ok(uploadDocs(s, 'bio').some((d) => d.name === 'Lecture notes: Mitosis and meiosis' && d.text === '# v2'));
+  assert.ok(!materialsNeedingNotes(s, 'bio').some((m) => m.id === 'lecture-notes-L1'));
+  s = withoutLectureNotes(s, 'L1');
+  assert.equal(s.materials.some((m) => m.lectureId === 'L1'), false);
+});

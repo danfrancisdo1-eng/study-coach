@@ -33,7 +33,7 @@ Every student, every course: high school, college and certification.
 **v1 doesn't:** a meaning-based search service (would need a new provider and Dan's OK); first version matches words, better than today's (whole words, headings, no course id as a search word).
 **Tests:** a 1.5-million-character course still answers "when is the final" and a topic question from the right passage.
 
-## E. Lectures become bullet notes; the full transcript is kept but not read every time
+## E. Lectures become bullet notes; the full transcript is kept but not read every time (built 2026-10-17, D-125; "Edit text" kept)
 **v1 does:** after the student reviews a transcript, the coach writes the lecture's CliffsNotes as Markdown (title and date, a heading per topic, bullets, a short "Likely on the exam" section keeping "this will be on the exam", the professor's examples and exact definitions). The student reviews them read-only; anything wrong they say in the course chat and the coach fixes it; then the notes are filed into the course. Only the coach edits notes (D-119). A PDF copy only on request. The notes are part of the course the coach reads (B). The full transcript is kept in storage, searchable (D) for exact quotes, never sent with every question; deleted with the account; listed in the privacy policy (docs/PRIVACY_DATA.md). Decided by Dan (2026-10-15): keep both.
 **v1 doesn't:** notes for unreviewed transcripts; keep audio on the server (recordings stay on the phone).
 **Tests:** notes are a fraction of the transcript's length and keep flagged exam hints (eval); the coach reads notes, not transcripts, until a search needs one.
