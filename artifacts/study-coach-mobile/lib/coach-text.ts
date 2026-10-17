@@ -10,6 +10,7 @@ export type Block =
   | { kind: 'bullet'; spans: Span[] }
   | { kind: 'trick'; n: string; label: string | null; spans: Span[] }
   | { kind: 'quote'; spans: Span[] }
+  | { kind: 'popquiz'; spans: Span[] }
   | { kind: 'text'; spans: Span[] };
 
 /** Splits "**bold** and plain" into spans; an unmatched ** stays as text. */
@@ -31,6 +32,9 @@ export function blocksOf(content: string): Block[] {
     const allBold = /^\*\*([^*]+)\*\*:?$/.exec(line) ?? /^#{1,4}\s+(.+)$/.exec(line);
     if (allBold) return { kind: 'heading', spans: [{ text: allBold[1]!.trim(), bold: true }] };
     // D-130: "> " marks the one highlighted takeaway (Dan's examples: "TensorRT = Race-Tuned Runtime").
+    // D-131: the check question, shown as a "Pop quiz" card (older replies said "Your turn: explain it back to me:").
+    const pop = /^(?:\*\*)?(?:pop quiz|your turn)(?:\*\*)?\s*:\s*(?:\*\*)?\s*(?:explain (?:it )?back to me\s*:\s*)?(.+)$/i.exec(line);
+    if (pop) return { kind: 'popquiz', spans: spansOf(pop[1]!.trim()) };
     const quote = /^>\s*(.+)$/.exec(line);
     if (quote) return { kind: 'quote', spans: spansOf(quote[1]!) };
     const bullet = /^[-•*]\s+(.*)$/.exec(line);

@@ -455,7 +455,7 @@ export interface CoachCase {
   /** What a good reply must do, for the judge. */
   expectations: string[];
   maxWords: number;
-  /** D-130: no line of the reply longer than this many words (memory tricks must scan in seconds). "Your turn" lines are exempt. */
+  /** D-130: no line of the reply longer than this many words (memory tricks must scan in seconds). "Pop quiz" (and older "Your turn") lines are exempt. */
   maxLineWords?: number;
   /** D-122: what was uploaded to the focused course (the coach reads it as COURSE MATERIAL). */
   uploads?: { name: string; text: string }[];
@@ -702,7 +702,7 @@ export const coachCases: CoachCase[] = [
     courses: [{ id: "bio-1", name: "BIOL 114", materials: 3, lectures: 1 }], firstVisit: false, history: [],
     message: "what does the mitochondria do?",
     expectedActions: [],
-    expectations: ["Answers correctly in 2-4 sentences (ATP production via cellular respiration)", "Offers to start a session for more"],
+    expectations: ["Answers correctly in 2-4 sentences (ATP production via cellular respiration)", "Offers more practice: in the text, or as suggestion chips such as 'Quiz me on these' or 'Another set on everything' (a Pop quiz with those chips counts)"],
     maxWords: 90,
   },
   {
@@ -896,7 +896,7 @@ export const coachCases: CoachCase[] = [
     message: "What's up",
     expectedActions: [],
     expectations: [
-      "If the reply asks the student a question, every suggestion is a possible answer to that question or a way out of it (e.g. show the answer, skip); the suggestions are NOT the four after-set options (memory tricks / flashcards / another set on everything / another set on the missed topics) all together",
+      "If the reply asks the student a question, the suggestions are answers to it or ways out (e.g. show the answer); for a 'Pop quiz:' check the exact chips ['Show me the answer', 'Quiz me on these', 'Flashcards for these', 'Another set on everything'] are correct (they are the app's Pop quiz chips, not after-set options). They are NOT the exact four after-set options together (memory tricks for the misses / flashcards for the misses / another set on everything / another set on the missed topics)",
     ],
     maxWords: 60,
   },
@@ -910,7 +910,7 @@ export const coachCases: CoachCase[] = [
     expectedActions: [],
     expectations: [
       "Gives a short hint or the answer (more solute inside the cell, so water moves in) in 1 to 3 sentences",
-      "If the reply ends with a question, the suggestions are answers to that question or ways out of it (e.g. show me the answer, try again, a set on osmosis); they are not the four after-set options (memory tricks / flashcards for the misses / another set on everything / missed topics)",
+      "If the reply ends with a question, the suggestions are answers to it or ways out (e.g. show me the answer, try again, a set on osmosis); for a 'Pop quiz:' check the exact chips ['Show me the answer', 'Quiz me on these', 'Flashcards for these', 'Another set on everything'] are correct (they are the app's Pop quiz chips, not after-set options). They are not the exact four after-set options together (memory tricks / flashcards for the misses / another set on everything / missed topics)",
     ],
     maxWords: 80,
   },
@@ -960,7 +960,8 @@ export const coachCases: CoachCase[] = [
     ] } },
     message: "Memory tricks for the misses",
     expectedActions: [],
-    expectations: ["Gives a memory trick of any kind (contrast, trigger, picture, word association, rhyme, mnemonic) for the osmosis/hypotonic miss", "Gives one for active transport / sodium-potassium pump needing ATP", "Laid out as short scannable lines (bold term = trick bullets, a contrast or clue words, one '> ' takeaway), no paragraph", "Ends with a check that starts 'Your turn: explain it back to me' (never the words 'teach-back')"],
+    expectations: ["Gives a memory trick of any kind (contrast, trigger, picture, word association, rhyme, mnemonic) for the osmosis/hypotonic miss", "Gives one for active transport / sodium-potassium pump needing ATP", "Laid out as short scannable lines (bold term = trick bullets, a contrast or clue words, one '> ' takeaway), no paragraph", "Ends with one check on its own line that starts 'Pop quiz:' (never 'teach-back' or 'your turn')"],
+    expectedSuggestions: ["Show me the answer", "Quiz me on these", "Flashcards for these", "Another set on everything"],
     maxWords: 160, maxLineWords: 14,
   },
   {

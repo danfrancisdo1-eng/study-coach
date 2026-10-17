@@ -388,7 +388,7 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   const words = parsed.reply.split(/\s+/).length;
   const tooLong = words > testCase.maxWords;
   if (testCase.maxLineWords) {
-    for (const line of parsed.reply.split(/\n+/).map((l) => l.trim()).filter((l) => l && !/^your turn/i.test(l))) {
+    for (const line of parsed.reply.split(/\n+/).map((l) => l.trim()).filter((l) => l && !/^(\*\*)?(your turn|pop quiz)/i.test(l))) {
       const n = line.replace(/\*\*/g, "").split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
       if (n > testCase.maxLineWords) notes.push(`line too long (${n} words): ${line.slice(0, 80)}`);
     }
