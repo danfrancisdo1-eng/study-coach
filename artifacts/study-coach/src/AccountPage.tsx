@@ -17,7 +17,7 @@ import MaterialIntake from './MaterialIntake';
 import HomeChat from './HomeChat';
 import DeleteAccount from './DeleteAccount';
 import { readLegacyStudyData } from './lib/legacy-import';
-import { courseExamFacts, needsFactsLookup, timedChoices } from './lib/exam-facts';
+import { courseExamFacts, factPicks, needsFactsLookup, timedChoices } from './lib/exam-facts';
 import { passMarkLine } from './lib/exam-sheet';
 
 type AccountState = {
@@ -228,6 +228,8 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
       {!current && <HomeChat aiConsent={state.aiConsent === true} busy={busy} courseId={selectedCourseId}
         passMark={(() => { const c = (state.courses ?? []).find(item => item?.id === selectedCourseId) as unknown as Record<string, unknown> | undefined; return passMarkLine(courseExamFacts(c ?? {}).passingScore); })()}
         timedChoices={(() => { const c = (state.courses ?? []).find(item => item?.id === selectedCourseId) as unknown as Record<string, unknown> | undefined; return c && c.kind === 'exam' ? timedChoices(courseExamFacts(c)) : []; })()}
+        factPicks={(() => { const c = (state.courses ?? []).find(item => item?.id === selectedCourseId) as unknown as Record<string, unknown> | undefined; return c && c.kind === 'exam' ? factPicks(courseExamFacts(c)) : null; })()}
+        onPickFacts={async (questions, minutes) => { const c = (state.courses ?? []).find(item => item?.id === selectedCourseId) as unknown as Record<string, unknown> | undefined; if (!selectedCourseId) return; await saveExamFacts.mutateAsync({ courseId: selectedCourseId, data: { questionCount: questions, durationMinutes: minutes, passingScore: courseExamFacts(c).passingScore } }); await stateQuery.refetch(); }}
         onCoursesChanged={() => void client.invalidateQueries({ queryKey: stateKey })}
         onOpenSession={id => { setIntakeFiles([]); setSessionId(id); setAdding(false); void client.invalidateQueries({ queryKey: listKey }); }} />}
       {!current && courses.length > 0 && (

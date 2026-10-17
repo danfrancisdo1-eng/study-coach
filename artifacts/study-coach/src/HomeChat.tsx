@@ -15,13 +15,16 @@ const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
  * Chat-first home (SPEC §7, D-016), web version of the iPhone Coach tab. The coach can
  * create a course or start a study session; the parent opens the session.
  */
-export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [], passMark, onCoursesChanged, onOpenSession }: {
+export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [], factPicks, onPickFacts, passMark, onCoursesChanged, onOpenSession }: {
   aiConsent: boolean;
   busy?: boolean;
   /** The course/exam selected on the page; the coach assumes it when a message does not name one. */
   courseId?: string | null;
   /** Timed exam choices for the selected certification exam (D-114); empty hides them. */
   timedChoices?: { size: TimedSize; label: string }[];
+  /** D-129: the selected exam has no published numbers: tap-to-pick choices, saved to the course before the exam starts. */
+  factPicks?: { questions: number[]; minutes: number[]; question: number | null; minute: number | null } | null;
+  onPickFacts?: (questions: number, minutes: number) => Promise<void>;
   /** The real exam's pass mark line for a timed exam's score (D-115). */
   passMark?: string;
   onCoursesChanged: () => void;
@@ -43,6 +46,8 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
   const version = chat.data?.version ?? 0;
   const sending = send.isPending;
   const sendElapsed = useElapsed(sending); // D-126
+  const [pickQ, setPickQ] = useState<number | null>(null); // D-129
+  const [pickM, setPickM] = useState<number | null>(null);
   const activeQuiz = chat.data?.activeQuiz ?? null;
   const activeDeck = chat.data?.activeDeck ?? null;
   const quizSessionId = activeQuiz?.sessionId ?? gradedSessionId;
@@ -135,6 +140,15 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
         ))}
         {chips.length > 0 && <div className="ae-row" data-testid="row-suggestions">
           {chips.map(chip => <button key={chip} type="button" className="ae-button ae-button--outline" disabled={sending || busy} onClick={() => void sendText(chip)} data-testid="button-suggestion">{chip}</button>)}
+        </div>}
+        {timedChoices.length === 0 && factPicks && onPickFacts && !activeQuiz && !activeDeck && <div style={{ display: 'grid', gap: 8 }} data-testid="row-timed-picks">
+          <span className="ae-muted">Simulated exam, timed. The official page doesn't list these; pick yours:</span>
+          <div className="ae-row" style={{ flexWrap: 'wrap', gap: 8 }}><span className="ae-muted">Questions</span>
+            {factPicks.questions.map(n => <button key={n} type="button" aria-pressed={(pickQ ?? factPicks.question) === n} className={`ae-button ${(pickQ ?? factPicks.question) === n ? 'ae-button--ink' : 'ae-button--outline'}`} onClick={() => setPickQ(n)} data-testid={`button-pick-questions-${n}`}>{n}</button>)}</div>
+          <div className="ae-row" style={{ flexWrap: 'wrap', gap: 8 }}><span className="ae-muted">Minutes</span>
+            {factPicks.minutes.map(n => <button key={n} type="button" aria-pressed={(pickM ?? factPicks.minute) === n} className={`ae-button ${(pickM ?? factPicks.minute) === n ? 'ae-button--ink' : 'ae-button--outline'}`} onClick={() => setPickM(n)} data-testid={`button-pick-minutes-${n}`}>{n}</button>)}</div>
+          {(() => { const q = pickQ ?? factPicks.question; const m = pickM ?? factPicks.minute; return <button type="button" className="ae-button ae-button--ink" disabled={sending || busy || !q || !m}
+            onClick={() => { if (q && m) void onPickFacts(q, m).then(() => sendText(`Timed exam: Full exam: ${q} questions · ${m} min`, 'full')); }} data-testid="button-timed-start-picked">{q && m ? `Start timed exam · ${q} questions · ${m} min` : 'Pick questions and minutes'}</button>; })()}
         </div>}
         {timedChoices.length > 0 && !activeQuiz && !activeDeck && <div className="ae-row" style={{ flexWrap: 'wrap', gap: 8 }} data-testid="row-timed-exam">
           <span className="ae-muted">Simulated exam, timed:</span>
