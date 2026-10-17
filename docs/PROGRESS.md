@@ -1,5 +1,19 @@
 # Progress
 
+## Session 11 — 2026-10-16 (Dan on the phone; Claude Code at the Mac)
+
+### Done
+- **Part C, course notes (D-123):** tell the coach a fact in a course chat and it is kept in that course's notes; "Updated your notes: …" with an Undo chip; the coach reads the notes first in every later message; read-only "Course notes" on the course screen (phone and web). coach.v20, course-notes.v1. Verified here: typecheck; tests (see below); evals course_notes 3/3, coach 46/46; iOS bundle export.
+- TestFlight build started then parked at Dan's request ("back burner"): it stopped at the Apple sign-in, nothing uploaded. The production build number on EAS is now 3.
+
+### Needs real-iPhone check
+- In BIO 101's chat: "quiz 9 moved to Nov 5" → the line "Updated your notes: …" and an Undo chip; open the course → "Course notes" shows it; ask "when is quiz 9?" → Nov 5; tap Undo that → back.
+
+### Next
+- Part E and F: lectures and every upload become coach-written notes. Then Part D: search for big courses.
+- TestFlight when Dan says (needs him at the Mac for the Apple sign-in once).
+- Beta: Clerk is still the development instance (pk_test); fine for internal testers, switch to production before a wide external beta.
+
 ## Session 10 — 2026-10-15 (Dan on the phone; Claude Code at the Mac)
 
 ### Done

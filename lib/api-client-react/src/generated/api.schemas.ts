@@ -744,6 +744,8 @@ export const HomeChatActionType = {
   start_quiz: 'start_quiz',
   start_flashcards: 'start_flashcards',
   update_memory_sheet: 'update_memory_sheet',
+  update_course_notes: 'update_course_notes',
+  undo_course_notes: 'undo_course_notes',
   start_session: 'start_session',
   lookup_exam_guide: 'lookup_exam_guide',
   web_search: 'web_search',
@@ -788,6 +790,8 @@ export interface HomeChatAction {
   sections?: number;
   /** web_search: what was searched for */
   query?: string;
+  /** update_course_notes: what changed in the course notes; undo_course_notes: the change that was taken back */
+  summary?: string;
   /** create_course: the new course's name */
   name?: string;
   /** create_course: a college course or a certification exam */

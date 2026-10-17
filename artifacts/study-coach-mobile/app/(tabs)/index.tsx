@@ -396,6 +396,11 @@ export default function CoachHome() {
           <Feather name="bookmark" size={14} color={colors.primaryText} />
           <Text style={styles.actionText}>Saved to your memory sheet</Text>
         </View>
+      ) : action.type === 'update_course_notes' || action.type === 'undo_course_notes' ? (
+        <View key={`notes-${action.type}-${action.courseId}-${action.summary ?? ''}`} style={styles.actionChip} testID="card-course-notes">
+          <Feather name={action.type === 'undo_course_notes' ? 'rotate-ccw' : 'edit-2'} size={14} color={colors.primaryText} />
+          <Text style={styles.actionText}>{action.type === 'undo_course_notes' ? `Undid in your notes: ${action.summary ?? ''}` : `Updated your notes: ${action.summary ?? ''}`}</Text>
+        </View>
       ) : action.type === 'start_quiz' && action.sessionId && action.sessionId === liveSet?.sessionId ? (
         // The latest set: a compact card that opens it over the chat (in progress) or reopens its review (graded).
         <Pressable key={`set-${action.sessionId}`} accessibilityRole="button" onPress={() => { if (activeQuiz?.sessionId !== action.sessionId) setGradedSessionId(action.sessionId!); setStudyOpen(true); }}

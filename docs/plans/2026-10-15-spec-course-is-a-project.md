@@ -23,7 +23,7 @@ Every student, every course: high school, college and certification.
 **v1 doesn't:** a separate calendar screen (later).
 **Tests and evals:** BIO 101 (Dan's synthetic syllabus and outline): "When are my finals?" → Tuesday, December 1, 2026, cumulative, weighted to Weeks 8–14. "When is my next quiz?" on Oct 15 → Quiz 8, Week 9 (Oct 20–23), genetics and DNA. A course with no dates → says it doesn't know, invents nothing. Another course's facts never appear. Measured cost per message on BIO 101 before choosing the budget.
 
-## C. Course memory: what you tell the coach is kept
+## C. Course memory: what you tell the coach is kept (built 2026-10-16, D-123)
 **v1 does:** when the student tells the coach a fact about the course ("my final is Dec 1", "quiz 9 moved to Nov 5", "the professor said chapter 9 is not on the test"), the coach writes it into the course's notes (Markdown) and says so in the chat ("Updated your BIO 101 notes: Quiz 9 is now Nov 5"). Telling the coach is the approval (Dan, D-119). From then on it is part of the course in every later chat, like ChatGPT remembering Dan's NCP-AAI exam date. The student can read the notes on the course screen (read-only) and change them by telling the coach; "undo that" reverts the last change.
 **v1 doesn't:** save things the student didn't state (no guessing); remember things across courses; let the student edit notes by hand.
 **Tests:** a stated date is in the notes and in the next conversation 100 messages later; a correction replaces it; "undo that" restores it; other courses never see it.

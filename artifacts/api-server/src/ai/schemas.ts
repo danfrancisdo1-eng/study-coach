@@ -63,7 +63,7 @@ export const coachSchema = object({
   actions: {
     type: "array",
     items: object({
-      type: { type: "string", enum: ["create_course", "start_quiz", "start_flashcards", "update_memory_sheet", "start_session", "lookup_exam_guide", "web_search"] },
+      type: { type: "string", enum: ["create_course", "start_quiz", "start_flashcards", "update_memory_sheet", "update_course_notes", "undo_course_notes", "start_session", "lookup_exam_guide", "web_search"] },
       // create_course: the course name. start_quiz / start_session: the course name or id, and a topic.
       name: string,
       topic: string,
@@ -90,7 +90,10 @@ export const quizCheckSchema = object({
   checks: { type: "array", items: object({ index: { type: "integer" }, consistent: { type: "boolean" }, correctIndex: { type: "integer" } }) },
 });
 
+export const courseNotesSchema = object({ notes: string, summary: string });
+
 export const TASK_SCHEMAS: Partial<Record<AiTask, JsonSchema>> = {
+  course_notes: courseNotesSchema,
   quiz_check: quizCheckSchema,
   flag_check: flagCheckSchema,
   coach: coachSchema,

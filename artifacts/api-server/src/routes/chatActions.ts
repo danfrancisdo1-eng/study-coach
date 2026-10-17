@@ -5,7 +5,7 @@
 export type QuizScope = "all" | "missed";
 export type QuizKind = "practice" | "exam";
 export type CoachAction = {
-  type: "create_course" | "start_quiz" | "start_flashcards" | "update_memory_sheet" | "start_session" | "lookup_exam_guide" | "web_search";
+  type: "create_course" | "start_quiz" | "start_flashcards" | "update_memory_sheet" | "update_course_notes" | "undo_course_notes" | "start_session" | "lookup_exam_guide" | "web_search";
   name: string;
   topic: string;
   count?: number;
@@ -28,6 +28,7 @@ export const MAX_DECK_COUNT = 30;
 const MAX_COURSE_NAME = 120;
 const MAX_TOPIC = 300;
 const DEFAULT_TOPIC = "General review";
+const MAX_STATEMENT = 1000;
 
 const normalize = (value: string) => value.trim().replace(/\s+/g, " ").toLowerCase();
 
@@ -46,7 +47,7 @@ export function parseCoachReply(text: string | null): CoachReply | null {
   for (const action of actions) {
     if (typeof action !== "object" || action === null) continue;
     const { type, name, topic, count, scope, kind, courseKind, examDate } = action as Record<string, unknown>;
-    if (type !== "create_course" && type !== "start_quiz" && type !== "start_flashcards" && type !== "update_memory_sheet" && type !== "start_session" && type !== "lookup_exam_guide" && type !== "web_search") continue;
+    if (type !== "create_course" && type !== "start_quiz" && type !== "start_flashcards" && type !== "update_memory_sheet" && type !== "update_course_notes" && type !== "undo_course_notes" && type !== "start_session" && type !== "lookup_exam_guide" && type !== "web_search") continue;
     kept.push({
       type,
       name: typeof name === "string" ? name : "",
@@ -87,6 +88,10 @@ export interface ActionPlan {
   deck: DeckPlan | null;
   /** The one memory-sheet update, if any. */
   sheet: SheetPlan | null;
+  /** D-123: one statement to write into a course's notes (the action's topic), if any. */
+  courseNotes: (StartPlan & { statement: string }) | null;
+  /** D-123: "undo that" on a course's notes, if asked (never together with an update). */
+  undoNotes: StartPlan | null;
   /** The one legacy session to start (opens the Courses tab), if any and only when no quiz was planned. */
   start: StartPlan | null;
   /** Human-readable reasons for anything skipped (surfaced in logs/tests, never shown as AI text). */
@@ -112,7 +117,7 @@ function resolveStart(plan: ActionPlan, courses: KnownCourse[], action: CoachAct
 }
 
 export function planActions(courses: KnownCourse[], actions: CoachAction[]): ActionPlan {
-  const plan: ActionPlan = { creates: [], lookup: null, search: null, quiz: null, deck: null, sheet: null, start: null, notes: [] };
+  const plan: ActionPlan = { creates: [], lookup: null, search: null, quiz: null, deck: null, sheet: null, courseNotes: null, undoNotes: null, start: null, notes: [] };
   for (const action of actions) {
     if (action.type === "create_course") {
       const name = action.name.trim().replace(/\s+/g, " ");
@@ -124,6 +129,14 @@ export function planActions(courses: KnownCourse[], actions: CoachAction[]): Act
       }
       if (plan.creates.some((c) => normalize(c.name) === normalize(name))) continue;
       plan.creates.push({ name, kind: action.courseKind ?? "course", ...(action.examDate ? { examDate: action.examDate } : {}) });
+    } else if (action.type === "update_course_notes" && plan.courseNotes === null && plan.undoNotes === null) {
+      const statement = action.topic.trim().replace(/\s+/g, " ").slice(0, MAX_STATEMENT);
+      if (!statement) { plan.notes.push("update_course_notes without a statement"); continue; }
+      const start = resolveStart(plan, courses, action);
+      if (start) plan.courseNotes = { ...start, statement };
+    } else if (action.type === "undo_course_notes" && plan.undoNotes === null && plan.courseNotes === null) {
+      const start = resolveStart(plan, courses, action);
+      if (start) plan.undoNotes = start;
     } else if (action.type === "update_memory_sheet" && plan.sheet === null) {
       const start = resolveStart(plan, courses, action);
       if (!start) continue;

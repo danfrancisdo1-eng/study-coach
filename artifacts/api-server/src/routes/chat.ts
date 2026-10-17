@@ -13,8 +13,10 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v19";
+import * as coachPrompt from "../prompts/coach.v20";
 import { courseContext } from "../lib/course-context";
+import { notesOf } from "../lib/course-notes";
+import { undoCourseNotes, updateCourseNotes } from "../lib/course-notes-writer";
 import * as webLookupPrompt from "../prompts/web-lookup.v1";
 import { lookupExamGuide } from "../lib/exam-guide";
 import { saveExamGuide } from "../lib/exam-guide-state";
@@ -39,6 +41,7 @@ const DEFAULT_SESSION_MINUTES = 20;
 // (SPEC §7 "resume where you left off"; the original guide's once-per-session check-in).
 const SESSION_GAP_MS = Number(process.env.HOME_CHAT_SESSION_GAP_MINUTES ?? "30") * 60_000;
 const OLD_MATERIAL_QUESTIONS = 2;
+const UNDO_CHIP = "Undo that"; // under a course-notes update (D-123)
 const SHEET_TOPIC = /memory sheet/i; // "Quiz me from my memory sheet": the sheet is the only source (D-025) // "missed topics" sets add 1–2 questions from earlier material (SPEC §6 step 7)
 
 type JsonObject = Record<string, unknown>;
@@ -524,6 +527,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     uploads: materials.flatMap((m) => (isObject(m) && m.courseId === threadId && typeof m.text === "string" ? [{ name: typeof m.name === "string" ? m.name : "Upload", text: m.text }] : [])),
     lectures: await reviewedLectureMaterials(ownerId, threadId),
     memorySheet: rowsFromState(state, threadId).length ? sheetAsText(rowsFromState(state, threadId)) : "",
+    notes: notesOf(state, threadId)?.text ?? "",
     query: content,
   }) : null;
   if (material) req.log.info({ courseId: threadId, mode: material.mode, uploads: material.uploads, chars: material.chars }, "Coach course material");
@@ -655,6 +659,34 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     }
     return session;
   };
+  // Course notes (D-123): the student told the coach a fact about the course, or asked to undo the
+  // last change. A course's chat writes that course's notes only.
+  const notesTarget = plan.courseNotes ?? plan.undoNotes;
+  if (notesTarget) {
+    const courseId = resolveCourse(notesTarget);
+    if (courseId && threadId && courseId !== threadId) {
+      req.log.info({ courseId, threadId }, "Home chat: course notes action for another course ignored");
+    } else if (courseId) {
+      const courseName = [...courses, ...created].find((c) => c.id === courseId)?.name ?? "this course";
+      try {
+        const summary = plan.courseNotes ? await updateCourseNotes(ownerId, courseId, courseName, plan.courseNotes.statement) : await undoCourseNotes(ownerId, courseId);
+        if (summary === null) {
+          await giveBack();
+          res.status(409).json({ error: "Your study data changed on another device. Reload and send again.", version });
+          return;
+        }
+        if (summary) {
+          done.push({ type: plan.courseNotes ? "update_course_notes" : "undo_course_notes", courseId, summary });
+          if (plan.courseNotes && !coach.suggestions.includes(UNDO_CHIP)) coach = { ...coach, suggestions: [...coach.suggestions, UNDO_CHIP].slice(-6) };
+        }
+      } catch (error) {
+        req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat course notes update failed");
+        await giveBack();
+        res.status(502).json({ error: "The coach could not update your course notes just now. Try sending that again." });
+        return;
+      }
+    }
+  }
   if (plan.sheet) {
     const courseId = resolveCourse(plan.sheet);
     const items = courseId ? memoryItems(plan.sheet, sameCourse(lastQuizSession, courseId), sameCourse(lastDeckSession, courseId)) : [];
