@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { clockText, clockTone, scoreLine, secondsLeft, timeUsedLine } from './lib/exam-sheet';
 import ProgressBar from './ProgressBar';
+import { topicParts } from './lib/topic-label';
 import { writtenProgress } from './lib/progress';
 import { getGetStudySessionQueryKey, useFlagStudyQuestion, useGetStudySession, useGradeStudyQuiz, useSaveStudyAnswer, type StudyQuestionFlagInputKind, type StudySession, type StudyQuizQuestionsItem } from '@workspace/api-client-react';
 
@@ -112,7 +113,7 @@ export default function QuizCard({ sessionId, passMark, onGraded, onError }: {
     const misses = quiz.questions.filter(q => q.feedback?.selectedOptionId && (q.feedback.selectedOptionId !== q.feedback.correctOptionId || (q.flag && !counts(q))));
     return (
       <div className="ae-card ae-card--compact" data-testid="panel-quiz-score" ref={topRef}>
-        <span className="ae-kicker">{kindLabel} · {session.topic}</span>
+        <span className="ae-kicker">{kindLabel} · {topicParts(session.topic).title}</span>{topicParts(session.topic).sections.map(section => <span key={section} className="ae-muted" style={{ display: 'block', fontSize: '.85rem' }}>{section}</span>)}
         <p style={{ fontSize: '2rem', fontWeight: 700, margin: '6px 0' }}>{quiz.grade.correct} / {quiz.grade.limitMinutes ? quiz.grade.answered + quiz.grade.unanswered : quiz.grade.answered}</p>
         <p>{scoreLine(quiz.grade)}</p>
         {timeUsedLine(quiz.grade) && <p className="ae-muted" data-testid="text-time-used">{timeUsedLine(quiz.grade)}</p>}
@@ -157,7 +158,7 @@ export default function QuizCard({ sessionId, passMark, onGraded, onError }: {
     return (
       <div className="ae-card ae-card--compact" data-testid="panel-quiz-writing" ref={topRef}>
         {clock}
-        <span className="ae-kicker">{kindLabel} · {session.topic}</span>
+        <span className="ae-kicker">{kindLabel} · {topicParts(session.topic).title}</span>{topicParts(session.topic).sections.map(section => <span key={section} className="ae-muted" style={{ display: 'block', fontSize: '.85rem' }}>{section}</span>)}
         {/* D-126: the real count of questions written so far. */}
         {(() => { const p = writtenProgress(questions.length, total); return <ProgressBar fraction={p.fraction} label={p.label} testId="progress-writing" />; })()}
       </div>
@@ -167,7 +168,7 @@ export default function QuizCard({ sessionId, passMark, onGraded, onError }: {
     return (
       <div className="ae-card ae-card--compact" data-testid="panel-quiz-grade" ref={topRef}>
         {clock}
-        <span className="ae-kicker">{kindLabel} · {session.topic}</span>
+        <span className="ae-kicker">{kindLabel} · {topicParts(session.topic).title}</span>{topicParts(session.topic).sections.map(section => <span key={section} className="ae-muted" style={{ display: 'block', fontSize: '.85rem' }}>{section}</span>)}
         <p>All {questions.length} answered.</p>
         <button type="button" className="ae-button ae-button--ink" disabled={busy} data-testid="button-quiz-grade" onClick={() => void gradeNow()}>Grade</button>
       </div>

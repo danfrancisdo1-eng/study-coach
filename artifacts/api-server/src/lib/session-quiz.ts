@@ -7,7 +7,7 @@ import * as sessionQuizPrompt from "../prompts/session-quiz.v8";
 import * as quizCheckPrompt from "../prompts/quiz-check.v2";
 import { applyQuizCheck, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
 import { shuffleOptions } from "./shuffle-options";
-import * as flashcardsPrompt from "../prompts/flashcards.v2";
+import * as flashcardsPrompt from "../prompts/flashcards.v3";
 
 export type JsonObject = Record<string, unknown>;
 export const SOURCE_CHUNK_LENGTH = 1_200;

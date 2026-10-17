@@ -4,6 +4,9 @@ import { Feather } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetStudySessionQueryKey, useGetStudySession, useReviewFlashcard, type StudySession } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { TYPE } from '@/constants/type';
+import { cardLines } from '@/lib/card-text';
+import { spansOf } from '@/lib/coach-text';
 
 /**
  * Flashcards in the chat (D-021): front → tap to flip → Got it / Again. "Again" cards come
@@ -71,7 +74,12 @@ export function FlashcardDeck({ sessionId, userId, onFinished, onError, onStepCh
       <Text style={styles.kicker}>Flashcards · Card {done + 1} of {total}{current.results.length ? ' · again' : ''}</Text>
       <Pressable accessibilityRole="button" accessibilityLabel={flipped ? 'Card back' : 'Tap to flip'} onPress={() => setFlipped((f) => !f)} style={[styles.face, flipped && styles.faceBack]} testID="button-flip-card">
         <Text style={styles.faceLabel}>{flipped ? 'Answer' : 'Tap to flip'}</Text>
-        <Text style={styles.faceText}>{flipped ? current.back : current.front}</Text>
+        {/* D-130: the questions' font; each idea on its own line with room between. */}
+        <View style={styles.faceLines}>
+          {cardLines(flipped ? current.back : current.front).map((line, i) => (
+            <Text key={i} style={styles.faceText}>{spansOf(line).map((sp, k) => <Text key={k} style={sp.bold ? styles.faceBold : undefined}>{sp.text}</Text>)}</Text>
+          ))}
+        </View>
       </Pressable>
       {flipped ? (
         <View style={styles.row}>
@@ -93,7 +101,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   face: { minHeight: 150, borderRadius: 16, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, padding: 16, justifyContent: 'center', gap: 8 },
   faceBack: { backgroundColor: colors.accent },
   faceLabel: { color: colors.mutedForeground, fontSize: 12, fontWeight: '600' },
-  faceText: { color: colors.foreground, fontSize: 18, lineHeight: 26, fontWeight: '600' },
+  faceLines: { gap: 12 },
+  faceText: { ...TYPE.prompt, color: colors.foreground },
+  faceBold: { fontFamily: TYPE.bodySemi.fontFamily },
   row: { flexDirection: 'row', gap: 10 },
   againButton: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
   againText: { color: colors.foreground, fontSize: 16, fontWeight: '700' },

@@ -455,6 +455,8 @@ export interface CoachCase {
   /** What a good reply must do, for the judge. */
   expectations: string[];
   maxWords: number;
+  /** D-130: no line of the reply longer than this many words (memory tricks must scan in seconds). "Your turn" lines are exempt. */
+  maxLineWords?: number;
   /** D-122: what was uploaded to the focused course (the coach reads it as COURSE MATERIAL). */
   uploads?: { name: string; text: string }[];
   /** A fixed "today" for date questions ("when is my next quiz"). */
@@ -958,8 +960,8 @@ export const coachCases: CoachCase[] = [
     ] } },
     message: "Memory tricks for the misses",
     expectedActions: [],
-    expectations: ["Gives a memory trick of any kind (contrast, trigger, picture, story, word origin, rhyme, mnemonic) for the osmosis/hypotonic miss", "Gives one for active transport / sodium-potassium pump needing ATP", "Ends with a check that starts 'Your turn: explain it back to me' (never the words 'teach-back')"],
-    maxWords: 220,
+    expectations: ["Gives a memory trick of any kind (contrast, trigger, picture, word association, rhyme, mnemonic) for the osmosis/hypotonic miss", "Gives one for active transport / sodium-potassium pump needing ATP", "Laid out as short scannable lines (bold term = trick bullets, a contrast or clue words, one '> ' takeaway), no paragraph", "Ends with a check that starts 'Your turn: explain it back to me' (never the words 'teach-back')"],
+    maxWords: 160, maxLineWords: 14,
   },
   {
     name: "another set on the missed topics: exam, scope missed",

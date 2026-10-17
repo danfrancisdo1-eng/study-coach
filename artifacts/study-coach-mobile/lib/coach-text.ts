@@ -9,6 +9,7 @@ export type Block =
   | { kind: 'heading'; spans: Span[] }
   | { kind: 'bullet'; spans: Span[] }
   | { kind: 'trick'; n: string; label: string | null; spans: Span[] }
+  | { kind: 'quote'; spans: Span[] }
   | { kind: 'text'; spans: Span[] };
 
 /** Splits "**bold** and plain" into spans; an unmatched ** stays as text. */
@@ -29,6 +30,9 @@ export function blocksOf(content: string): Block[] {
   return content.split(/\n+/).map((l) => l.trim()).filter(Boolean).map((line): Block => {
     const allBold = /^\*\*([^*]+)\*\*:?$/.exec(line) ?? /^#{1,4}\s+(.+)$/.exec(line);
     if (allBold) return { kind: 'heading', spans: [{ text: allBold[1]!.trim(), bold: true }] };
+    // D-130: "> " marks the one highlighted takeaway (Dan's examples: "TensorRT = Race-Tuned Runtime").
+    const quote = /^>\s*(.+)$/.exec(line);
+    if (quote) return { kind: 'quote', spans: spansOf(quote[1]!) };
     const bullet = /^[-•*]\s+(.*)$/.exec(line);
     if (bullet) return { kind: 'bullet', spans: spansOf(bullet[1]!) };
     const numbered = /^(\d+)[.)]\s+(.*)$/.exec(line);

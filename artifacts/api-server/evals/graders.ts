@@ -264,6 +264,8 @@ export async function gradeFlashcards(testCase: FlashcardsCase, text: string | n
     if (fronts.has(normalize(c.front ?? ""))) notes.push(`card ${i}: duplicate front`);
     fronts.add(normalize(c.front ?? ""));
     if ((c.back ?? "").split(/\s+/).length > 60) notes.push(`card ${i}: back too long`);
+    // D-130: one idea per line; no line longer than 25 words.
+    for (const line of (c.back ?? "").split(/\n+/)) if (line.split(/\s+/).filter(Boolean).length > 25) notes.push(`card ${i}: a back line runs on`);
   });
   const verdict = await judge<{ cards: { index: number; correct: boolean; aboutTheDocument: boolean; reason: string }[] }>(
     "You check flashcards for a study app. For each card decide whether the back is a correct, complete-enough answer to the front (consistent with the source material when it covers the point, established knowledge otherwise), and whether the card is about the supplied document itself (an outline's weeks, dates, grading) rather than the subject. Be strict and brief.",
@@ -385,6 +387,12 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   if (!actionsOk) notes.push(`actions ${JSON.stringify(got)} != expected ${JSON.stringify(want)}`);
   const words = parsed.reply.split(/\s+/).length;
   const tooLong = words > testCase.maxWords;
+  if (testCase.maxLineWords) {
+    for (const line of parsed.reply.split(/\n+/).map((l) => l.trim()).filter((l) => l && !/^your turn/i.test(l))) {
+      const n = line.replace(/\*\*/g, "").split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+      if (n > testCase.maxLineWords) notes.push(`line too long (${n} words): ${line.slice(0, 80)}`);
+    }
+  }
   if (tooLong) notes.push(`too long: ${words} words > ${testCase.maxWords}`);
   const verdict = await judge<{ expectations: { met: boolean; reason: string }[] }>(
     "You grade one reply from the AI study coach on an app's home chat, for students age 13+. Return exactly one verdict per expectation, in the same order. Check each expectation strictly.",
@@ -398,7 +406,7 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   for (const [i, e] of verdicts.entries()) if (!e.met) notes.push(`not met: ${testCase.expectations[i]} (${e.reason.slice(0, 140)})`);
   const met = verdicts.filter((e) => e.met).length;
   const score = (met / testCase.expectations.length) * (actionsOk && chipsOk ? 1 : 0.5) * (tooLong ? 0.5 : 1);
-  return { pass: actionsOk && chipsOk && !tooLong && met === testCase.expectations.length, score, notes };
+  return { pass: !notes.some((n) => n.startsWith("line too long")) && actionsOk && chipsOk && !tooLong && met === testCase.expectations.length, score, notes };
 }
 
 export async function gradeReviewSheet(testCase: ReviewSheetCase, text: string | null): Promise<Score> {
