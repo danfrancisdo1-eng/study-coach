@@ -2,10 +2,11 @@
 // a Claude judge only for things code can't check (answer-key correctness, tutoring quality).
 import Anthropic from "@anthropic-ai/sdk";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
-import type { UploadNotesCase, CourseNotesCase, ReviewSheetCase, CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase, WebLookupCase } from "./fixtures";
+import type { CourseRouterCase, UploadNotesCase, CourseNotesCase, ReviewSheetCase, CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase, WebLookupCase } from "./fixtures";
 import { parseQuizCheck } from "../src/lib/quiz-check";
 import { parseNotesReply } from "../src/lib/course-notes";
 import { parseUploadNotes } from "../src/lib/upload-notes";
+import { parseRoute, type Section } from "../src/lib/course-sections";
 import { parseFlagCheck } from "../src/lib/flag-check";
 import { hasPositionalOption } from "../src/lib/shuffle-options";
 import { parseExamGuideReply } from "../src/lib/exam-guide-parse";
@@ -495,4 +496,18 @@ export function gradeUploadNotes(testCase: UploadNotesCase, text: string | null)
   if (testCase.maxRatio && notes.length > testCase.maxRatio * testCase.text.length) problems.push(`notes are ${Math.round((100 * notes.length) / testCase.text.length)}% of the transcript (max ${Math.round(testCase.maxRatio * 100)}%)`);
   const checks = testCase.mustContain.length + testCase.mustNotContain.length + (testCase.maxRatio ? 1 : 0);
   return { pass: problems.length === 0, score: Math.max(0, 1 - problems.length / checks), notes: [...problems, `${notes.length} chars of notes from ${testCase.text.length} chars of raw text`] };
+}
+
+/** Course router (D-127): code checks on the picked sections (by "document › heading"). */
+export function gradeCourseRouter(testCase: CourseRouterCase, sections: Section[], text: string | null): Score {
+  let route;
+  try { route = parseRoute(text ? JSON.parse(text) : null, new Set(sections.map((s) => s.id))); } catch (error) { return { pass: false, score: 0, notes: [`invalid output: ${(error as Error).message.slice(0, 200)}`] }; }
+  if (!route) return { pass: false, score: 0, notes: ["no usable route"] };
+  const labels = route.sections.map((id) => { const s = sections.find((x) => x.id === id)!; return `${s.doc} › ${s.heading}`; });
+  const problems: string[] = [];
+  for (const want of testCase.mustPick) if (!labels.includes(want)) problems.push(`missed "${want}"`);
+  for (const bad of testCase.mustNotPick ?? []) if (labels.includes(bad)) problems.push(`picked "${bad}"`);
+  if (testCase.searchRaw && !route.searchRaw) problems.push("did not ask for the original files");
+  const checks = testCase.mustPick.length + (testCase.mustNotPick?.length ?? 0) + (testCase.searchRaw ? 1 : 0);
+  return { pass: problems.length === 0, score: checks ? Math.max(0, 1 - problems.length / checks) : 1, notes: [...problems, `picked: ${labels.join("; ") || "(none)"}; terms: ${route.terms.join(", ")}`] };
 }

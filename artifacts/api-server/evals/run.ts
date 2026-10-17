@@ -21,6 +21,8 @@ import * as coachPrompt from "../src/prompts/coach.v21";
 import * as courseNotesPrompt from "../src/prompts/course-notes.v1";
 import * as uploadNotesPrompt from "../src/prompts/upload-notes.v1";
 import * as lectureNotesPrompt from "../src/prompts/lecture-notes.v1";
+import * as courseRouterPrompt from "../src/prompts/course-router.v1";
+import { indexText, sectionsOf } from "../src/lib/course-sections";
 import { courseContext } from "../src/lib/course-context";
 import * as webLookupPrompt from "../src/prompts/web-lookup.v1";
 import * as flashcardsPrompt from "../src/prompts/flashcards.v2";
@@ -29,8 +31,8 @@ import * as memorySheetPrompt from "../src/prompts/memory-sheet.v2";
 import * as reviewSheetPrompt from "../src/prompts/review-sheet.v3";
 import * as flagCheckPrompt from "../src/prompts/flag-check.v1";
 import { taskConfig, type AiTask } from "../src/ai/tasks";
-import { classicQuizCases, coachCases, courseNotesCases, uploadNotesCases, examGuideCases, flagCheckCases, flashcardsCases, memorySheetCases, reviewSheetCases, ocrCaseNames, planCases, quizCheckCases, sessionQuizCases, syllabusCases, tutorCases, webLookupCases, type Source } from "./fixtures";
-import { gradeClassicQuiz, gradeCoach, gradeCourseNotes, gradeUploadNotes, gradeExamGuide, gradeFlagCheck, gradeFlashcards, gradeMemorySheet, gradeOcr, gradePlan, gradeQuizCheck, gradeReviewSheet, gradeSessionQuiz, gradeSyllabus, gradeTutor, gradeWebLookup, type Score } from "./graders";
+import { classicQuizCases, coachCases, courseNotesCases, uploadNotesCases, courseRouterCases, routerCourseDocs, examGuideCases, flagCheckCases, flashcardsCases, memorySheetCases, reviewSheetCases, ocrCaseNames, planCases, quizCheckCases, sessionQuizCases, syllabusCases, tutorCases, webLookupCases, type Source } from "./fixtures";
+import { gradeClassicQuiz, gradeCoach, gradeCourseNotes, gradeUploadNotes, gradeCourseRouter, gradeExamGuide, gradeFlagCheck, gradeFlashcards, gradeMemorySheet, gradeOcr, gradePlan, gradeQuizCheck, gradeReviewSheet, gradeSessionQuiz, gradeSyllabus, gradeTutor, gradeWebLookup, type Score } from "./graders";
 
 const evalDir = path.resolve(process.argv[1] ? path.dirname(process.argv[1]) : ".", "..");
 const serverDir = path.resolve(evalDir, "..");
@@ -47,7 +49,7 @@ const option = (name: string) => args.flatMap((a, i) => (a === `--${name}` && ar
 const dryRun = args.includes("--dry-run");
 const providerArg = option("provider")[0] ?? "both";
 const providers = providerArg === "both" ? ["openai", "anthropic"] : [providerArg];
-const allTasks: AiTask[] = ["syllabus", "classic_quiz", "exam_plan", "session_quiz", "tutor", "image_ocr", "coach", "flashcards", "exam_guide", "memory_sheet", "quiz_check", "flag_check", "web_lookup", "review_sheet", "course_notes", "upload_notes"];
+const allTasks: AiTask[] = ["syllabus", "classic_quiz", "exam_plan", "session_quiz", "tutor", "image_ocr", "coach", "flashcards", "exam_guide", "memory_sheet", "quiz_check", "flag_check", "web_lookup", "review_sheet", "course_notes", "upload_notes", "course_router"];
 const tasks = option("task").length ? (option("task") as AiTask[]) : allTasks;
 
 // USD per million tokens (input, output). Unknown models show no cost.
@@ -122,6 +124,14 @@ async function main() {
       }),
       grade: (text) => gradeTutor(c, text?.trim() ?? null),
     });
+    if (tasks.includes("course_router")) {
+      const sections = sectionsOf(routerCourseDocs);
+      for (const c of courseRouterCases) jobs.push({
+        task: "course_router", name: c.name,
+        run: () => complete("course_router", { system: courseRouterPrompt.systemPrompt({ courseName: "BIO 101" }), messages: [{ role: "user", content: `INDEX\n${indexText(sections)}\n\nRECENT CONVERSATION\n${c.recent.map((m) => `${m.role === "user" ? "Student" : "Coach"}: ${m.content}`).join("\n") || "(none)"}\n\nLATEST MESSAGE\n${c.message}` }] }),
+        grade: (text) => gradeCourseRouter(c, sections, text),
+      });
+    }
     if (tasks.includes("upload_notes")) for (const c of uploadNotesCases) jobs.push({
       task: "upload_notes", name: c.name,
       run: () => complete("upload_notes", { system: c.kind === "lecture" ? lectureNotesPrompt.systemPrompt({ courseName: "BIO 101", title: c.uploadName, recordedOn: "2026-10-15" }) : uploadNotesPrompt.systemPrompt({ courseName: "BIO 101", uploadName: c.uploadName, format: c.format }), messages: [{ role: "user", content: c.text }], timeoutMs: 180_000 }),

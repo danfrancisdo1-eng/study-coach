@@ -4,10 +4,11 @@
 // match the question. Pure, so tests load it directly. Part D will improve the matching.
 export const COURSE_CONTEXT_BUDGET = 150_000;
 const PASSAGE = 1_500;
-const PLANNING = /syllabus|outline|schedule|course description|calendar|notes:|course facts/i;
+// Always sent whole on a big course. Not "Lecture notes: …" (D-127: those are read by section).
+export const PLANNING = /syllabus|outline|schedule|course description|calendar|course facts/i;
 
 type Doc = { name: string; text: string };
-export type CourseContext = { text: string; mode: "whole" | "search" | "empty"; uploads: number; chars: number };
+export type CourseContext = { text: string; mode: "whole" | "search" | "routed" | "empty"; uploads: number; chars: number };
 
 const block = (d: Doc) => `=== ${d.name} ===\n${d.text.trim()}\n`;
 
