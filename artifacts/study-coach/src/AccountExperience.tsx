@@ -78,6 +78,8 @@ export type AccountExperienceProps = {
   examGuides?: Record<string, { found?: boolean; sections?: { name: string; weight: number | null }[]; sourceUrl?: string | null; questionCount?: number | null; durationMinutes?: number | null; passingScore?: string } | null>;
   /** Memory-sheet rows per course (D-025). */
   memorySheets?: Record<string, { id: string; term: string; trick: string; whenYouSee: string; think: string }[]>;
+  /** Course notes per course (D-123): written by the coach, read-only here. */
+  courseNotes?: Record<string, string>;
   onRefreshExamGuide?: (courseId: string) => void;
   /** The real exam's facts per course (typed first, then the guide's; D-111), and saving a correction. */
   examFacts?: Record<string, ExamFacts>;
@@ -112,7 +114,7 @@ export function AccountExperience(props: AccountExperienceProps) {
     courses, selectedCourseId, phase, sessionStarted, materialsCheck, aiConsent, materials,
     turns, questions, answers, assistedAnswers, qualityNotice, invalidItemCount = 0, flaggedQuestionIds = [],
     quizTutorReply, feedback, reviewSchedule, resultSummary, isRetest,
-    busy = false, error, onSelectCourse, onCreateCourse, onRenameCourse, onStartSession, examGuides = {}, onRefreshExamGuide, examFacts = {}, onSaveExamFacts, memorySheets = {},
+    busy = false, error, onSelectCourse, onCreateCourse, onRenameCourse, onStartSession, examGuides = {}, onRefreshExamGuide, examFacts = {}, onSaveExamFacts, memorySheets = {}, courseNotes = {},
     savedMaterialsByCourse = {}, onDeleteMaterial, onDeleteCourse,
     onMaterialsChoice, onUploadMaterials, onContinueMaterials, onConsentChange, onSendTurn,
     onReadyForQuiz, onSelectAnswer, onFlagQuestion, onAskDuringQuiz, onMarkAssisted, onSubmitQuiz, onRequestRetest,
@@ -206,6 +208,13 @@ export function AccountExperience(props: AccountExperienceProps) {
                     </> : examGuides[course.id] ? <p className="ae-muted">No official guide found; the coach uses its own knowledge of the exam.</p> : <p className="ae-muted">Not looked up yet.</p>}
                     {realExamLine(examFacts[course.id]) && <p data-testid={`text-real-exam-${course.id}`}>{realExamLine(examFacts[course.id])}</p>}
                     {onSaveExamFacts && <ExamFactsForm key={JSON.stringify(examFacts[course.id] ?? null)} courseId={course.id} facts={examFacts[course.id]} busy={busy} onSave={facts => onSaveExamFacts(course.id, facts)} />}
+                  </div>}
+                  {(courseNotes[course.id] ?? '').trim() && <div className="ae-course-manage" style={{ width: '100%', marginTop: 10 }} data-testid={`panel-course-notes-${course.id}`}>
+                    <p className="ae-kicker">Course notes</p>
+                    {courseNotes[course.id]!.split('\n').filter(line => line.trim()).map((line, i) => /^#+\s/.test(line)
+                      ? <p key={i} style={{ fontWeight: 700 }}>{line.replace(/^#+\s*/, '')}</p>
+                      : <p key={i}>{line.replace(/^\s*[-*]\s+/, '• ')}</p>)}
+                    <p className="ae-muted" style={{ fontSize: '.8rem' }}>To change something, tell the coach in this course's chat.</p>
                   </div>}
                   {(memorySheets[course.id] ?? []).length > 0 && <div className="ae-course-manage" style={{ width: '100%', marginTop: 10 }} data-testid={`panel-memory-sheet-${course.id}`}>
                     <p className="ae-kicker">Memory sheet · {memorySheets[course.id]!.length}</p>

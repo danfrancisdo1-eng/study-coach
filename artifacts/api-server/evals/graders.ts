@@ -2,8 +2,9 @@
 // a Claude judge only for things code can't check (answer-key correctness, tutoring quality).
 import Anthropic from "@anthropic-ai/sdk";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
-import type { ReviewSheetCase, CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase, WebLookupCase } from "./fixtures";
+import type { CourseNotesCase, ReviewSheetCase, CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase, WebLookupCase } from "./fixtures";
 import { parseQuizCheck } from "../src/lib/quiz-check";
+import { parseNotesReply } from "../src/lib/course-notes";
 import { parseFlagCheck } from "../src/lib/flag-check";
 import { hasPositionalOption } from "../src/lib/shuffle-options";
 import { parseExamGuideReply } from "../src/lib/exam-guide-parse";
@@ -454,4 +455,21 @@ export async function gradeReviewSheet(testCase: ReviewSheetCase, text: string |
   if (!verdict.correct) notes.push(`incorrect: ${verdict.reason.slice(0, 160)}`);
   if (!verdict.professional) notes.push(`not professional: ${verdict.reason.slice(0, 160)}`);
   return { pass: notes.length === 0, score: notes.length === 0 ? 1 : Math.max(0, 1 - notes.length * 0.2), notes };
+}
+
+/** Course notes writer (D-123): code checks only (facts kept, replaced, nothing invented from an instruction). */
+export function gradeCourseNotes(testCase: CourseNotesCase, text: string | null): Score {
+  let parsed: { notes: string; summary: string } | null;
+  try {
+    parsed = parseNotesReply(text ? JSON.parse(text) : null);
+  } catch (error) {
+    return { pass: false, score: 0, notes: [`invalid output: ${(error as Error).message.slice(0, 200)}`] };
+  }
+  if (!parsed) return { pass: false, score: 0, notes: ["no usable notes/summary"] };
+  const lower = parsed.notes.toLowerCase();
+  const notes: string[] = [];
+  for (const want of testCase.mustContain) if (!lower.includes(want.toLowerCase())) notes.push(`missing "${want}"`);
+  for (const bad of testCase.mustNotContain) if (lower.includes(bad.toLowerCase())) notes.push(`still contains "${bad}"`);
+  const checks = testCase.mustContain.length + testCase.mustNotContain.length;
+  return { pass: notes.length === 0, score: checks ? 1 - notes.length / checks : 1, notes };
 }

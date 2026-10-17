@@ -112,6 +112,8 @@ export default function CourseScreen() {
   };
   const guide = isExam && course?.examGuide && typeof course.examGuide === 'object' ? record(course.examGuide) : null;
   const guideSections = Array.isArray(guide?.sections) ? (guide!.sections as unknown[]).map(record) : [];
+  // Course notes (D-123): what the student told the coach, written by the coach; read-only here.
+  const courseNotes = course && typeof course.notes === 'object' && course.notes && typeof (course.notes as Record<string, unknown>).text === 'string' ? String((course.notes as Record<string, unknown>).text) : '';
   const memoryRows = (Array.isArray(state.memorySheet) ? state.memorySheet.map(record) : []).filter((r) => r.courseId === courseId && typeof r.term === 'string');
   const refreshGuide = async () => {
     setError('');
@@ -342,6 +344,16 @@ export default function CourseScreen() {
               </View>
             );
           })()}
+          <View style={styles.card} testID="panel-course-notes">
+            <Text style={styles.kicker}>Course notes</Text>
+            {courseNotes.trim() ? courseNotes.split('\n').filter((line) => line.trim()).map((line, i) => (
+              /^#+\s/.test(line)
+                ? <Text key={i} selectable style={styles.sheetTerm}>{line.replace(/^#+\s*/, '')}</Text>
+                : <Text key={i} selectable style={styles.body}>{line.replace(/^\s*[-*]\s+/, '• ')}</Text>
+            )) : <Text style={styles.caption}>Tell the coach about dates and changes ("quiz 9 moved to Nov 5") and it keeps them here.</Text>}
+            {courseNotes.trim() ? <Text style={styles.caption}>To change something, tell the coach in this course's chat.</Text> : null}
+          </View>
+
           <View style={styles.card} testID="panel-memory-sheet">
             <Text style={styles.kicker}>Memory sheet · {memoryRows.length}</Text>
             {memoryRows.length ? memoryRows.map((row) => (

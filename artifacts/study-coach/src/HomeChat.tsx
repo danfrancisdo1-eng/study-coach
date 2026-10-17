@@ -114,6 +114,8 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
                 : <p>{turn.content}</p>}
               {turn.actions?.map(action => action.type === 'update_memory_sheet' ? (
                 <p key={`sheet-${action.courseId}-${action.rows?.[0]?.id ?? ''}`} className="ae-muted" style={{ fontSize: '.85rem' }} data-testid="card-memory-sheet">Saved to your memory sheet</p>
+              ) : action.type === 'update_course_notes' || action.type === 'undo_course_notes' ? (
+                <p key={`notes-${action.type}-${action.courseId}-${action.summary ?? ''}`} className="ae-muted" style={{ fontSize: '.85rem' }} data-testid="card-course-notes">{action.type === 'undo_course_notes' ? `Undid in your notes: ${action.summary ?? ''}` : `Updated your notes: ${action.summary ?? ''}`}</p>
               ) : (
                 <p key={`${action.type}-${action.courseId}-${action.sessionId ?? ''}`} className="ae-muted" style={{ fontSize: '.85rem' }}>
                   {action.type === 'create_course' ? `Added course: ${action.name ?? ''}`

@@ -277,6 +277,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
         examFacts={Object.fromEntries((state.courses ?? []).filter(c => !!c && typeof (c as { id?: unknown }).id === 'string').map(c => [c.id, courseExamFacts(c as unknown as Record<string, unknown>)]))}
         onSaveExamFacts={(courseId, facts) => void act(async () => { await saveExamFacts.mutateAsync({ courseId, data: facts }); await stateQuery.refetch(); })}
         memorySheets={memorySheetsByCourse((state as { memorySheet?: unknown }).memorySheet)}
+        courseNotes={Object.fromEntries((state.courses ?? []).flatMap(c => { const notes = (c as { id?: unknown; notes?: { text?: unknown } } | null)?.notes; const id = (c as { id?: unknown } | null)?.id; return typeof id === 'string' && typeof notes?.text === 'string' ? [[id, notes.text]] : []; }))}
         onDeleteMaterial={materialId => void act(() => updateState(previous => ({
           ...previous, materials: (previous.materials ?? []).filter(item => item.id !== materialId),
         })))}

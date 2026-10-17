@@ -19,6 +19,8 @@ export interface HomeChatAction {
   sections?: number;
   /** web_search: what was searched for */
   query?: string;
+  /** update_course_notes: what changed in the course notes; undo_course_notes: the change that was taken back */
+  summary?: string;
   /** create_course: the new course's name */
   name?: string;
   /** create_course: a college course or a certification exam */
