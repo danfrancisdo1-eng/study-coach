@@ -88,6 +88,7 @@ export default function CoachHome() {
   const queryClient = useQueryClient();
   const listRef = useRef<FlatList<HomeChatMessage>>(null);
   const quizScrollRef = useRef<ScrollView>(null);
+  const inputRef = useRef<TextInput>(null); // D-131: tapping a Pop quiz card puts the cursor here
   const { height: windowHeight } = useWindowDimensions();
   const [draft, setDraft] = useState('');
   const [draftHeight, setDraftHeight] = useState(44); // measured from the text; the box shrinks back when the draft is cleared
@@ -369,6 +370,15 @@ export default function CoachHome() {
           if (block.kind === 'bullet') return (
             <View key={i} style={styles.bulletRow}><Text style={styles.body}>•</Text><Text style={[styles.body, styles.bulletText]}>{inline(block.spans)}</Text></View>
           );
+          if (block.kind === 'popquiz') return (
+            // D-131: the check question as its own card, so the eye stops on it (Dan: "my eyes would read past it").
+            <Pressable key={i} accessibilityRole="button" accessibilityLabel={`Pop quiz: ${block.spans.map((s) => s.text).join('')}. Double tap to answer.`}
+              onPress={() => inputRef.current?.focus()} style={styles.popQuiz} testID="chat-pop-quiz">
+              <View style={styles.popQuizHead}><Feather name="help-circle" size={16} color={colors.hookText} /><Text style={styles.popQuizTitle}>Pop quiz</Text></View>
+              <Text style={styles.popQuizText}>{inline(block.spans)}</Text>
+              <Text style={styles.popQuizHint}>Type your answer below.</Text>
+            </Pressable>
+          );
           if (block.kind === 'quote') return (
             // D-130: the one takeaway to remember, set apart (Dan's examples).
             <View key={i} style={styles.quoteRow} testID="chat-takeaway"><Text style={[styles.body, styles.bold]}>{inline(block.spans)}</Text></View>
@@ -628,6 +638,7 @@ export default function CoachHome() {
             {/* The gold ring spins only while the coach is writing a reply or a set (D-048). */}
             <GlowRing active={send.isPending} radius={16} style={styles.inputRing}>
             <TextInput
+              ref={inputRef}
               value={draft} onChangeText={setDraft} placeholder="Message your coach" placeholderTextColor={colors.mutedForeground}
               multiline maxLength={8000} style={[styles.input, { height: draft ? draftHeight : 44 }]} editable={!busy && !showWelcome} accessibilityLabel="Message your coach" testID="input-home-chat"
               onContentSizeChange={(e) => setDraftHeight(Math.min(140, Math.max(44, Math.ceil(e.nativeEvent.contentSize.height) + (Platform.OS === 'ios' ? 22 : 16))))}
@@ -705,6 +716,11 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   heading: { color: colors.foreground, fontSize: 16, lineHeight: 22, fontWeight: '700' },
   headingGap: { marginTop: 12 },
   bulletRow: { flexDirection: 'row', gap: 8, paddingLeft: 2, marginBottom: 2 },
+  popQuiz: { gap: 6, padding: 14, borderRadius: 14, backgroundColor: colors.hookBg, marginTop: 6 },
+  popQuizHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  popQuizTitle: { color: colors.hookText, fontSize: 15, fontWeight: '800', letterSpacing: 0.3 },
+  popQuizText: { color: colors.hookText, fontSize: 16, lineHeight: 23, fontWeight: '600', fontStyle: 'italic' },
+  popQuizHint: { color: colors.hookText, fontSize: 13, opacity: 0.8 },
   quoteRow: { borderLeftWidth: 3, borderLeftColor: colors.border, paddingLeft: 12, paddingVertical: 4, marginVertical: 4 },
   bulletText: { flex: 1 },
   trickCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, padding: 11, borderRadius: 14, backgroundColor: colors.hookBg },

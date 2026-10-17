@@ -48,6 +48,7 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
   const sending = send.isPending;
   const sendElapsed = useElapsed(sending); // D-126
   const [pickQ, setPickQ] = useState<number | null>(null); // D-129
+  const inputRef = useRef<HTMLInputElement>(null); // D-131: the Pop quiz card focuses the message box
   const [pickM, setPickM] = useState<number | null>(null);
   const activeQuiz = chat.data?.activeQuiz ?? null;
   const activeDeck = chat.data?.activeDeck ?? null;
@@ -117,6 +118,12 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
                   const inline = (spans: Span[]) => spans.map((sp, k) => sp.bold ? <strong key={k}>{sp.text}</strong> : <span key={k}>{sp.text}</span>);
                   if (block.kind === 'heading') return <p key={i} style={{ fontWeight: 700, marginTop: i > 0 ? '1em' : 0 }}>{block.spans[0]?.text}</p>;
                   if (block.kind === 'bullet') return <p key={i} style={{ paddingLeft: '1em', textIndent: '-.8em' }}>• {inline(block.spans)}</p>;
+                  if (block.kind === 'popquiz') return <div key={i} role="button" tabIndex={0} data-testid="chat-pop-quiz" className="sc-miss-hook" style={{ borderRadius: 14, padding: '12px 14px', margin: '8px 0', cursor: 'text' }}
+                    onClick={() => inputRef.current?.focus()} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') inputRef.current?.focus(); }}>
+                    <p style={{ fontWeight: 800, margin: '0 0 4px' }}>❓ Pop quiz</p>
+                    <p style={{ fontWeight: 600, fontStyle: 'italic', margin: '0 0 4px' }}>{inline(block.spans)}</p>
+                    <p style={{ fontSize: '.85rem', opacity: .8, margin: 0 }}>Type your answer below.</p>
+                  </div>;
                   if (block.kind === 'quote') return <p key={i} data-testid="chat-takeaway" style={{ borderLeft: '3px solid #d9d3c8', paddingLeft: 12, fontWeight: 700, margin: '6px 0' }}>{inline(block.spans)}</p>;
                   if (block.kind === 'trick') return <p key={i} className="sc-miss-hook sc-trick">⚡ {block.label ? <strong>{block.label}: </strong> : null}{inline(block.spans)}</p>;
                   return <p key={i}>{inline(block.spans)}</p>;
@@ -167,7 +174,7 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
       </div>
       {error && <p className="ae-callout ae-callout--error" role="alert" data-testid="status-chat-error" style={{ marginTop: 12 }}>{error}</p>}
       <form className="ae-row" onSubmit={event => void submit(event)} style={{ marginTop: 14 }}>
-        <input className="ae-input" aria-label="Message your coach" placeholder={aiConsent ? 'Message your coach' : 'Accept the AI notice below to chat'} value={draft}
+        <input ref={inputRef} className="ae-input" aria-label="Message your coach" placeholder={aiConsent ? 'Message your coach' : 'Accept the AI notice below to chat'} value={draft}
           onChange={event => setDraft(event.target.value)} maxLength={8000} disabled={!aiConsent || sending || busy} style={{ flex: 1, minWidth: 200 }} data-testid="input-home-chat" />
         <button type="submit" className="ae-button ae-button--ink" disabled={!aiConsent || sending || busy || !draft.trim()} data-testid="button-send-home-chat">Send</button>
       </form>
