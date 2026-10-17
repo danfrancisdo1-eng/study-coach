@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { useExtractStudyMaterial, useExtractStudyWebsite, type StudyMaterialExtraction } from '@workspace/api-client-react';
+import { useExtractStudyWebsite, type StudyMaterialExtraction } from '@workspace/api-client-react';
+import ProgressBar, { useElapsed } from './ProgressBar';
+import { materialWorkMs, timeLeftText, uploadThenWork } from './lib/progress';
+import { uploadMaterial } from './lib/material-upload';
 
 export default function MaterialIntake({ courseName, consent, files, onFilesChange, onSave }: {
   courseName: string;
@@ -18,13 +21,19 @@ export default function MaterialIntake({ courseName, consent, files, onFilesChan
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [lastUrl, setLastUrl] = useState('');
+  // D-126: the waiting bar: real upload share, then an estimate of reading and writing notes.
+  const [sent, setSent] = useState(0);
+  const [workStart, setWorkStart] = useState<number | null>(null);
+  const [job, setJob] = useState<{ kind: 'file' | 'photo' | 'website'; bytes: number } | null>(null);
+  const elapsed = useElapsed(busy && job !== null);
   const open = () => { if (!dialog.current?.open) dialog.current?.showModal(); };
   useEffect(() => { current.current = true; return () => { current.current = false; }; }, []);
 
   const read = async (file?: File, link?: string) => {
     setBusy(true);
     setPreview(null);
-    setNotice('Extracting readable text… Nothing is saved yet.');
+    setJob({ kind: 'website', bytes: 0 }); setSent(1); setWorkStart(Date.now());
+    setNotice('Nothing is saved yet.');
     try {
       const result = await websiteMutation.mutateAsync({ data: { url: link ?? '' } });
       if (!current.current) return;
@@ -35,16 +44,14 @@ export default function MaterialIntake({ courseName, consent, files, onFilesChan
     } finally { if (current.current) setBusy(false); }
   };
 
-  // Each selection gets its own generated-hook request header, without bypassing the shared client.
-  const extraction = useExtractStudyMaterial({ request: { headers: { 'X-Filename': files[0]?.name ?? 'Material' } } });
-  const extractionRef = useRef(extraction.mutateAsync);
-  extractionRef.current = extraction.mutateAsync;
+  // D-126: the file goes up with XMLHttpRequest (same route and headers) so the bar shows bytes sent.
   const readFile = async (file: File) => {
-    setBusy(true); setPreview(null); setNotice('Extracting readable text… Nothing is saved yet.');
+    setBusy(true); setPreview(null); setNotice('Nothing is saved yet.');
+    setJob({ kind: file.type.startsWith('image/') ? 'photo' : 'file', bytes: file.size }); setSent(0); setWorkStart(null);
     try {
       if (!file.size || file.size > 12 * 1024 * 1024) throw new Error('Choose a nonempty file up to 12 MB.');
       if (file.type.startsWith('image/') && !consent) throw new Error('Accept the AI-processing consent before reading image text.');
-      const result = await extractionRef.current({ data: file });
+      const result = await uploadMaterial(file, (fraction) => { if (!current.current) return; setSent(fraction); if (fraction >= 1) setWorkStart((at) => at ?? Date.now()); });
       if (current.current) { setPreview(result); setNotice('Review the text and coverage, then choose Save.'); }
     } catch (error) {
       if (current.current) setNotice(`${error instanceof Error ? error.message : 'Extraction failed.'} Nothing was saved. Retry or choose another file.`);
@@ -77,7 +84,14 @@ export default function MaterialIntake({ courseName, consent, files, onFilesChan
       <input ref={fileInput} type="file" multiple accept=".txt,.md,.markdown,.pdf,.docx,.pptx,.png,.jpg,.jpeg,.webp" hidden onChange={event => { if (event.target.files?.length) onFilesChange(Array.from(event.target.files)); event.target.value = ''; }} />
       <label className="field">Website link<input type="url" value={url} onChange={event => setUrl(event.target.value)} placeholder="https://…" data-testid="input-intake-url" /></label>
       <button type="button" className="btn btn-outline" disabled={busy || !url.trim()} onClick={() => { onFilesChange([]); setLastUrl(url.trim()); void read(undefined, url.trim()); }} data-testid="button-intake-website">Read page</button>
-      <p role="status" aria-live="polite" data-testid="status-intake">{busy ? 'Working… ' : ''}{notice}</p>
+      {busy && job && (() => {
+        const expected = materialWorkMs(job);
+        const workElapsed = workStart ? Date.now() - workStart : 0;
+        const label = sent < 1 ? `Uploading ${Math.round(sent * 100)}%` : `${job.kind === 'website' ? 'Reading the page' : job.kind === 'photo' ? 'Reading your photo' : 'Reading your file'} and writing notes · ${timeLeftText(workElapsed, expected)}`;
+        void elapsed; // re-renders twice a second while waiting
+        return <ProgressBar fraction={uploadThenWork(sent, workElapsed, expected)} label={label} testId="progress-material" />;
+      })()}
+      <p role="status" aria-live="polite" data-testid="status-intake">{notice}</p>
       {preview ? <>
         <h3>{preview.filename}</h3>
         {preview.sourceUrl && <p style={{ overflowWrap: 'anywhere' }}>{preview.sourceUrl}</p>}
