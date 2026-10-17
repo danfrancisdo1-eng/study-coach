@@ -372,9 +372,9 @@ export default function CoachHome() {
           );
           if (block.kind === 'popquiz') return (
             // D-131: the check question as its own card, so the eye stops on it (Dan: "my eyes would read past it").
-            <Pressable key={i} accessibilityRole="button" accessibilityLabel={`Pop quiz: ${block.spans.map((s) => s.text).join('')}. Double tap to answer.`}
+            <Pressable key={i} accessibilityRole="button" accessibilityLabel={`Pop Quiz: ${block.spans.map((s) => s.text).join('')}. Double tap to answer.`}
               onPress={() => inputRef.current?.focus()} style={styles.popQuiz} testID="chat-pop-quiz">
-              <View style={styles.popQuizHead}><Feather name="help-circle" size={16} color={colors.hookText} /><Text style={styles.popQuizTitle}>Pop quiz</Text></View>
+              <View style={styles.popQuizHead}><Feather name="help-circle" size={16} color={colors.hookText} /><Text style={styles.popQuizTitle}>Pop Quiz</Text></View>
               <Text style={styles.popQuizText}>{inline(block.spans)}</Text>
               <Text style={styles.popQuizHint}>Type your answer below.</Text>
             </Pressable>
@@ -719,7 +719,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   popQuiz: { gap: 6, padding: 14, borderRadius: 14, backgroundColor: colors.hookBg, marginTop: 6 },
   popQuizHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   popQuizTitle: { color: colors.hookText, fontSize: 15, fontWeight: '800', letterSpacing: 0.3 },
-  popQuizText: { color: colors.hookText, fontSize: 16, lineHeight: 23, fontWeight: '600', fontStyle: 'italic' },
+  popQuizText: { color: colors.hookText, fontSize: 16, lineHeight: 23 }, // Dan: plain text; the box is enough
   popQuizHint: { color: colors.hookText, fontSize: 13, opacity: 0.8 },
   quoteRow: { borderLeftWidth: 3, borderLeftColor: colors.border, paddingLeft: 12, paddingVertical: 4, marginVertical: 4 },
   bulletText: { flex: 1 },

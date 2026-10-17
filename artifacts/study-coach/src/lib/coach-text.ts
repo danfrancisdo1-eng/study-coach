@@ -35,7 +35,8 @@ export function blocksOf(content: string): Block[] {
     // D-130: "> " marks the one highlighted takeaway (Dan's examples: "TensorRT = Race-Tuned Runtime").
     // D-131: the check question, shown as a "Pop quiz" card (older replies said "Your turn: explain it back to me:").
     const pop = /^(?:\*\*)?(?:pop quiz|your turn)(?:\*\*)?\s*:\s*(?:\*\*)?\s*(?:explain (?:it )?back to me\s*:\s*)?(.+)$/i.exec(line);
-    if (pop) return { kind: 'popquiz', spans: spansOf(pop[1]!.trim()) };
+    // Dan: the question starts with a capital letter.
+    if (pop) { const q = pop[1]!.trim(); return { kind: 'popquiz', spans: spansOf(q.charAt(0).toUpperCase() + q.slice(1)) }; }
     const quote = /^>\s*(.+)$/.exec(line);
     if (quote) return { kind: 'quote', spans: spansOf(quote[1]!) };
     const bullet = /^[-•*]\s+(.*)$/.exec(line);

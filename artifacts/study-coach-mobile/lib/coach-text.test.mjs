@@ -25,7 +25,7 @@ test('a "> " line is a highlighted takeaway with bold kept', () => {
 
 // D-131: the check question is a Pop quiz card (Dan: "my eyes would read past the coach question").
 test('a "Pop quiz:" line, or an older "Your turn: explain it back to me:" line, is a pop quiz block', () => {
-  assert.deepEqual(blocksOf('Pop quiz: how do you tell a jailbreak from an indirect injection?'), [{ kind: 'popquiz', spans: [{ text: 'how do you tell a jailbreak from an indirect injection?', bold: false }] }]);
-  assert.deepEqual(blocksOf('Your turn: explain it back to me: why does a cell swell?'), [{ kind: 'popquiz', spans: [{ text: 'why does a cell swell?', bold: false }] }]);
+  assert.deepEqual(blocksOf('Pop quiz: how do you tell a jailbreak from an indirect injection?'), [{ kind: 'popquiz', spans: [{ text: 'How do you tell a jailbreak from an indirect injection?', bold: false }] }]);
+  assert.deepEqual(blocksOf('Your turn: explain it back to me: why does a cell swell?'), [{ kind: 'popquiz', spans: [{ text: 'Why does a cell swell?', bold: false }] }]);
   assert.equal(blocksOf('**Pop quiz:** what is osmosis?')[0].kind, 'popquiz');
 });
