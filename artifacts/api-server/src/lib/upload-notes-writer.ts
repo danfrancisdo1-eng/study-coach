@@ -5,7 +5,9 @@ import { db, studyStatesTable } from "@workspace/db";
 import { complete } from "../ai";
 import { logger } from "./logger";
 import * as uploadNotesPrompt from "../prompts/upload-notes.v1";
-import { findUpload, materialsNeedingNotes, parseUploadNotes, withFirstUploadNotes, withUploadNotes } from "./upload-notes";
+import * as lectureNotesPrompt from "../prompts/lecture-notes.v1";
+import { reviewedLectureMaterials } from "./lecture-materials";
+import { findUpload, lecturesWithNotes, materialsNeedingNotes, parseUploadNotes, withFirstUploadNotes, withLectureNotes, withoutLectureNotes, withUploadNotes } from "./upload-notes";
 import { parseNotesReply } from "./course-notes";
 
 type JsonObject = Record<string, unknown>;
@@ -72,6 +74,11 @@ export function backfillUploadNotes(ownerId: string, courseId: string): void {
     try {
       const first = await readState(ownerId);
       if (first?.state.aiConsent !== true) return;
+      // Part E (D-125): reviewed lectures without notes first.
+      const done = lecturesWithNotes(first.state, courseId);
+      for (const lecture of (await reviewedLectureMaterials(ownerId, courseId)).filter((l) => !done.has(l.lectureId)).slice(0, BACKFILL_PER_RUN)) {
+        await writeLectureNotes(ownerId, { lectureId: lecture.lectureId, courseId, title: lecture.title, recordedAt: lecture.recordedAt, text: lecture.text });
+      }
       for (const upload of materialsNeedingNotes(first.state, courseId).slice(0, BACKFILL_PER_RUN)) {
         const notes = await writeUploadNotes({ courseName: courseName(first.state, courseId), uploadName: upload.name, format: upload.format ?? "text", text: upload.text });
         if (!notes) continue;
@@ -111,4 +118,45 @@ export async function fixUploadNotes(ownerId: string, courseId: string, uploadNa
     if (await writeState(ownerId, withUploadNotes(current.state, upload.id, parsed.notes, parsed.summary, new Date().toISOString()), current.version)) return { name: upload.name, summary: parsed.summary };
   }
   return null;
+}
+
+/**
+ * Lecture notes (D-125): written from a reviewed transcript and saved with the course's uploads,
+ * replacing earlier notes for that lecture. Returns false when nothing was saved (no consent, the
+ * AI failed, or the study data kept changing); never throws.
+ */
+export async function writeLectureNotes(ownerId: string, lecture: { lectureId: string; courseId: string; title: string; recordedAt: Date; text: string }): Promise<boolean> {
+  try {
+    const first = await readState(ownerId);
+    if (first?.state.aiConsent !== true || !lecture.text.trim()) return false;
+    const response = await complete("upload_notes", {
+      system: lectureNotesPrompt.systemPrompt({ courseName: courseName(first.state, lecture.courseId), title: lecture.title, recordedOn: lecture.recordedAt.toISOString().slice(0, 10) }),
+      messages: [{ role: "user", content: lecture.text.slice(0, 400_000) }],
+      timeoutMs: 180_000,
+    });
+    const notes = parseUploadNotes(response.text ? JSON.parse(response.text) : null);
+    if (!notes) return false;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const current = await readState(ownerId);
+      if (!current) return false;
+      if (await writeState(ownerId, withLectureNotes(current.state, { ...lecture, notes, at: new Date().toISOString() }), current.version)) return true;
+    }
+  } catch (error) {
+    logger.warn({ lectureId: lecture.lectureId, error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 300) : "Unknown error" }, "Lecture notes could not be written");
+  }
+  return false;
+}
+
+/** After the student saves a reviewed transcript: write its notes in the background. */
+export function rememberLectureNotes(ownerId: string, lecture: { lectureId: string; courseId: string; title: string; recordedAt: Date; text: string }): void {
+  void writeLectureNotes(ownerId, lecture);
+}
+
+/** A deleted lecture takes its notes with it. */
+export async function removeLectureNotes(ownerId: string, lectureId: string): Promise<void> {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const current = await readState(ownerId);
+    if (!current || !(Array.isArray(current.state.materials) && current.state.materials.some((m) => isObject(m) && m.lectureId === lectureId))) return;
+    if (await writeState(ownerId, withoutLectureNotes(current.state, lectureId), current.version)) return;
+  }
 }

@@ -95,7 +95,7 @@ export default function CourseScreen() {
   const courses = Array.isArray(state.courses) ? state.courses.map(record) : [];
   const course = courses.find((c) => c.id === courseId);
   const materials: SavedMaterial[] = (Array.isArray(state.materials) ? state.materials.map(record) : [])
-    .filter((m) => m.courseId === courseId && typeof m.id === 'string' && typeof m.name === 'string' && typeof m.text === 'string')
+    .filter((m) => m.courseId === courseId && typeof m.id === 'string' && typeof m.name === 'string' && typeof m.text === 'string' && typeof m.lectureId !== 'string')
     .map((m) => ({ id: m.id as string, courseId: courseId!, name: m.name as string, text: m.text as string, extractionFormat: m.extractionFormat as SavedMaterial['extractionFormat'], ...(typeof m.notes === 'string' ? { notes: m.notes } : {}) }));
   const isExam = course?.kind === 'exam';
   const busy = saving || putState.isPending || lookupGuide.isPending || saveFacts.isPending;

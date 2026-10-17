@@ -20,6 +20,7 @@ import * as imageOcrPrompt from "../src/prompts/image-ocr.v1";
 import * as coachPrompt from "../src/prompts/coach.v21";
 import * as courseNotesPrompt from "../src/prompts/course-notes.v1";
 import * as uploadNotesPrompt from "../src/prompts/upload-notes.v1";
+import * as lectureNotesPrompt from "../src/prompts/lecture-notes.v1";
 import { courseContext } from "../src/lib/course-context";
 import * as webLookupPrompt from "../src/prompts/web-lookup.v1";
 import * as flashcardsPrompt from "../src/prompts/flashcards.v2";
@@ -123,7 +124,7 @@ async function main() {
     });
     if (tasks.includes("upload_notes")) for (const c of uploadNotesCases) jobs.push({
       task: "upload_notes", name: c.name,
-      run: () => complete("upload_notes", { system: uploadNotesPrompt.systemPrompt({ courseName: "BIO 101", uploadName: c.uploadName, format: c.format }), messages: [{ role: "user", content: c.text }], timeoutMs: 120_000 }),
+      run: () => complete("upload_notes", { system: c.kind === "lecture" ? lectureNotesPrompt.systemPrompt({ courseName: "BIO 101", title: c.uploadName, recordedOn: "2026-10-15" }) : uploadNotesPrompt.systemPrompt({ courseName: "BIO 101", uploadName: c.uploadName, format: c.format }), messages: [{ role: "user", content: c.text }], timeoutMs: 180_000 }),
       grade: (text) => gradeUploadNotes(c, text),
     });
     if (tasks.includes("course_notes")) for (const c of courseNotesCases) jobs.push({

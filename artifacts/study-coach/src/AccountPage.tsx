@@ -95,10 +95,10 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
     id: item.id, filename: item.name, status: 'ready' as const,
     detail: 'Saved to this course',
   })) ?? [];
-  const savedMaterialsByCourse: Record<string, { id: string; name: string; notes?: string }[]> = {};
+  const savedMaterialsByCourse: Record<string, { id: string; name: string; notes?: string; lecture?: boolean }[]> = {};
   for (const item of state.materials ?? []) {
     if (item && typeof item.courseId === 'string' && typeof item.id === 'string') {
-      (savedMaterialsByCourse[item.courseId] ??= []).push({ id: item.id, name: item.name, ...(typeof (item as { notes?: unknown }).notes === 'string' ? { notes: (item as unknown as { notes: string }).notes } : {}) });
+      (savedMaterialsByCourse[item.courseId] ??= []).push({ id: item.id, name: item.name, ...(typeof (item as { lectureId?: unknown }).lectureId === 'string' ? { lecture: true } : {}), ...(typeof (item as { notes?: unknown }).notes === 'string' ? { notes: (item as unknown as { notes: string }).notes } : {}) });
     }
   }
   const busy = put.isPending || importer.isPending || create.isPending || checkIn.isPending ||

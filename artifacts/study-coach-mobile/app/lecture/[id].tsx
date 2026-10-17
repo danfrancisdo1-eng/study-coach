@@ -6,9 +6,10 @@ import { Feather } from '@expo/vector-icons';
 import { useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  deleteLecture, getGetLectureQueryKey, getListLecturesQueryKey, updateLecture, useGetLecture, type Lecture,
+  deleteLecture, getGetLectureQueryKey, getGetStudyStateQueryKey, getListLecturesQueryKey, updateLecture, useGetLecture, useGetStudyState, type Lecture,
 } from '@workspace/api-client-react';
 import { goBack } from '@/lib/nav';
+import { NotesView } from '@/components/NotesView';
 import { useColors } from '@/hooks/useColors';
 import {
   editedSegments, formatDuration, spokenDuration, transcriptHasText, transcriptionBlocker, type TranscriptSegment,
@@ -32,6 +33,12 @@ export default function LectureScreen() {
   const lectureKey = [...getGetLectureQueryKey(id), userId];
   const query = useGetLecture(id, { query: { queryKey: lectureKey, enabled: Boolean(userId && id) } });
   const lecture = query.data;
+  // Part E (D-125): the coach's notes for this lecture, written after the transcript is saved as reviewed.
+  const stateQuery = useGetStudyState({ query: { queryKey: [...getGetStudyStateQueryKey(), userId], enabled: Boolean(userId), refetchInterval: (q) => {
+    const mats = (q.state.data?.state as { materials?: unknown[] } | undefined)?.materials ?? [];
+    return query.data?.status === 'reviewed' && !mats.some((m) => (m as { lectureId?: string })?.lectureId === id) ? 5000 : false;
+  } } });
+  const lectureNotes = (((stateQuery.data?.state as { materials?: unknown[] } | undefined)?.materials ?? []) as { lectureId?: string; notes?: string }[]).find((m) => m?.lectureId === id)?.notes ?? null;
 
   const [hasAudio, setHasAudio] = useState(false);
   const [edits, setEdits] = useState<Record<number, string>>({});
@@ -202,6 +209,13 @@ export default function LectureScreen() {
             <Text style={styles.body}>The recording isn’t on this iPhone, so it can’t be transcribed here. It may have been recorded on another device.</Text>
           ) : null}
 
+          {lecture.status === 'reviewed' ? (
+            <View style={styles.section} testID="panel-lecture-notes">
+              <Text style={styles.sectionTitle}>Lecture notes</Text>
+              {lectureNotes ? <NotesView notes={lectureNotes} /> : <Text style={styles.caption}>The coach is writing your notes from this transcript. They appear here in a minute.</Text>}
+              {lectureNotes ? <Text style={styles.caption}>The coach reads these notes. Anything wrong? Tell the coach in this course's chat.</Text> : null}
+            </View>
+          ) : null}
           {segments.length ? (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>

@@ -73,7 +73,7 @@ export type AccountExperienceProps = {
   onCreateCourse: (name: string, kind: 'course' | 'exam', examDate?: string) => void;
   onRenameCourse: (courseId: string, name: string) => void;
   /** Saved materials per course id, shown while a course is being edited. */
-  savedMaterialsByCourse?: Record<string, { id: string; name: string; notes?: string }[]>;
+  savedMaterialsByCourse?: Record<string, { id: string; name: string; notes?: string; lecture?: boolean }[]>;
   /** Official exam-guide per course id (certification exams), shown while editing. */
   examGuides?: Record<string, { found?: boolean; sections?: { name: string; weight: number | null }[]; sourceUrl?: string | null; questionCount?: number | null; durationMinutes?: number | null; passingScore?: string } | null>;
   /** Memory-sheet rows per course (D-025). */
@@ -237,7 +237,7 @@ export function AccountExperience(props: AccountExperienceProps) {
                           <p className="ae-muted" style={{ fontSize: '.8rem' }}>Anything wrong? Tell the coach in this course's chat.</p>
                         </div> : <p className="ae-muted" style={{ fontSize: '.85rem' }}>The coach writes these notes the next time you use this course's chat.</p>}
                       </details>
-                      {onDeleteMaterial && <button type="button" className="ae-button ae-button--quiet" disabled={busy} style={{ color: 'var(--destructive, #b33b2d)' }}
+                      {onDeleteMaterial && !material.lecture && <button type="button" className="ae-button ae-button--quiet" disabled={busy} style={{ color: 'var(--destructive, #b33b2d)' }}
                         onClick={() => { if (window.confirm(`Delete “${material.name}”? Tutoring and quizzes for ${course.name} will stop using it. This can’t be undone.`)) onDeleteMaterial(material.id); }}
                         data-testid={`button-delete-material-${material.id}`}>Delete</button>}
                     </div>)}
