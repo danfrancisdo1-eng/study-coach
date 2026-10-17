@@ -28,7 +28,7 @@ Every student, every course: high school, college and certification.
 **v1 doesn't:** save things the student didn't state (no guessing); remember things across courses; let the student edit notes by hand.
 **Tests:** a stated date is in the notes and in the next conversation 100 messages later; a correction replaces it; "undo that" restores it; other courses never see it.
 
-## D. Search for big courses
+## D. Search for big courses (chat built 2026-10-17, D-127: Dan's section routing, word search as the backup)
 **v1 does:** when a course is over B's budget, each question searches all of the course's uploads (and full lecture transcripts) and sends the best-matching passages (about 10,000 characters), plus the syllabus and dates always. The same search replaces today's crude word matching for quizzes, flashcards and the review sheet (the review sheet today picks by course name, which is close to random).
 **v1 doesn't:** a meaning-based search service (would need a new provider and Dan's OK); first version matches words, better than today's (whole words, headings, no course id as a search word).
 **Tests:** a 1.5-million-character course still answers "when is the final" and a topic question from the right passage.

@@ -14,7 +14,9 @@ import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
 import * as coachPrompt from "../prompts/coach.v21";
-import { courseContext } from "../lib/course-context";
+import { courseContext, NOTES_BLOCK, PLANNING } from "../lib/course-context";
+import { indexText, routedContext, sectionsOf, wordSearch } from "../lib/course-sections";
+import { routeCourse } from "../lib/course-router";
 import { notesOf } from "../lib/course-notes";
 import { undoCourseNotes, updateCourseNotes } from "../lib/course-notes-writer";
 import { lecturesWithNotes, materialsNeedingNotes, uploadDocs } from "../lib/upload-notes";
@@ -528,7 +530,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const threadLectures = threadId ? await reviewedLectureMaterials(ownerId, threadId) : [];
   const lectureNotesDone = threadId ? lecturesWithNotes(state, threadId) : new Set<string>();
   const lecturesWithoutNotes = threadLectures.filter((l) => !lectureNotesDone.has(l.lectureId));
-  const material = threadId ? courseContext({
+  let material = threadId ? courseContext({
     courseName: threadCourseName!,
     // D-124: each upload's notes; the raw text only until its notes exist.
     uploads: uploadDocs(state, threadId),
@@ -537,6 +539,29 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     notes: notesOf(state, threadId)?.text ?? "",
     query: content,
   }) : null;
+  // Part D (D-127): a course too big to read whole is read by section. The router picks the sections
+  // for this message from the index; the planning documents, course facts and memory sheet always go;
+  // raw passages (original files, full transcripts) when the router asks. Router failure: the passage
+  // search above stands.
+  if (threadId && material?.mode === "search") {
+    const notesText = notesOf(state, threadId)?.text ?? "";
+    const sheet = rowsFromState(state, threadId).length ? sheetAsText(rowsFromState(state, threadId)) : "";
+    const docs = [...uploadDocs(state, threadId), ...lecturesWithoutNotes.map((l) => ({ name: l.name, text: l.text }))].filter((d) => d.text.trim());
+    const always = [...(notesText.trim() ? [{ name: NOTES_BLOCK, text: notesText }] : []), ...docs.filter((d) => PLANNING.test(d.name)), ...(sheet.trim() ? [{ name: "Memory sheet", text: sheet }] : [])];
+    const sections = sectionsOf(docs.filter((d) => !PLANNING.test(d.name)));
+    const route = await routeCourse({ courseName: threadCourseName!, index: indexText(sections), ids: new Set(sections.map((s) => s.id)), recent: messages.slice(-4).map((m) => ({ role: m.role, content: m.content })), question: content });
+    if (route) {
+      const raw = [
+        ...materials.flatMap((m) => (isObject(m) && m.courseId === threadId && typeof m.text === "string" && m.text.trim() ? [{ name: typeof m.name === "string" ? m.name : "Upload", text: m.text }] : [])),
+        ...threadLectures.map((l) => ({ name: `Transcript: ${l.title}`, text: l.text })),
+      ];
+      const terms = route.terms.length ? route.terms : content.split(/[^\p{L}\p{N}-]+/u).filter((w) => w.length > 3);
+      const picked = route.sections.map((id) => sections.find((s) => s.id === id)!).filter(Boolean);
+      const text = routedContext({ courseName: threadCourseName!, always, picked, passages: route.searchRaw ? wordSearch(raw, terms) : [] });
+      material = { ...material, text, mode: "routed", chars: text.length };
+      req.log.info({ courseId: threadId, sections: sections.length, picked: picked.length, searchRaw: route.searchRaw }, "Coach course routed");
+    }
+  }
   if (material) req.log.info({ courseId: threadId, mode: material.mode, uploads: material.uploads, chars: material.chars }, "Coach course material");
   // D-124: older uploads (or ones whose notes failed) get notes in the background; the coach reads their raw text meanwhile.
   if (threadId && (materialsNeedingNotes(state, threadId).length || lecturesWithoutNotes.length)) backfillUploadNotes(ownerId, threadId);

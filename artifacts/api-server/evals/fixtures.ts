@@ -196,6 +196,38 @@ export const memorySheetCases: MemorySheetCase[] = [
 ];
 
 /** Answer-key check (quiz-check.v1, D-027): keys the explanation contradicts, from Dan's screenshots. */
+/** Course router (course-router.v1, D-127): a big course's notes, a message, the sections it must pick. */
+export const routerCourseDocs: { name: string; text: string }[] = [
+  { name: "Lecture notes: Cell structure", text: "# Cell structure\n## Prokaryotes vs eukaryotes\n- Prokaryotes lack a nucleus\n## Organelles\n- Mitochondria make ATP; ribosomes build proteins" },
+  { name: "Lecture notes: Membranes", text: "# Membranes\n## Fluid mosaic model\n- Phospholipid bilayer with proteins\n## Osmosis and diffusion\n- Water moves toward higher solute concentration\n## Active transport\n- Sodium-potassium pump uses ATP" },
+  { name: "Lecture notes: Energy", text: "# Energy\n## Enzymes\n- Lower activation energy\n## Cellular respiration\n- Glycolysis, Krebs cycle, electron transport chain\n## Photosynthesis\n- Light reactions and the Calvin cycle" },
+  { name: "Lecture notes: Cell division", text: "# Cell division\n## Mitosis phases\n- PMAT: prophase, metaphase, anaphase, telophase\n## Cytokinesis\n- Splits the cytoplasm\n## Meiosis\n- Two divisions, four haploid gametes, crossing over" },
+  { name: "Lecture notes: Genetics", text: "# Genetics\n## Mendel's laws\n- Segregation and independent assortment\n## Punnett squares\n- Monohybrid cross ratios 3:1\n## Sex linkage\n- X-linked traits show more in males" },
+  { name: "Lecture notes: Molecular genetics", text: "# Molecular genetics\n## DNA replication\n- Semi-conservative, helicase, DNA polymerase\n## Transcription and translation\n- mRNA, codons, ribosomes\n## Mutations\n- Point mutations and frameshifts" },
+  { name: "Lecture notes: Evolution", text: "# Evolution\n## Natural selection\n- Variation, inheritance, differential survival\n## Hardy-Weinberg\n- p^2 + 2pq + q^2 = 1, a null model\n## Speciation\n- Reproductive isolation" },
+  { name: "Lecture notes: Ecology", text: "# Ecology\n## Population growth\n- Exponential vs logistic, carrying capacity\n## Food webs\n- Trophic levels, energy pyramid 10%\n## Nutrient cycles\n- Carbon and nitrogen cycles" },
+];
+
+export interface CourseRouterCase {
+  name: string;
+  recent: { role: "user" | "assistant"; content: string }[];
+  message: string;
+  /** "document › heading" labels that must all be picked. */
+  mustPick: string[];
+  /** Labels that must not be picked. */
+  mustNotPick?: string[];
+  searchRaw?: boolean;
+}
+
+export const courseRouterCases: CourseRouterCase[] = [
+  { name: "meaning, not words: how do cells split", recent: [], message: "how do cells split into two?", mustPick: ["Lecture notes: Cell division › Mitosis phases"], mustNotPick: ["Lecture notes: Ecology › Food webs"] },
+  { name: "comparison across sections", recent: [], message: "what's the difference between mitosis and meiosis?", mustPick: ["Lecture notes: Cell division › Mitosis phases", "Lecture notes: Cell division › Meiosis"] },
+  { name: "follow-up uses the conversation", recent: [{ role: "user", content: "explain osmosis" }, { role: "assistant", content: "Water moves across the membrane toward the side with more solute." }], message: "and how is that different from active transport?", mustPick: ["Lecture notes: Membranes › Osmosis and diffusion", "Lecture notes: Membranes › Active transport"] },
+  { name: "an exact quote asks for the original files", recent: [], message: "what exactly did the professor say about the Krebs cycle in lecture?", mustPick: [], searchRaw: true },
+  { name: "a formula by name", recent: [], message: "what is the equation for allele frequencies in a population at equilibrium?", mustPick: ["Lecture notes: Evolution › Hardy-Weinberg"] },
+  { name: "energy flow in ecosystems", recent: [], message: "why is there less energy at the top of a food chain?", mustPick: ["Lecture notes: Ecology › Food webs"], mustNotPick: ["Lecture notes: Energy › Photosynthesis"] },
+];
+
 /** Upload notes (upload-notes.v1, D-124): an upload's raw text becomes Markdown notes. Each mustContain entry is a string or a list of accepted forms. */
 export interface UploadNotesCase {
   name: string;

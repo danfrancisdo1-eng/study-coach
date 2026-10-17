@@ -94,10 +94,12 @@ export const quizCheckSchema = object({
 
 export const courseNotesSchema = object({ notes: string, summary: string });
 export const uploadNotesSchema = object({ notes: string });
+export const courseRouterSchema = object({ sections: strings, searchRaw: { type: "boolean" }, terms: strings });
 
 export const TASK_SCHEMAS: Partial<Record<AiTask, JsonSchema>> = {
   course_notes: courseNotesSchema,
   upload_notes: uploadNotesSchema,
+  course_router: courseRouterSchema,
   upload_notes_fix: courseNotesSchema,
   quiz_check: quizCheckSchema,
   flag_check: flagCheckSchema,
