@@ -14,6 +14,7 @@ import { Bone, SkeletonGroup } from '@/components/Skeleton';
 import { ProgressBar } from '@/components/ProgressBar';
 import { writtenProgress } from '@/lib/progress';
 import { FONT, TYPE } from '@/constants/type';
+import { topicParts } from '@/lib/topic-label';
 import { rowResult, scoreLine, sectionTallies } from '@/lib/live-set';
 
 /**
@@ -286,7 +287,9 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
   return (
     <Animated.View layout={LinearTransition.duration(220)} style={styles.card} testID="card-live-set">
       <View style={styles.head}>
-        <CardText style={styles.kicker}>Practice · {session.topic}</CardText>
+        {/* D-130: "All topics" with each section on its own line, not one long capitalised run. */}
+        <CardText style={styles.kicker}>Practice · {topicParts(session.topic).title}</CardText>
+        {topicParts(session.topic).sections.map((section) => <CardText key={section} style={styles.sectionLine}>{section}</CardText>)}
         {!quiz.grade ? <CardText style={styles.headCount} accessibilityLabel={`${answered.length} of ${total} answered`}>{answered.length}/{total}</CardText> : null}
       </View>
       {!quiz.grade ? (
@@ -329,6 +332,7 @@ function QuestionSkeleton({ caption }: { caption: string }) {
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   card: { marginTop: 8, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 16, gap: 12 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  sectionLine: { ...TYPE.small, color: colors.mutedForeground },
   kicker: { ...TYPE.kicker, color: colors.mutedForeground, flexShrink: 1 },
   headCount: { ...TYPE.small, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   progressTrack: { height: 5, borderRadius: 3, backgroundColor: colors.secondary, overflow: 'hidden' },

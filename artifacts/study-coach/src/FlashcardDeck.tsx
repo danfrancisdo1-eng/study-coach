@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetStudySessionQueryKey, useGetStudySession, useReviewFlashcard, type StudySession } from '@workspace/api-client-react';
+import { cardLines } from './lib/card-text';
+import { spansOf } from './lib/coach-text';
+import { topicParts } from './lib/topic-label';
 
 /** Flashcards in the home chat (D-021), web version of the iPhone FlashcardDeck. */
 export default function FlashcardDeck({ sessionId, onFinished, onError }: {
@@ -31,7 +34,7 @@ export default function FlashcardDeck({ sessionId, onFinished, onError }: {
     const again = deck.cards.filter(card => card.results.includes('again'));
     return (
       <div className="ae-card ae-card--compact" data-testid="panel-deck-finished" ref={topRef}>
-        <span className="ae-kicker">FLASHCARDS · {session.topic}</span>
+        <span className="ae-kicker">FLASHCARDS · {topicParts(session.topic).title}</span>
         <p style={{ fontSize: '2rem', fontWeight: 700, margin: '6px 0' }}>{total} / {total}</p>
         <p>{again.length ? `${again.length} card${again.length === 1 ? '' : 's'} needed a second look.` : 'Every card on the first try.'}</p>
         {again.map(card => <p key={card.id} className="ae-muted">• {card.concept}</p>)}
@@ -54,7 +57,7 @@ export default function FlashcardDeck({ sessionId, onFinished, onError }: {
       <span className="ae-kicker">FLASHCARDS · CARD {done + 1} OF {total}{current.results.length ? ' · AGAIN' : ''}</span>
       <button type="button" className="ae-card ae-card--tint" style={{ width: '100%', minHeight: 140, textAlign: 'left', cursor: 'pointer', marginTop: 10 }} onClick={() => setFlipped(f => !f)} data-testid="button-flip-card">
         <span className="ae-kicker">{flipped ? 'ANSWER' : 'TAP TO FLIP'}</span>
-        <p style={{ fontSize: '1.1rem', fontWeight: 600 }}>{flipped ? current.back : current.front}</p>
+        <div style={{ display: 'grid', gap: 10 }}>{cardLines(flipped ? current.back : current.front).map((line, i) => <p key={i} style={{ fontSize: '1.1rem', margin: 0 }}>{spansOf(line).map((sp, k) => sp.bold ? <strong key={k}>{sp.text}</strong> : <span key={k}>{sp.text}</span>)}</p>)}</div>
       </button>
       {flipped ? (
         <div className="ae-row" style={{ marginTop: 10 }}>

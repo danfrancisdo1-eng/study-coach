@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { blocksOf, type Span } from './lib/coach-text';
+import { topicParts } from './lib/topic-label';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetHomeChatQueryKey, useGetHomeChat, useOpenHomeChat, useSendHomeChatMessage, type HomeChat as HomeChatData } from '@workspace/api-client-react';
 import QuizCard from './QuizCard';
@@ -116,6 +117,7 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
                   const inline = (spans: Span[]) => spans.map((sp, k) => sp.bold ? <strong key={k}>{sp.text}</strong> : <span key={k}>{sp.text}</span>);
                   if (block.kind === 'heading') return <p key={i} style={{ fontWeight: 700, marginTop: i > 0 ? '1em' : 0 }}>{block.spans[0]?.text}</p>;
                   if (block.kind === 'bullet') return <p key={i} style={{ paddingLeft: '1em', textIndent: '-.8em' }}>• {inline(block.spans)}</p>;
+                  if (block.kind === 'quote') return <p key={i} data-testid="chat-takeaway" style={{ borderLeft: '3px solid #d9d3c8', paddingLeft: 12, fontWeight: 700, margin: '6px 0' }}>{inline(block.spans)}</p>;
                   if (block.kind === 'trick') return <p key={i} className="sc-miss-hook sc-trick">⚡ {block.label ? <strong>{block.label}: </strong> : null}{inline(block.spans)}</p>;
                   return <p key={i}>{inline(block.spans)}</p>;
                 })
@@ -129,7 +131,7 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
               ) : (
                 <p key={`${action.type}-${action.courseId}-${action.sessionId ?? ''}`} className="ae-muted" style={{ fontSize: '.85rem' }}>
                   {action.type === 'create_course' ? `Added course: ${action.name ?? ''}`
-                    : action.type === 'start_quiz' ? `${action.kind === 'practice' ? 'Practice' : 'Exam'} set: ${action.count ?? ''} questions on ${action.topic ?? ''}`
+                    : action.type === 'start_quiz' ? `${action.kind === 'practice' ? 'Practice' : 'Exam'} set: ${action.count ?? ''} questions on ${[topicParts(action.topic ?? '').title, ...topicParts(action.topic ?? '').sections].join(' · ')}`
                     : action.type === 'start_flashcards' ? `Flashcards: ${action.count ?? ''} cards on ${action.topic ?? ''}`
                     : <>Started a session: {action.topic ?? ''}{action.sessionId && <> · <button type="button" className="ae-button ae-button--quiet" onClick={() => onOpenSession(action.sessionId!)} data-testid="button-open-session">Open</button></>}</>}
                 </p>

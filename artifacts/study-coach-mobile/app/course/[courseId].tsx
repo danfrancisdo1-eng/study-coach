@@ -37,7 +37,7 @@ const record = (value: unknown): StateRecord => (value && typeof value === 'obje
 const readable = (problem: unknown): string => friendlyError(problem);
 
 export default function CourseScreen() {
-  const { courseId, intake } = useLocalSearchParams<{ courseId: string; intake?: string }>();
+  const { courseId, intake, timed } = useLocalSearchParams<{ courseId: string; intake?: string; timed?: string }>();
   // "Add material" right after adding the course (D-057): the screen opens scrolled to the intake card.
   const scrollRef = useRef<ScrollView>(null);
   const intakeY = useRef<number | null>(null);
@@ -50,7 +50,7 @@ export default function CourseScreen() {
     scrollTo(intakeY.current);
   };
   const [picker, setPicker] = useState<StudyAction | null>(null); // "Which topics?" for flashcards and hooks (D-058)
-  const [timedPicker, setTimedPicker] = useState(false); // full exam or a block, timed (D-114)
+  const [timedPicker, setTimedPicker] = useState(timed === '1'); // full exam or a block, timed (D-114); opened from the chat's Simulated exam chip (D-130)
   const [noMaterialNote, setNoMaterialNote] = useState(false); // the one-time note under "Questions without material" (D-060)
   const { isLoaded, isSignedIn, userId } = useAuth();
   const colors = useColors();

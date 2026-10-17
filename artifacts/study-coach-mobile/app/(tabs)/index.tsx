@@ -14,6 +14,7 @@ import {
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { blocksOf, type Span } from '@/lib/coach-text';
+import { topicParts } from '@/lib/topic-label';
 import { premiumCode } from '@/lib/premium-ui';
 import { ActionButton } from '@/components/ActionButton';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
@@ -35,6 +36,7 @@ import { passMarkLine } from '@/lib/exam-sheet';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.'; // sent for the student after Grade so the coach can respond to the result
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
+const SIM_EXAM_CHIP = 'Simulated exam'; // D-130: opens the timed sheet, not a chat message
 
 /**
  * Chat-first home (SPEC §7, D-016): the conversation is the app. The coach asks for the
@@ -190,7 +192,10 @@ export default function CoachHome() {
     if (activeStudyId && openedForRef.current !== activeStudyId) { openedForRef.current = activeStudyId; setStudyOpen(true); }
   }, [activeStudyId]);
   const lastMessage = messages[messages.length - 1];
-  const chips = lastMessage?.role === 'assistant' && !activeQuiz && !activeDeck ? (lastMessage.suggestions ?? []) : [];
+  const baseChips = lastMessage?.role === 'assistant' && !activeQuiz && !activeDeck ? (lastMessage.suggestions ?? []) : [];
+  // D-130 (Dan: "No option for exam or simul"): after a graded set on a certification exam, the
+  // after-set chips also offer the timed Simulated exam (opens the course's timed sheet).
+  const chips = focusCourse?.kind === 'exam' && baseChips.includes('Another set on everything') && !baseChips.includes(SIM_EXAM_CHIP) ? [...baseChips, SIM_EXAM_CHIP] : baseChips;
 
   // The list is inverted (newest message first in the data, drawn at the bottom), so it
   // opens at the newest message with no scroll arithmetic; scrollToEnd kept landing short.
@@ -364,6 +369,10 @@ export default function CoachHome() {
           if (block.kind === 'bullet') return (
             <View key={i} style={styles.bulletRow}><Text style={styles.body}>•</Text><Text style={[styles.body, styles.bulletText]}>{inline(block.spans)}</Text></View>
           );
+          if (block.kind === 'quote') return (
+            // D-130: the one takeaway to remember, set apart (Dan's examples).
+            <View key={i} style={styles.quoteRow} testID="chat-takeaway"><Text style={[styles.body, styles.bold]}>{inline(block.spans)}</Text></View>
+          );
           if (block.kind === 'trick') return (
             <View key={i} style={styles.trickCard} testID="chat-trick">
               <Feather name="zap" size={15} color={colors.hookText} />
@@ -388,7 +397,9 @@ export default function CoachHome() {
       {item.id === lastMessage?.id && chips.length ? (
         <View style={styles.chipRow}>
           {chips.map((chip) => (
-            <Pressable key={chip} accessibilityRole="button" disabled={busy} onPress={() => void sendText(chip)} style={[styles.suggestion, busy && styles.disabled]} testID="button-suggestion">
+            <Pressable key={chip} accessibilityRole="button" disabled={busy}
+              onPress={() => (chip === SIM_EXAM_CHIP && focusCourse ? router.push({ pathname: '/course/[courseId]', params: { courseId: focusCourse.id, timed: '1' } }) : void sendText(chip))}
+              style={[styles.suggestion, busy && styles.disabled]} testID={chip === SIM_EXAM_CHIP ? 'button-suggestion-simulated' : 'button-suggestion'}>
               <Text style={styles.suggestionText}>{chip}</Text>
             </Pressable>
           ))}
@@ -415,7 +426,8 @@ export default function CoachHome() {
           style={({ pressed }) => [styles.setCard, pressed && styles.pressed]} testID="card-set">
           <Feather name="edit-3" size={16} color={colors.primaryText} />
           <View style={styles.setCardCopy}>
-            <Text style={styles.setCardTitle}>{action.kind === 'practice' ? 'Practice set' : 'Exam set'} · {action.topic ?? ''}</Text>
+            <Text style={styles.setCardTitle}>{action.kind === 'practice' ? 'Practice set' : 'Exam set'} · {topicParts(action.topic ?? '').title}</Text>
+            {topicParts(action.topic ?? '').sections.map((section) => <Text key={section} style={styles.caption} numberOfLines={1}>{section}</Text>)}
             <Text style={styles.caption}>{activeQuiz?.sessionId === action.sessionId ? `${activeQuiz.answered} of ${activeQuiz.total} answered` : `${action.count ?? ''} questions · graded`}</Text>
           </View>
           <Text style={styles.openLinkText}>{activeQuiz?.sessionId === action.sessionId ? 'Open' : 'Review'}</Text>
@@ -573,7 +585,7 @@ export default function CoachHome() {
               </Pressable>
               <View style={styles.headerCopy}>
                 <Text style={styles.brand}>{deckSessionId ? 'Flashcards' : quizIsPractice ? 'Practice' : 'Exam'}</Text>
-                <Text numberOfLines={1} style={styles.headerSub}>{(activeDeck ?? activeQuiz)?.topic ?? 'RapidRecall AI'}</Text>
+                <Text numberOfLines={1} style={styles.headerSub}>{topicParts((activeDeck ?? activeQuiz)?.topic ?? 'RapidRecall AI').title}</Text>
               </View>
             </View>
             <ScrollView ref={quizScrollRef} style={styles.studySheet} contentContainerStyle={[styles.quizDockContent, { paddingBottom: 24 }]} keyboardShouldPersistTaps="handled" testID="dock-quiz">
@@ -692,7 +704,8 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   bold: { fontWeight: '700' },
   heading: { color: colors.foreground, fontSize: 16, lineHeight: 22, fontWeight: '700' },
   headingGap: { marginTop: 12 },
-  bulletRow: { flexDirection: 'row', gap: 8, paddingLeft: 2 },
+  bulletRow: { flexDirection: 'row', gap: 8, paddingLeft: 2, marginBottom: 2 },
+  quoteRow: { borderLeftWidth: 3, borderLeftColor: colors.border, paddingLeft: 12, paddingVertical: 4, marginVertical: 4 },
   bulletText: { flex: 1 },
   trickCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, padding: 11, borderRadius: 14, backgroundColor: colors.hookBg },
   trickText: { flex: 1, color: colors.hookText, fontSize: 13.5, lineHeight: 19.5 },

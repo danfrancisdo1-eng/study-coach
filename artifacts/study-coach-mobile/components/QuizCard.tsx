@@ -13,6 +13,7 @@ import { writtenProgress } from '@/lib/progress';
 import { isPerfect } from '@/lib/perfect-score';
 import { useColors } from '@/hooks/useColors';
 import { FONT, TYPE } from '@/constants/type';
+import { topicParts } from '@/lib/topic-label';
 import { canGrade, clockText, clockTone, scoreLine, secondsLeft, timeUsedLine } from '@/lib/exam-sheet';
 
 /**
@@ -187,7 +188,9 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
     return (
       <View style={styles.card} testID="panel-quiz-score">
         <Confetti sessionId={sessionId} perfect={isPerfect(quiz.grade)} />
-        <CardText style={styles.kicker}>{kindLabel} · {session.topic}</CardText>
+        {/* D-130: "All topics" with each section on its own line, not one long capitalised run. */}
+        <CardText style={styles.kicker}>{kindLabel} · {topicParts(session.topic).title}</CardText>
+        {topicParts(session.topic).sections.map((section) => <CardText key={section} style={styles.sectionLine}>{section}</CardText>)}
         <View style={styles.scoreRow}><CardText style={styles.score}>{quiz.grade.correct}</CardText><CardText style={styles.scoreOf}> / {quiz.grade.limitMinutes ? quiz.grade.answered + quiz.grade.unanswered : quiz.grade.answered}</CardText></View>
         {/* Dan (2026-10-12): "20% on the questions you answered" read like 20% missed. Say the score plainly. */}
         <CardText style={styles.body}>{scoreLine(quiz.grade)}</CardText>
@@ -268,7 +271,9 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
     return (
       <View style={styles.card} testID="panel-quiz-writing">
         {clock}
-        <CardText style={styles.kicker}>{kindLabel} · {session.topic}</CardText>
+        {/* D-130: "All topics" with each section on its own line, not one long capitalised run. */}
+        <CardText style={styles.kicker}>{kindLabel} · {topicParts(session.topic).title}</CardText>
+        {topicParts(session.topic).sections.map((section) => <CardText key={section} style={styles.sectionLine}>{section}</CardText>)}
         {progress}
         {bubbles}
         {/* D-126: the real count of questions written so far. */}
@@ -291,7 +296,9 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
     return (
       <View style={styles.card} testID="panel-quiz-grade">
         {clock}
-        <CardText style={styles.kicker}>{kindLabel} · {session.topic}</CardText>
+        {/* D-130: "All topics" with each section on its own line, not one long capitalised run. */}
+        <CardText style={styles.kicker}>{kindLabel} · {topicParts(session.topic).title}</CardText>
+        {topicParts(session.topic).sections.map((section) => <CardText key={section} style={styles.sectionLine}>{section}</CardText>)}
         <CardText style={styles.cardTitle}>All {questions.length} answered.</CardText>
         {bubbles}
         {!marked.length ? <CardText style={styles.muted}>Tap a bubble to look at a question again, or grade now.</CardText> : null}
@@ -355,6 +362,7 @@ function CardText(props: React.ComponentProps<typeof Text>) {
 // light cards, the trick in a tinted card, "Your answer" / "Best answer" as labelled lines.
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 16, gap: 12 },
+  sectionLine: { ...TYPE.small, color: colors.mutedForeground },
   kicker: { ...TYPE.kicker, color: colors.mutedForeground },
   prompt: { ...TYPE.prompt, color: colors.foreground },
   body: { ...TYPE.body, color: colors.foreground },

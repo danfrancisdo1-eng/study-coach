@@ -17,3 +17,8 @@ test('inline bold and memory-trick lines', () => {
   assert.equal(trick.spans[0].text, 'protects the model');
   assert.deepEqual(spansOf('a ** b'), [{ text: 'a ** b', bold: false }]);
 });
+
+// D-130: a "> " line is the one highlighted takeaway (Dan's examples: "TensorRT = Race-Tuned Runtime").
+test('a "> " line is a highlighted takeaway with bold kept', () => {
+  assert.deepEqual(blocksOf('> **FAST** → TensorRT'), [{ kind: 'quote', spans: [{ text: 'FAST', bold: true }, { text: ' → TensorRT', bold: false }] }]);
+});
