@@ -52,3 +52,18 @@ test('a guide from before the exam facts existed is refreshed once, by itself (D
   assert.equal(needsFactsLookup({ kind: 'course', examGuide: old }), false);
   assert.equal(needsFactsLookup(undefined), false);
 });
+
+// D-129: when the vendor publishes no numbers, the student taps them (no typing); a number the
+// lookup did find is pre-selected and added to the choices if it is not one of them.
+import { factPicks } from './exam-facts.ts';
+
+test('factPicks: standard choices, found numbers included and pre-selected', () => {
+  assert.deepEqual(factPicks({ questionCount: null, durationMinutes: 45, passingScore: '' }), {
+    questions: [20, 40, 50, 60], minutes: [30, 45, 60, 90, 120], question: null, minute: 45,
+  });
+  const odd = factPicks({ questionCount: 65, durationMinutes: 130, passingScore: '' });
+  assert.deepEqual(odd.questions, [20, 40, 50, 60, 65]);
+  assert.deepEqual(odd.minutes, [30, 45, 60, 90, 120, 130]);
+  assert.equal(odd.question, 65);
+  assert.equal(odd.minute, 130);
+});

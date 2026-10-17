@@ -71,3 +71,14 @@ export function needsFactsLookup(course: O | null | undefined): boolean {
   const facts = courseExamFacts(course);
   return !facts.questionCount || !facts.durationMinutes;
 }
+
+/** Tap-to-pick numbers when the vendor publishes none (D-129): standard choices plus any number the lookup found, which is pre-selected. */
+export function factPicks(facts: ExamFacts): { questions: number[]; minutes: number[]; question: number | null; minute: number | null } {
+  const withFound = (list: number[], found: number | null) => (found && !list.includes(found) ? [...list, found].sort((a, b) => a - b) : list);
+  return {
+    questions: withFound([20, 40, 50, 60], facts.questionCount),
+    minutes: withFound([30, 45, 60, 90, 120], facts.durationMinutes),
+    question: facts.questionCount,
+    minute: facts.durationMinutes,
+  };
+}

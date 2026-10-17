@@ -14,7 +14,7 @@ import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
-import { courseExamFacts, factsFromInputs, needsFactsLookup, realExamLine, timedChoices, type TimedSize } from '@/lib/exam-facts';
+import { courseExamFacts, factPicks, factsFromInputs, needsFactsLookup, realExamLine, timedChoices, type TimedSize } from '@/lib/exam-facts';
 import { whenLabel } from '@/lib/when';
 import { ActionButton } from '@/components/ActionButton';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
@@ -101,6 +101,25 @@ export default function CourseScreen() {
   const busy = saving || putState.isPending || lookupGuide.isPending || saveFacts.isPending;
   const facts = courseExamFacts(course);
   const choices = isExam ? timedChoices(facts) : [];
+  // D-129: no published numbers → the student taps them (no typing); a found number is pre-selected.
+  const picks = factPicks(facts);
+  const [pickQ, setPickQ] = useState<number | null>(null);
+  const [pickM, setPickM] = useState<number | null>(null);
+  const chosenQ = pickQ ?? picks.question;
+  const chosenM = pickM ?? picks.minute;
+  const startPicked = async () => {
+    if (!chosenQ || !chosenM) return;
+    setError(''); setSaving(true);
+    try {
+      // Saved to the course, so next time the sheet goes straight to Full exam or a Block.
+      await saveFacts.mutateAsync({ courseId: courseId!, data: { questionCount: chosenQ, durationMinutes: chosenM, passingScore: facts.passingScore } });
+      await queryClient.invalidateQueries({ queryKey: stateKey });
+      startTimed('full', `Full exam: ${chosenQ} questions · ${chosenM} min`);
+    } catch (problem) {
+      setTimedPicker(false);
+      setError(readable(problem));
+    } finally { setSaving(false); }
+  };
   const openEditor = () => {
     setName(typeof course?.name === 'string' ? course.name : '');
     setExamDate(typeof course?.examDate === 'string' ? describeExamDate(course.examDate) : '');
@@ -428,15 +447,34 @@ export default function CourseScreen() {
           </View>
           <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
             {!choices.length ? (
-              // No question count or time limit yet (Dan saw an untimed set with no idea why): say so and offer both ways in.
+              // No question count or time limit (Microsoft publishes none, D-129): tap them, then Start. No typing.
               <View style={styles.card} testID="panel-timed-needs-facts">
                 {lookupGuide.isPending
                   ? <View style={styles.row}><ActivityIndicator color={colors.primaryText} /><Text style={styles.body}>Looking up the real exam's number of questions and time limit…</Text></View>
-                  : <Text style={styles.body}>{guide && 'questionCount' in guide ? "The official exam page doesn't list the number of questions or the time limit. Type them in from the exam page and the clock is ready." : "To time it like the real exam, the app needs the exam's number of questions and time limit."}</Text>}
+                  : <Text style={styles.body}>The official exam page doesn't list these. Pick yours:</Text>}
+                <Text style={styles.kicker}>Questions</Text>
                 <View style={styles.actions}>
-                  <ActionButton label="Look them up" icon="search" disabled={busy} onPress={() => { setTimedPicker(false); void refreshGuide(); }} testID="button-timed-lookup" />
-                  <ActionButton label="Type them in" icon="edit-2" secondary onPress={() => { setTimedPicker(false); openEditor(); }} testID="button-timed-type" />
+                  {picks.questions.map((n) => (
+                    <Pressable key={n} accessibilityRole="button" accessibilityState={{ selected: chosenQ === n }} accessibilityLabel={`${n} questions`} onPress={() => setPickQ(n)}
+                      style={[styles.pick, chosenQ === n && styles.pickOn]} testID={`button-pick-questions-${n}`}>
+                      <Text style={[styles.pickText, chosenQ === n && styles.pickTextOn]}>{n}</Text>
+                    </Pressable>
+                  ))}
                 </View>
+                <Text style={styles.kicker}>Minutes</Text>
+                <View style={styles.actions}>
+                  {picks.minutes.map((n) => (
+                    <Pressable key={n} accessibilityRole="button" accessibilityState={{ selected: chosenM === n }} accessibilityLabel={`${n} minutes`} onPress={() => setPickM(n)}
+                      style={[styles.pick, chosenM === n && styles.pickOn]} testID={`button-pick-minutes-${n}`}>
+                      <Text style={[styles.pickText, chosenM === n && styles.pickTextOn]}>{n}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <ActionButton label={chosenQ && chosenM ? `Start timed exam · ${chosenQ} questions · ${chosenM} min` : 'Pick questions and minutes'} icon="clock"
+                  disabled={busy || !chosenQ || !chosenM} onPress={() => void startPicked()} testID="button-timed-start-picked" />
+                <Pressable accessibilityRole="button" onPress={() => { setTimedPicker(false); openEditor(); }} style={styles.textButtonRow} testID="button-timed-type">
+                  <Text style={styles.link}>Other numbers…</Text>
+                </Pressable>
               </View>
             ) : null}
             {choices.map((choice) => (
@@ -487,6 +525,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { minHeight: 44, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.chipBorder, backgroundColor: colors.chipBg, alignItems: 'center', justifyContent: 'center' },
   chipText: { color: colors.primaryText, fontSize: 13.5, fontWeight: '600' },
+  pick: { minWidth: 56, minHeight: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  pickOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  pickText: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
+  pickTextOn: { color: colors.primaryForeground },
+  link: { color: colors.primaryText, fontSize: 15, fontWeight: '600' },
+  textButtonRow: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   topicChoice: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   topicChoiceAll: { backgroundColor: colors.primary, borderColor: colors.primary },
   topicChoiceText: { flex: 1, color: colors.foreground, fontSize: 16, fontWeight: '600' },
