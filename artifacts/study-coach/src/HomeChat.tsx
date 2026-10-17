@@ -120,8 +120,8 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
                   if (block.kind === 'bullet') return <p key={i} style={{ paddingLeft: '1em', textIndent: '-.8em' }}>• {inline(block.spans)}</p>;
                   if (block.kind === 'popquiz') return <div key={i} role="button" tabIndex={0} data-testid="chat-pop-quiz" className="sc-miss-hook" style={{ borderRadius: 14, padding: '12px 14px', margin: '8px 0', cursor: 'text' }}
                     onClick={() => inputRef.current?.focus()} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') inputRef.current?.focus(); }}>
-                    <p style={{ fontWeight: 800, margin: '0 0 4px' }}>❓ Pop quiz</p>
-                    <p style={{ fontWeight: 600, fontStyle: 'italic', margin: '0 0 4px' }}>{inline(block.spans)}</p>
+                    <p style={{ fontWeight: 800, margin: '0 0 4px' }}>❓ Pop Quiz</p>
+                    <p style={{ margin: '0 0 4px' }}>{inline(block.spans)}</p>
                     <p style={{ fontSize: '.85rem', opacity: .8, margin: 0 }}>Type your answer below.</p>
                   </div>;
                   if (block.kind === 'quote') return <p key={i} data-testid="chat-takeaway" style={{ borderLeft: '3px solid #d9d3c8', paddingLeft: 12, fontWeight: 700, margin: '6px 0' }}>{inline(block.spans)}</p>;
