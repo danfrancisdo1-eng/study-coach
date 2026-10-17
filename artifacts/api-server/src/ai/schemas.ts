@@ -63,7 +63,7 @@ export const coachSchema = object({
   actions: {
     type: "array",
     items: object({
-      type: { type: "string", enum: ["create_course", "start_quiz", "start_flashcards", "update_memory_sheet", "update_course_notes", "undo_course_notes", "start_session", "lookup_exam_guide", "web_search"] },
+      type: { type: "string", enum: ["create_course", "start_quiz", "start_flashcards", "update_memory_sheet", "update_course_notes", "undo_course_notes", "fix_upload_notes", "start_session", "lookup_exam_guide", "web_search"] },
       // create_course: the course name. start_quiz / start_session: the course name or id, and a topic.
       name: string,
       topic: string,
@@ -74,6 +74,8 @@ export const coachSchema = object({
       // create_course only: a college course or a certification exam, with the exam date when known.
       courseKind: { type: "string", enum: ["course", "exam"] },
       examDate: string,
+      // fix_upload_notes only: the upload's name as listed in COURSE MATERIAL.
+      upload: string,
     }),
   },
 });
@@ -91,9 +93,12 @@ export const quizCheckSchema = object({
 });
 
 export const courseNotesSchema = object({ notes: string, summary: string });
+export const uploadNotesSchema = object({ notes: string });
 
 export const TASK_SCHEMAS: Partial<Record<AiTask, JsonSchema>> = {
   course_notes: courseNotesSchema,
+  upload_notes: uploadNotesSchema,
+  upload_notes_fix: courseNotesSchema,
   quiz_check: quizCheckSchema,
   flag_check: flagCheckSchema,
   coach: coachSchema,

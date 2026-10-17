@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { File as ExpoFile } from 'expo-file-system';
@@ -8,6 +8,7 @@ import { selectProviderMaterial } from '@/lib/material-file-provider';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { ActionButton } from '@/components/ActionButton';
+import { NotesView } from '@/components/NotesView';
 
 /**
  * Material intake (CLAUDE.md §8): Photos, Files, OneDrive (via the Files picker),
@@ -26,6 +27,8 @@ export type SavedMaterial = {
   extractionCoverage?: StudyMaterialExtraction['coverage'];
   coverageNote?: string;
   sourceUrl?: string;
+  /** D-124: the coach's Markdown notes (the raw `text` is kept unchanged). */
+  notes?: string;
 };
 
 export type IntakeStatus = { uploading: boolean; reviewing: boolean; saving: boolean };
@@ -200,7 +203,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
     if (!mounted.current || upload.courseId !== courseId) return;
     setMaterialUploading(false);
     setExtractedMaterial(result);
-    setMaterialNotice(`${result.filename} is ready. Check the text below, then Save.`);
+    setMaterialNotice(result.notes ? `${result.filename}: here are your notes. Check them, then Save.` : `${result.filename} is ready. Notes will be written after you save.`);
   };
 
   const handleMaterialExtractionError = (upload: PendingMaterial, problem: unknown) => {
@@ -234,6 +237,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
         extractionStatus: extractedMaterial.status,
         extractionCoverage: extractedMaterial.coverage,
         coverageNote: extractedMaterial.coverageNote,
+        ...(extractedMaterial.notes ? { notes: extractedMaterial.notes } : {}),
         ...(extractedMaterial.sourceUrl ? { sourceUrl: extractedMaterial.sourceUrl } : {}),
       };
       await onSave(addition);
@@ -254,8 +258,8 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
       {materialUploading ? (
         <View style={styles.extractionPreview} accessibilityRole="progressbar" accessibilityLabel="Extracting course material text" testID="status-material-extracting">
           <ActivityIndicator color={colors.primaryText} />
-          <Text style={styles.cardTitle}>Extracting text</Text>
-          <Text style={styles.muted}>Reading your file. Nothing is saved until you check the text and tap Save.</Text>
+          <Text style={styles.cardTitle}>Reading and writing notes</Text>
+          <Text style={styles.muted}>Reading your file and turning it into notes. Nothing is saved until you tap Save.</Text>
           <ActionButton
             label="Cancel extraction"
             secondary
@@ -274,10 +278,11 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
           <Text style={styles.cardTitle}>{extractedMaterial.filename}</Text>
           <Text style={styles.muted}>{extractedMaterial.coverageNote}</Text>
           {extractedMaterial.sourceUrl ? <Text selectable style={styles.caption}>{extractedMaterial.sourceUrl}</Text> : null}
-          <TextInput accessibilityLabel="Extracted material text" testID="input-extracted-text" multiline
-            value={extractedMaterial.text} maxLength={100000}
-            onChangeText={text => setExtractedMaterial({ ...extractedMaterial, text, characterCount: text.length })}
-            style={[styles.input, { minHeight: 180, maxHeight: 320, textAlignVertical: 'top' }]} />
+          {/* D-124: read-only. Anything wrong? Tell the coach in this course's chat after saving. */}
+          <ScrollView style={[styles.input, { maxHeight: 320 }]} nestedScrollEnabled testID="panel-upload-notes">
+            {extractedMaterial.notes ? <NotesView notes={extractedMaterial.notes} /> : <Text selectable style={styles.muted}>{extractedMaterial.text}</Text>}
+          </ScrollView>
+          <Text style={styles.caption}>{extractedMaterial.notes ? 'Anything wrong? After saving, tell the coach in this course\'s chat and it fixes the notes.' : 'The coach will turn this into notes after you save.'}</Text>
           <View style={styles.buttonRow}>
             <ActionButton label="Save to course" icon="check" onPress={() => void saveExtractedMaterial()} disabled={allBusy || !extractedMaterial.text.trim()} testID="button-save-extracted-material" />
             <ActionButton

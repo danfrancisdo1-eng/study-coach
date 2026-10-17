@@ -4,7 +4,7 @@
 //   AI_PROVIDER_<TASK>=openai|anthropic per-task override, e.g. AI_PROVIDER_TUTOR
 //   AI_MODEL_<TASK>=<model id>          per-task model override, e.g. AI_MODEL_TUTOR
 
-export type AiTask = "image_ocr" | "tutor" | "session_quiz" | "syllabus" | "classic_quiz" | "exam_plan" | "coach" | "flashcards" | "exam_guide" | "memory_sheet" | "quiz_check" | "flag_check" | "web_lookup" | "review_sheet" | "course_notes";
+export type AiTask = "image_ocr" | "tutor" | "session_quiz" | "syllabus" | "classic_quiz" | "exam_plan" | "coach" | "flashcards" | "exam_guide" | "memory_sheet" | "quiz_check" | "flag_check" | "web_lookup" | "review_sheet" | "course_notes" | "upload_notes" | "upload_notes_fix";
 export type AiProvider = "openai" | "anthropic";
 export type Effort = "low" | "medium" | "high";
 
@@ -23,7 +23,7 @@ type ProviderDefaults = Omit<TaskConfig, "provider" | "json">;
 
 // JSON output tasks get a schema from ./schemas (TASK_SCHEMAS).
 const JSON_TASKS: Record<AiTask, boolean> = {
-  image_ocr: true, tutor: false, session_quiz: true, syllabus: true, classic_quiz: true, exam_plan: true, coach: true, flashcards: true, exam_guide: false, memory_sheet: true, quiz_check: true, flag_check: true, web_lookup: false, review_sheet: false, course_notes: true,
+  image_ocr: true, tutor: false, session_quiz: true, syllabus: true, classic_quiz: true, exam_plan: true, coach: true, flashcards: true, exam_guide: false, memory_sheet: true, quiz_check: true, flag_check: true, web_lookup: false, review_sheet: false, course_notes: true, upload_notes: true, upload_notes_fix: true,
 };
 
 // Today's production settings.
@@ -43,6 +43,8 @@ const OPENAI: Record<AiTask, ProviderDefaults> = {
   web_lookup: { model: "gpt-5.6-terra", maxTokens: 2000 }, // unused: the task needs web search, Anthropic only
   review_sheet: { model: "gpt-5.6-terra", maxTokens: 8000 },
   course_notes: { model: "gpt-5.6-terra", maxTokens: 6000 },
+  upload_notes: { model: "gpt-5.6-terra", maxTokens: 16000 },
+  upload_notes_fix: { model: "gpt-5.6-terra", maxTokens: 16000 },
 };
 
 // Starting points from docs/AUDIT.md section 5c; confirmed or changed by evals.
@@ -74,6 +76,9 @@ const ANTHROPIC: Record<AiTask, ProviderDefaults> = {
   review_sheet: { model: "claude-sonnet-5-5", maxTokens: 32000, effort: "medium" },
   // Course notes writer (D-123): applies one stated fact to a course's Markdown notes. Dates must be exact.
   course_notes: { model: "claude-sonnet-5-5", maxTokens: 10000, effort: "low" },
+  // Upload notes (D-124): every upload becomes Markdown notes; long uploads give long notes.
+  upload_notes: { model: "claude-sonnet-5-5", maxTokens: 32000, effort: "low" },
+  upload_notes_fix: { model: "claude-sonnet-5-5", maxTokens: 32000, effort: "low" },
 };
 
 function provider(value: string | undefined): AiProvider | undefined {

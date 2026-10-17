@@ -96,7 +96,7 @@ export default function CourseScreen() {
   const course = courses.find((c) => c.id === courseId);
   const materials: SavedMaterial[] = (Array.isArray(state.materials) ? state.materials.map(record) : [])
     .filter((m) => m.courseId === courseId && typeof m.id === 'string' && typeof m.name === 'string' && typeof m.text === 'string')
-    .map((m) => ({ id: m.id as string, courseId: courseId!, name: m.name as string, text: m.text as string, extractionFormat: m.extractionFormat as SavedMaterial['extractionFormat'] }));
+    .map((m) => ({ id: m.id as string, courseId: courseId!, name: m.name as string, text: m.text as string, extractionFormat: m.extractionFormat as SavedMaterial['extractionFormat'], ...(typeof m.notes === 'string' ? { notes: m.notes } : {}) }));
   const isExam = course?.kind === 'exam';
   const busy = saving || putState.isPending || lookupGuide.isPending || saveFacts.isPending;
   const facts = courseExamFacts(course);
@@ -394,7 +394,7 @@ export default function CourseScreen() {
           <View style={styles.card} onLayout={(e) => { manageY.current = e.nativeEvent.layout.y; }}>
             <CourseManager
               courseName={typeof course.name === 'string' ? course.name : 'this course'}
-              materials={materials.map((m) => ({ id: m.id, name: m.name, extractionFormat: m.extractionFormat }))}
+              materials={materials.map((m) => ({ id: m.id, name: m.name, extractionFormat: m.extractionFormat, notes: m.notes }))}
               busy={busy}
               onDeleteMaterial={deleteMaterial}
               onDeleteCourse={removeCourse}

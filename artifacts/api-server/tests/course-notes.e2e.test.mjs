@@ -22,6 +22,8 @@ test('course notes: kept, read later, course-only, corrected, undone', async (t)
       writerRequests.push(request.body);
       return writer ? reply(JSON.stringify(writer)) : { status: 500, body: { error: { message: 'stub' } } };
     }
+    // Part F (D-124): uploads without notes get them in the background; not a coach request.
+    if (system.startsWith('You turn one upload into study notes')) return reply(JSON.stringify({ notes: '## Notes\n- Quiz 9: Oct 30.' }));
     coachRequests.push(request.body.messages.map((m) => m.content).join('\n'));
     return reply(JSON.stringify(coach));
   });

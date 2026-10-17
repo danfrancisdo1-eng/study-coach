@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { db, studyStatesTable } from "@workspace/db";
 import { complete } from "../ai";
 import * as courseNotesPrompt from "../prompts/course-notes.v1";
-import { notesOf, parseNotesReply, undoNotes, withNotes } from "./course-notes";
+import { notesOf, parseNotesReply, undoLatest, withNotes } from "./course-notes";
 
 type JsonObject = Record<string, unknown>;
 const isObject = (value: unknown): value is JsonObject => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -51,7 +51,7 @@ export async function undoCourseNotes(ownerId: string, courseId: string): Promis
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const current = await readState(ownerId);
     if (!current) return null;
-    const undone = undoNotes(current.state, courseId, new Date().toISOString());
+    const undone = undoLatest(current.state, courseId, new Date().toISOString());
     if (!undone.restored) return "";
     if (await writeState(ownerId, undone.state, current.version)) return undone.undid || "your last change";
   }

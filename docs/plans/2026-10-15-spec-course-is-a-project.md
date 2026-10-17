@@ -38,7 +38,7 @@ Every student, every course: high school, college and certification.
 **v1 doesn't:** notes for unreviewed transcripts; keep audio on the server (recordings stay on the phone).
 **Tests:** notes are a fraction of the transcript's length and keep flagged exam hints (eval); the coach reads notes, not transcripts, until a search needs one.
 
-## F. Every upload becomes notes (Dan, D-120)
+## F. Every upload becomes notes (Dan, D-120; built 2026-10-16, D-124)
 **v1 does:** the same as E for every upload: photos (OCR typos fixed), PDFs, slides, websites and syllabi become Markdown bullet notes the coach reads; a syllabus's notes keep every date, quiz, exam and grading line. Reviewed read-only, corrected by telling the coach, then filed. The raw extracted text is kept in storage and only searched when the notes don't cover something. Photos themselves stay on the phone (only their text reaches the server, as today).
 **v1 doesn't:** let the student edit extracted text by hand (replaces the old "extracted text is always editable before an explicit save").
 **Tests and evals:** notes keep every date and grading line of Dan's BIO 101 syllabus; OCR typos fixed without changing facts; the coach reads notes, not raw text, until a search needs it.

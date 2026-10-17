@@ -16,6 +16,7 @@ export const HomeChatActionType = {
   update_memory_sheet: 'update_memory_sheet',
   update_course_notes: 'update_course_notes',
   undo_course_notes: 'undo_course_notes',
+  fix_upload_notes: 'fix_upload_notes',
   start_session: 'start_session',
   lookup_exam_guide: 'lookup_exam_guide',
   web_search: 'web_search',

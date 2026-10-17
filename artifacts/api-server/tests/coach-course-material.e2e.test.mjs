@@ -10,6 +10,8 @@ test('coach: the course chat reads that course whole, never another course; the 
   const database = await startDatabase(t);
   const coachRequests = [];
   const ai = await startAiStub(t, (request) => {
+    // Part F (D-124): background notes for uploads are not coach requests.
+    if (request.body.messages[0].content.startsWith('You turn one upload into study notes')) return { status: 500, body: { error: { message: 'stub' } } };
     coachRequests.push(request.body.messages[0].content);
     return { status: 200, body: { id: 'x', object: 'chat.completion', created: 0, model: 'stub', choices: [{ index: 0, finish_reason: 'stop', message: { role: 'assistant', content: JSON.stringify({ reply: 'Your final is Tuesday, December 1, 2026.', suggestions: [], actions: [] }) } }], usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 } } };
   });

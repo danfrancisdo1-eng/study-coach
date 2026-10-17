@@ -95,10 +95,10 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
     id: item.id, filename: item.name, status: 'ready' as const,
     detail: 'Saved to this course',
   })) ?? [];
-  const savedMaterialsByCourse: Record<string, { id: string; name: string }[]> = {};
+  const savedMaterialsByCourse: Record<string, { id: string; name: string; notes?: string }[]> = {};
   for (const item of state.materials ?? []) {
     if (item && typeof item.courseId === 'string' && typeof item.id === 'string') {
-      (savedMaterialsByCourse[item.courseId] ??= []).push({ id: item.id, name: item.name });
+      (savedMaterialsByCourse[item.courseId] ??= []).push({ id: item.id, name: item.name, ...(typeof (item as { notes?: unknown }).notes === 'string' ? { notes: (item as unknown as { notes: string }).notes } : {}) });
     }
   }
   const busy = put.isPending || importer.isPending || create.isPending || checkIn.isPending ||
@@ -120,6 +120,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
       await updateState(previous => ({ ...previous, materials: [...(previous.materials ?? []), {
         id: crypto.randomUUID(), courseId: targetCourseId, name: preview.filename, text: preview.text.trim(), addedAt: new Date().toISOString(),
         sourceUrl: preview.sourceUrl, extractionFormat: preview.format, extractionCoverage: preview.coverage, coverageNote: preview.coverageNote,
+        ...(preview.notes ? { notes: preview.notes } : {}),
       }] }));
     } catch (problem) {
       if (message(problem).includes('409')) await stateQuery.refetch();

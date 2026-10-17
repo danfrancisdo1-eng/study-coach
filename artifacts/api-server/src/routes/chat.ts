@@ -13,10 +13,12 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v20";
+import * as coachPrompt from "../prompts/coach.v21";
 import { courseContext } from "../lib/course-context";
 import { notesOf } from "../lib/course-notes";
 import { undoCourseNotes, updateCourseNotes } from "../lib/course-notes-writer";
+import { materialsNeedingNotes, uploadDocs } from "../lib/upload-notes";
+import { backfillUploadNotes, fixUploadNotes } from "../lib/upload-notes-writer";
 import * as webLookupPrompt from "../prompts/web-lookup.v1";
 import { lookupExamGuide } from "../lib/exam-guide";
 import { saveExamGuide } from "../lib/exam-guide-state";
@@ -524,13 +526,16 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const threadCourseName = threadId ? courses.find((c) => c.id === threadId)?.name ?? "this course" : null;
   const material = threadId ? courseContext({
     courseName: threadCourseName!,
-    uploads: materials.flatMap((m) => (isObject(m) && m.courseId === threadId && typeof m.text === "string" ? [{ name: typeof m.name === "string" ? m.name : "Upload", text: m.text }] : [])),
+    // D-124: each upload's notes; the raw text only until its notes exist.
+    uploads: uploadDocs(state, threadId),
     lectures: await reviewedLectureMaterials(ownerId, threadId),
     memorySheet: rowsFromState(state, threadId).length ? sheetAsText(rowsFromState(state, threadId)) : "",
     notes: notesOf(state, threadId)?.text ?? "",
     query: content,
   }) : null;
   if (material) req.log.info({ courseId: threadId, mode: material.mode, uploads: material.uploads, chars: material.chars }, "Coach course material");
+  // D-124: older uploads (or ones whose notes failed) get notes in the background; the coach reads their raw text meanwhile.
+  if (threadId && materialsNeedingNotes(state, threadId).length) backfillUploadNotes(ownerId, threadId);
   const history = messages.slice(-HISTORY_TURNS).map((m) => ({ role: m.role, content: m.content }));
   // Results so far for this thread's course (D-042): past sets and decks as facts for the coach.
   const courseSessions = threadId
@@ -659,6 +664,30 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     }
     return session;
   };
+  // D-124: a fix the student told the coach for one upload's notes (this course's uploads only).
+  if (plan.fixUpload) {
+    const courseId = resolveCourse(plan.fixUpload);
+    if (courseId && (!threadId || courseId === threadId)) {
+      try {
+        const fixed = await fixUploadNotes(ownerId, courseId, plan.fixUpload.upload, plan.fixUpload.correction);
+        if (fixed === null) {
+          await giveBack();
+          res.status(409).json({ error: "Your study data changed on another device. Reload and send again.", version });
+          return;
+        }
+        if (fixed === "missing") req.log.info({ courseId }, "Home chat: fix_upload_notes for an upload that does not exist");
+        else {
+          done.push({ type: "fix_upload_notes", courseId, name: fixed.name, summary: fixed.summary });
+          if (!coach.suggestions.includes(UNDO_CHIP)) coach = { ...coach, suggestions: [...coach.suggestions, UNDO_CHIP].slice(-6) };
+        }
+      } catch (error) {
+        req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat upload notes fix failed");
+        await giveBack();
+        res.status(502).json({ error: "The coach could not fix those notes just now. Try sending that again." });
+        return;
+      }
+    }
+  }
   // Course notes (D-123): the student told the coach a fact about the course, or asked to undo the
   // last change. A course's chat writes that course's notes only.
   const notesTarget = plan.courseNotes ?? plan.undoNotes;

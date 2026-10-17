@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { NotesView } from '@/components/NotesView';
 import { courseConfirmWord, matchesCourseConfirmWord } from '@/lib/course-delete-confirm';
 
-export type ManagedMaterial = { id: string; name: string; extractionFormat?: string };
+export type ManagedMaterial = { id: string; name: string; extractionFormat?: string; notes?: string };
 
 /**
  * Shown inside "Edit course": the course's saved materials, each deletable, and a
@@ -22,6 +23,7 @@ export function CourseManager({ courseName, materials, busy, onDeleteMaterial, o
   const styles = createStyles(colors);
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState('');
+  const [open, setOpen] = useState<string | null>(null); // the upload whose notes are shown (D-124)
   const confirmWord = courseConfirmWord(courseName);
   const matches = matchesCourseConfirmWord(typed, courseName);
 
@@ -38,15 +40,27 @@ export function CourseManager({ courseName, materials, busy, onDeleteMaterial, o
       <Text style={styles.title}>Materials in this course</Text>
       {materials.length === 0 ? <Text style={styles.caption}>No saved materials yet.</Text> : null}
       {materials.map((material) => (
-        <View key={material.id} style={styles.row} testID={`row-material-${material.id}`}>
+        <View key={material.id}>
+        <View style={styles.row} testID={`row-material-${material.id}`}>
           <Feather name="file-text" size={16} color={colors.mutedForeground} />
-          <Text style={styles.name} numberOfLines={2}>{material.name}</Text>
+          <Pressable style={{ flex: 1, minHeight: 44, justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel={`${open === material.id ? 'Hide' : 'Show'} notes for ${material.name}`}
+            onPress={() => setOpen(open === material.id ? null : material.id)} testID={`button-material-notes-${material.id}`}>
+            <Text style={styles.name} numberOfLines={2}>{material.name}</Text>
+            <Text style={styles.caption}>{open === material.id ? 'Hide notes' : material.notes ? 'Show notes' : 'Notes are being written'}</Text>
+          </Pressable>
           <Pressable
             accessibilityRole="button" accessibilityLabel={`Delete ${material.name}`} disabled={busy}
             onPress={() => confirmMaterial(material)} style={styles.smallButton} testID={`button-delete-material-${material.id}`}
           >
             <Text style={styles.danger}>Delete</Text>
           </Pressable>
+        </View>
+        {open === material.id ? (
+          <View style={{ paddingLeft: 26, paddingBottom: 8, gap: 6 }}>
+            {material.notes ? <NotesView notes={material.notes} testID={`notes-material-${material.id}`} /> : <Text style={styles.caption}>The coach writes these notes the next time you use this course's chat.</Text>}
+            {material.notes ? <Text style={styles.caption}>Anything wrong? Tell the coach in this course's chat.</Text> : null}
+          </View>
+        ) : null}
         </View>
       ))}
 
