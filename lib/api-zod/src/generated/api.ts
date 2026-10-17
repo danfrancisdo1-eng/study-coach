@@ -524,7 +524,8 @@ export const ExtractStudyWebsiteResponse = zod.object({
   "status": zod.enum(['complete']),
   "coverage": zod.enum(['entire_file', 'selectable_text_only', 'document_body_text', 'slide_text_only', 'visible_image_text', 'public_page_text']),
   "characterCount": zod.number().int().min(1).max(extractStudyWebsiteResponseCharacterCountMax),
-  "coverageNote": zod.string()
+  "coverageNote": zod.string(),
+  "notes": zod.string().optional().describe('D-124: the coach\'s Markdown notes for this upload (typos fixed, every date and grading line kept). Absent without AI consent or when the notes could not be written; the raw text is still returned.')
 })
 
 
@@ -810,7 +811,8 @@ export const ExtractStudyMaterialResponse = zod.object({
   "status": zod.enum(['complete']),
   "coverage": zod.enum(['entire_file', 'selectable_text_only', 'document_body_text', 'slide_text_only', 'visible_image_text', 'public_page_text']),
   "characterCount": zod.number().int().min(1).max(extractStudyMaterialResponseCharacterCountMax),
-  "coverageNote": zod.string()
+  "coverageNote": zod.string(),
+  "notes": zod.string().optional().describe('D-124: the coach\'s Markdown notes for this upload (typos fixed, every date and grading line kept). Absent without AI consent or when the notes could not be written; the raw text is still returned.')
 })
 
 
@@ -1240,13 +1242,13 @@ export const GetHomeChatResponse = zod.object({
   "content": zod.string(),
   "at": zod.coerce.date(),
   "actions": zod.array(zod.object({
-  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'update_memory_sheet', 'update_course_notes', 'undo_course_notes', 'start_session', 'lookup_exam_guide', 'web_search']),
+  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'update_memory_sheet', 'update_course_notes', 'undo_course_notes', 'fix_upload_notes', 'start_session', 'lookup_exam_guide', 'web_search']),
   "courseId": zod.string(),
   "found": zod.boolean().optional().describe('lookup_exam_guide: an official guide was found (the course is now a certification exam)'),
   "sections": zod.number().int().optional().describe('lookup_exam_guide: how many sections the guide has'),
   "query": zod.string().optional().describe('web_search: what was searched for'),
-  "summary": zod.string().optional().describe('update_course_notes: what changed in the course notes; undo_course_notes: the change that was taken back'),
-  "name": zod.string().optional().describe('create_course: the new course\'s name'),
+  "summary": zod.string().optional().describe('update_course_notes / fix_upload_notes: what changed in the notes; undo_course_notes: the change that was taken back'),
+  "name": zod.string().optional().describe('create_course: the new course\'s name; fix_upload_notes: the upload whose notes were fixed'),
   "courseKind": zod.enum(['course', 'exam']).optional().describe('create_course: a college course or a certification exam'),
   "rows": zod.array(zod.object({
   "id": zod.string(),
@@ -1321,13 +1323,13 @@ export const SendHomeChatMessageResponse = zod.object({
   "content": zod.string(),
   "at": zod.coerce.date(),
   "actions": zod.array(zod.object({
-  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'update_memory_sheet', 'update_course_notes', 'undo_course_notes', 'start_session', 'lookup_exam_guide', 'web_search']),
+  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'update_memory_sheet', 'update_course_notes', 'undo_course_notes', 'fix_upload_notes', 'start_session', 'lookup_exam_guide', 'web_search']),
   "courseId": zod.string(),
   "found": zod.boolean().optional().describe('lookup_exam_guide: an official guide was found (the course is now a certification exam)'),
   "sections": zod.number().int().optional().describe('lookup_exam_guide: how many sections the guide has'),
   "query": zod.string().optional().describe('web_search: what was searched for'),
-  "summary": zod.string().optional().describe('update_course_notes: what changed in the course notes; undo_course_notes: the change that was taken back'),
-  "name": zod.string().optional().describe('create_course: the new course\'s name'),
+  "summary": zod.string().optional().describe('update_course_notes / fix_upload_notes: what changed in the notes; undo_course_notes: the change that was taken back'),
+  "name": zod.string().optional().describe('create_course: the new course\'s name; fix_upload_notes: the upload whose notes were fixed'),
   "courseKind": zod.enum(['course', 'exam']).optional().describe('create_course: a college course or a certification exam'),
   "rows": zod.array(zod.object({
   "id": zod.string(),
@@ -1392,13 +1394,13 @@ export const OpenHomeChatResponse = zod.object({
   "content": zod.string(),
   "at": zod.coerce.date(),
   "actions": zod.array(zod.object({
-  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'update_memory_sheet', 'update_course_notes', 'undo_course_notes', 'start_session', 'lookup_exam_guide', 'web_search']),
+  "type": zod.enum(['create_course', 'start_quiz', 'start_flashcards', 'update_memory_sheet', 'update_course_notes', 'undo_course_notes', 'fix_upload_notes', 'start_session', 'lookup_exam_guide', 'web_search']),
   "courseId": zod.string(),
   "found": zod.boolean().optional().describe('lookup_exam_guide: an official guide was found (the course is now a certification exam)'),
   "sections": zod.number().int().optional().describe('lookup_exam_guide: how many sections the guide has'),
   "query": zod.string().optional().describe('web_search: what was searched for'),
-  "summary": zod.string().optional().describe('update_course_notes: what changed in the course notes; undo_course_notes: the change that was taken back'),
-  "name": zod.string().optional().describe('create_course: the new course\'s name'),
+  "summary": zod.string().optional().describe('update_course_notes / fix_upload_notes: what changed in the notes; undo_course_notes: the change that was taken back'),
+  "name": zod.string().optional().describe('create_course: the new course\'s name; fix_upload_notes: the upload whose notes were fixed'),
   "courseKind": zod.enum(['course', 'exam']).optional().describe('create_course: a college course or a certification exam'),
   "rows": zod.array(zod.object({
   "id": zod.string(),

@@ -2,9 +2,10 @@
 // a Claude judge only for things code can't check (answer-key correctness, tutoring quality).
 import Anthropic from "@anthropic-ai/sdk";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
-import type { CourseNotesCase, ReviewSheetCase, CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase, WebLookupCase } from "./fixtures";
+import type { UploadNotesCase, CourseNotesCase, ReviewSheetCase, CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase, WebLookupCase } from "./fixtures";
 import { parseQuizCheck } from "../src/lib/quiz-check";
 import { parseNotesReply } from "../src/lib/course-notes";
+import { parseUploadNotes } from "../src/lib/upload-notes";
 import { parseFlagCheck } from "../src/lib/flag-check";
 import { hasPositionalOption } from "../src/lib/shuffle-options";
 import { parseExamGuideReply } from "../src/lib/exam-guide-parse";
@@ -472,4 +473,25 @@ export function gradeCourseNotes(testCase: CourseNotesCase, text: string | null)
   for (const bad of testCase.mustNotContain) if (lower.includes(bad.toLowerCase())) notes.push(`still contains "${bad}"`);
   const checks = testCase.mustContain.length + testCase.mustNotContain.length;
   return { pass: notes.length === 0, score: checks ? 1 - notes.length / checks : 1, notes };
+}
+
+/** Upload notes (D-124): code checks only. Dashes and spacing are normalized before matching. */
+export function gradeUploadNotes(testCase: UploadNotesCase, text: string | null): Score {
+  let notes: string | null;
+  try {
+    notes = parseUploadNotes(text ? JSON.parse(text) : null);
+  } catch (error) {
+    return { pass: false, score: 0, notes: [`invalid output: ${(error as Error).message.slice(0, 200)}`] };
+  }
+  if (!notes) return { pass: false, score: 0, notes: ["no usable notes"] };
+  const norm = (v: string) => v.toLowerCase().replace(/[\u2010-\u2015]/g, "-").replace(/\s+/g, " ");
+  const body = norm(notes);
+  const problems: string[] = [];
+  for (const want of testCase.mustContain) {
+    const forms = Array.isArray(want) ? want : [want];
+    if (!forms.some((f) => body.includes(norm(f)))) problems.push(`missing "${forms.join('" or "')}"`);
+  }
+  for (const bad of testCase.mustNotContain) if (body.includes(norm(bad))) problems.push(`contains "${bad}"`);
+  const checks = testCase.mustContain.length + testCase.mustNotContain.length;
+  return { pass: problems.length === 0, score: Math.max(0, 1 - problems.length / checks), notes: [...problems, `${notes.length} chars of notes from ${testCase.text.length} chars of raw text`] };
 }

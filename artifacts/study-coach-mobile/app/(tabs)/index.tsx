@@ -396,6 +396,11 @@ export default function CoachHome() {
           <Feather name="bookmark" size={14} color={colors.primaryText} />
           <Text style={styles.actionText}>Saved to your memory sheet</Text>
         </View>
+      ) : action.type === 'fix_upload_notes' ? (
+        <View key={`fix-${action.courseId}-${action.name ?? ''}-${action.summary ?? ''}`} style={styles.actionChip} testID="card-upload-notes-fix">
+          <Feather name="edit-2" size={14} color={colors.primaryText} />
+          <Text style={styles.actionText}>{`Fixed your notes for ${action.name ?? 'that upload'}: ${action.summary ?? ''}`}</Text>
+        </View>
       ) : action.type === 'update_course_notes' || action.type === 'undo_course_notes' ? (
         <View key={`notes-${action.type}-${action.courseId}-${action.summary ?? ''}`} style={styles.actionChip} testID="card-course-notes">
           <Feather name={action.type === 'undo_course_notes' ? 'rotate-ccw' : 'edit-2'} size={14} color={colors.primaryText} />

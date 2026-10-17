@@ -22,4 +22,6 @@ export interface StudyMaterialExtraction {
      */
   characterCount: number;
   coverageNote: string;
+  /** D-124: the coach's Markdown notes for this upload (typos fixed, every date and grading line kept). Absent without AI consent or when the notes could not be written; the raw text is still returned. */
+  notes?: string;
 }

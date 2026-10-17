@@ -4,13 +4,16 @@
 
 ### Done
 - **Part C, course notes (D-123):** tell the coach a fact in a course chat and it is kept in that course's notes; "Updated your notes: …" with an Undo chip; the coach reads the notes first in every later message; read-only "Course notes" on the course screen (phone and web). coach.v20, course-notes.v1. Verified here: typecheck; tests (see below); evals course_notes 3/3, coach 46/46; iOS bundle export.
+- **Part F, every upload becomes notes (D-124):** the upload preview shows the coach's notes (read-only, typos fixed, every syllabus date and grading line kept); saved with the raw text; tap an upload on the course screen to read its notes; "the syllabus notes have the final wrong" in the course chat fixes them, with Undo; older uploads get notes in the background. upload-notes.v1, coach.v21. Verified here: typecheck; tests; evals upload_notes 2/2, coach 48/48; iOS bundle export.
 - TestFlight build started then parked at Dan's request ("back burner"): it stopped at the Apple sign-in, nothing uploaded. The production build number on EAS is now 3.
 
 ### Needs real-iPhone check
+- Upload a photo or PDF to BIO 101: "Reading and writing notes", then read-only notes with typos fixed; Save; on the course screen tap the upload → notes. In the chat: "the syllabus notes have the final wrong, it's Dec 3" → "Fixed your notes for …" + Undo.
+- An older upload: use BIO 101's chat once, then reopen the course screen: its notes appear.
 - In BIO 101's chat: "quiz 9 moved to Nov 5" → the line "Updated your notes: …" and an Undo chip; open the course → "Course notes" shows it; ask "when is quiz 9?" → Nov 5; tap Undo that → back.
 
 ### Next
-- Part E and F: lectures and every upload become coach-written notes. Then Part D: search for big courses.
+- Part E: lecture notes (and "Edit text" on transcripts removed, Dan's OK 2026-10-16). Then Part D: search for big courses.
 - TestFlight when Dan says (needs him at the Mac for the Apple sign-in once).
 - Beta: Clerk is still the development instance (pk_test); fine for internal testers, switch to production before a wide external beta.
 

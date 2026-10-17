@@ -287,6 +287,8 @@ export interface StudyMaterialExtraction {
      */
   characterCount: number;
   coverageNote: string;
+  /** D-124: the coach's Markdown notes for this upload (typos fixed, every date and grading line kept). Absent without AI consent or when the notes could not be written; the raw text is still returned. */
+  notes?: string;
 }
 
 export type StudySessionStatus = typeof StudySessionStatus[keyof typeof StudySessionStatus];
@@ -746,6 +748,7 @@ export const HomeChatActionType = {
   update_memory_sheet: 'update_memory_sheet',
   update_course_notes: 'update_course_notes',
   undo_course_notes: 'undo_course_notes',
+  fix_upload_notes: 'fix_upload_notes',
   start_session: 'start_session',
   lookup_exam_guide: 'lookup_exam_guide',
   web_search: 'web_search',
@@ -790,9 +793,9 @@ export interface HomeChatAction {
   sections?: number;
   /** web_search: what was searched for */
   query?: string;
-  /** update_course_notes: what changed in the course notes; undo_course_notes: the change that was taken back */
+  /** update_course_notes / fix_upload_notes: what changed in the notes; undo_course_notes: the change that was taken back */
   summary?: string;
-  /** create_course: the new course's name */
+  /** create_course: the new course's name; fix_upload_notes: the upload whose notes were fixed */
   name?: string;
   /** create_course: a college course or a certification exam */
   courseKind?: HomeChatActionCourseKind;

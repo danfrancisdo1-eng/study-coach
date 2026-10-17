@@ -23,6 +23,7 @@ import * as imageOcrPrompt from "../prompts/image-ocr.v1";
 import * as tutorPrompt from "../prompts/tutor.v3";
 import { readPublicPage } from "../lib/public-page";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
+import { notesForExtraction } from "../lib/upload-notes-writer";
 import { rememberMisses } from "../lib/memory-sheet";
 import { parseFlagCheck } from "../lib/flag-check";
 import * as flagCheckPrompt from "../prompts/flag-check.v1";
@@ -673,7 +674,9 @@ router.post("/study/materials/website", async (req, res): Promise<void> => {
   activeMaterialReads.add(userId);
   try {
     const result = await readPublicPage(req.body.url.trim());
-    res.json({ ...result, format: "website", status: "complete", coverage: "public_page_text", characterCount: result.text.length,
+    // D-124: the coach's notes for the page (with AI consent); the raw text is returned unchanged.
+    const notes = await notesForExtraction(userId, { uploadName: result.finalUrl, format: "website", text: result.text });
+    res.json({ ...result, ...(notes ? { notes } : {}), format: "website", status: "complete", coverage: "public_page_text", characterCount: result.text.length,
       coverageNote: `Read one public page (${result.finalUrl}). Navigation and scripts were removed. No crawling, login access, JavaScript rendering, images, linked pages or paywall bypass. Review for missing content before saving.` });
   } catch {
     res.status(422).json({ error: "This public page could not be read: it may be inaccessible, require login/JavaScript, use an unsupported format, exceed limits, or point to a private/reserved network. Nothing was saved. Check the link and retry." });
@@ -723,7 +726,8 @@ router.post("/study/materials/extract", async (req, res): Promise<void> => {
       if (!result.finished) throw new Error("Incomplete extraction");
       const text = enforceTextLimit(JSON.parse(result.text ?? "{}").text ?? "");
       if (text.replace(/\[unreadable\]/gi, "").trim().length < 3) throw new Error("No meaningful readable text");
-      res.json({ filename, format: "image", text, status: "complete", coverage: "visible_image_text", characterCount: text.length,
+      const notes = await notesForExtraction(userId, { uploadName: filename, format: "photo", text });
+      res.json({ filename, format: "image", text, ...(notes ? { notes } : {}), status: "complete", coverage: "visible_image_text", characterCount: text.length,
         coverageNote: "AI-transcribed visible text from one image; handwriting, small/blurry text, diagrams and cropped content may be missed or misread. [unreadable] marks uncertainty. Review and correct before saving; nothing is saved automatically." });
     } catch (error) {
       req.log.error({ error: aiErrorMessage(error) }, "Photo text extraction failed");
@@ -738,10 +742,12 @@ router.post("/study/materials/extract", async (req, res): Promise<void> => {
   }
   try {
     const { text, coverage } = await extractMaterial(req.body, format);
+    const notes = await notesForExtraction(owner(req), { uploadName: filename, format, text });
     res.json({
       filename,
       format,
       text,
+      ...(notes ? { notes } : {}),
       status: "complete",
       coverage,
       characterCount: text.length,

@@ -53,3 +53,27 @@ export function parseNotesReply(value: unknown): { notes: string; summary: strin
   if (!summary || notes.length > MAX_NOTES_CHARS) return null;
   return { notes, summary };
 }
+
+/**
+ * "Undo that" across a course (D-124): takes back the newest change, whether to the course facts or
+ * to one upload's notes (a fix the student asked for). Notes first written at upload are not undoable.
+ */
+export function undoLatest(state: JsonObject, courseId: string, at: string): { state: JsonObject; restored: boolean; undid: string } {
+  const course = notesOf(state, courseId);
+  const courseCandidate = course && (course.history.length || course.text) ? course.updatedAt : null;
+  let newest: { kind: "course" } | { kind: "upload"; material: JsonObject } | null = courseCandidate !== null ? { kind: "course" } : null;
+  let newestAt = courseCandidate ?? "";
+  for (const m of Array.isArray(state.materials) ? state.materials : []) {
+    if (!isObject(m) || m.courseId !== courseId || !Array.isArray(m.notesHistory) || !m.notesHistory.length) continue;
+    const when = typeof m.notesUpdatedAt === "string" ? m.notesUpdatedAt : "";
+    if (!newest || when > newestAt) { newest = { kind: "upload", material: m }; newestAt = when; }
+  }
+  if (!newest) return { state, restored: false, undid: "" };
+  if (newest.kind === "course") return undoNotes(state, courseId, at);
+  const material = newest.material;
+  const history = material.notesHistory as { text: string; change: string; at: string }[];
+  const previous = history.at(-1)!;
+  const undid = typeof material.notesChange === "string" ? material.notesChange : "";
+  const restored = { ...material, notes: previous.text, notesChange: previous.change, notesUpdatedAt: at, notesHistory: history.slice(0, -1) };
+  return { state: { ...state, materials: (state.materials as unknown[]).map((m) => (m === material ? restored : m)) }, restored: true, undid };
+}

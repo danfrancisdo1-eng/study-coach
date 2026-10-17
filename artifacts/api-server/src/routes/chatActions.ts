@@ -5,7 +5,7 @@
 export type QuizScope = "all" | "missed";
 export type QuizKind = "practice" | "exam";
 export type CoachAction = {
-  type: "create_course" | "start_quiz" | "start_flashcards" | "update_memory_sheet" | "update_course_notes" | "undo_course_notes" | "start_session" | "lookup_exam_guide" | "web_search";
+  type: "create_course" | "start_quiz" | "start_flashcards" | "update_memory_sheet" | "update_course_notes" | "undo_course_notes" | "fix_upload_notes" | "start_session" | "lookup_exam_guide" | "web_search";
   name: string;
   topic: string;
   count?: number;
@@ -13,6 +13,8 @@ export type CoachAction = {
   kind?: QuizKind;
   courseKind?: CourseKind;
   examDate?: string;
+  /** fix_upload_notes: the upload's name. */
+  upload?: string;
 };
 export type CourseKind = "course" | "exam";
 export type CoachReply = { reply: string; suggestions: string[]; actions: CoachAction[] };
@@ -46,8 +48,8 @@ export function parseCoachReply(text: string | null): CoachReply | null {
   const kept: CoachAction[] = [];
   for (const action of actions) {
     if (typeof action !== "object" || action === null) continue;
-    const { type, name, topic, count, scope, kind, courseKind, examDate } = action as Record<string, unknown>;
-    if (type !== "create_course" && type !== "start_quiz" && type !== "start_flashcards" && type !== "update_memory_sheet" && type !== "update_course_notes" && type !== "undo_course_notes" && type !== "start_session" && type !== "lookup_exam_guide" && type !== "web_search") continue;
+    const { type, name, topic, count, scope, kind, courseKind, examDate, upload } = action as Record<string, unknown>;
+    if (type !== "create_course" && type !== "start_quiz" && type !== "start_flashcards" && type !== "update_memory_sheet" && type !== "update_course_notes" && type !== "undo_course_notes" && type !== "fix_upload_notes" && type !== "start_session" && type !== "lookup_exam_guide" && type !== "web_search") continue;
     kept.push({
       type,
       name: typeof name === "string" ? name : "",
@@ -57,6 +59,7 @@ export function parseCoachReply(text: string | null): CoachReply | null {
       ...(kind === "practice" || kind === "exam" ? { kind } : {}),
       ...(courseKind === "course" || courseKind === "exam" ? { courseKind } : {}),
       ...(typeof examDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(examDate) ? { examDate } : {}),
+      ...(typeof upload === "string" && upload.trim() ? { upload: upload.trim().slice(0, 300) } : {}),
     });
   }
   const chips = (Array.isArray(suggestions) ? suggestions : [])
@@ -92,6 +95,8 @@ export interface ActionPlan {
   courseNotes: (StartPlan & { statement: string }) | null;
   /** D-123: "undo that" on a course's notes, if asked (never together with an update). */
   undoNotes: StartPlan | null;
+  /** D-124: one fix to one upload's notes (upload name + the correction), if any. */
+  fixUpload: (StartPlan & { upload: string; correction: string }) | null;
   /** The one legacy session to start (opens the Courses tab), if any and only when no quiz was planned. */
   start: StartPlan | null;
   /** Human-readable reasons for anything skipped (surfaced in logs/tests, never shown as AI text). */
@@ -117,7 +122,7 @@ function resolveStart(plan: ActionPlan, courses: KnownCourse[], action: CoachAct
 }
 
 export function planActions(courses: KnownCourse[], actions: CoachAction[]): ActionPlan {
-  const plan: ActionPlan = { creates: [], lookup: null, search: null, quiz: null, deck: null, sheet: null, courseNotes: null, undoNotes: null, start: null, notes: [] };
+  const plan: ActionPlan = { creates: [], lookup: null, search: null, quiz: null, deck: null, sheet: null, courseNotes: null, undoNotes: null, fixUpload: null, start: null, notes: [] };
   for (const action of actions) {
     if (action.type === "create_course") {
       const name = action.name.trim().replace(/\s+/g, " ");
@@ -134,7 +139,12 @@ export function planActions(courses: KnownCourse[], actions: CoachAction[]): Act
       if (!statement) { plan.notes.push("update_course_notes without a statement"); continue; }
       const start = resolveStart(plan, courses, action);
       if (start) plan.courseNotes = { ...start, statement };
-    } else if (action.type === "undo_course_notes" && plan.undoNotes === null && plan.courseNotes === null) {
+    } else if (action.type === "fix_upload_notes" && plan.fixUpload === null && plan.undoNotes === null && plan.courseNotes === null) {
+      const correction = action.topic.trim().replace(/\s+/g, " ").slice(0, MAX_STATEMENT);
+      if (!correction || !action.upload) { plan.notes.push("fix_upload_notes without an upload or a correction"); continue; }
+      const start = resolveStart(plan, courses, action);
+      if (start) plan.fixUpload = { ...start, upload: action.upload, correction };
+    } else if (action.type === "undo_course_notes" && plan.undoNotes === null && plan.courseNotes === null && plan.fixUpload === null) {
       const start = resolveStart(plan, courses, action);
       if (start) plan.undoNotes = start;
     } else if (action.type === "update_memory_sheet" && plan.sheet === null) {

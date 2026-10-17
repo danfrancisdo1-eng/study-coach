@@ -82,9 +82,14 @@ export default function MaterialIntake({ courseName, consent, files, onFilesChan
         <h3>{preview.filename}</h3>
         {preview.sourceUrl && <p style={{ overflowWrap: 'anywhere' }}>{preview.sourceUrl}</p>}
         <p>{preview.coverageNote}</p>
-        <label className="field">Review or correct the extracted text ({preview.text.length.toLocaleString()} characters)
-          <textarea value={preview.text} rows={12} onChange={event => setPreview({ ...preview, text: event.target.value, characterCount: event.target.value.length })} data-testid="input-intake-preview" />
-        </label>
+        {/* D-124: read-only notes; corrections go through the coach after saving. */}
+        <p className="ae-kicker">{preview.notes ? 'Your notes' : 'Extracted text (the coach writes notes after you save)'}</p>
+        <div data-testid="panel-intake-notes" style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid #d9d3c8', borderRadius: 10, padding: 12, whiteSpace: preview.notes ? 'normal' : 'pre-wrap' }}>
+          {preview.notes ? preview.notes.split('\n').filter(line => line.trim()).map((line, i) => /^#{1,6}\s/.test(line)
+            ? <p key={i} style={{ fontWeight: 700, margin: i ? '10px 0 2px' : '0 0 2px' }}>{line.replace(/^#+\s*/, '')}</p>
+            : <p key={i} style={{ margin: '2px 0' }}>{line.replace(/^\s*[-*]\s+/, '• ').replace(/\*\*(.+?)\*\*/g, '$1')}</p>) : preview.text}
+        </div>
+        {preview.notes && <p className="ae-muted" style={{ fontSize: '.85rem' }}>Anything wrong? After saving, tell the coach in this course's chat and it fixes the notes.</p>}
         <button type="button" className="btn btn-dark" disabled={busy || !preview.text.trim()} onClick={() => void save()} data-testid="button-intake-save">Save to this course</button>
         <button type="button" className="btn btn-outline" disabled={busy} onClick={() => { setPreview(null); onFilesChange(files.slice(1)); setNotice('Preview discarded. Nothing was saved.'); }}>Discard preview</button>
       </> : !busy && notice && <button type="button" className="btn btn-outline" onClick={() => files[0] ? void readFile(files[0]) : lastUrl ? void read(undefined, lastUrl) : fileInput.current?.click()} data-testid="button-intake-retry">Retry / choose file</button>}

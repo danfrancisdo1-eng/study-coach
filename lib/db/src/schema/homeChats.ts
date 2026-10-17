@@ -8,6 +8,7 @@ export type HomeChatAction =
   | { type: "start_flashcards"; sessionId: string; courseId: string; topic: string; count: number }
   | { type: "update_memory_sheet"; courseId: string; rows: { id: string; term: string; trick: string; whenYouSee: string; think: string }[] }
   | { type: "update_course_notes" | "undo_course_notes"; courseId: string; summary: string }
+  | { type: "fix_upload_notes"; courseId: string; name: string; summary: string }
   | { type: "start_session"; sessionId: string; courseId: string; topic: string }
   | { type: "lookup_exam_guide"; courseId: string; found: boolean; sections: number }
   | { type: "web_search"; courseId: string; query: string; found: boolean };
