@@ -11,7 +11,8 @@ import { desc } from "drizzle-orm";
 import { complete } from "../ai";
 import * as reviewSheetPrompt from "../prompts/review-sheet.v3";
 import { BUDGET, jsonFromReply, missesFrom, parseReviewSheet, trimToBudget } from "../lib/review-sheet";
-import { sourceChunks, sourceTextOf } from "../lib/session-quiz";
+import { sourceTextOf } from "../lib/session-quiz";
+import { routedSourceChunks } from "../lib/routed-sources";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { rowsFromState } from "../lib/memory-sheet";
 import { activeFor, consume, enforced, planFor, refund } from "../lib/premium-store";
@@ -99,7 +100,8 @@ router.post("/study/courses/:courseId/review-sheet", async (req, res): Promise<v
   }
   const guide = isObject(course.examGuide) && course.examGuide.found === true ? course.examGuide : null;
   const sections = guide ? list(guide.sections).filter(isObject).map((s) => ({ name: String(s.name ?? ""), weight: typeof s.weight === "number" ? s.weight : null })).filter((s) => s.name) : [];
-  const { chunks } = sourceChunks(state, courseId, courseName, await reviewedLectureMaterials(ownerId, courseId));
+  // Part D (D-128): a big course gives the review sheet the sections most likely on the exam, not a word match on the course name.
+  const { chunks } = await routedSourceChunks({ state, courseId, courseName, topic: courseName, lectures: await reviewedLectureMaterials(ownerId, courseId), question: "Make a one-page review sheet: what is most likely on the exam, the key definitions, formulas and anything the professor flagged." });
   const sessions = (await db.select({ session: studySessionsTable.session }).from(studySessionsTable)
     .where(and(eq(studySessionsTable.ownerId, ownerId), eq(studySessionsTable.courseId, courseId)))
     .orderBy(desc(studySessionsTable.createdAt)).limit(60)).map((r) => r.session as unknown as Session);

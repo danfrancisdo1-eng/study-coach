@@ -13,6 +13,8 @@ test('course routing: big course picks sections; small course reads whole; route
   buildServer();
   const database = await startDatabase(t);
   let route = null;
+  let coach = null;
+  const quizRequests = [];
   const routerRequests = [];
   const coachRequests = [];
   const ai = await startAiStub(t, (request) => {
@@ -25,8 +27,13 @@ test('course routing: big course picks sections; small course reads whole; route
       return reply(JSON.stringify({ sections: route.headings.map(id).filter(Boolean), searchRaw: route.searchRaw, terms: route.terms }));
     }
     if (system.startsWith('You turn one')) return { status: 500, body: { error: { message: 'stub' } } };
+    if (system.startsWith('Create exactly')) {
+      quizRequests.push(all);
+      return reply(JSON.stringify({ questions: Array.from({ length: 3 }, (_, i) => ({ prompt: `Routed question ${quizRequests.length}-${i}?`, options: ['A', 'B', 'C', 'D'], answerIndex: 0, concept: 'mitosis', explanation: 'A is right.', hook: 'h' })) }));
+    }
+    if (system.startsWith('You check the answer key')) return { status: 500, body: { error: { message: 'stub' } } };
     coachRequests.push(all);
-    return reply(JSON.stringify({ reply: 'ok', suggestions: [], actions: [] }));
+    return reply(JSON.stringify(coach ?? { reply: 'ok', suggestions: [], actions: [] }));
   });
   const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url });
   // Big Bio: 60 uploads with notes (each ~3,000 characters) = well over the 150,000 budget.
@@ -34,7 +41,7 @@ test('course routing: big course picks sections; small course reads whole; route
   const materials = [
     { id: 'syl', courseId: 'bio', name: 'Bio syllabus', text: 'raw syllabus', notes: '# Syllabus\n- Final: Tuesday, December 1, 2026' },
     { id: 'mit', courseId: 'bio', name: 'Lecture notes: Cell division', text: 'RAW-CELL The professor said PMAT is the order, remember it.', notes: '# Cell division\n## Mitosis phases\n- PMAT-NOTES prophase metaphase anaphase telophase\n## Cytokinesis\n- CYTO-NOTES' },
-    ...Array.from({ length: 60 }, (_, i) => ({ id: `f${i}`, courseId: 'bio', name: `Reading ${i}`, text: `raw ${i}`, notes: filler(i) })),
+    ...Array.from({ length: 60 }, (_, i) => ({ id: `f${i}`, courseId: 'bio', name: `Reading ${i}`, text: `raw ${i} ${'original reading about trophic levels and food webs. '.repeat(60)}`, notes: filler(i) })),
     { id: 'small', courseId: 'chem', name: 'Chem notes', text: 'raw chem', notes: '# Chem\n## Moles\n- CHEM-WHOLE' },
   ];
   await database.db.query('insert into study_states (id, owner_id, state) values ($1, $2, $3)', ['s1', 'user_r', JSON.stringify({ aiConsent: true,
@@ -72,6 +79,18 @@ test('course routing: big course picks sections; small course reads whole; route
   assert.equal(chat.status, 200);
   assert.equal(coachRequests.length, before + 1);
   assert.ok(coachRequests.at(-1).includes('December 1, 2026'));
+
+  // Part D for sets (D-128): a practice set on mitosis is written from the picked section and the raw passage.
+  route = { headings: ['Lecture notes: Cell division › Mitosis phases'], searchRaw: false, terms: ['PMAT'] };
+  coach = { reply: 'Here it comes.', suggestions: [], actions: [{ type: 'start_quiz', name: 'BIO 101', topic: 'mitosis', count: 3, kind: 'practice', scope: 'all' }] };
+  chat = await send('practice set on mitosis', 'bio');
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  assert.ok(routerRequests.some((r) => r.includes('Write practice questions and flashcards on: mitosis')), 'the set asked the router');
+  const written = quizRequests.at(-1);
+  assert.ok(written.includes('PMAT-NOTES'), 'the picked section');
+  assert.ok(written.includes('RAW-CELL The professor said PMAT'), 'the raw passage for detail');
+  assert.ok(!written.includes('ecology detail 7 about'), 'not unrelated readings');
+  coach = null;
 
   // A small course is read whole and never routed.
   const routerCalls = routerRequests.length;

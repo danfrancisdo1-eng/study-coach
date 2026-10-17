@@ -17,6 +17,7 @@ import * as coachPrompt from "../prompts/coach.v21";
 import { courseContext, NOTES_BLOCK, PLANNING } from "../lib/course-context";
 import { indexText, routedContext, sectionsOf, wordSearch } from "../lib/course-sections";
 import { routeCourse } from "../lib/course-router";
+import { routedSourceChunks } from "../lib/routed-sources";
 import { notesOf } from "../lib/course-notes";
 import { undoCourseNotes, updateCourseNotes } from "../lib/course-notes-writer";
 import { lecturesWithNotes, materialsNeedingNotes, uploadDocs } from "../lib/upload-notes";
@@ -318,7 +319,9 @@ async function sourcesFor(ownerId: string, state: JsonObject, courseId: string, 
   const rows = rowsFromState(state, courseId);
   const sheet = rows.length ? [{ courseId, name: "Memory sheet", text: sheetAsText(rows) }] : [];
   if (SHEET_TOPIC.test(topic)) return sourceChunks({ ...state, materials: [] }, courseId, topic, sheet);
-  return sourceChunks(state, courseId, topic, [...await reviewedLectureMaterials(ownerId, courseId), ...sheet]);
+  // Part D (D-128): a course too big for the question writer is picked by section.
+  const course = list(state.courses).find((c): c is JsonObject => isObject(c) && c.id === courseId);
+  return routedSourceChunks({ state, courseId, courseName: typeof course?.name === "string" ? course.name : "this course", topic, lectures: await reviewedLectureMaterials(ownerId, courseId), extra: sheet });
 }
 
 // A set of six or more is written in two parts (D-052): the first three questions come back

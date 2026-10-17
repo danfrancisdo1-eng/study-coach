@@ -63,3 +63,16 @@ test('routedContext: always the planning documents and course facts, then the pi
   assert.ok(!text.includes('trophic levels'), 'sections not picked are left out');
   assert.match(text, /chosen for this question/i, 'says it is a selection');
 });
+
+// Part D for sets, flashcards and the review sheet (D-128): the picked sections' notes first, then
+// matching passages from the original files, within the question writer's source budget.
+import { chunksFromRoute } from '../src/lib/course-sections.ts';
+
+test('chunksFromRoute: notes of the picked sections, then raw passages, within the budget', () => {
+  const sections = sectionsOf(notes);
+  const mitosis = sections.find((s) => s.heading === 'Mitosis phases');
+  const chunks = chunksFromRoute([mitosis], [{ name: 'Transcript: Cell division', text: 'The professor said PMAT.' }], 14_000);
+  assert.deepEqual(chunks.map((c) => c.label), ['Lecture notes: Cell division › Mitosis phases', 'Transcript: Cell division']);
+  const tight = chunksFromRoute(sections, [{ name: 'raw', text: 'x'.repeat(5000) }], 3000);
+  assert.ok(tight.reduce((n, c) => n + c.text.length, 0) <= 3000);
+});
