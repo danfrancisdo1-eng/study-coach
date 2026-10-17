@@ -98,3 +98,20 @@ export function routedContext({ courseName, always, picked, passages }: { course
     ...passages.map((p) => `--- from ${p.name} (original) ---\n${p.text.trim()}\n`),
   ].join("\n");
 }
+
+/** Part D for question writing (D-128): the picked sections' notes first, then raw passages, within `budget` characters. */
+export function chunksFromRoute(picked: Section[], passages: Doc[], budget: number): { label: string; text: string; score: number }[] {
+  const out: { label: string; text: string; score: number }[] = [];
+  let used = 0;
+  for (const s of picked) {
+    if (used + s.text.length > budget) continue;
+    out.push({ label: `${s.doc} › ${s.heading}`, text: s.text, score: 1 });
+    used += s.text.length;
+  }
+  for (const p of passages) {
+    if (used + p.text.length > budget) continue;
+    out.push({ label: p.name, text: p.text, score: 1 });
+    used += p.text.length;
+  }
+  return out;
+}
