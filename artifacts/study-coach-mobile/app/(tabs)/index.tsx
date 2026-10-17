@@ -27,6 +27,8 @@ import { GlassBar } from '@/components/GlassBar';
 import { GlowRing } from '@/components/GlowRing';
 import { HomeSkeleton } from '@/components/Skeleton';
 import { LiveSetCard } from '@/components/LiveSetCard';
+import { ProgressBar, useElapsed } from '@/components/ProgressBar';
+import { estimate } from '@/lib/progress';
 import { liveSetAction } from '@/lib/live-set';
 import { courseExamFacts, type TimedSize } from '@/lib/exam-facts';
 import { passMarkLine } from '@/lib/exam-sheet';
@@ -108,6 +110,7 @@ export default function CoachHome() {
   const chatQuery = useGetHomeChat(chatParams, { query: { queryKey: chatKey, enabled: !!userId } });
   const putState = usePutStudyState();
   const send = useSendHomeChatMessage();
+  const sendElapsed = useElapsed(send.isPending); // D-126: the estimate while the first questions are written
   const open = useOpenHomeChat();
   const report = useReportHomeChatMessage();
   const lookupGuide = useLookupExamGuide();
@@ -531,7 +534,9 @@ export default function CoachHome() {
               )}
             </View>
           )}
-          ListHeaderComponent={busy ? <View style={styles.busyRow}><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.caption}>{send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '') ? 'Coach is writing the first questions…' : 'Coach is thinking…'}</Text></View> : null}
+          ListHeaderComponent={busy ? (send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '')
+            ? <View style={styles.busyRow}><ProgressBar fraction={estimate(sendElapsed, 15_000)} label="Coach is writing the first questions…" testID="progress-first-questions" /></View>
+            : <View style={styles.busyRow}><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.caption}>Coach is thinking…</Text></View>) : null}
           testID="list-home-chat"
         />
         {/* The one frosted panel (D-048): the "Coach · <course>" strip, which the chat scrolls under. */}

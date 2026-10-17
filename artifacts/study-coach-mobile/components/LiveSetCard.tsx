@@ -11,6 +11,8 @@ import { Confetti } from '@/components/Confetti';
 import { isPerfect } from '@/lib/perfect-score';
 import { useColors } from '@/hooks/useColors';
 import { Bone, SkeletonGroup } from '@/components/Skeleton';
+import { ProgressBar } from '@/components/ProgressBar';
+import { writtenProgress } from '@/lib/progress';
 import { FONT, TYPE } from '@/constants/type';
 import { rowResult, scoreLine, sectionTallies } from '@/lib/live-set';
 
@@ -265,6 +267,8 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
   } else if (writing) {
     live = (
       <View style={styles.live} onLayout={liveLayout(step)} testID="panel-live-writing">
+        {/* D-126: the real count of questions written so far. */}
+        <ProgressBar {...writtenProgress(questions.length, total)} testID="progress-writing" />
         <QuestionSkeleton caption={`Writing question ${questions.length + 1}…`} />
       </View>
     );

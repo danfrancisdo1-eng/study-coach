@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-17 — D-126: Progress bars while waiting (questions, uploads, transcription)
+- Dan: "a motion bar that fills from left to right and/or a loading percentage". One bar (phone components/ProgressBar.tsx, web src/ProgressBar.tsx) that fills left to right with a label in words; Reduce Motion makes it jump instead of glide (phone: reanimated useReducedMotion; web: the global prefers-reduced-motion rule).
+- Real where the app knows it: questions written ("Writing questions: 4 of 10 (40%)", the practice card and the exam card, phone and web) and bytes uploaded ("Uploading 45%"). Phone file uploads now stream from disk with progress (lib/material-upload.ts, expo-file-system UploadTask, same route, headers and auth as before, like lecture uploads); web uploads use XMLHttpRequest (lib/material-upload.ts) for the same reason.
+- Estimated where the server reports nothing (reading the file and writing notes, transcription, the coach writing the first questions): an eased fill that reads about 80% at the expected time, creeps toward 95% and only completes when the job does; no percentage, rough words instead ("about 3 minutes left", "under a minute left", "almost done"). Expected times: files 15 s + 8 s per MB (max 2 min), photos 30 s, websites 25 s, transcription 20 s + 15 s per 5 minutes of recording, first questions 15 s (lib/progress.ts, 5 tests).
+- Decided by Dan ("bars first", before part D).
+
 ## 2026-10-17 — D-125: Each course is a Project, part E: lectures become bullet notes (lecture-notes.v1)
 - When the student saves a transcript as reviewed (or saves a reviewed one again), the server writes the lecture's notes in the background (`upload_notes` task with lecture-notes.v1): "# title", the date, a heading per topic with bullets, exact definitions and the professor's examples, course announcements (quiz/exam dates and coverage, due dates), and "## Likely on the exam" from what the professor flagged. Filler, side talk and misheard words are cleaned only when certain; no fact changes.
 - Stored with the course's uploads as a notes-only entry (`lecture-notes-<lectureId>`, `lectureId`, text ""): the transcript stays in the lectures table, unchanged. Deleting the lecture removes its notes. A lecture reviewed before this gets notes the first time its course chat is used.

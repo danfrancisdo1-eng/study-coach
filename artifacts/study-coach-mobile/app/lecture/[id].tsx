@@ -10,6 +10,8 @@ import {
 } from '@workspace/api-client-react';
 import { goBack } from '@/lib/nav';
 import { NotesView } from '@/components/NotesView';
+import { ProgressBar, useElapsed } from '@/components/ProgressBar';
+import { timeLeftText, transcribeWorkMs, uploadThenWork } from '@/lib/progress';
 import { useColors } from '@/hooks/useColors';
 import {
   editedSegments, formatDuration, spokenDuration, transcriptHasText, transcriptionBlocker, type TranscriptSegment,
@@ -45,6 +47,11 @@ export default function LectureScreen() {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState<'transcribing' | 'saving' | 'deleting' | null>(null);
   const [progress, setProgress] = useState(0);
+  // D-126: when the upload finished and the server began transcribing (for the estimate).
+  const [transcribeStart, setTranscribeStart] = useState<number | null>(null);
+  useElapsed(busy === 'transcribing'); // re-renders twice a second while transcribing
+  if (busy === 'transcribing' && progress >= 1 && transcribeStart === null) setTranscribeStart(Date.now());
+  if (busy !== 'transcribing' && transcribeStart !== null) setTranscribeStart(null);
   const [message, setMessage] = useState('');
   const abort = useRef<AbortController | null>(null);
 
@@ -199,7 +206,12 @@ export default function LectureScreen() {
 
           {busy === 'transcribing' ? (
             <View style={styles.card} accessibilityLiveRegion="polite">
-              <Text style={styles.cardTitle}>{progress < 1 ? `Uploading ${Math.round(progress * 100)}%` : 'Transcribing…'}</Text>
+              {(() => {
+                const expected = transcribeWorkMs(lecture?.durationSeconds ?? 0);
+                const elapsed = transcribeStart ? Date.now() - transcribeStart : 0;
+                return <ProgressBar fraction={uploadThenWork(progress, elapsed, expected)} testID="progress-transcribe"
+                  label={progress < 1 ? `Uploading ${Math.round(progress * 100)}%` : `Transcribing · ${timeLeftText(elapsed, expected)}`} />;
+              })()}
               <Text style={styles.body}>Long lectures can take a few minutes. Keep RapidRecall AI open.</Text>
               <Pressable accessibilityRole="button" onPress={() => abort.current?.abort()} style={styles.textButton} testID="button-cancel-transcribe"><Text style={styles.link}>Cancel</Text></Pressable>
             </View>

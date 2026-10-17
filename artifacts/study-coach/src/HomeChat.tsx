@@ -3,6 +3,8 @@ import { blocksOf, type Span } from './lib/coach-text';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetHomeChatQueryKey, useGetHomeChat, useOpenHomeChat, useSendHomeChatMessage, type HomeChat as HomeChatData } from '@workspace/api-client-react';
 import QuizCard from './QuizCard';
+import ProgressBar, { useElapsed } from './ProgressBar';
+import { estimate } from './lib/progress';
 import FlashcardDeck from './FlashcardDeck';
 import type { TimedSize } from './lib/exam-facts';
 
@@ -40,6 +42,7 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
   const messages = chat.data?.messages ?? [];
   const version = chat.data?.version ?? 0;
   const sending = send.isPending;
+  const sendElapsed = useElapsed(sending); // D-126
   const activeQuiz = chat.data?.activeQuiz ?? null;
   const activeDeck = chat.data?.activeDeck ?? null;
   const quizSessionId = activeQuiz?.sessionId ?? gradedSessionId;
@@ -143,7 +146,7 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
         {!deckSessionId && quizSessionId && <QuizCard key={quizSessionId} sessionId={quizSessionId} passMark={passMark}
           onGraded={graded => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
           onError={problem => { const data = (problem as { data?: { error?: unknown } }).data; setError(data && typeof data.error === 'string' ? data.error : 'Something went wrong. Try again.'); }} />}
-        {sending && <p className="ae-muted">Coach is working… writing questions can take up to a minute.</p>}
+        {sending && <ProgressBar fraction={estimate(sendElapsed, 15_000)} label="Coach is working… writing questions can take up to a minute." testId="progress-coach" />}
         <div ref={endRef} />
       </div>
       {error && <p className="ae-callout ae-callout--error" role="alert" data-testid="status-chat-error" style={{ marginTop: 12 }}>{error}</p>}

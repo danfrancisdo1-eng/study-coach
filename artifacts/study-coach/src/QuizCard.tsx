@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { clockText, clockTone, scoreLine, secondsLeft, timeUsedLine } from './lib/exam-sheet';
+import ProgressBar from './ProgressBar';
+import { writtenProgress } from './lib/progress';
 import { getGetStudySessionQueryKey, useFlagStudyQuestion, useGetStudySession, useGradeStudyQuiz, useSaveStudyAnswer, type StudyQuestionFlagInputKind, type StudySession, type StudyQuizQuestionsItem } from '@workspace/api-client-react';
 
 /**
@@ -156,7 +158,8 @@ export default function QuizCard({ sessionId, passMark, onGraded, onError }: {
       <div className="ae-card ae-card--compact" data-testid="panel-quiz-writing" ref={topRef}>
         {clock}
         <span className="ae-kicker">{kindLabel} · {session.topic}</span>
-        <p className="ae-muted">Writing question {answered.length + 1} of {total}…</p>
+        {/* D-126: the real count of questions written so far. */}
+        {(() => { const p = writtenProgress(questions.length, total); return <ProgressBar fraction={p.fraction} label={p.label} testId="progress-writing" />; })()}
       </div>
     );
   }

@@ -8,6 +8,8 @@ import {
   type StudyQuestionFlagInputKind, type StudySession, type StudyQuizQuestionsItem,
 } from '@workspace/api-client-react';
 import { Confetti } from '@/components/Confetti';
+import { ProgressBar } from '@/components/ProgressBar';
+import { writtenProgress } from '@/lib/progress';
 import { isPerfect } from '@/lib/perfect-score';
 import { useColors } from '@/hooks/useColors';
 import { FONT, TYPE } from '@/constants/type';
@@ -269,7 +271,8 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
         <CardText style={styles.kicker}>{kindLabel} · {session.topic}</CardText>
         {progress}
         {bubbles}
-        <View style={styles.note}><ActivityIndicator color={colors.primaryText} size="small" /><CardText style={styles.noteText}>Writing question {answered.length + 1}…</CardText></View>
+        {/* D-126: the real count of questions written so far. */}
+        <ProgressBar {...writtenProgress(questions.length, total)} testID="progress-writing" />
       </View>
     );
   }

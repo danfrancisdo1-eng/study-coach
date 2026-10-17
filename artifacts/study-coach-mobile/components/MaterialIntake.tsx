@@ -1,14 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { File as ExpoFile } from 'expo-file-system';
-import { useExtractStudyMaterial, useExtractStudyWebsite, type StudyMaterialExtraction } from '@workspace/api-client-react';
+import { useExtractStudyWebsite, type StudyMaterialExtraction } from '@workspace/api-client-react';
 import { selectProviderMaterial } from '@/lib/material-file-provider';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { ActionButton } from '@/components/ActionButton';
 import { NotesView } from '@/components/NotesView';
+import { ProgressBar, useElapsed } from '@/components/ProgressBar';
+import { materialWorkMs, timeLeftText, uploadThenWork } from '@/lib/progress';
+import { uploadMaterial } from '@/lib/material-upload';
+import { useAuth } from '@clerk/expo';
 
 /**
  * Material intake (CLAUDE.md §8): Photos, Files, OneDrive (via the Files picker),
@@ -42,24 +46,27 @@ function id(): string {
 // One plain sentence, never a native exception or a URL (D-065, D-067).
 const readableError = (problem: unknown): string => friendlyError(problem);
 
-function MaterialExtractionTask({ upload, onComplete, onFailure }: {
+function MaterialExtractionTask({ upload, onComplete, onFailure, onProgress }: {
   upload: PendingMaterial;
   onComplete: (upload: PendingMaterial, result: StudyMaterialExtraction) => void;
   onFailure: (upload: PendingMaterial, problem: unknown) => void;
+  /** D-126: the share of the file sent so far (0–1), and the file's size once known. */
+  onProgress: (sent: number, bytes: number) => void;
 }) {
-  const extraction = useExtractStudyMaterial({
-    request: { headers: { 'X-Filename': upload.filename } },
-  });
+  const { getToken } = useAuth();
+  const getTokenRef = useRef(getToken);
+  getTokenRef.current = getToken;
+  const progressRef = useRef(onProgress);
+  progressRef.current = onProgress;
   const websiteExtraction = useExtractStudyWebsite();
   const websiteMutationRef = useRef(websiteExtraction.mutateAsync);
   websiteMutationRef.current = websiteExtraction.mutateAsync;
-  const mutationRef = useRef(extraction.mutateAsync);
   const callbacksRef = useRef({ onComplete, onFailure });
-  mutationRef.current = extraction.mutateAsync;
   callbacksRef.current = { onComplete, onFailure };
 
   useEffect(() => {
     let active = true;
+    const abort = new AbortController();
     const extract = async () => {
       try {
         if (upload.url) {
@@ -71,15 +78,16 @@ function MaterialExtractionTask({ upload, onComplete, onFailure }: {
         if (file.size > 12 * 1024 * 1024) {
           throw new Error('Files must be 12 MB or smaller. No text was extracted.');
         }
-        const bytes = await file.bytes();
-        if (bytes.byteLength === 0) {
+        if (file.size === 0) {
           throw new Error('The selected file is empty. No text was extracted.');
         }
         if (!active) return;
-        const body = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-        // React Native Blob cannot be constructed from binary views; its fetch transport
-        // accepts ArrayBuffer directly, while the generated endpoint currently types body as Blob.
-        const result = await mutationRef.current({ data: body as unknown as Blob });
+        progressRef.current(0, file.size);
+        // D-126: streamed from disk with upload progress (same route, headers and auth as before).
+        const result = await uploadMaterial({
+          file, filename: upload.filename, token: await getTokenRef.current(), signal: abort.signal,
+          onProgress: (sent) => { if (active) progressRef.current(sent, file.size); },
+        });
         if (!active) return;
         if (result.status !== 'complete' || !result.text.trim()) {
           throw new Error('The server did not return a complete text extraction. Nothing was saved.');
@@ -90,7 +98,7 @@ function MaterialExtractionTask({ upload, onComplete, onFailure }: {
       }
     };
     void extract();
-    return () => { active = false; };
+    return () => { active = false; abort.abort(); };
   }, [upload.id]);
 
   return null;
@@ -119,6 +127,12 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
   const [materialUpload, setMaterialUpload] = useState<PendingMaterial | null>(null);
   const [extractedMaterial, setExtractedMaterial] = useState<StudyMaterialExtraction | null>(null);
   const [materialUploading, setMaterialUploading] = useState(false);
+  // D-126: what the waiting bar shows. sent = share of the file uploaded; workStart = when the
+  // server's part (reading, writing notes) began; size drives the estimate.
+  const [sent, setSent] = useState(0);
+  const [fileBytes, setFileBytes] = useState(0);
+  const [workStart, setWorkStart] = useState<number | null>(null);
+  const uploadElapsed = useElapsed(materialUploading);
   const [saving, setSaving] = useState(false);
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
@@ -145,7 +159,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
         return;
       }
       setExtractedMaterial(null);
-      setMaterialUploading(true);
+      setMaterialUploading(true); setSent(0); setFileBytes(0); setWorkStart(null);
       setMaterialNotice(`${fileName} · uploading for text extraction. Nothing is saved yet.`);
       setMaterialUpload({ id: id(), uri: picked.uri, filename: fileName, courseId });
     } catch (problem) {
@@ -175,7 +189,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
       }
       const filename = asset.fileName || 'Study photo.jpg';
       setExtractedMaterial(null);
-      setMaterialUploading(true);
+      setMaterialUploading(true); setSent(0); setFileBytes(0); setWorkStart(null);
       setMaterialNotice('Reading your photo…');
       setMaterialUpload({ id: id(), uri: asset.uri, filename, courseId });
     } catch (problem) {
@@ -191,7 +205,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
       const url = new URL(/^https?:\/\//i.test(input) ? input : `https://${input}`);
       if (!['http:', 'https:'].includes(url.protocol) || !url.hostname.includes('.') || url.username || url.password || url.href.length > 2048) throw new Error();
       setExtractedMaterial(null);
-      setMaterialUploading(true);
+      setMaterialUploading(true); setSent(0); setFileBytes(0); setWorkStart(null);
       setMaterialNotice('Reading the website…');
       setMaterialUpload({ id: id(), uri: '', url: url.href, filename: url.hostname, courseId });
     } catch {
@@ -254,12 +268,24 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
 
   return (
     <View style={styles.stack}>
-      {materialUpload ? <MaterialExtractionTask key={materialUpload.id} upload={materialUpload} onComplete={handleMaterialExtracted} onFailure={handleMaterialExtractionError} /> : null}
+      {materialUpload ? <MaterialExtractionTask key={materialUpload.id} upload={materialUpload} onComplete={handleMaterialExtracted} onFailure={handleMaterialExtractionError}
+        onProgress={(fraction, bytes) => { setSent(fraction); setFileBytes(bytes); if (fraction >= 1) setWorkStart((at) => at ?? Date.now()); }} /> : null}
       {materialUploading ? (
-        <View style={styles.extractionPreview} accessibilityRole="progressbar" accessibilityLabel="Extracting course material text" testID="status-material-extracting">
-          <ActivityIndicator color={colors.primaryText} />
+        <View style={styles.extractionPreview} testID="status-material-extracting">
           <Text style={styles.cardTitle}>Reading and writing notes</Text>
-          <Text style={styles.muted}>Reading your file and turning it into notes. Nothing is saved until you tap Save.</Text>
+          {(() => {
+            // D-126: a website has no upload step; a file shows its real upload, then the estimate.
+            const isWebsite = Boolean(materialUpload?.url);
+            const isPhoto = /\.(png|jpe?g|webp|heic)$/i.test(materialUpload?.filename ?? '');
+            const expected = materialWorkMs({ kind: isWebsite ? 'website' : isPhoto ? 'photo' : 'file', bytes: fileBytes });
+            const workElapsed = isWebsite ? uploadElapsed : workStart ? Date.now() - workStart : 0;
+            const fraction = isWebsite ? uploadThenWork(1, workElapsed, expected) : uploadThenWork(sent, workElapsed, expected);
+            const label = !isWebsite && sent < 1
+              ? `Uploading ${Math.round(sent * 100)}%`
+              : `${isWebsite ? 'Reading the page' : isPhoto ? 'Reading your photo' : 'Reading your file'} and writing notes · ${timeLeftText(workElapsed, expected)}`;
+            return <ProgressBar fraction={fraction} label={label} testID="progress-material" />;
+          })()}
+          <Text style={styles.muted}>Nothing is saved until you tap Save.</Text>
           <ActionButton
             label="Cancel extraction"
             secondary
