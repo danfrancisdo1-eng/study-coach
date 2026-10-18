@@ -148,8 +148,10 @@ async function runPersona(p) {
       const segments = words.map((text, i) => ({ start: i * 20, end: i * 20 + 19, text }));
       const l1 = (await api('PUT', `/study/lectures/${lecture.id}`, { version: lecture.version, segments })).body;
       await api('PUT', `/study/lectures/${lecture.id}`, { version: l1.version, status: 'reviewed' });
-      log.push({ role: 'app', text: `Recorded and reviewed the lecture "${m.lectureTitle}".` });
       await new Promise((r) => setTimeout(r, 20_000)); // lecture notes are written in the background
+      const ln = (await api('GET', '/study/state')).body.state.materials?.find((x) => x.lectureId === lecture.id);
+      log.push({ role: 'app', text: `Recorded and reviewed the lecture "${m.lectureTitle}": ${ln?.notes ? `${ln.notes.length} characters of lecture notes` : 'no lecture notes yet'}.`, notes: ln?.notes ?? null });
+      if (!ln?.notes) problems.push({ severity: 'medium', category: 'upload', quote: m.lectureTitle, problem: 'No lecture notes 20 s after the transcript was saved as reviewed.' });
     }
 
     // The conversation: the student decides each message; sets and decks are played like the app.
@@ -247,7 +249,9 @@ async function grade(run) {
   const verdict = await ask(JUDGE_MODEL,
     'Score the app from 0 to 10 (10 = flawless). You review one conversation between a student and the AI study coach of a phone study app (RapidRecall AI), for a product owner who will fix what you find. Be specific and strict, quote the exact words, and do not invent problems. The materials are synthetic test data. The student is simulated; judge only the app (the coach and the app\'s messages).',
     { student: { name: run.persona.name, age: run.persona.age, level: run.persona.level, course: run.persona.course, curveball: run.persona.curveball }, today: TODAY,
-      syllabusOrPlan: run.materials.syllabus.slice(0, 6000), movedItem: run.materials.movedItem, courseNotesAtTheEnd: run.courseNotes,
+      materialsTheStudentUploaded: { syllabusOrPlan: run.materials.syllabus, notes: run.materials.notes, photoText: run.materials.photoText, lectureTranscript: run.materials.transcript },
+      noteToJudge: 'Anything the coach says that appears in ANY of these materials (including announcements in the lecture transcript) is grounded, not invented. Only flag facts found in none of them and not said by the student.',
+      movedItem: run.materials.movedItem, courseNotesAtTheEnd: run.courseNotes,
       conversation: run.log, checklist: CHECKLIST },
     obj({ score: { type: 'integer', description: 'Overall quality from 0 (broken) to 10 (flawless)' }, summary: str, issues: { type: 'array', items: obj({ severity: { type: 'string', enum: ['high', 'medium', 'low'] }, category: str, quote: str, problem: str, fix: str }) }, strengths: { type: 'array', items: str } }), 'medium');
   return { ...verdict, issues: [...run.problems, ...codeChecks(run), ...verdict.issues] };
@@ -273,6 +277,21 @@ details{margin-top:.6rem}.msg{background:var(--card);border:1px solid var(--line
 }
 
 // ---------- main ----------
+const regrade = opt('regrade');
+if (regrade) {
+  const saved = JSON.parse(readFileSync(regrade, 'utf8'));
+  const results = await Promise.all(saved.map(async (r) => {
+    const persona = personas.find((x) => x.id === r.persona);
+    const run = { persona, log: r.log, problems: (r.problems ?? r.issues.filter((i) => ['error', 'upload', 'set', 'deck', 'flow', 'crash', 'slow'].includes(i.category))), materials: await materialsFor(persona), courseNotes: r.courseNotes ?? '', seconds: r.seconds ?? 0 };
+    return { ...run, grade: await grade(run) };
+  }));
+  const out = regrade.replace(/\.json$/, '-regraded.html');
+  writeFileSync(out, report(results, usage));
+  writeFileSync(out.replace(/\.html$/, '.json'), JSON.stringify(results.map((r) => ({ persona: r.persona.id, score: r.grade.score, summary: r.grade.summary, issues: r.grade.issues, log: r.log, problems: r.problems, courseNotes: r.courseNotes, seconds: r.seconds })), null, 2));
+  for (const r of results) console.log(`  ${r.persona.name}: ${r.grade.score}/10, ${r.grade.issues.filter((i) => i.severity === 'high').length} high, ${r.grade.issues.filter((i) => i.severity === 'medium').length} medium`);
+  console.log(`Report: ${out}`);
+  process.exit(0);
+}
 console.log(`Simulated students: ${chosen.join(', ')} (${TURNS} turns each)`);
 buildServer();
 const CONCURRENCY = Number(opt('parallel') ?? 3);
@@ -293,5 +312,5 @@ const cost = usage;
 mkdirSync(path.join(dir, 'reports'), { recursive: true });
 const out = path.join(dir, 'reports', `${new Date().toISOString().replace(/[:.]/g, '-')}.html`);
 writeFileSync(out, report(results, cost));
-writeFileSync(out.replace(/\.html$/, '.json'), JSON.stringify(results.map((r) => ({ persona: r.persona.id, score: r.grade.score, summary: r.grade.summary, issues: r.grade.issues, log: r.log })), null, 2));
+writeFileSync(out.replace(/\.html$/, '.json'), JSON.stringify(results.map((r) => ({ persona: r.persona.id, score: r.grade.score, summary: r.grade.summary, issues: r.grade.issues, log: r.log, problems: r.problems, courseNotes: r.courseNotes, seconds: r.seconds })), null, 2));
 console.log(`Report: ${out}`);
