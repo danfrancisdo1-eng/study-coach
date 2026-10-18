@@ -135,3 +135,17 @@ test('start_flashcards: count clamped to 1-30, default 10, scope defaults to all
   assert.ok(both.deck && !both.quiz, 'first wins');
   assert.equal(planActions(courses, [{ type: 'start_flashcards', name: 'Nope', topic: 'x' }]).deck, null);
 });
+
+// D-136 (simulated students): a reply that promises a set without starting one, and "misses"
+// chips after a perfect score.
+import { NO_MISS_CHIPS, promisesSet, withoutMissChips } from '../src/routes/chatActions.ts';
+
+test('promisesSet spots a reply that says the questions are coming', () => {
+  for (const text of ['Practice it is. The first question is coming up.', 'Sorry about that, restarting your set now. The first question is on its way.', 'Here comes your set!', 'Starting your 10-question practice set on cells.']) assert.equal(promisesSet(text), true, text);
+  for (const text of ['Want a quick set on cells?', 'Practice or exam?', 'Nice work, 9 of 10.']) assert.equal(promisesSet(text), false, text);
+});
+
+test('withoutMissChips replaces "misses" chips after a perfect score', () => {
+  assert.deepEqual(withoutMissChips(['Memory tricks for the misses', 'Flashcards for the misses', 'Another set on everything', 'Another set on the missed topics']), ['Another set on everything', ...NO_MISS_CHIPS.filter((c) => c !== 'Another set on everything')]);
+  assert.deepEqual(withoutMissChips(['Harder questions', 'Pick a new topic', 'Another set on everything']), ['Harder questions', 'Pick a new topic', 'Another set on everything']);
+});

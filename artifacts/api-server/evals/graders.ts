@@ -3,7 +3,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
 import type { CourseRouterCase, UploadNotesCase, CourseNotesCase, ReviewSheetCase, CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase, WebLookupCase } from "./fixtures";
-import { parseQuizCheck } from "../src/lib/quiz-check";
+import { explanationProblem, parseQuizCheck } from "../src/lib/quiz-check";
 import { parseNotesReply } from "../src/lib/course-notes";
 import { parseUploadNotes } from "../src/lib/upload-notes";
 import { parseRoute, type Section } from "../src/lib/course-sections";
@@ -138,6 +138,8 @@ export async function gradeSessionQuiz(input: { topic: string; sources: Source[]
   if (formatted > 2) notes.push(`${formatted} real-exam-format questions, at most two allowed`);
   const used = new Set(input.originalPrompts.map(normalize));
   questions.forEach((q, i) => { if (used.has(normalize(q.prompt))) notes.push(`q${i}: repeats an original prompt`); });
+  // D-135: no leaked reasoning, no "closest to" answers.
+  questions.forEach((q, i) => { const why = explanationProblem(String((q as { explanation?: unknown }).explanation ?? "")); if (why) notes.push(`q${i}: ${why}`); });
   const verdict = await judgeQuestions(input.topic, input.sources, questions);
   const correct = verdict.questions.filter((q) => q.correct).length;
   for (const q of verdict.questions.filter((v) => !v.correct)) notes.push(`q${q.index} judged wrong: ${q.reason.slice(0, 160)}`);
@@ -285,7 +287,7 @@ export async function gradeFlashcards(testCase: FlashcardsCase, text: string | n
 }
 
 export function gradeQuizCheck(testCase: QuizCheckCase, text: string | null): Score {
-  let checks: Map<number, { consistent: boolean; correctIndex: number | null }>;
+  let checks: Map<number, { consistent: boolean; correctIndex: number | null; duplicateOf?: number }>;
   try {
     checks = parseQuizCheck(parseJson(text), testCase.questions.length);
   } catch (error) {
@@ -297,6 +299,10 @@ export function gradeQuizCheck(testCase: QuizCheckCase, text: string | null): Sc
     if (!got) { notes.push(`q${i}: no verdict`); return; }
     const want = e.correctIndex === -1 ? null : e.correctIndex;
     if (got.consistent !== e.consistent || got.correctIndex !== want) notes.push(`q${i}: got ${JSON.stringify(got)}, wanted ${JSON.stringify({ consistent: e.consistent, correctIndex: want })}`);
+    // D-135: repeats of an earlier question.
+    const dup = testCase.duplicates?.[i];
+    if (dup !== undefined && got.duplicateOf !== dup) notes.push(`q${i}: should be flagged as a repeat of q${dup}`);
+    if (dup === undefined && got.duplicateOf !== undefined) notes.push(`q${i}: wrongly flagged as a repeat of q${got.duplicateOf}`);
   });
   const score = 1 - notes.length / testCase.expected.length;
   return { pass: notes.length === 0, score: Math.max(0, score), notes };

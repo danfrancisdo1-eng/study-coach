@@ -3,9 +3,9 @@
 // chat-first home (routes/chat.ts) can start question sets with the same code.
 import { randomUUID } from "node:crypto";
 import { complete } from "../ai";
-import * as sessionQuizPrompt from "../prompts/session-quiz.v8";
-import * as quizCheckPrompt from "../prompts/quiz-check.v2";
-import { applyQuizCheck, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
+import * as sessionQuizPrompt from "../prompts/session-quiz.v9";
+import * as quizCheckPrompt from "../prompts/quiz-check.v3";
+import { applyQuizCheck, explanationProblem, keyFromExplanation, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
 import { shuffleOptions } from "./shuffle-options";
 import * as flashcardsPrompt from "../prompts/flashcards.v3";
 
@@ -342,9 +342,17 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
       explanation: value.explanation.slice(0, 2000), ...(typeof value.hook === "string" && value.hook.trim() ? { hook: value.hook.trim().slice(0, 300) } : {}),
     });
   }
-  // Answer-key consistency check (D-027): fix keys the explanation contradicts, drop unclear ones.
-  // A failed check keeps the set as written (the writer is right far more often than not).
-  const { kept, dropped } = await checkAnswerKeys(valid);
+  // D-135: code checks first: drop leaked reasoning or "closest to" answers; re-key when the
+  // explanation says in words that another option is correct. Dropped questions are topped up (D-133).
+  const screened: ProposedQuestion[] = [];
+  for (const q of valid) {
+    if (explanationProblem(q.explanation)) { invalidItemCount += 1; continue; }
+    const rekey = keyFromExplanation(q);
+    screened.push(rekey === null ? q : { ...q, answerIndex: rekey });
+  }
+  // Answer-key consistency check (D-027): fix keys the explanation contradicts, drop unclear ones
+  // and (D-135) repeats of an earlier question in the batch. A failed check keeps the set as written.
+  const { kept, dropped } = await checkAnswerKeys(screened);
   invalidItemCount += dropped;
   // Option order (D-032): shuffled after the check, so the key isn't usually in slot A or B.
   const questions: StoredQuestion[] = kept.map((q) => shuffleOptions(q)).map((q) => {

@@ -89,7 +89,7 @@ export const memorySheetSchema = object({
 });
 
 export const quizCheckSchema = object({
-  checks: { type: "array", items: object({ index: { type: "integer" }, consistent: { type: "boolean" }, correctIndex: { type: "integer" } }) },
+  checks: { type: "array", items: object({ index: { type: "integer" }, consistent: { type: "boolean" }, correctIndex: { type: "integer" }, duplicateOf: { type: "integer" } }) },
 });
 
 export const courseNotesSchema = object({ notes: string, summary: string });

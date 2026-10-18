@@ -291,9 +291,22 @@ export interface QuizCheckCase {
   questions: { prompt: string; options: string[]; answerIndex: number; explanation: string }[];
   /** Expected verdict per question: the correct index the explanation supports, or -1 for unclear. */
   expected: { consistent: boolean; correctIndex: number }[];
+  /** D-135: question index → the earlier question it repeats (all others must not be flagged). */
+  duplicates?: Record<number, number>;
 }
 
 export const quizCheckCases: QuizCheckCase[] = [
+  {
+    name: "a reworded repeat of an earlier question is flagged (simulated students: PMP and Psych sets)",
+    questions: [
+      { prompt: "On a power-interest grid, a stakeholder with high power and low interest should be:", options: ["Managed closely", "Kept satisfied", "Kept informed", "Monitored"], answerIndex: 1, explanation: "High power, low interest: keep satisfied so they don't become blockers." },
+      { prompt: "Which tool helps prioritize stakeholders by their authority and concern?", options: ["RACI chart", "Power-interest grid", "Burndown chart", "Risk register"], answerIndex: 1, explanation: "The power-interest grid maps authority against concern to prioritize engagement." },
+      { prompt: "A city inspector has final say on the building's sign-off but little interest in weekly progress. How should the project manager engage them?", options: ["Manage closely", "Keep satisfied", "Keep informed", "Monitor"], answerIndex: 1, explanation: "High power with low interest calls for keeping them satisfied." },
+      { prompt: "What does a critical path tell the project manager?", options: ["The cheapest activities", "The longest chain of dependent activities, which sets the shortest duration", "The riskiest activities", "Activities with the most float"], answerIndex: 1, explanation: "The critical path is the longest dependent chain; it determines the minimum project duration." },
+    ],
+    expected: [{ consistent: true, correctIndex: 1 }, { consistent: true, correctIndex: 1 }, { consistent: true, correctIndex: 1 }, { consistent: true, correctIndex: 1 }],
+    duplicates: { 2: 0 },
+  },
   {
     name: "two wrong keys from the Copilot set, two right ones",
     questions: [
@@ -507,6 +520,25 @@ export const coachCases: CoachCase[] = [
     expectedActions: [],
     expectations: ["Gives the final exam date as Tuesday, December 1, 2026", "Says it is cumulative (heavier on the material after the midterm is fine)", "Says or implies it comes from their syllabus", "Does not say it cannot see the date or ask the student for the date"],
     maxWords: 90,
+  },
+  // coach.v24 (D-136, simulated students).
+  {
+    name: "chatty first message names the class: creates it (Maya, simulated student)",
+    courses: [], firstVisit: true, history: [],
+    message: "hi so um, I'm Maya and I'm a sophomore, and I need help studying for my Health class, the Sex Ed unit, which yes is as awkward as it sounds lol. can we just, like, not make it weird?",
+    expectedActions: [{ type: "create_course", name: "Health" }],
+    expectations: ["Says the class is added, kindly and without making it awkward", "Asks what she wants to do next (a quick set or adding material)"],
+    maxWords: 70,
+  },
+  {
+    name: "perfect score: next-step chips, never misses chips",
+    courses: [{ id: "bio", name: "Biology (10th grade)", materials: 3, lectures: 1 }], firstVisit: false, focusCourseId: "bio",
+    history: [{ role: "user", content: "Practice" }, { role: "assistant", content: "Practice mode on photosynthesis, coming right up." }],
+    quiz: { courseName: "Biology (10th grade)", topic: "photosynthesis", kind: "practice", answered: 10, total: 10, graded: { correct: 10, percent: 100, missed: [] } },
+    message: "I finished the set.",
+    expectedActions: [], expectedSuggestions: ["Another set on everything", "Harder questions", "Pick a new topic"],
+    expectations: ["One short line celebrating 10 of 10", "No suggestion mentions misses or missed topics"],
+    maxWords: 30,
   },
   // coach.v20 (D-123): course notes.
   {

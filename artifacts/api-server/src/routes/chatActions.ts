@@ -181,3 +181,19 @@ export function planActions(courses: KnownCourse[], actions: CoachAction[]): Act
   if (plan.quiz || plan.deck) plan.start = null; // a set or deck in the chat replaces the legacy hand-off
   return plan;
 }
+
+// D-136 (simulated students): Maya's coach said "The first question is coming up" three times
+// without starting a set; Aiden scored 10/10 and was offered "tricks for the misses".
+const PROMISE = /\b(first question|questions?|your (set|cards|deck|flashcards))\b[^.?!]{0,30}\b(is|are)\s+(coming|on (its|their) way|up next)\b|\bhere comes your\b|\bstarting your\b|\brestarting your (set|quiz)\b/i;
+/** True when a reply tells the student a set or deck is starting. */
+export function promisesSet(reply: string): boolean {
+  return PROMISE.test(reply);
+}
+
+export const NO_MISS_CHIPS = ["Another set on everything", "Harder questions", "Pick a new topic", "Flashcards on this topic"];
+/** After a set with no misses: drop chips about misses and offer next steps instead. */
+export function withoutMissChips(chips: string[]): string[] {
+  const kept = chips.filter((c) => !/\bmiss(es|ed)?\b/i.test(c));
+  if (kept.length === chips.length) return chips;
+  return [...kept, ...NO_MISS_CHIPS.filter((c) => !kept.includes(c))].slice(0, MAX_SUGGESTIONS);
+}
