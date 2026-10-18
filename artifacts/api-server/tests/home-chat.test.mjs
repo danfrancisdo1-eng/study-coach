@@ -751,3 +751,47 @@ test('home chat: sets reach the requested size: batches of 10, retry, top-up', a
   session = await untilReady(chat.body.messages.at(-1).actions[0].sessionId);
   assert.equal(session.quiz.questions.length, 10, 'the failed batch was retried');
 });
+
+// D-136: a reply that promises the set without starting it is asked again once; a perfect score
+// gets next-step chips instead of "misses" chips.
+test('home chat: a promised set is started; no "misses" chips after a perfect score', async (t) => {
+  buildServer();
+  const database = await startDatabase(t);
+  const coachReplies = [];
+  const ai = await startAiStub(t, (request) => {
+    const system = request.body.messages[0].content;
+    if (system.startsWith('Create exactly')) { quizBatch += 1; return quizReply(Number(/^Create exactly (\d+)/.exec(system)[1])); }
+    if (system.startsWith('You check the answer key')) return { status: 400, body: { error: { message: 'skip' } } };
+    const next = coachReplies.shift() ?? { reply: 'ok', suggestions: [], actions: [] };
+    return chatReply(JSON.stringify(next));
+  });
+  const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url });
+  await seedAccount(database.db, 'user_promise', { aiConsent: true, courses: [{ id: 'bio', name: 'BIOL 114' }], materials: [] });
+  const call = async (method, path, body) => {
+    const res = await fetch(`${base}/api${path}`, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${signToken('user_promise')}` }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const text = await res.text();
+    return { status: res.status, body: text ? JSON.parse(text) : null };
+  };
+  coachReplies.push(
+    { reply: 'Practice it is. The first question is coming up.', suggestions: [], actions: [] },
+    { reply: 'Here it comes.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 4, kind: 'practice', scope: 'all' }] },
+  );
+  let chat = await call('POST', '/study/chat', { content: 'practice', version: 0 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  const started = chat.body.messages.at(-1).actions[0];
+  assert.equal(started?.type, 'start_quiz', 'the second ask started the set');
+  const nudge = ai.requests.filter((r) => !/^(Create exactly|You check)/.test(r.body.messages[0].content)).at(-1).body.messages.at(-1).content;
+  assert.match(nudge, /no start_quiz or start_flashcards action/);
+
+  // Answer every question right (the stub keys answerIndex i % 4), grade, then the after-set reply.
+  let session;
+  for (let i = 0; i < 100; i += 1) { session = (await call('GET', `/study/sessions/${started.sessionId}`)).body; if (session.quiz.status === 'ready') break; await new Promise((r) => setTimeout(r, 50)); }
+  for (const [i, q] of session.quiz.questions.entries()) await call('PUT', `/study/sessions/${started.sessionId}/answers`, { questionId: q.id, optionId: q.options.find((o) => o.text === `${'ABCD'[i % 4]}${i}`)?.id ?? q.options[0].id, assisted: false });
+  const graded = (await call('POST', `/study/sessions/${started.sessionId}/grade`)).body;
+  assert.equal(graded.quiz.grade.correct, graded.quiz.grade.answered, 'a perfect score');
+  coachReplies.push({ reply: 'Perfect, 4 of 4!', suggestions: ['Memory tricks for the misses', 'Flashcards for the misses', 'Another set on everything', 'Another set on the missed topics'], actions: [] });
+  chat = await call('POST', '/study/chat', { content: 'I finished the set.', version: 1 });
+  const chips = chat.body.messages.at(-1).suggestions;
+  assert.ok(!chips.some((c) => /miss/i.test(c)), JSON.stringify(chips));
+  assert.ok(chips.includes('Harder questions') && chips.includes('Another set on everything'), JSON.stringify(chips));
+});

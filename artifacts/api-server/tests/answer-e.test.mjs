@@ -44,8 +44,11 @@ test('answer-E formats: five options and positional options are accepted, kept i
   const chat = await call('POST', '/study/chat', { content: 'practice', version: 0 });
   assert.equal(chat.status, 200, JSON.stringify(chat.body));
   const started = chat.body.messages.at(-1).actions[0];
-  assert.equal(started.count, 2, 'the 3-option, 6-option and out-of-range questions are dropped');
-  const session = (await call('GET', `/study/sessions/${started.sessionId}`)).body;
+  assert.equal(started.count, 5, 'announced at the requested size; the dropped ones are topped up (D-133)');
+  // The top-up writer can only repeat the same questions (dropped as repeats), so the set ends at 2.
+  let session;
+  for (let i = 0; i < 200; i += 1) { session = (await call('GET', `/study/sessions/${started.sessionId}`)).body; if (session.quiz.status === 'ready') break; await new Promise((r) => setTimeout(r, 50)); }
+  assert.equal(session.quiz.questions.length, 2, 'the 3-option, 6-option and out-of-range questions are dropped');
   assert.equal(session.quiz.invalidItemCount, 3);
   const [combo, five] = session.quiz.questions;
   assert.deepEqual(combo.options.map((o) => o.text), ['Osmosis', 'Diffusion', 'Sodium-potassium pump', 'Endocytosis', 'Both C and D'], 'a positional option keeps the written order');

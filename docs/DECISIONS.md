@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-136: Coach flow fixes from the simulated students (coach.v24)
+- A reply that promises a set ("the first question is coming up") without a start_quiz/start_flashcards action is asked again once by the app with a note, and the second reply is used (Maya's coach promised three times and nothing appeared). promisesSet in routes/chatActions.ts.
+- After a graded set with nothing missed, chips about misses are replaced by "Another set on everything", "Harder questions", "Pick a new topic", "Flashcards on this topic" (code, withoutMissChips), and coach.v24 says the same (Aiden got 10/10 and two dead ends).
+- coach.v24 also: a class named anywhere in a chatty first message is created; in the general chat with exactly one course, a study request goes straight to that course's topic step (it asked "which course?" with one course); a saved change is never taken back unless the student says it was wrong (Priya's coach retracted a correct Practice Test 2 date).
+- Evals: coach 50/50 and 49/50 (2 new: Maya's chatty first message, a perfect score). Tests: 2 unit, 1 end to end.
+
 ## 2026-10-18 — D-135: Cleaner questions: no repeats, no leaked reasoning, keys that match (session-quiz.v9, quiz-check.v3)
 - Found by the simulated students (D-132): sets had 2–3 reworded repeats; explanations showed the writer's own checking ("but wait: it is true, so the key must be B", "Check: the options list 0.32 m…"); two keys contradicted their explanations (CPA: the explanation says "$5,000 is correct", the key was $500; CFA: "about 5.19, closest to 5.24").
 - session-quiz.v9: every question tests a different idea; explanations speak to the student (no checking out loud, no option letters); a calculated answer appears exactly among the options, never "closest to". quiz-check.v3 (Haiku) also returns "duplicateOf" (an earlier question in the batch that tests the same idea), and the repeat is dropped. Code checks before the AI check (lib/quiz-check.ts): leaked reasoning or "closest to" drops the question; an explanation that says another option "is correct" re-keys it. Dropped questions are topped up (D-133).

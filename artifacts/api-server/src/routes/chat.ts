@@ -13,7 +13,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v23";
+import * as coachPrompt from "../prompts/coach.v24";
 import { courseContext, NOTES_BLOCK, PLANNING } from "../lib/course-context";
 import { indexText, routedContext, sectionsOf, wordSearch } from "../lib/course-sections";
 import { routeCourse } from "../lib/course-router";
@@ -29,7 +29,7 @@ import { eventsFrom, resultsHistoryText, weakConcepts } from "../lib/results-his
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { excludedByReport, generateFlashcards, generateSessionQuiz, quizStatus, sourceChunks, sourceTextOf, type GenerateQuizInput, type Quiz, type QuizStatus, type Session, type StoredQuestion } from "../lib/session-quiz";
 import { itemsFromSession, rowsFromState, sheetAsText, updateMemorySheet, type MemoryItem } from "../lib/memory-sheet";
-import { parseCoachReply, planActions, type DeckPlan, type KnownCourse, type QuizPlan, type SheetPlan } from "./chatActions";
+import { parseCoachReply, planActions, promisesSet, withoutMissChips, type DeckPlan, type KnownCourse, type QuizPlan, type SheetPlan } from "./chatActions";
 import { getSession, requireStudyAuth, saveSession } from "./study";
 import { logger } from "../lib/logger";
 import { activeFor, consume, enforced, planFor, refund } from "../lib/premium-store";
@@ -618,6 +618,21 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     });
     coach = parseCoachReply(response.text);
     if (!coach) throw new Error(response.text ? "Reply was not valid coach JSON" : "Empty response");
+    // D-136: the reply says the questions are coming but starts nothing: ask once more for the action.
+    if (promisesSet(coach.reply) && !coach.actions.some((a) => a.type === "start_quiz" || a.type === "start_flashcards")) {
+      req.log.info("Home chat: the reply promised a set without starting one; asking again");
+      try {
+        const again = await complete("coach", {
+          ...(material ? { context: material.text } : {}),
+          system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null }),
+          messages: [...history, { role: "user", content }, { role: "assistant", content: response.text ?? "" }, { role: "user", content: "(App note, not from the student: your reply says the set is starting, but it has no start_quiz or start_flashcards action, so nothing would appear. Reply again: either include the action now, or ask the one thing you still need to know.)" }],
+        });
+        const second = parseCoachReply(again.text);
+        if (second) coach = second;
+      } catch (error) {
+        req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 300) : "Unknown error" }, "Home chat: the second ask failed; keeping the first reply");
+      }
+    }
   } catch (error) {
     req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat AI request failed");
     await giveBack();
@@ -625,6 +640,8 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     return;
   }
 
+  // D-136: nothing was missed in the latest graded set, so no chips about misses.
+  if (quiz?.graded && quiz.graded.missed.length === 0) coach = { ...coach, suggestions: withoutMissChips(coach.suggestions) };
   const plan = planActions(courses, coach.actions);
   if (timed && threadId) plan.quiz = { courseId: threadId, topic: "All topics", count: timed.count, scope: "all", kind: "exam" };
   if (plan.notes.length) req.log.info({ notes: plan.notes }, "Home chat actions skipped");
