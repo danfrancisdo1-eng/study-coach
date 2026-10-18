@@ -15,7 +15,7 @@ import * as classicQuizPrompt from "../src/prompts/classic-quiz.v1";
 import * as examPlanPrompt from "../src/prompts/exam-plan.v1";
 import * as tutorPrompt from "../src/prompts/tutor.v3";
 import * as sessionQuizPrompt from "../src/prompts/session-quiz.v9";
-import * as quizCheckPrompt from "../src/prompts/quiz-check.v3";
+import * as quizCheckPrompt from "../src/prompts/quiz-check.v4";
 import * as imageOcrPrompt from "../src/prompts/image-ocr.v1";
 import * as coachPrompt from "../src/prompts/coach.v24";
 import * as courseNotesPrompt from "../src/prompts/course-notes.v1";

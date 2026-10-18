@@ -66,7 +66,8 @@ const ANTHROPIC: Record<AiTask, ProviderDefaults> = {
   // Memory sheet rows (D-025): term → trick → when you see X, think Y.
   memory_sheet: { model: "claude-sonnet-5-5", maxTokens: 8000, effort: "low" },
   // Answer-key consistency check after every set (D-027): cheap, explanation-only.
-  quiz_check: { model: "claude-haiku-4-5", maxTokens: 4000 },
+  // D-137: Sonnet (was Haiku): the AP Physics run showed wrong keys on worked numbers slipping past Haiku.
+  quiz_check: { model: "claude-sonnet-5-5", maxTokens: 8000, effort: "low" },
   // Re-check of a reported question (D-034): one question, answered cold by the strongest
   // model at high effort, the same standard as the answer-key audit (D-031).
   flag_check: { model: "claude-opus-5-5", maxTokens: 12000, effort: "high" },

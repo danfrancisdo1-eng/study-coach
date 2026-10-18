@@ -4,8 +4,8 @@
 import { randomUUID } from "node:crypto";
 import { complete } from "../ai";
 import * as sessionQuizPrompt from "../prompts/session-quiz.v9";
-import * as quizCheckPrompt from "../prompts/quiz-check.v3";
-import { applyQuizCheck, explanationProblem, keyFromExplanation, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
+import * as quizCheckPrompt from "../prompts/quiz-check.v4";
+import { applyQuizCheck, explanationProblem, keyFromExplanation, numericKey, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
 import { shuffleOptions } from "./shuffle-options";
 import * as flashcardsPrompt from "../prompts/flashcards.v3";
 
@@ -347,7 +347,10 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
   const screened: ProposedQuestion[] = [];
   for (const q of valid) {
     if (explanationProblem(q.explanation)) { invalidItemCount += 1; continue; }
-    const rekey = keyFromExplanation(q);
+    // D-137: the worked numbers decide when they clearly point at one option (or at none).
+    const byNumber = numericKey(q);
+    if (byNumber === "drop") { invalidItemCount += 1; continue; }
+    const rekey = byNumber ?? keyFromExplanation(q);
     screened.push(rekey === null ? q : { ...q, answerIndex: rekey });
   }
   // Answer-key consistency check (D-027): fix keys the explanation contradicts, drop unclear ones
