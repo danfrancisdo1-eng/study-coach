@@ -538,15 +538,18 @@ test('home chat: answer-key check fixes a wrong key and drops an unclear questio
   let chat = await call('POST', '/study/chat', { content: 'practice', version: 0 });
   assert.equal(chat.status, 200, JSON.stringify(chat.body));
   const started = chat.body.messages.at(-1).actions[0];
-  assert.equal(started.count, 3, 'the unclear question is dropped');
+  assert.equal(started.count, 4, 'the unclear question is dropped and topped up (D-133), so the set keeps its size');
   const checkRequest = ai.requests.filter((r) => r.body.messages[0].content.startsWith('You check the answer key')).at(-1).body;
   const sent = JSON.parse(checkRequest.messages[1].content).questions;
   assert.equal(sent.length, 4);
   assert.deepEqual(sent[0].options, ['A0', 'B0', 'C0', 'D0']);
   assert.equal(sent[0].answerIndex, 0);
-  let session = (await call('GET', `/study/sessions/${started.sessionId}`)).body;
-  assert.equal(session.quiz.invalidItemCount, 1);
-  assert.deepEqual(session.quiz.questions.map((q) => q.prompt), [`Set ${quizBatch} question 1?`, `Set ${quizBatch} question 3?`, `Set ${quizBatch} question 4?`]);
+  const firstBatch = quizBatch;
+  let session;
+  for (let i = 0; i < 200; i += 1) { session = (await call('GET', `/study/sessions/${started.sessionId}`)).body; if (session.quiz.status === 'ready') break; await new Promise((r) => setTimeout(r, 50)); }
+  assert.equal(session.quiz.invalidItemCount, 0);
+  assert.equal(session.quiz.questions.length, 4);
+  assert.deepEqual(session.quiz.questions.slice(0, 3).map((q) => q.prompt), [`Set ${firstBatch} question 1?`, `Set ${firstBatch} question 3?`, `Set ${firstBatch} question 4?`]);
   // Question 1's key was moved from A0 to C0 (what its explanation supports).
   const q0 = session.quiz.questions[0];
   session = (await call('PUT', `/study/sessions/${started.sessionId}/answers`, { questionId: q0.id, optionId: q0.options[2].id, assisted: false })).body;
@@ -678,4 +681,73 @@ test('home chat: a set of six or more arrives in two parts', async (t) => {
   assert.equal(session.quiz.questions.length, 3);
   assert.equal(session.quiz.invalidItemCount, 4);
   assert.equal((await call('GET', '/study/chat')).body.activeQuiz.total, 3, 'ready: the size is what landed');
+});
+
+// D-133 (simulated students: asked for 10, got 9, 8, 7 or 3; a 50 became 2): the rest of a set is
+// written in batches of at most 10, a failed batch is retried once, and questions dropped by the
+// checks are topped up, so a set ends at the size the student asked for.
+test('home chat: sets reach the requested size: batches of 10, retry, top-up', async (t) => {
+  buildServer();
+  const database = await startDatabase(t);
+  let coach = { reply: 'Set coming.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 30, kind: 'exam', scope: 'all' }] };
+  let written = 0;
+  let shortBy = 0; // the writer returns this many fewer than asked, once
+  let failNext = 0; // the next N writer calls fail
+  const asks = [];
+  const ai = await startAiStub(t, (request) => {
+    const system = request.body.messages[0].content;
+    const asked = /^Create exactly (\d+)/.exec(system);
+    if (asked) {
+      asks.push(Number(asked[1]));
+      if (failNext > 0) { failNext -= 1; return { status: 400, body: { error: { message: 'bad' } } }; }
+      const n = Math.max(0, Number(asked[1]) - shortBy);
+      shortBy = 0;
+      const reply = chatReply(JSON.stringify({ questions: Array.from({ length: n }, (_, i) => { const k = written + i; return { prompt: `Question ${[k * 3 + 1, k * 5 + 2, k * 7 + 3, k * 11 + 4, k * 13 + 5].map((n) => `w${n.toString(36)}x`).join(' ')}?`, options: [`A${k}`, `B${k}`, `C${k}`, `D${k}`], answerIndex: 0, concept: `concept-${k}`, explanation: `Because ${k}.` }; }) }));
+      written += n;
+      return reply;
+    }
+    if (system.startsWith('You check the answer key')) return { status: 400, body: { error: { message: 'skip' } } };
+    return chatReply(JSON.stringify(coach));
+  });
+  const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url });
+  await seedAccount(database.db, 'user_full', { aiConsent: true, courses: [{ id: 'bio', name: 'BIOL 114' }], materials: [] });
+  const call = async (method, path, body) => {
+    const res = await fetch(`${base}/api${path}`, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${signToken('user_full')}` }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const text = await res.text();
+    return { status: res.status, body: text ? JSON.parse(text) : null };
+  };
+  const untilReady = async (id) => {
+    for (let i = 0; i < 400; i += 1) {
+      const s = (await call('GET', `/study/sessions/${id}`)).body;
+      if (s.quiz.status === 'ready') return s;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    throw new Error('never ready');
+  };
+
+  // 30 questions: 3 first, then 27 in batches of at most 10 (10, 10, 7); one batch comes back 2 short and is topped up.
+  shortBy = 0;
+  let chat = await call('POST', '/study/chat', { content: 'exam, 30 questions', version: 0 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  asks.length = 0;
+  shortBy = 2;
+  let session = await untilReady(chat.body.messages.at(-1).actions[0].sessionId);
+  assert.equal(session.quiz.questions.length, 30, 'the full 30');
+  assert.equal(session.quiz.invalidItemCount, 0);
+  assert.ok(asks.every((n) => n <= 10), `every batch is at most 10: ${asks}`);
+  assert.ok(asks.includes(2), `a top-up of the 2 missing: ${asks}`);
+
+  // A failed batch is retried once; a set under 6 whose writer came back short is topped up too.
+  coach = { reply: 'Set coming.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 5, kind: 'practice', scope: 'all' }] };
+  shortBy = 1;
+  chat = await call('POST', '/study/chat', { content: 'five', version: 1 });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  session = await untilReady(chat.body.messages.at(-1).actions[0].sessionId);
+  assert.equal(session.quiz.questions.length, 5, 'the 4 that came back plus a top-up of 1');
+
+  coach = { reply: 'Set coming.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 10, kind: 'practice', scope: 'all' }] };
+  chat = await call('POST', '/study/chat', { content: 'ten', version: 2 });
+  failNext = 1;
+  session = await untilReady(chat.body.messages.at(-1).actions[0].sessionId);
+  assert.equal(session.quiz.questions.length, 10, 'the failed batch was retried');
 });

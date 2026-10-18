@@ -330,6 +330,13 @@ async function sourcesFor(ownerId: string, state: JsonObject, courseId: string, 
 const FIRST_PART = 3;
 const SPLIT_FROM = 6;
 const WRITE_RETRIES = 3; // saves that lose a version race with the student's answers
+// D-133 (simulated students: "asked for 10, got 9/8/7/3"; a 50 became 2): the rest is written in
+// batches of at most 10, a failed batch is tried once more, and questions dropped by the checks
+// are topped up (at most twice), so a set ends at the size the student asked for.
+const MAX_BATCH = 10;
+const BATCH_TRIES = 2;
+const TOP_UPS = 2;
+const splitCount = (n: number): number[] => { const out: number[] = []; for (let left = n; left > 0; left -= MAX_BATCH) out.push(Math.min(MAX_BATCH, left)); return out; };
 
 /** A timed exam (D-114): its limit and the batches it is written in (one guide section each). */
 type TimedStart = { minutes: number; batches: Batch[] };
@@ -362,58 +369,71 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
   const quiz: Quiz | null = await generateSessionQuiz({ ...input, expectedCount: firstCount, ...(firstBatch ? { sectionWeights: batchWeights(firstBatch) } : {}) });
   if (!quiz) return null;
   const rest = plan.count - firstCount;
+  const missing = firstCount - quiz.questions.length; // dropped by the checks: topped up below
   quiz.expectedCount = plan.count + carried.length;
-  if (rest > 0) quiz.writing = { startedAt: new Date().toISOString() };
+  const more = rest > 0 || missing > 0;
+  if (more) quiz.writing = { startedAt: new Date().toISOString() };
   else quiz.questions.push(...carried);
   // The clock starts once the first questions are in hand.
   if (timed) quiz.timer = newTimer(timed.minutes);
   session.quiz = quiz;
   await insertSession(ownerId, session);
-  if (rest > 0) {
-    const batches = timed ? timed.batches.slice(1) : [{ section: null, count: rest }];
-    void writeRestOfSet(ownerId, session.id, { ...input, expectedCount: rest, originalPrompts: [...originalPrompts, ...quiz.questions.map((q) => q.prompt)] }, carried, timed ? batches : undefined);
+  if (more) {
+    const batches = timed ? timed.batches.slice(1) : splitCount(rest).map((count) => ({ section: null, count }));
+    void writeRestOfSet(ownerId, session.id, { ...input, expectedCount: rest, originalPrompts: [...originalPrompts, ...quiz.questions.map((q) => q.prompt)] }, carried, batches, Boolean(timed));
   }
   return session;
 }
 
 /**
- * The second part of a set, after the reply has gone out. Appends what the writer returns
- * (plus the carried questions) to the stored session and clears the writing marker; the
- * student may be answering the first part meanwhile, so the save retries on a version race.
- * A failed writer leaves the set as its first part (the missing questions count as invalid).
+ * The rest of a set, after the reply has gone out (D-052, D-133). Writes the planned batches
+ * (at most 10 questions each, or a timed exam's section batches, D-114), saving each as it lands;
+ * a failed batch is tried once more; then, while the set is short of its size (questions dropped
+ * as duplicates or by the checks, or a batch that failed twice), up to two top-up batches.
+ * The student may be answering meanwhile, so each save retries on a version race. Whatever is
+ * still missing at the end counts as invalid.
  */
-async function writeRestOfSet(ownerId: string, sessionId: string, input: GenerateQuizInput, carried: StoredQuestion[], batches?: Batch[]): Promise<void> {
+async function writeRestOfSet(ownerId: string, sessionId: string, input: GenerateQuizInput, carried: StoredQuestion[], planned: Batch[], timed = false): Promise<void> {
   const log = logger.child({ ownerId, sessionId });
-  // One part (D-052), or a timed exam's batches, one guide section each (D-114): each batch is
-  // saved as it lands, so the student never waits long for the next question.
-  const parts = batches ?? [{ section: null, count: input.expectedCount }];
   const prompts = [...input.originalPrompts];
-  for (let index = 0; index < parts.length; index += 1) {
-    const batch = parts[index]!;
-    const last = index === parts.length - 1;
-    let part: Quiz | null = null;
-    try {
-      part = await generateSessionQuiz({ ...input, expectedCount: batch.count, originalPrompts: prompts, ...(batches ? { sectionWeights: batchWeights(batch) } : {}) });
-    } catch (error) {
-      log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat: part of the set failed; keeping what arrived");
+  const queue = [...planned];
+  let topUps = 0;
+  let firstLoop = true;
+  while (queue.length || firstLoop) {
+    firstLoop = false;
+    const batch = queue.shift();
+    let added: StoredQuestion[] = [];
+    if (batch) {
+      for (let attempt = 0; attempt < BATCH_TRIES && !added.length; attempt += 1) {
+        try {
+          const part = await generateSessionQuiz({ ...input, expectedCount: batch.count, originalPrompts: prompts, ...(timed ? { sectionWeights: batchWeights(batch) } : {}) });
+          added = part?.questions ?? [];
+        } catch (error) {
+          log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error", attempt: attempt + 1 }, "Home chat: a batch of the set failed");
+        }
+      }
     }
-    const added = part?.questions ?? [];
-    const invalid = part ? part.invalidItemCount : batch.count;
     let saved = false;
+    let shortBy = 0;
+    let finished = false;
     for (let attempt = 0; attempt < WRITE_RETRIES; attempt += 1) {
       const session = await getSession(sessionId, ownerId);
       const quiz = session?.quiz;
       if (!session || !quiz || !quiz.writing) return; // deleted with its course, or already finished
       if (quiz.grade) { log.warn("Home chat: part of the set arrived after grading; dropped"); return; }
-      // Each part was written separately: drop anything that repeats a question already in the set (D-097).
+      // Each batch was written separately: drop anything that repeats a question already in the set (D-097).
       const fresh = withoutNearDuplicates(added, quiz.questions.map((q) => q.prompt));
-      const extra = last ? withoutNearDuplicates(carried, [...quiz.questions, ...fresh].map((q) => q.prompt)) : [];
-      quiz.questions.push(...fresh, ...extra);
-      quiz.invalidItemCount += invalid;
-      if (last) quiz.writing = null;
+      quiz.questions.push(...fresh);
+      shortBy = Math.max(0, quiz.expectedCount - carried.length - quiz.questions.length);
+      finished = !queue.length && (shortBy === 0 || topUps >= TOP_UPS);
+      if (finished) {
+        quiz.questions.push(...withoutNearDuplicates(carried, quiz.questions.map((q) => q.prompt)));
+        quiz.invalidItemCount = shortBy;
+        quiz.writing = null;
+      }
       if (await saveSession(session, ownerId)) {
         prompts.push(...fresh.map((q) => q.prompt));
-        log.info({ added: added.length, carried: extra.length, invalid, part: index + 1, of: parts.length }, "Home chat: part of the set is in");
+        log.info({ added: fresh.length, asked: batch?.count ?? 0, shortBy, finished }, "Home chat: part of the set is in");
         saved = true;
         break;
       }
@@ -422,6 +442,8 @@ async function writeRestOfSet(ownerId: string, sessionId: string, input: Generat
       log.error("Home chat: could not save part of the set after retries; the set keeps what it has");
       return;
     }
+    if (finished) return;
+    if (!queue.length && shortBy > 0) { topUps += 1; queue.push({ section: null, count: Math.min(MAX_BATCH, shortBy) }); }
   }
 }
 
