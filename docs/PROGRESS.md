@@ -27,6 +27,7 @@
 ### Next
 - Part D: search for big courses (and for exact quotes in transcripts and raw uploads). Optional: a typed time limit so college courses get a clock too.
 - TestFlight testers: Dan's son and his friends (internal testers must be App Store Connect users; others via an external group, which needs Apple's one-time beta review: description, privacy policy URL, a reviewer account). A short invite message is ready to write.
+- **After launch (Dan, 2026-10-17):** import a recorded video or audio file (Photos/Files) for transcription; the phone would extract the audio first (videos are GBs; the server takes 50 MB of audio), which needs a small native piece and a new build. Until then lectures are recorded in the app.
 - A new TestFlight build is needed only for screen changes (server changes reach it by themselves): `npx eas-cli build --platform ios --profile production --auto-submit` in artifacts/study-coach-mobile.
 - Beta: Clerk is still the development instance (pk_test); fine for internal testers, switch to production before a wide external beta.
 
