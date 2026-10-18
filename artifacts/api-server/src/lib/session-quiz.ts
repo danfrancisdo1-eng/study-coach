@@ -4,7 +4,7 @@
 import { randomUUID } from "node:crypto";
 import { complete } from "../ai";
 import * as sessionQuizPrompt from "../prompts/session-quiz.v9";
-import * as quizCheckPrompt from "../prompts/quiz-check.v5";
+import * as quizCheckPrompt from "../prompts/quiz-check.v6";
 import { applyQuizCheck, explanationProblem, keyFromExplanation, numericKey, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
 import { shuffleOptions } from "./shuffle-options";
 import * as flashcardsPrompt from "../prompts/flashcards.v3";

@@ -23,6 +23,12 @@ export interface HomeChatInput {
      * @maxLength 200
      */
   courseId?: string;
+  /**
+     * Daily reps (D-139): the device's offset from UTC in minutes (e.g. -300 for Chicago in summer), so 'today' is the student's day. Omitted = UTC.
+     * @minimum -840
+     * @maximum 840
+     */
+  utcOffsetMinutes?: number;
   /** Timed exams (D-114): start a full exam simulation or a 10/20/40-question block on this thread's certification exam, sized and timed from the real exam's facts. No coach AI call; the reply is written by the app. 400 when the course is not an exam or the question count / time limit are unknown. */
   timedExam?: HomeChatInputTimedExam;
 }

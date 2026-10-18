@@ -13,7 +13,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v25";
+import * as coachPrompt from "../prompts/coach.v26";
 import { courseContext, NOTES_BLOCK, PLANNING } from "../lib/course-context";
 import { indexText, routedContext, sectionsOf, wordSearch } from "../lib/course-sections";
 import { routeCourse } from "../lib/course-router";
@@ -26,10 +26,11 @@ import * as webLookupPrompt from "../prompts/web-lookup.v1";
 import { lookupExamGuide } from "../lib/exam-guide";
 import { saveExamGuide } from "../lib/exam-guide-state";
 import { eventsFrom, resultsHistoryText, weakConcepts } from "../lib/results-history";
+import { DAILY_SET, dailyLine, dailyReps, dailyText, firstMessageToday, localDay } from "../lib/daily-reps";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { excludedByReport, generateFlashcards, generateSessionQuiz, quizStatus, sourceChunks, sourceTextOf, type GenerateQuizInput, type Quiz, type QuizStatus, type Session, type StoredQuestion } from "../lib/session-quiz";
 import { itemsFromSession, rowsFromState, sheetAsText, updateMemorySheet, type MemoryItem } from "../lib/memory-sheet";
-import { parseCoachReply, planActions, promisesSet, withoutMissChips, type DeckPlan, type KnownCourse, type QuizPlan, type SheetPlan } from "./chatActions";
+import { FINISHED_SET, NEXT_TEN, parseCoachReply, planActions, promisesSet, withoutMissChips, type DeckPlan, type KnownCourse, type QuizPlan, type SheetPlan } from "./chatActions";
 import { getSession, requireStudyAuth, saveSession } from "./study";
 import { logger } from "../lib/logger";
 import { activeFor, consume, enforced, planFor, refund } from "../lib/premium-store";
@@ -335,7 +336,8 @@ const WRITE_RETRIES = 3; // saves that lose a version race with the student's an
 // are topped up (at most twice), so a set ends at the size the student asked for.
 const MAX_BATCH = 10;
 const BATCH_TRIES = 2;
-const TOP_UPS = 3; // D-138: a 50 ended at 42 with two rounds
+const TOP_UPS = 4; // D-138: a 50 ended at 42 with two rounds; D-139: 44 with three, so four, each asking for a few extra
+const TOP_UP_EXTRA = 3; // repeats are dropped, so a top-up asks for a few more than it needs and keeps what fits
 const splitCount = (n: number): number[] => { const out: number[] = []; for (let left = n; left > 0; left -= MAX_BATCH) out.push(Math.min(MAX_BATCH, left)); return out; };
 
 /** A timed exam (D-114): its limit and the batches it is written in (one guide section each). */
@@ -351,7 +353,7 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
     ? [...new Set(previousQuiz.questions.filter((q) => q.answers.length && q.answers.at(-1)?.optionId !== q.correctOptionId).map((q) => q.concept))]
     : [];
   // "The ones I missed" with no graded set in this chat: the course's past results (D-042).
-  const missed = latestMissed.length ? latestMissed : plan.scope === "missed" ? pastWeak : [];
+  const missed = latestMissed.length ? latestMissed : plan.scope === "missed" || plan.scope === "daily" ? pastWeak : [];
   const input: Omit<GenerateQuizInput, "expectedCount"> = {
     courseId: plan.courseId, topic: plan.topic, kind: plan.kind,
     mode: missed.length ? "targeted" : "diagnostic",
@@ -359,7 +361,7 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
     ...(sectionWeights?.length && !missed.length ? { sectionWeights } : {}),
   };
   // "Missed topics" sets carry 1–2 questions from the earlier set that were answered correctly (SPEC §6 step 7); they go last.
-  const carried: StoredQuestion[] = missed.length && previousQuiz
+  const carried: StoredQuestion[] = missed.length && previousQuiz && plan.scope !== "daily"
     ? previousQuiz.questions.filter((q) => q.answers.length && q.answers.at(-1)?.optionId === q.correctOptionId).slice(0, OLD_MATERIAL_QUESTIONS)
       .map((q) => ({ ...q, id: randomUUID(), answers: [], feedback: undefined, flag: undefined, invalid: undefined }))
     : [];
@@ -426,7 +428,8 @@ async function writeRestOfSet(ownerId: string, sessionId: string, input: Generat
       if (!session || !quiz || !quiz.writing) return; // deleted with its course, or already finished
       if (quiz.grade) { log.warn("Home chat: part of the set arrived after grading; dropped"); return; }
       // Each batch was written separately: drop anything that repeats a question already in the set (D-097).
-      const fresh = withoutNearDuplicates(added, quiz.questions.map((q) => q.prompt));
+      const room = Math.max(0, quiz.expectedCount - carried.length - quiz.questions.length);
+      const fresh = withoutNearDuplicates(added, quiz.questions.map((q) => q.prompt)).slice(0, room);
       quiz.questions.push(...fresh);
       shortBy = Math.max(0, quiz.expectedCount - carried.length - quiz.questions.length);
       finished = !queue.length && (shortBy === 0 || topUps >= TOP_UPS);
@@ -447,7 +450,7 @@ async function writeRestOfSet(ownerId: string, sessionId: string, input: Generat
       return;
     }
     if (finished) return;
-    if (!queue.length && shortBy > 0) { topUps += 1; queue.push({ section: null, count: Math.min(MAX_BATCH, shortBy) }); }
+    if (!queue.length && shortBy > 0) { topUps += 1; queue.push({ section: null, count: Math.min(MAX_BATCH, shortBy + TOP_UP_EXTRA) }); }
   }
 }
 
@@ -483,6 +486,10 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   }
   const ownerId = owner(req);
   const content = parsed.data.content.trim();
+  // D-139: the student's own day (the app sends its UTC offset).
+  const offset = parsed.data.utcOffsetMinutes ?? 0;
+  const clock = new Date();
+  const today = localDay(clock.toISOString(), offset);
   const stateRows = await db.select({ state: studyStatesTable.state }).from(studyStatesTable)
     .where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
   const state = stateRows[0]?.state;
@@ -603,6 +610,9 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     : [];
   const courseEvents = eventsFrom(courseSessions);
   const results = resultsHistoryText(courseEvents);
+  const reps = dailyReps(courseEvents, offset, clock);
+  const daily = threadId ? dailyText(reps) : null;
+  const firstToday = firstMessageToday(messages, offset, clock);
   const lastQuizAction = latestQuizAction(messages);
   const lastQuizSession = lastQuizAction ? await loadSession(ownerId, lastQuizAction.sessionId) : null;
   const quiz = lastQuizAction ? quizContext(courses, lastQuizAction, lastQuizSession) : null;
@@ -617,7 +627,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   } else try {
     const response = await complete("coach", {
       ...(material ? { context: material.text } : {}),
-      system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null }),
+      system: coachPrompt.systemPrompt({ today, daily, firstMessageToday: firstToday, courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null }),
       messages: [...history, { role: "user", content }],
     });
     coach = parseCoachReply(response.text);
@@ -628,7 +638,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       try {
         const again = await complete("coach", {
           ...(material ? { context: material.text } : {}),
-          system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null }),
+          system: coachPrompt.systemPrompt({ today, daily, firstMessageToday: firstToday, courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null }),
           messages: [...history, { role: "user", content }, { role: "assistant", content: response.text ?? "" }, { role: "user", content: "(App note, not from the student: your reply says the set is starting, but it has no start_quiz or start_flashcards action, so nothing would appear. Reply again: either include the action now, or ask the one thing you still need to know.)" }],
         });
         const second = parseCoachReply(again.text);
@@ -648,6 +658,10 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   if (quiz?.graded && quiz.graded.missed.length === 0) coach = { ...coach, suggestions: withoutMissChips(coach.suggestions) };
   const plan = planActions(courses, coach.actions);
   if (timed && threadId) plan.quiz = { courseId: threadId, topic: "All topics", count: timed.count, scope: "all", kind: "exam" };
+  // D-139: "Next 10" always starts the day's next 10 here, whatever the reply said.
+  if (!timed && threadId && content.toLowerCase() === NEXT_TEN.toLowerCase()) { plan.quiz = { courseId: threadId, topic: "Today's 10", count: DAILY_SET, scope: "daily", kind: "practice" }; plan.deck = null; }
+  // D-139: the line after a graded set carries the day's count.
+  if (threadId && content === FINISHED_SET && quiz?.graded) coach = { ...coach, reply: `${coach.reply} ${dailyLine(reps)}` };
   if (plan.notes.length) req.log.info({ notes: plan.notes }, "Home chat actions skipped");
   // The free plan has one course (D-090): a coach reply that would add another is not applied.
   if (premium && premium.limits.courses !== null && plan.creates.length && courses.length + plan.creates.length > premium.limits.courses) {
@@ -686,7 +700,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     try {
       const followUp = await complete("coach", {
         ...(material ? { context: material.text } : {}),
-        system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: summary, firstVisit: false, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, webFindings: { query: plan.search.query, text: text || "Nothing reliable was found." } }),
+        system: coachPrompt.systemPrompt({ today, daily, firstMessageToday: firstToday, courses: summary, firstVisit: false, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, webFindings: { query: plan.search.query, text: text || "Nothing reliable was found." } }),
         messages: [...history, { role: "user", content }],
       });
       const second = parseCoachReply(followUp.text);
@@ -719,7 +733,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       try {
         const followUp = await complete("coach", {
           ...(material ? { context: material.text } : {}),
-          system: coachPrompt.systemPrompt({ today: new Date().toISOString().slice(0, 10), courses: buildSummary(visible(refreshed)), firstVisit: false, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, guideJustLookedUp: { courseName: course.name, found, sections } }),
+          system: coachPrompt.systemPrompt({ today, daily, firstMessageToday: firstToday, courses: buildSummary(visible(refreshed)), firstVisit: false, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, guideJustLookedUp: { courseName: course.name, found, sections } }),
           messages: [...history, { role: "user", content }],
         });
         const second = parseCoachReply(followUp.text);
@@ -837,11 +851,13 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       if (!await setGate(courseId)) return;
       try {
         const latestState = await latestStateFor(ownerId, state, created);
+        // D-139: the day's 10 are on the last study day's misses, else on everything (weighted like the exam).
+        if (plan.quiz.scope === "daily") plan.quiz = { ...plan.quiz, topic: courseId === threadId && reps.focus.length ? reps.focus.slice(0, 4).join("; ") : "All topics" };
         // "All topics" on an exam with an official guide: spread the set by the guide's weights.
         const guideSections = courses.find((c) => c.id === courseId)?.guideSections;
         const allTopics = /^all topics/i.test(plan.quiz.topic);
         // Past results for a missed-scope set with no graded set in this chat (same course only).
-        const pastWeak = courseId === threadId ? weakConcepts(courseEvents) : weakConcepts(eventsFrom((await db.select({ session: studySessionsTable.session }).from(studySessionsTable)
+        const pastWeak = plan.quiz.scope === "daily" ? (courseId === threadId ? reps.focus : []) : courseId === threadId ? weakConcepts(courseEvents) : weakConcepts(eventsFrom((await db.select({ session: studySessionsTable.session }).from(studySessionsTable)
           .where(and(eq(studySessionsTable.ownerId, ownerId), eq(studySessionsTable.courseId, courseId))).orderBy(desc(studySessionsTable.createdAt)).limit(40)).map((r) => r.session as Session)));
         const timedStart = timed ? { minutes: timed.minutes, batches: examBatches(guideSections ?? [], timed.count) } : undefined;
         const session = await startQuiz(ownerId, latestState, { ...plan.quiz, courseId }, sameCourse(lastQuizSession, courseId), allTopics && !timed ? guideSections : undefined, pastWeak, timedStart);

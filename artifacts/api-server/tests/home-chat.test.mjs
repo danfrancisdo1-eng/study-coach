@@ -601,7 +601,7 @@ test('home chat: a set of six or more arrives in two parts', async (t) => {
   };
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const untilReady = async (id) => {
-    for (let i = 0; i < 200; i += 1) {
+    for (let i = 0; i < 600; i += 1) {
       const session = (await call('GET', `/study/sessions/${id}`)).body;
       if (session.quiz.status === 'ready') return session;
       await sleep(50);
@@ -735,7 +735,7 @@ test('home chat: sets reach the requested size: batches of 10, retry, top-up', a
   assert.equal(session.quiz.questions.length, 30, 'the full 30');
   assert.equal(session.quiz.invalidItemCount, 0);
   assert.ok(asks.every((n) => n <= 10), `every batch is at most 10: ${asks}`);
-  assert.ok(asks.includes(2), `a top-up of the 2 missing: ${asks}`);
+  assert.ok(asks.includes(5), `a top-up of the 2 missing, plus 3 extra for repeats (D-139): ${asks}`);
 
   // A failed batch is retried once; a set under 6 whose writer came back short is topped up too.
   coach = { reply: 'Set coming.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 5, kind: 'practice', scope: 'all' }] };

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { blocksOf, type Span } from './lib/coach-text';
 import { topicParts } from './lib/topic-label';
 import { useQueryClient } from '@tanstack/react-query';
-import { getGetHomeChatQueryKey, useGetHomeChat, useOpenHomeChat, useSendHomeChatMessage, type HomeChat as HomeChatData } from '@workspace/api-client-react';
+import { getGetHomeChatQueryKey, useCreateReviewSheet, useGetHomeChat, useOpenHomeChat, useSendHomeChatMessage, type HomeChat as HomeChatData } from '@workspace/api-client-react';
+import { reviewHtml } from './lib/review-html';
 import QuizCard from './QuizCard';
 import ProgressBar, { useElapsed } from './ProgressBar';
 import { estimate } from './lib/progress';
@@ -10,6 +11,7 @@ import FlashcardDeck from './FlashcardDeck';
 import type { TimedSize } from './lib/exam-facts';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.';
+const REVIEW_CHIP = 'Review sheet (PDF)'; // D-139: opens the printable review sheet, not a chat message
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
 
 /**
@@ -37,6 +39,7 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
   const chatKey = getGetHomeChatQueryKey(chatParams);
   const chat = useGetHomeChat(chatParams);
   const send = useSendHomeChatMessage();
+  const review = useCreateReviewSheet();
   const open = useOpenHomeChat();
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
@@ -55,6 +58,16 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
   const quizSessionId = activeQuiz?.sessionId ?? gradedSessionId;
   const deckSessionId = activeDeck?.sessionId ?? finishedDeckId;
   const lastMessage = messages[messages.length - 1];
+  // D-139: the review sheet opens in a new tab and the print dialog saves it as a PDF. The tab is
+  // opened in the click itself (pop-up blockers), then filled when the sheet is written.
+  const openReview = (id: string) => {
+    const tab = window.open('', '_blank');
+    if (!tab) { setError('Allow pop-ups for this site to open the review sheet.'); return; }
+    tab.document.write('<p style="font-family:sans-serif;padding:24px">Writing your review sheet…</p>');
+    void review.mutateAsync({ courseId: id }).then((sheet) => {
+      tab.document.open(); tab.document.write(reviewHtml(sheet)); tab.document.close(); tab.focus(); tab.print();
+    }, () => { tab.close(); setError('The review sheet could not be made just now. Try again.'); });
+  };
   const chips = lastMessage?.role === 'assistant' && !activeQuiz && !activeDeck ? (lastMessage.suggestions ?? []) : [];
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'nearest' }); }, [messages.length]);
@@ -77,7 +90,7 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
     if (!content || sending || busy || !aiConsent) return;
     setError('');
     try {
-      const result: HomeChatData = await send.mutateAsync({ data: { content, version, ...(courseId ? { courseId } : {}), ...(timed ? { timedExam: { size: timed } } : {}) } });
+      const result: HomeChatData = await send.mutateAsync({ data: { content, version, utcOffsetMinutes: -new Date().getTimezoneOffset(), ...(courseId ? { courseId } : {}), ...(timed ? { timedExam: { size: timed } } : {}) } });
       client.setQueryData(chatKey, result);
       if (result.activeQuiz) { setGradedSessionId(null); setFinishedDeckId(null); }
       if (result.activeDeck) { setFinishedDeckId(null); setGradedSessionId(null); }
@@ -148,7 +161,7 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
           </div>
         ))}
         {chips.length > 0 && <div className="ae-row" data-testid="row-suggestions">
-          {chips.map(chip => <button key={chip} type="button" className="ae-button ae-button--outline" disabled={sending || busy} onClick={() => void sendText(chip)} data-testid="button-suggestion">{chip}</button>)}
+          {chips.map(chip => <button key={chip} type="button" className="ae-button ae-button--outline" disabled={sending || busy} onClick={() => (chip === REVIEW_CHIP && courseId ? openReview(courseId) : void sendText(chip))} data-testid={chip === REVIEW_CHIP ? 'button-suggestion-review' : 'button-suggestion'}>{chip}</button>)}
         </div>}
         {timedChoices.length === 0 && factPicks && onPickFacts && !activeQuiz && !activeDeck && <div style={{ display: 'grid', gap: 8 }} data-testid="row-timed-picks">
           <span className="ae-muted">Simulated exam, timed. The official page doesn't list these; pick yours:</span>

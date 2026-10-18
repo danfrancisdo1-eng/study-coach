@@ -8,11 +8,17 @@
 - Fixed from their findings: **full-size sets** (D-133), **cleaner questions** (D-135: no repeats in a batch, no leaked reasoning, no "closest to"), **coach flow** (D-136: a promised set is started, no misses chips after 10/10, chatty first message creates the course, one course needs no picking, saved dates not retracted), **math keys** (D-137: worked numbers decide; checker on Sonnet; first part retried).
 - Results: run 1 scores 4–9 (15 high issues); run 2 13 of 15 at 7–8 (8 high); rerun of six math-heavy students 6–8 with no wrong answer keys. Tests 224/224; evals coach 50/50, session_quiz 7/7, quiz_check 4/4.
 - Intro video decisions from the other thread logged as D-134 (waiting for Dan's edited cut).
+- **D-138** (coach.v25, quiz-check.v5): repeats across batches dropped, 3 top-up rounds, no "spot on" to wrong statements, numbered steps, office hours for a discouraged student. Run 3 of the students: mostly 6–7, 11 high, partly from v25 itself (the coach said it could not see a score).
+- **D-139 Daily reps** (SPEC §8, signed; coach.v26, quiz-check.v6): the study plan is 100 questions a day, 10 at a time ("Next 10"); tomorrow's 10s are on today's misses until 100/100; the day count follows every graded set; days are the student's (UTC offset sent by both apps); the day before an exam the coach offers "Review sheet (PDF)", which opens it in one tap (web: new printable review sheet). A study plan the student uploaded is used instead. Also: score always known, typed timed exams point to Simulated exam, two-right-answer questions dropped, top-ups ask for extras. Tests 232/232; evals coach 60/60 and 59/60, quiz_check 7/7 twice; iOS bundle exports.
+
+### Needs real-iPhone check
+- "Next 10" chip starts a set at once; the line after a set shows "That's N of today's 100."
+- "Review sheet (PDF)" chip in a course chat opens the review screen.
+- The day count rolls over at local midnight (not UTC).
 
 ### Next (open findings, for Dan to choose)
-- Repeats across the separately written batches of a set (the AI repeat check only sees one batch); a 50 ended at 42 (top-ups capped) and the coach did not mention the shortfall.
-- The coach agreed with a wrong physics statement ("Spot on"); step-by-step math came as one run-on paragraph; "I'm failing" got reassurance without pointing to office hours.
-- Study-plan requests (a weekly plan, "update my plan") are not handled: the coach saves the date but builds no plan. A product decision.
+- Rerun the simulated students on D-139 and compare with run 3.
+- "Next 10" is not among the fixed chips after a graded set (those stay the four after-set chips); add it there if the daily flow needs it.
 - Dan: rotate the OpenAI key on the stray line of artifacts/api-server/.env (printed in the session again on 2026-10-17).
 
 

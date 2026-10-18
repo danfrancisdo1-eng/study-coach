@@ -298,6 +298,21 @@ export interface QuizCheckCase {
 }
 
 export const quizCheckCases: QuizCheckCase[] = [
+  // D-139: two keys the third simulated-students run caught (the student's answer was also right).
+  {
+    name: "two options answer it: 'which is second' with a 'first and second' option (Org Chem, simulated student)",
+    questions: [
+      { prompt: "A stereocenter carries –CH2OH, –C(CH3)3, –CH3 and –H. Which group ranks second-highest by CIP priority?", options: ["–C(CH3)3", "–CH2OH is first, and –C(CH3)3 is second", "–CH3", "–H"], answerIndex: 1, explanation: "–CH2OH ranks first (O at the first point of difference). –C(CH3)3 (C,C,C) beats –CH3 (H,H,H), so –C(CH3)3 is second." },
+    ],
+    expected: [{ consistent: false, correctIndex: -1 }],
+  },
+  {
+    name: "two options cause it: a smaller MUS interval (CPA AUD, simulated student)",
+    questions: [
+      { prompt: "In monetary unit sampling, which factor would cause the auditor to select a SMALLER sampling interval?", options: ["A lower risk of incorrect acceptance", "A larger tolerable misstatement", "A higher risk of incorrect acceptance", "A larger expected misstatement"], answerIndex: 3, explanation: "A larger expected misstatement raises the sample size, so the interval (book value ÷ sample size) gets smaller. A higher acceptable risk would reduce the sample size and so widen the interval." },
+    ],
+    expected: [{ consistent: false, correctIndex: -1 }],
+  },
   {
     name: "a repeat of a question from an earlier batch of the same set (Org Chem, simulated student)",
     alreadyInSet: ["Which group has higher CIP priority: -CH2OH or -C(CH3)3?", "Does the R/S label tell you the sign of optical rotation?"],
@@ -472,7 +487,7 @@ export interface CoachCase {
   history: { role: "user" | "assistant"; content: string }[];
   message: string;
   /** Exact action list the coach must return (type + name; topic checked loosely; kind/scope when given). */
-  expectedActions: { type: "create_course" | "start_quiz" | "start_flashcards" | "update_memory_sheet" | "update_course_notes" | "undo_course_notes" | "fix_upload_notes" | "start_session" | "lookup_exam_guide" | "web_search"; name: string; kind?: "practice" | "exam"; scope?: "all" | "missed"; courseKind?: "course" | "exam"; examDate?: string; topic?: string }[];
+  expectedActions: { type: "create_course" | "start_quiz" | "start_flashcards" | "update_memory_sheet" | "update_course_notes" | "undo_course_notes" | "fix_upload_notes" | "start_session" | "lookup_exam_guide" | "web_search"; name: string; kind?: "practice" | "exam"; scope?: "all" | "missed" | "daily"; courseKind?: "course" | "exam"; examDate?: string; topic?: string }[];
   /** Suggestion chips that must appear (case-insensitive, in any order), if any. */
   expectedSuggestions?: string[];
   /** The latest question set from this chat, as routes/chat.ts would describe it. */
@@ -499,6 +514,10 @@ export interface CoachCase {
   today?: string;
   /** D-123: the course notes (what the student told the coach), first in COURSE MATERIAL. */
   notes?: string;
+  /** D-139: today's reps (lib/daily-reps.ts dailyText). */
+  daily?: string;
+  /** D-139: the student's first message in this chat today. */
+  firstMessageToday?: boolean;
 }
 
 const bioResults = `Sets and decks (3 total):
@@ -544,24 +563,76 @@ export const coachCases: CoachCase[] = [
     expectations: ["Gives the final exam date as Tuesday, December 1, 2026", "Says it is cumulative (heavier on the material after the midterm is fine)", "Says or implies it comes from their syllabus", "Does not say it cannot see the date or ask the student for the date"],
     maxWords: 90,
   },
-  // coach.v25 (D-138): Dan's method and coach habits from the simulated students.
+  // coach.v26 (D-139, SPEC §8): daily reps, the day before the exam, scores always known, typed timed exams.
   {
-    name: "study plan request: Dan's method, no schedule, Quick 5",
+    name: "study plan request: daily reps, 100 a day 10 at a time (Dan's plan)",
     courses: [{ id: "micro", name: "ECON 301", materials: 3, lectures: 1 }], firstVisit: false, focusCourseId: "micro", history: [], today: "2026-10-18",
     uploads: [{ name: "Syllabus", text: "# ECON 301\n## Exams\n- Midterm: Thu Nov 5\n## Quizzes\n- Quiz 3: Thu Oct 29" }],
+    daily: "Daily reps (today is 2026-10-18 for the student): 0 of 100 questions done today, 0 right; the 10s today cover all topics (nothing missed on the last study day).",
     message: "Can you make me a weekly study plan for the midterm? I like having a schedule.",
-    expectedActions: [], expectedSuggestions: ["Quick 5"],
-    expectations: ["Says there is no schedule: keep doing questions over and over wherever you are, naming everyday places (line, between classes, bus, toilet or similar)", "Does not give a weekly or daily plan, time blocks or a calendar", "Short and friendly, not preachy"],
-    maxWords: 80,
+    expectedActions: [], expectedSuggestions: ["Next 10"],
+    expectations: ["Gives the daily-reps plan: 100 questions a day, 10 at a time, in spare minutes anywhere (names everyday places such as a line, the bus or the toilet)", "Says what is missed today becomes tomorrow's questions, every day until 100/100", "Says that the day before the exam it will make a review PDF of everything with the focus spots highlighted", "Does not give a weekly calendar or time blocks"],
+    maxWords: 120,
   },
   {
-    name: "Quick 5 tapped: starts a 5-question practice round at once",
+    name: "study plan with past misses names where the 10s start (CPA, simulated student)",
+    courses: [{ id: "cpa", name: "CPA AUD", kind: "exam", examDate: "2026-11-22", materials: 2, lectures: 0 }], firstVisit: false, focusCourseId: "cpa", history: [], today: "2026-10-18",
+    results: "Sets and decks (2 total):\n- 2026-10-17 practice on All topics: 6/10 (60%); missed: Sampling risk, Going concern, Audit reports, Internal control\n- 2026-10-16 practice on Ethics: 9/10 (90%); missed: Independence",
+    daily: "Daily reps (today is 2026-10-18 for the student): 0 of 100 questions done today, 0 right; the 10s today focus on what was missed on 2026-10-17: Sampling risk, Going concern, Audit reports, Internal control.",
+    message: "can u help me build a plan?? exam is in 5 weeks and i work full time",
+    expectedActions: [], expectedSuggestions: ["Next 10"],
+    expectations: ["Gives the 100-a-day, 10-at-a-time plan that fits around work (spare minutes)", "Names the topics today's 10s start with (sampling risk, going concern, audit reports, internal control)", "Mentions the review PDF the day before the exam"],
+    maxWords: 130,
+  },
+  {
+    name: "study plan the student uploaded is used, not replaced (CFA, simulated student)",
+    courses: [{ id: "cfa", name: "CFA Level I", kind: "exam", materials: 2, lectures: 0 }], firstVisit: false, focusCourseId: "cfa", history: [], today: "2026-10-18",
+    uploads: [{ name: "My study plan", text: "# CFA L1 plan\n- Weeks 1–2 (Oct 12–25): Ethics, Quant\n- Weeks 3–4 (Oct 26–Nov 8): FRA\n- Weeks 5–6 (Nov 9–22): Fixed income, Equity\n- Nov 23 – exam: mock exams" }],
+    message: "help me build a structured and realistic study plan please",
+    expectedActions: [],
+    expectations: ["Works from his uploaded plan (this week is Ethics and Quant, Oct 12–25; FRA next)", "Never says there is no schedule or replaces his plan", "Short and concrete"],
+    maxWords: 120,
+  },
+  {
+    name: "Next 10 tapped: starts a daily 10 at once",
     courses: [{ id: "micro", name: "ECON 301", materials: 3, lectures: 1 }], firstVisit: false, focusCourseId: "micro", today: "2026-10-18",
-    history: [{ role: "user", content: "make me a study plan" }, { role: "assistant", content: "There's no schedule. Just keep doing questions, over and over, wherever you are. Every round makes it stick." }],
-    message: "Quick 5",
-    expectedActions: [{ type: "start_quiz", name: "ECON 301", kind: "practice" }],
+    daily: "Daily reps (today is 2026-10-18 for the student): 30 of 100 questions done today, 24 right; the 10s today cover all topics (nothing missed on the last study day).",
+    history: [{ role: "user", content: "make me a study plan" }, { role: "assistant", content: "Here's the plan: 100 questions a day, 10 at a time, whenever you have a minute." }],
+    message: "Next 10",
+    expectedActions: [{ type: "start_quiz", name: "ECON 301", kind: "practice", scope: "daily" }],
     expectations: ["Starts right away in one short line; does not ask practice or exam, nor which topic"],
     maxWords: 25,
+  },
+  {
+    name: "the day before the exam: says it, offers the review sheet (first message today)",
+    courses: [{ id: "bio", name: "BIO 101", materials: 3, lectures: 2 }], firstVisit: false, focusCourseId: "bio", history: [{ role: "user", content: "quiz me on osmosis" }, { role: "assistant", content: "Here are 5 on osmosis." }], today: "2026-10-29",
+    uploads: [{ name: "Syllabus", text: "# BIO 101\n## Exams\n- Midterm 1: Fri Oct 30 (chapters 1–5)\n- Final: Dec 14" }],
+    firstMessageToday: true,
+    message: "hey whats up",
+    expectedActions: [], expectedSuggestions: ["Review sheet (PDF)"],
+    expectations: ["Says Midterm 1 is tomorrow (Fri Oct 30)", "Says it made a review PDF of everything with the focus spots highlighted", "Does not invent other dates"],
+    maxWords: 70,
+  },
+  {
+    name: "after a graded set the score is known; a wrong claimed score is corrected (AWS, simulated student)",
+    courses: [{ id: "aws", name: "AWS Solutions Architect", kind: "exam", materials: 2, lectures: 0 }], firstVisit: false, focusCourseId: "aws", today: "2026-10-18",
+    history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: "5 of 7 right. That's 7 of today's 100." }],
+    quiz: { courseName: "AWS Solutions Architect", topic: "Auto Scaling", kind: "practice", answered: 7, total: 7, graded: { correct: 5, percent: 71, missed: [
+      { concept: "Scheduled scaling", prompt: "Which policy suits a known Monday 9 am spike?", chose: "Target tracking", correct: "Scheduled scaling", explanation: "A known time is scheduled scaling." },
+      { concept: "ELB health checks", prompt: "What makes the ASG replace an instance the load balancer marks unhealthy?", chose: "EC2 status checks", correct: "Turning on ELB health checks for the ASG", explanation: "The ASG uses EC2 checks unless ELB checks are on." },
+    ] } },
+    message: "Ok, score was 6/10 — 4 misses, mostly on cooldown vs warm-up and step vs target tracking. Can you give me memory tricks for those misses?",
+    expectedActions: [],
+    expectations: ["Goes by the app's result (5 of 7; missed scheduled scaling and ELB health checks), kindly noting the difference from what the student said", "Never says it cannot see the score", "Memory tricks cover the actual misses (scheduled scaling, ELB health checks), not only the ones the student named"],
+    maxWords: 180,
+  },
+  {
+    name: "a timed practice exam typed in the chat points to Simulated exam (PMP, simulated student)",
+    courses: [{ id: "pmp", name: "PMP", kind: "exam", materials: 2, lectures: 0 }], firstVisit: false, focusCourseId: "pmp", history: [], today: "2026-10-18",
+    message: "can I do a timed practice exam? the real one is 180 questions in 230 minutes",
+    expectedActions: [], expectedSuggestions: ["Simulated exam"],
+    expectations: ["Says in one line that the timer is on the Simulated exam button", "Does not start an untimed set and call it timed"],
+    maxWords: 60,
   },
   {
     name: "a wrong statement is corrected, never 'spot on' (Ethan, AP Physics)",
@@ -978,7 +1049,7 @@ export const coachCases: CoachCase[] = [
     courses: [{ id: "ab", name: "Microsoft AB-731", kind: "exam", materials: 2, lectures: 0 }], firstVisit: false, history: [],
     message: "can you make me a pdf review of everything for the upcoming exam?",
     expectedActions: [],
-    expectations: ["Says the app can make it: the \"Review sheet (PDF)\" button on the course screen builds a review from their material and misses and saves or shares it as a PDF", "Does not say it cannot make a PDF"],
+    expectations: ["Says the app can make it: the \"Review sheet (PDF)\" button on the course's own screen builds a review from their material and misses and saves or shares it as a PDF (this is the general chat, so it points to the course)", "Does not say it cannot make a PDF"],
     maxWords: 80,
   },
   // coach.v16 (D-074): suggestions answer the reply; the four after-set chips are for the first reply only.

@@ -1301,12 +1301,16 @@ export const sendHomeChatMessageBodyVersionMin = 0;
 
 export const sendHomeChatMessageBodyCourseIdMax = 200;
 
+export const sendHomeChatMessageBodyUtcOffsetMinutesMin = -840;
+export const sendHomeChatMessageBodyUtcOffsetMinutesMax = 840;
+
 
 
 export const SendHomeChatMessageBody = zod.object({
   "content": zod.string().min(1).max(sendHomeChatMessageBodyContentMax),
   "version": zod.number().int().min(sendHomeChatMessageBodyVersionMin).describe('Conversation version from the last GET/POST; 0 for a new conversation.'),
   "courseId": zod.string().max(sendHomeChatMessageBodyCourseIdMax).optional().describe('The course or exam the student is focused on: selects that course\'s thread (one per course; omitted or unknown = the general thread), and the coach assumes it when a message does not name one.'),
+  "utcOffsetMinutes": zod.number().int().min(sendHomeChatMessageBodyUtcOffsetMinutesMin).max(sendHomeChatMessageBodyUtcOffsetMinutesMax).optional().describe('Daily reps (D-139): the device\'s offset from UTC in minutes (e.g. -300 for Chicago in summer), so \'today\' is the student\'s day. Omitted = UTC.'),
   "timedExam": zod.object({
   "size": zod.enum(['full', '10', '20', '40'])
 }).optional().describe('Timed exams (D-114): start a full exam simulation or a 10/20/40-question block on this thread\'s certification exam, sized and timed from the real exam\'s facts. No coach AI call; the reply is written by the app. 400 when the course is not an exam or the question count / time limit are unknown.')

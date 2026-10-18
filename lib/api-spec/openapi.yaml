@@ -968,6 +968,7 @@ components:
         content: { type: string, minLength: 1, maxLength: 8000 }
         version: { type: integer, minimum: 0, description: "Conversation version from the last GET/POST; 0 for a new conversation." }
         courseId: { type: string, maxLength: 200, description: "The course or exam the student is focused on: selects that course's thread (one per course; omitted or unknown = the general thread), and the coach assumes it when a message does not name one." }
+        utcOffsetMinutes: { type: integer, minimum: -840, maximum: 840, description: "Daily reps (D-139): the device's offset from UTC in minutes (e.g. -300 for Chicago in summer), so 'today' is the student's day. Omitted = UTC." }
         timedExam:
           type: object
           description: "Timed exams (D-114): start a full exam simulation or a 10/20/40-question block on this thread's certification exam, sized and timed from the real exam's facts. No coach AI call; the reply is written by the app. 400 when the course is not an exam or the question count / time limit are unknown."
