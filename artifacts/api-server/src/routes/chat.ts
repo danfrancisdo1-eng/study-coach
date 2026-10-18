@@ -13,7 +13,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v29";
+import * as coachPrompt from "../prompts/coach.v30";
 import { courseContext, NOTES_BLOCK, PLANNING } from "../lib/course-context";
 import { indexText, routedContext, sectionsOf, wordSearch } from "../lib/course-sections";
 import { routeCourse } from "../lib/course-router";
@@ -751,7 +751,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   // D-139: "Next 10" always starts the day's next 10 here, whatever the reply said.
   if (!timed && threadId && content.toLowerCase() === NEXT_TEN.toLowerCase()) { plan.quiz = { courseId: threadId, topic: "Today's 10", count: DAILY_SET, scope: "daily", kind: "practice" }; plan.deck = null; }
   // D-139: the line after a graded set carries the day's count.
-  if (threadId && content === FINISHED_SET && quiz?.graded) coach = { ...coach, reply: `${coach.reply} ${dailyLine(reps)}` };
+  if (threadId && content === FINISHED_SET && quiz?.graded) coach = { ...coach, reply: `${coach.reply} ${dailyLine(reps, quiz.answered)}` };
   if (plan.notes.length) req.log.info({ notes: plan.notes }, "Home chat actions skipped");
   // The free plan has one course (D-090): a coach reply that would add another is not applied.
   if (premium && premium.limits.courses !== null && plan.creates.length && courses.length + plan.creates.length > premium.limits.courses) {

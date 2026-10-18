@@ -67,7 +67,8 @@ export default function ReviewSheetScreen() {
     if (!next || opening) return;
     setOpening(true); setError('');
     try { await Print.printAsync({ html: reviewHtml(next) }); }
-    catch (problem) { setError(friendlyError(problem)); }
+    // Closing the preview without printing is not an error (D-148: it showed "Something went wrong").
+    catch (problem) { if (!/did not complete|cancel/i.test(String((problem as Error)?.message ?? problem))) setError(friendlyError(problem)); }
     finally { setOpening(false); }
   };
   useEffect(() => { if (sheet) void openPdf(sheet); }, [sheet]);
