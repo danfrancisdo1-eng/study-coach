@@ -52,7 +52,7 @@ test('daily reps: the day count after a set, and the next day\'s 10 on yesterday
   coach = { reply: '2 of 4 right.', suggestions: [], actions: [] };
   chat = await call('POST', '/study/chat', { content: 'I finished the set.', version: 1, courseId: 'bio', utcOffsetMinutes: 0 });
   assert.equal(chat.body.messages.at(-1).content, "2 of 4 right. That's 4 of today's 100.");
-  assert.match(coachSystem(), /Daily reps \(today is \d{4}-\d{2}-\d{2} for the student\): 4 of 100 questions done today, 2 right; the 10s today cover all topics/);
+  assert.match(coachSystem(), /Daily reps \(today is \d{4}-\d{2}-\d{2} for the student\): 4 of 100 questions done today, 2 right; today's sets of 10 cover all topics/);
 
   // Move that set to yesterday: today's 10 are on its misses.
   const rows = await database.db.query('select id, session from study_sessions where owner_id = $1', ['user_d']);
@@ -70,7 +70,7 @@ test('daily reps: the day count after a set, and the next day\'s 10 on yesterday
   assert.equal(next.kind, 'practice');
   assert.equal(next.count, 10);
   assert.equal(next.topic, 'concept-0; concept-2');
-  assert.match(coachSystem(), /0 of 100 questions done today, 0 right; the 10s today focus on what was missed on \d{4}-\d{2}-\d{2}: concept-0, concept-2/);
+  assert.match(coachSystem(), /0 of 100 questions done today, 0 right; today's sets of 10 focus on what was missed on \d{4}-\d{2}-\d{2}: concept-0, concept-2/);
   const writer = ai.requests.filter((r) => r.body.messages[0].content.includes('Create exactly')).at(-1).body.messages[0].content;
   assert.match(writer, /concept-0/);
   assert.match(writer, /concept-2/);

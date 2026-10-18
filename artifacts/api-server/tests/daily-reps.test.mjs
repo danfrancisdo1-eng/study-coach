@@ -37,6 +37,9 @@ test('a perfect last day, or no earlier day, means all topics', () => {
 
 test("the line after a set carries the day's count", () => {
   assert.equal(dailyLine({ answered: 40, right: 31 }), "That's 40 of today's 100.");
+  // D-148 (Dan: "Only did 10 not 25"): the line says what this set added when the day had earlier sets.
+  assert.equal(dailyLine({ answered: 25, right: 20 }, 10), "10 more: that's 25 of today's 100.");
+  assert.equal(dailyLine({ answered: 10, right: 8 }, 10), "That's 10 of today's 100.", 'the first set of the day needs no "more"');
   assert.equal(dailyLine({ answered: 100, right: 100 }), "100/100 today. You've got it.");
   assert.equal(dailyLine({ answered: 110, right: 104 }), "110 done today, 104 right. Tomorrow's 10s are on today's misses.");
 });

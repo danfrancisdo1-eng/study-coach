@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-148: "10 more: that's 25 of today's 100"; never "your daily 10" (coach.v30)
+- Dan on the Dev app: after a 10-question set the line read "That's 25 of today's 100" (earlier sets that day counted, which read as wrong), and the coach said "your daily 10 are in" (sounds like the plan is 10 a day).
+- The line now says what the set added when the day had earlier sets ("10 more: that's 25 of today's 100."). coach.v30: the plan is 100 a day, 10 at a time; a set is "10 more toward today's 100", never "your daily 10"; the coach never states the day's count (the app adds it).
+- Closing iPhone's print preview no longer shows "Something went wrong" on the review screen.
+- Evals: coach 62/64 then 64/64 (misses: the day-before reply did not say "everything"; the injection case saved the student's own pasted fact to the memory sheet, the injected instruction was ignored). Tests pass.
+- **Decided by:** Dan (screenshots, "Only did 10 not 25", "makes it sound like the plan was for 10 daily").
+
 ## 2026-10-18 — D-147: When a topic's notes run out, new angles and knowledge beyond the notes (session-quiz.v10, quiz-check.v7)
 - Simulated students with the bank on: a 10 on Marbury v. Madison came out 6; logs (new "Question writer batch" line) showed later batches dropped almost whole by the answer checker as repeats: the notes held about a dozen facts and the writer could only reword them.
 - Dan chose 1 and 2: a top-up batch of a set that came up short (session-quiz.v10 "stretch") may test a covered fact from a clearly different angle (applied, reversed, cause or effect, comparison) or use established knowledge beyond the notes, its explanation starting "Beyond your notes:". Every other batch gets v9's text unchanged (adding the rule to all batches cost quality: 25/28 vs 21/21 for v9).

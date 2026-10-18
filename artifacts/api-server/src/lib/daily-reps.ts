@@ -40,17 +40,18 @@ export function dailyReps(events: ResultEvent[], offsetMinutes: number, now: Dat
 }
 
 /** The app's line after a graded set (appended to the coach's reply about the result). */
-export function dailyLine({ answered, right }: Pick<DailyReps, "answered" | "right">): string {
+export function dailyLine({ answered, right }: Pick<DailyReps, "answered" | "right">, thisSet = answered): string {
   if (answered >= DAILY_GOAL && right === answered) return `${right}/${answered} today. You've got it.`;
   if (answered >= DAILY_GOAL) return `${answered} done today, ${right} right. Tomorrow's 10s are on today's misses.`;
-  return `That's ${answered} of today's ${DAILY_GOAL}.`;
+  // D-148: with earlier sets today, say what this one added ("only did 10, not 25").
+  return thisSet > 0 && thisSet < answered ? `${thisSet} more: that's ${answered} of today's ${DAILY_GOAL}.` : `That's ${answered} of today's ${DAILY_GOAL}.`;
 }
 
 /** The day as facts for the coach prompt. */
 export function dailyText(reps: DailyReps): string {
   const focus = reps.focus.length
-    ? `the 10s today focus on what was missed on ${reps.focusFrom}: ${reps.focus.join(", ")}`
-    : "the 10s today cover all topics (nothing missed on the last study day)";
+    ? `today's sets of 10 focus on what was missed on ${reps.focusFrom}: ${reps.focus.join(", ")}`
+    : "today's sets of 10 cover all topics (nothing missed on the last study day)";
   return `Daily reps (today is ${reps.today} for the student): ${reps.answered} of ${DAILY_GOAL} questions done today, ${reps.right} right; ${focus}.`;
 }
 
