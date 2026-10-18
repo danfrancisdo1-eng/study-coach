@@ -25,7 +25,7 @@ test('state saves: an upload without a course is refused; sets never use one', a
   const ai = await startAiStub(t, (request) => {
     const system = request.body.messages[0].content;
     const user = request.body.messages.at(-1).content;
-    if (/^Create exactly/.test(system)) {
+    if (/Create exactly/.test(system)) {
       writerSystems.push(`${system}\n${user}`);
       return chatReply(JSON.stringify({ questions: [{ prompt: 'Q?', options: ['a', 'b', 'c', 'd'], answerIndex: 0, concept: 'c', explanation: 'e' }] }));
     }

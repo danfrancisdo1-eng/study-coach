@@ -141,7 +141,7 @@ test('home chat: practice and exam question sets', async (t) => {
   let quizCount = 4;
   const ai = await startAiStub(t, (request) => {
     const system = request.body.messages[0].content;
-    if (system.startsWith('Create exactly')) { quizBatch += 1; return quizReply(quizCount); }
+    if (system.includes('Create exactly')) { quizBatch += 1; return quizReply(quizCount); }
     return chatReply(JSON.stringify(coach));
   });
   const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url });
@@ -214,7 +214,7 @@ test('home chat: practice and exam question sets', async (t) => {
   const retest = chat.body.messages.at(-1).actions[0];
   assert.equal(retest.kind, 'exam');
   assert.equal(retest.count, 5, '3 new + 2 earlier correct questions');
-  const quizPrompt = ai.requests.filter((r) => r.body.messages[0].content.startsWith('Create exactly')).at(-1).body.messages[0].content;
+  const quizPrompt = ai.requests.filter((r) => r.body.messages[0].content.includes('Create exactly')).at(-1).body.messages[0].content;
   assert.match(quizPrompt, /Specifically test missed concepts: concept-0, concept-2/);
   session = (await call('GET', `/study/sessions/${retest.sessionId}`)).body;
   assert.equal(session.quiz.kind, 'exam');
@@ -285,8 +285,8 @@ test('home chat: misses from another course are not used for a deck or a retest'
   let quizBatch = 0;
   const ai = await startAiStub(t, (request) => {
     const system = request.body.messages[0].content;
-    if (system.startsWith('Create exactly') && system.includes('flashcards')) return deckReply(3);
-    if (system.startsWith('Create exactly')) { quizBatch += 1; return quizReply(4); }
+    if (system.includes('Create exactly') && system.includes('flashcards')) return deckReply(3);
+    if (system.includes('Create exactly')) { quizBatch += 1; return quizReply(4); }
     if (system.startsWith('You check the answer key')) return chatReply(JSON.stringify({ checks: [] }));
     return chatReply(JSON.stringify(coach));
   });
@@ -350,7 +350,7 @@ test('home chat: flashcard decks', async (t) => {
   let coach = { reply: 'Here come your cards.', suggestions: [], actions: [{ type: 'start_flashcards', name: 'bio', topic: 'cells', count: 3 }] };
   const ai = await startAiStub(t, (request) => {
     const system = request.body.messages[0].content;
-    return system.startsWith('Create exactly') && system.includes('flashcards') ? deckReply(3) : chatReply(JSON.stringify(coach));
+    return system.includes('Create exactly') && system.includes('flashcards') ? deckReply(3) : chatReply(JSON.stringify(coach));
   });
   const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url });
   await seedAccount(database.db, 'user_f', { aiConsent: true, courses: [{ id: 'bio', name: 'BIOL 114' }], materials: [] });
@@ -419,7 +419,7 @@ test('home chat: memory sheet fills itself from a graded set; a set from the she
   ] };
   const ai = await startAiStub(t, (request) => {
     const system = request.body.messages[0].content;
-    if (system.startsWith('Create exactly')) { quizBatch += 1; return quizReply(4); }
+    if (system.includes('Create exactly')) { quizBatch += 1; return quizReply(4); }
     if (system.startsWith('You write rows for a student')) return sheetReply ? chatReply(JSON.stringify(sheetReply)) : { status: 500, body: { error: { message: 'stub' } } };
     return chatReply(JSON.stringify(coach));
   });
@@ -492,7 +492,7 @@ test('home chat: memory sheet fills itself from a graded set; a set from the she
   coach = { reply: 'From your sheet.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'Memory sheet', count: 4, kind: 'practice', scope: 'all' }] };
   chat = await call('POST', '/study/chat', { content: 'Quiz me from my memory sheet', version: 4 });
   assert.equal(chat.status, 200, JSON.stringify(chat.body));
-  const quizPrompt = ai.requests.filter((r) => r.body.messages[0].content.startsWith('Create exactly')).at(-1).body.messages.map((m) => m.content).join('\n');
+  const quizPrompt = ai.requests.filter((r) => r.body.messages[0].content.includes('Create exactly')).at(-1).body.messages.map((m) => m.content).join('\n');
   assert.match(quizPrompt, /Zero is the hero/);
   assert.match(quizPrompt, /Osmosis: Water follows salt/);
   assert.doesNotMatch(quizPrompt, /Mitochondria make ATP/);
@@ -523,7 +523,7 @@ test('home chat: answer-key check fixes a wrong key and drops an unclear questio
   ] };
   const ai = await startAiStub(t, (request) => {
     const system = request.body.messages[0].content;
-    if (system.startsWith('Create exactly')) { quizBatch += 1; return quizReply(4); }
+    if (system.includes('Create exactly')) { quizBatch += 1; return quizReply(4); }
     if (system.startsWith('You check the answer key')) return check ? chatReply(JSON.stringify(check)) : { status: 500, body: { error: { message: 'stub' } } };
     return chatReply(JSON.stringify(coach));
   });
@@ -578,7 +578,7 @@ test('home chat: a set of six or more arrives in two parts', async (t) => {
   }));
   const ai = await startAiStub(t, async (request) => {
     const system = request.body.messages[0].content;
-    const asked = /^Create exactly (\d+)/.exec(system);
+    const asked = /Create exactly (\d+)/.exec(system);
     if (asked) {
       const n = Number(asked[1]);
       writerCalls += 1;
@@ -639,10 +639,10 @@ test('home chat: a set of six or more arrives in two parts', async (t) => {
   assert.equal(new Set(session.quiz.questions.map((q) => q.prompt)).size, 8);
   assert.equal(session.quiz.questions[0].answer.optionId, pickText(q0, 'A0'));
   assert.equal(session.quiz.invalidItemCount, 0);
-  const writers = ai.requests.filter((r) => /^Create exactly/.test(r.body.messages[0].content)).map((r) => r.body.messages[0].content);
+  const writers = ai.requests.filter((r) => /Create exactly/.test(r.body.messages[0].content)).map((r) => r.body.messages[0].content);
   assert.equal(writers.length, 2);
-  assert.match(writers[0], /^Create exactly 3 /);
-  assert.match(writers[1], /^Create exactly 5 /);
+  assert.match(writers[0], /Create exactly 3 /);
+  assert.match(writers[1], /Create exactly 5 /);
   assert.match(writers[1], /unlike these original prompts: Big set question 1\? \| Big set question 2\? \| Big set question 3\?/);
   chat = await call('GET', '/study/chat');
   assert.equal(chat.body.activeQuiz.status, 'ready');
@@ -665,7 +665,7 @@ test('home chat: a set of six or more arrives in two parts', async (t) => {
   session = (await call('GET', `/study/sessions/${short.sessionId}`)).body;
   assert.equal(session.quiz.status, 'ready');
   assert.equal(session.quiz.questions.length, 5);
-  assert.equal(ai.requests.filter((r) => /^Create exactly/.test(r.body.messages[0].content)).length, 3, 'one writer call for the short set');
+  assert.equal(ai.requests.filter((r) => /Create exactly/.test(r.body.messages[0].content)).length, 3, 'one writer call for the short set');
   for (const q of session.quiz.questions) await call('PUT', `/study/sessions/${short.sessionId}/answers`, { questionId: q.id, optionId: q.options[0].id, assisted: false });
   await call('POST', `/study/sessions/${short.sessionId}/grade`);
 
@@ -696,7 +696,7 @@ test('home chat: sets reach the requested size: batches of 10, retry, top-up', a
   const asks = [];
   const ai = await startAiStub(t, (request) => {
     const system = request.body.messages[0].content;
-    const asked = /^Create exactly (\d+)/.exec(system);
+    const asked = /Create exactly (\d+)/.exec(system);
     if (asked) {
       asks.push(Number(asked[1]));
       if (failNext > 0) { failNext -= 1; return { status: 400, body: { error: { message: 'bad' } } }; }
@@ -760,7 +760,7 @@ test('home chat: a promised set is started; no "misses" chips after a perfect sc
   const coachReplies = [];
   const ai = await startAiStub(t, (request) => {
     const system = request.body.messages[0].content;
-    if (system.startsWith('Create exactly')) { quizBatch += 1; return quizReply(Number(/^Create exactly (\d+)/.exec(system)[1])); }
+    if (system.includes('Create exactly')) { quizBatch += 1; return quizReply(Number(/Create exactly (\d+)/.exec(system)[1])); }
     if (system.startsWith('You check the answer key')) return { status: 400, body: { error: { message: 'skip' } } };
     const next = coachReplies.shift() ?? { reply: 'ok', suggestions: [], actions: [] };
     return chatReply(JSON.stringify(next));
@@ -780,7 +780,7 @@ test('home chat: a promised set is started; no "misses" chips after a perfect sc
   assert.equal(chat.status, 200, JSON.stringify(chat.body));
   const started = chat.body.messages.at(-1).actions[0];
   assert.equal(started?.type, 'start_quiz', 'the second ask started the set');
-  const nudge = ai.requests.filter((r) => !/^(Create exactly|You check)/.test(r.body.messages[0].content)).at(-1).body.messages.at(-1).content;
+  const nudge = ai.requests.filter((r) => !/(Create exactly|^You check)/.test(r.body.messages[0].content)).at(-1).body.messages.at(-1).content;
   assert.match(nudge, /no start_quiz or start_flashcards action/);
 
   // Answer every question right (the stub keys answerIndex i % 4), grade, then the after-set reply.

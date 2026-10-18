@@ -2,6 +2,16 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-145: Question bank per course, cost log per account, cached material for the writer
+- SPEC §9 ("a question bank per course before launch"). New tables question_bank and ai_cost (migration 0005, additive; plan docs/plans/2026-10-18-question-bank-migration-0005.md).
+- Sets on "All topics", missed concepts or the daily 10s come from the course's bank when it can start them (at least the first part): exact size, no writer call, nothing served in the last 12 hours, unseen first, then misses, then the longest-ago right answers; the day's misses first for a focus set; an exam's all-topics set spread by the guide weights. What the bank lacks is written as before. Topic sets are always written. Timed exams are written as before.
+- The bank fills itself in the background (to 60 ready when fewer than 30 are) after any set starts and when an exam's guide is found; questions written for sets are banked too. Grading records each result (a reported question whose key did not hold is retired). Deleting a course or the account deletes its bank.
+- Every AI call made for an account is added to ai_cost (day, task, calls, tokens, cached tokens, estimated cost): the data for "are we charging enough".
+- The question writer gets the course material as its own cached block before the instructions (the batches of a set or a fill read it at a tenth of the price). Prompt text unchanged; session_quiz evals 7/7 twice.
+- QUESTION_BANK=0 turns the bank off (the older tests that count writer calls); on in production and for the simulated students.
+- Not yet: a new upload does not refresh the bank (older banked questions stay until used); timed exams do not use the bank.
+- **Decided by:** Dan ("All looks good" to the pricing spec; "you can work on question bank").
+
 ## 2026-10-18 — D-144: Pricing: students $12.99/mo or $79.99/yr after Apple's free week; cert exams 50 free questions then $29.99 for 60 days
 - SPEC §9 (signed). One app with two prices (by course type) instead of two apps: Apple rejects near-duplicate apps (guideline 4.3) and two apps double the work; Custom Product Pages market to each audience.
 - Apple's introductory free week is once per Apple ID, which answers "five emails, five free courses". The free 50 cert questions are per account in v1 (DeviceCheck later).

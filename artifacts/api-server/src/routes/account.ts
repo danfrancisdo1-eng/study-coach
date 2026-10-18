@@ -6,7 +6,7 @@
 import { Router, type IRouter, type Request } from "express";
 import { clerkClient } from "@clerk/express";
 import { eq } from "drizzle-orm";
-import { aiUsageTable, db, entitlementsTable, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable } from "@workspace/db";
+import { aiCostTable, aiUsageTable, db, entitlementsTable, homeChatsTable, lecturesTable, questionBankTable, studySessionsTable, studyStatesTable } from "@workspace/db";
 import { requireStudyAuth } from "./study";
 
 const router: IRouter = Router();
@@ -27,6 +27,9 @@ router.delete("/study/account", async (req, res): Promise<void> => {
     // Plan status and daily counters (D-090). The purchase itself stays with Apple and RevenueCat.
     await tx.delete(entitlementsTable).where(eq(entitlementsTable.ownerId, ownerId));
     await tx.delete(aiUsageTable).where(eq(aiUsageTable.ownerId, ownerId));
+    // The question bank and the daily AI cost (D-145).
+    await tx.delete(questionBankTable).where(eq(questionBankTable.ownerId, ownerId));
+    await tx.delete(aiCostTable).where(eq(aiCostTable.ownerId, ownerId));
     return { sessions: sessions.length, chats: chats.length, lectures: lectures.length, states: states.length };
   });
   // The sign-in identity. Tests run without a Clerk backend (SKIP_CLERK_USER_DELETE=1); never set in production.

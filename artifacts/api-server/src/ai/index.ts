@@ -20,7 +20,18 @@ export interface AiInput {
   webSearch?: { maxUses: number };
 }
 
-export function complete(task: AiTask, input: AiInput): Promise<AiResult> {
+/** D-145: told about every call's tokens (the app logs cost per account; evals register nothing). */
+type UsageListener = (task: AiTask, model: string, usage: AiResult["usage"]) => void;
+let usageListener: UsageListener | null = null;
+export function setUsageListener(listener: UsageListener | null): void { usageListener = listener; }
+
+export async function complete(task: AiTask, input: AiInput): Promise<AiResult> {
+  const result = await completeWith(task, input);
+  try { usageListener?.(task, taskConfig(task).model, result.usage); } catch { /* the cost log never fails a call */ }
+  return result;
+}
+
+function completeWith(task: AiTask, input: AiInput): Promise<AiResult> {
   const config = taskConfig(task);
   if (config.provider === "anthropic") {
     return anthropicCompletion({ ...config, ...input, jsonSchema: TASK_SCHEMAS[task] });

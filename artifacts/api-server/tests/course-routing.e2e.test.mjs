@@ -27,7 +27,7 @@ test('course routing: big course picks sections; small course reads whole; route
       return reply(JSON.stringify({ sections: route.headings.map(id).filter(Boolean), searchRaw: route.searchRaw, terms: route.terms }));
     }
     if (system.startsWith('You turn one')) return { status: 500, body: { error: { message: 'stub' } } };
-    if (system.startsWith('Create exactly')) {
+    if (system.includes('Create exactly')) {
       quizRequests.push(all);
       return reply(JSON.stringify({ questions: Array.from({ length: 3 }, (_, i) => ({ prompt: `Routed question ${quizRequests.length}-${i}?`, options: ['A', 'B', 'C', 'D'], answerIndex: 0, concept: 'mitosis', explanation: 'A is right.', hook: 'h' })) }));
     }

@@ -5,6 +5,11 @@ import { publishableKeyFromHost } from "@clerk/shared/keys";
 import router, { requireStudyAuth } from "./routes";
 import privacyRouter from "./routes/privacy";
 import { logger } from "./lib/logger";
+import { setUsageListener } from "./ai";
+import { logAiCost } from "./lib/cost-log";
+
+// D-145: every AI call made for an account is added to its daily cost (ai_cost).
+setUsageListener(logAiCost);
 import {
   CLERK_PROXY_PATH,
   clerkProxyMiddleware,

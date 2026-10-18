@@ -25,7 +25,7 @@ test('results history reaches the coach and drives missed-scope sets', async (t)
   let coach = { reply: 'Set coming.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 4, kind: 'practice', scope: 'all' }] };
   const ai = await startAiStub(t, (request) => {
     const system = request.body.messages[0].content;
-    if (system.startsWith('Create exactly')) return quizReply;
+    if (system.includes('Create exactly')) return quizReply;
     if (system.startsWith('You check the answer key')) return chatReply(JSON.stringify({ checks: [] }));
     return chatReply(JSON.stringify(coach));
   });
@@ -69,7 +69,7 @@ test('results history reaches the coach and drives missed-scope sets', async (t)
   coach = { reply: 'Set on your weak spots.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'Missed concepts', count: 4, kind: 'practice', scope: 'missed' }] };
   chat = await call('POST', '/study/chat', { content: 'Test me on the ones I missed', version: 0, courseId: 'chem' });
   assert.equal(chat.status, 200, JSON.stringify(chat.body));
-  const writer = ai.requests.filter((r) => r.body.messages[0].content.startsWith('Create exactly')).at(-1).body.messages[0].content;
+  const writer = ai.requests.filter((r) => r.body.messages[0].content.includes('Create exactly')).at(-1).body.messages[0].content;
   assert.match(writer, /Specifically test missed concepts: concept-0, concept-2/);
   const retest = (await call('GET', `/study/sessions/${chat.body.messages.at(-1).actions[0].sessionId}`)).body;
   assert.equal(retest.quiz.mode, 'targeted');

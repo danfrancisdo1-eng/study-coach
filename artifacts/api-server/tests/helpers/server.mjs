@@ -60,6 +60,8 @@ export async function startServer(t, aiPort, extraEnv = {}) {
       ...(extraEnv.DATABASE_URL ? {} : { SKIP_MIGRATIONS: '1' }),
       AI_INTEGRATIONS_OPENAI_BASE_URL: `http://127.0.0.1:${aiPort}`,
       AI_INTEGRATIONS_OPENAI_API_KEY: 'dummy',
+      // The question bank (D-145) adds background writer calls; tests about it (and the simulated students) turn it on.
+      QUESTION_BANK: '0',
       ...extraEnv,
     },
   });

@@ -33,7 +33,7 @@ test('question reports: re-check verdicts, exclusion, and regrading', async (t) 
   const checkerRequests = [];
   const ai = await startAiStub(t, (request) => {
     const system = request.body.messages[0].content;
-    if (system.startsWith('Create exactly')) { batch += 1; return quizReply(batch); }
+    if (system.includes('Create exactly')) { batch += 1; return quizReply(batch); }
     if (system.startsWith('You check the answer key')) return chatReply(JSON.stringify({ checks: [] }));
     if (system.startsWith('A student has challenged')) {
       const payload = JSON.parse(request.body.messages[1].content);

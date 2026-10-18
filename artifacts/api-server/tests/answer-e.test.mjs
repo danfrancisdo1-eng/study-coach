@@ -29,7 +29,7 @@ test('answer-E formats: five options and positional options are accepted, kept i
   const coach = { reply: 'Set coming.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 5, kind: 'practice', scope: 'all' }] };
   const ai = await startAiStub(t, (request) => {
     const system = request.body.messages[0].content;
-    if (system.startsWith('Create exactly')) return writerReply;
+    if (system.includes('Create exactly')) return writerReply;
     if (system.startsWith('You check the answer key')) return chatReply(JSON.stringify({ checks: [] }));
     return chatReply(JSON.stringify(coach));
   });
