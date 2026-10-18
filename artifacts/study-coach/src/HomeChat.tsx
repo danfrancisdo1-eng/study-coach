@@ -11,7 +11,10 @@ import FlashcardDeck from './FlashcardDeck';
 import type { TimedSize } from './lib/exam-facts';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.';
-const REVIEW_CHIP = 'Review sheet (PDF)'; // D-139: opens the printable review sheet, not a chat message
+const REVIEW_CHIP = 'Review sheet (PDF)';
+// D-149 (Dan: review the actual sheet before deciding to print or download): the tab shows the sheet with a
+// "Print or save as PDF" bar (the browser's print dialog saves a PDF); the bar never prints.
+const withPrintBar = (html: string) => html.replace(/<body([^>]*)>/, '<body$1><div class="rr-print-bar" style="position:sticky;top:0;display:flex;justify-content:flex-end;padding:10px;background:#fff;border-bottom:1px solid #ddd"><button type="button" onclick="window.print()" style="font:600 15px system-ui;padding:10px 16px;border-radius:10px;border:0;background:#F2B544;cursor:pointer">Print or save as PDF</button></div><style>@media print{.rr-print-bar{display:none!important}}</style>'); // D-139: opens the printable review sheet, not a chat message
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
 
 /**
@@ -65,7 +68,7 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
     if (!tab) { setError('Allow pop-ups for this site to open the review sheet.'); return; }
     tab.document.write('<p style="font-family:sans-serif;padding:24px">Writing your review sheet…</p>');
     void review.mutateAsync({ courseId: id }).then((sheet) => {
-      tab.document.open(); tab.document.write(reviewHtml(sheet)); tab.document.close(); tab.focus(); tab.print();
+      tab.document.open(); tab.document.write(withPrintBar(reviewHtml(sheet))); tab.document.close(); tab.focus();
     }, () => { tab.close(); setError('The review sheet could not be made just now. Try again.'); });
   };
   const chips = lastMessage?.role === 'assistant' && !activeQuiz && !activeDeck ? (lastMessage.suggestions ?? []) : [];
