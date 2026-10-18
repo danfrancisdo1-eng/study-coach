@@ -13,7 +13,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v24";
+import * as coachPrompt from "../prompts/coach.v25";
 import { courseContext, NOTES_BLOCK, PLANNING } from "../lib/course-context";
 import { indexText, routedContext, sectionsOf, wordSearch } from "../lib/course-sections";
 import { routeCourse } from "../lib/course-router";
@@ -335,7 +335,7 @@ const WRITE_RETRIES = 3; // saves that lose a version race with the student's an
 // are topped up (at most twice), so a set ends at the size the student asked for.
 const MAX_BATCH = 10;
 const BATCH_TRIES = 2;
-const TOP_UPS = 2;
+const TOP_UPS = 3; // D-138: a 50 ended at 42 with two rounds
 const splitCount = (n: number): number[] => { const out: number[] = []; for (let left = n; left > 0; left -= MAX_BATCH) out.push(Math.min(MAX_BATCH, left)); return out; };
 
 /** A timed exam (D-114): its limit and the batches it is written in (one guide section each). */

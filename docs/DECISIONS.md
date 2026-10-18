@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-138: No study plans; repeats across batches; full-size big sets (coach.v25, quiz-check.v5)
+- Study plans (Dan): there is no schedule. Asked for a plan, the coach says to keep doing questions over and over wherever you are (in line, between classes, on the bus, even sitting on the toilet) and offers "Quick 5", "Flashcards", "Memory tricks". "Quick 5" starts a 5-question practice set (missed topics if there are past misses, otherwise all topics). A moved exam date changes focus, not a plan.
+- From the third simulated-students run: the coach never says "spot on" to a wrong statement; step-by-step answers come one numbered step per line; a discouraged student is pointed to help named in the material (office hours, tutoring).
+- The answer checker gets the questions already in the set (last 60) and flags a repeat of one as duplicateOf -2, which drops it and tops it up (a run repeated questions across batches).
+- Top-ups raised from 2 to 3 rounds (a 50-question set ended at 42).
+- Evals: coach 55/55 then 54/55 (step-by-step case word cap raised to 230; numbered steps are longer); quiz_check 5/5 twice (new cross-batch repeat case). Tests 225/225.
+- **Decided by:** Dan ("perfect answer. include sitting on the toilet"; "ok" to the fixes).
+
 ## 2026-10-18 — D-137: Math keys checked against the worked numbers (quiz-check.v4 on Sonnet)
 - Second simulated-students run: 13 of 15 at 7–8/10 (from mostly 5–6), high issues 15 → 8; but AP Physics scored 3/10: several keys disagreed with their own worked solutions ("x ≈ 0.25 m", key 0.10 m; "25 J went to thermal", key 12.5 J; "square root of 9, which is 3", key √3), so a right answer was graded wrong and the coach coached the wrong concepts. Haiku's explanation-only check missed them.
 - A code check (numericKey): when the explanation's numbers reach exactly one other option, the key moves there; when they reach no option (all options numeric), the question is dropped and topped up. More leaked-reasoning patterns ("Recomputing…", "check with values", "the value matching the first choice"). quiz-check.v4 redoes the explanation's arithmetic and now runs on Sonnet (low effort; about 1.5¢ per batch). A failed first part of a set is tried once more before the student sees an error (a 502 in the run).

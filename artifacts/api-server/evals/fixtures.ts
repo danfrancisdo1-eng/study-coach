@@ -291,11 +291,23 @@ export interface QuizCheckCase {
   questions: { prompt: string; options: string[]; answerIndex: number; explanation: string }[];
   /** Expected verdict per question: the correct index the explanation supports, or -1 for unclear. */
   expected: { consistent: boolean; correctIndex: number }[];
+  /** D-138: questions the student already has in this set (earlier batches); a repeat of one is duplicateOf -2. */
+  alreadyInSet?: string[];
   /** D-135: question index → the earlier question it repeats (all others must not be flagged). */
   duplicates?: Record<number, number>;
 }
 
 export const quizCheckCases: QuizCheckCase[] = [
+  {
+    name: "a repeat of a question from an earlier batch of the same set (Org Chem, simulated student)",
+    alreadyInSet: ["Which group has higher CIP priority: -CH2OH or -C(CH3)3?", "Does the R/S label tell you the sign of optical rotation?"],
+    questions: [
+      { prompt: "Rank by Cahn-Ingold-Prelog priority: -C(CH3)3 versus -CH2OH. Which is higher?", options: ["-C(CH3)3, it has more carbons", "-CH2OH, O beats C at the first point of difference", "They tie", "It depends on the solvent"], answerIndex: 1, explanation: "Compare at the first point of difference: O (8) beats C (6), so -CH2OH is higher." },
+      { prompt: "Which is a meso compound?", options: ["(2R,3R)-tartaric acid", "(2R,3S)-tartaric acid", "(2S,3S)-tartaric acid", "(R)-2-butanol"], answerIndex: 1, explanation: "(2R,3S)-tartaric acid has an internal mirror plane, so it is meso." },
+    ],
+    expected: [{ consistent: true, correctIndex: 1 }, { consistent: true, correctIndex: 1 }],
+    duplicates: { 0: -2 },
+  },
   {
     name: "AP Physics keys that disagree with the worked numbers (simulated student Ethan)",
     questions: [
@@ -530,6 +542,51 @@ export const coachCases: CoachCase[] = [
     message: "When are my finals",
     expectedActions: [],
     expectations: ["Gives the final exam date as Tuesday, December 1, 2026", "Says it is cumulative (heavier on the material after the midterm is fine)", "Says or implies it comes from their syllabus", "Does not say it cannot see the date or ask the student for the date"],
+    maxWords: 90,
+  },
+  // coach.v25 (D-138): Dan's method and coach habits from the simulated students.
+  {
+    name: "study plan request: Dan's method, no schedule, Quick 5",
+    courses: [{ id: "micro", name: "ECON 301", materials: 3, lectures: 1 }], firstVisit: false, focusCourseId: "micro", history: [], today: "2026-10-18",
+    uploads: [{ name: "Syllabus", text: "# ECON 301\n## Exams\n- Midterm: Thu Nov 5\n## Quizzes\n- Quiz 3: Thu Oct 29" }],
+    message: "Can you make me a weekly study plan for the midterm? I like having a schedule.",
+    expectedActions: [], expectedSuggestions: ["Quick 5"],
+    expectations: ["Says there is no schedule: keep doing questions over and over wherever you are, naming everyday places (line, between classes, bus, toilet or similar)", "Does not give a weekly or daily plan, time blocks or a calendar", "Short and friendly, not preachy"],
+    maxWords: 80,
+  },
+  {
+    name: "Quick 5 tapped: starts a 5-question practice round at once",
+    courses: [{ id: "micro", name: "ECON 301", materials: 3, lectures: 1 }], firstVisit: false, focusCourseId: "micro", today: "2026-10-18",
+    history: [{ role: "user", content: "make me a study plan" }, { role: "assistant", content: "There's no schedule. Just keep doing questions, over and over, wherever you are. Every round makes it stick." }],
+    message: "Quick 5",
+    expectedActions: [{ type: "start_quiz", name: "ECON 301", kind: "practice" }],
+    expectations: ["Starts right away in one short line; does not ask practice or exam, nor which topic"],
+    maxWords: 25,
+  },
+  {
+    name: "a wrong statement is corrected, never 'spot on' (Ethan, AP Physics)",
+    courses: [{ id: "phys", name: "AP Physics 1", materials: 2, lectures: 1 }], firstVisit: false, focusCourseId: "phys", history: [], today: "2026-10-18",
+    uploads: [{ name: "Notes", text: "# Forces\n- Components: Fx = F cos θ, Fy = F sin θ" }],
+    message: "so a 20 N rope pulling at 60 degrees just splits in half, 10 N up and 10 N sideways right?",
+    expectedActions: [],
+    expectations: ["Says kindly that this is not right before anything else", "Gives the correct components: vertical 20 sin 60° ≈ 17.3 N and horizontal 20 cos 60° = 10 N", "Never says 'spot on', 'exactly' or 'right' about the wrong statement"],
+    maxWords: 90,
+  },
+  {
+    name: "step by step comes one numbered step per line (Mia, Algebra 2)",
+    courses: [{ id: "alg", name: "Algebra 2", materials: 2, lectures: 0 }], firstVisit: false, focusCourseId: "alg", history: [], today: "2026-10-18",
+    message: "can you walk me through dividing x^3 - 4x^2 + 5 by x - 4 with synthetic division step by step? i always mess up the setup sorry",
+    expectedActions: [],
+    expectations: ["Writes the steps as numbered lines, one step per line, not a run-on paragraph", "Includes the 0 placeholder for the missing x term (coefficients 1, -4, 0, 5)", "Gets the right result: x^2 + 0x + 0 with remainder 5 (quotient x^2, remainder 5)"],
+    maxWords: 230,
+  },
+  {
+    name: "discouraged student: honest, one next step, office hours from the syllabus (Ryan, Calc II)",
+    courses: [{ id: "calc", name: "Calculus II", materials: 2, lectures: 1 }], firstVisit: false, focusCourseId: "calc", history: [], today: "2026-10-18",
+    uploads: [{ name: "Syllabus", text: "# MATH 152\n## Help\n- Office hours: Tue 1–3 pm, Thu 11 am–12 pm, Room 214\n- Free tutoring: Math Lab, Mon–Thu 4–8 pm\n## Exams\n- Quiz 4: Fri Oct 23 (volumes by shells)" }],
+    message: "idk im failing calc II, i want to give up honestly",
+    expectedActions: [],
+    expectations: ["Kind and honest; does not claim to know his grade (no 'you're not failing')", "Gives one concrete next step", "Points to the help in his syllabus (office hours Tue 1–3 or Thu 11–12, or the Math Lab)"],
     maxWords: 90,
   },
   // coach.v24 (D-136, simulated students).
