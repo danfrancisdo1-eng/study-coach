@@ -72,7 +72,7 @@ export type Quiz = {
    * lands or the writer gives up; a writer that died leaves it, so `quizStatus` also treats a
    * stale start as finished.
    */
-  writing?: { startedAt: string } | null;
+  writing?: { startedAt: string; /** D-140: when the latest part landed */ lastPartAt?: string } | null;
   expectedCount: number;
   questions: StoredQuestion[];
   sourceStatus: SourceStatus;

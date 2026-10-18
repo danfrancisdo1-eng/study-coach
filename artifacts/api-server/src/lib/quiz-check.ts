@@ -39,7 +39,8 @@ export function applyQuizCheck(questions: ProposedQuestion[], checks: Map<number
 }
 
 // D-135 (simulated students): checks that need no AI.
-const REASONING = /\b(but wait|wait[:,]|let me (re)?check|re-?check|recomput\w*|re-?calculat\w*|on second thought|the key must|so the key|answer key|answerIndex|option index|check with (the )?values|matching the (first|second|third|fourth|fifth|last) (choice|option))\b|^check:/i;
+// D-140: also an explanation that argues for a key its working does not reach ("rounds to 5.41 rather than 5.43 only if the arithmetic is sloppy").
+const REASONING = /\b(sloppy|rounds? to [\d.,]+ rather than [\d.,]+|(?:value|values|answer) (?:in|shown in) the options|the options (?:show|use|assume)|but wait|wait[:,]|let me (re)?check|re-?check|recomput\w*|re-?calculat\w*|on second thought|the key must|so the key|answer key|answerIndex|option index|check with (the )?values|matching the (first|second|third|fourth|fifth|last) (choice|option))\b|^check:/i;
 const APPROXIMATE = /\bclosest to\b|\bnearest (option|choice|answer)\b|\bapproximately matches\b/i;
 
 /** A problem with an explanation that disqualifies the question: the writer's reasoning leaked into it, or the key is only "closest to" the computed answer. */

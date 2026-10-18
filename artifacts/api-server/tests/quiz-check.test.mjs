@@ -89,3 +89,10 @@ test('parseQuizCheck reads duplicateOf -2 (repeats an earlier batch) and the que
   const { kept } = applyQuizCheck(qs, parseQuizCheck({ checks: [{ index: 0, consistent: true, correctIndex: 0, duplicateOf: -2 }, { index: 1, consistent: true, correctIndex: 0, duplicateOf: -1 }] }, 2));
   assert.deepEqual(kept.map((q) => q.prompt), ['Q1']);
 });
+
+// D-140 (CFA simulated student): the working reached 5.405 and argued its way to the key 5.43.
+test('explanationProblem catches an explanation that argues for a key its working does not reach', () => {
+  assert.match(explanationProblem('So C = 3.50 + 40 - 38.095 = 5.405, which rounds to 5.41 rather than 5.43 only if the arithmetic is sloppy; the exact value in the options is derived using the same steps.'), /reasoning/);
+  assert.match(explanationProblem('The answer key uses a rounded PV, which is why the options show 5.43.'), /reasoning/);
+  assert.equal(explanationProblem('C = 3.50 + 40 - 38.10 = 5.40, so the call is worth 5.40 rather than the 3.50 put.'), null, 'a normal "rather than" stays');
+});
