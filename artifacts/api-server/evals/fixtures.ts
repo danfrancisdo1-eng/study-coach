@@ -291,9 +291,22 @@ export interface QuizCheckCase {
   questions: { prompt: string; options: string[]; answerIndex: number; explanation: string }[];
   /** Expected verdict per question: the correct index the explanation supports, or -1 for unclear. */
   expected: { consistent: boolean; correctIndex: number }[];
+  /** D-135: question index → the earlier question it repeats (all others must not be flagged). */
+  duplicates?: Record<number, number>;
 }
 
 export const quizCheckCases: QuizCheckCase[] = [
+  {
+    name: "a reworded repeat of an earlier question is flagged (simulated students: PMP and Psych sets)",
+    questions: [
+      { prompt: "On a power-interest grid, a stakeholder with high power and low interest should be:", options: ["Managed closely", "Kept satisfied", "Kept informed", "Monitored"], answerIndex: 1, explanation: "High power, low interest: keep satisfied so they don't become blockers." },
+      { prompt: "Which tool helps prioritize stakeholders by their authority and concern?", options: ["RACI chart", "Power-interest grid", "Burndown chart", "Risk register"], answerIndex: 1, explanation: "The power-interest grid maps authority against concern to prioritize engagement." },
+      { prompt: "A city inspector has final say on the building's sign-off but little interest in weekly progress. How should the project manager engage them?", options: ["Manage closely", "Keep satisfied", "Keep informed", "Monitor"], answerIndex: 1, explanation: "High power with low interest calls for keeping them satisfied." },
+      { prompt: "What does a critical path tell the project manager?", options: ["The cheapest activities", "The longest chain of dependent activities, which sets the shortest duration", "The riskiest activities", "Activities with the most float"], answerIndex: 1, explanation: "The critical path is the longest dependent chain; it determines the minimum project duration." },
+    ],
+    expected: [{ consistent: true, correctIndex: 1 }, { consistent: true, correctIndex: 1 }, { consistent: true, correctIndex: 1 }, { consistent: true, correctIndex: 1 }],
+    duplicates: { 2: 0 },
+  },
   {
     name: "two wrong keys from the Copilot set, two right ones",
     questions: [

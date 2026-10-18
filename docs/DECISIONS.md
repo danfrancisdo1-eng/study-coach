@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-135: Cleaner questions: no repeats, no leaked reasoning, keys that match (session-quiz.v9, quiz-check.v3)
+- Found by the simulated students (D-132): sets had 2–3 reworded repeats; explanations showed the writer's own checking ("but wait: it is true, so the key must be B", "Check: the options list 0.32 m…"); two keys contradicted their explanations (CPA: the explanation says "$5,000 is correct", the key was $500; CFA: "about 5.19, closest to 5.24").
+- session-quiz.v9: every question tests a different idea; explanations speak to the student (no checking out loud, no option letters); a calculated answer appears exactly among the options, never "closest to". quiz-check.v3 (Haiku) also returns "duplicateOf" (an earlier question in the batch that tests the same idea), and the repeat is dropped. Code checks before the AI check (lib/quiz-check.ts): leaked reasoning or "closest to" drops the question; an explanation that says another option "is correct" re-keys it. Dropped questions are topped up (D-133).
+- Evals: quiz_check 3/3 twice (new: a reworded PMP repeat flagged), session_quiz 7/7 twice (now also failing any leaked reasoning or approximate answer). Tests: 3 unit.
+
 ## 2026-10-18 — D-134: Intro video on first launch (approved, waiting for Dan's edited video; logged from another thread as a second "D-123", renumbered)
 - Dan's 23-second intro (RRAI_Intro_linked.mp4, 1080×1920) plays full screen once at first launch, before the welcome tour: Skip always visible, sound off until tapped, rewatchable from Account → "See the tour again". Compressed to about 5 MB and bundled so it plays offline.
 - Dan approved adding expo-video and a new EAS development build (which also carries the new icon and launch screen, D-113). Waiting for his edited cut: real hands instead of cartoon hands (≈3.5s, 8s, 14s, 20s) and a garbled QR code (≈20s; the original scanned to his real credential).
