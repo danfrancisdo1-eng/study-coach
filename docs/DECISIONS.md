@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-150: Intro video at first launch, replay from Account (expo-video)
+- Dan's 23 s intro (RRAI_Intro_linked.mp4, kept as is: cartoon hands, his name). The credential's QR code (pixelated) and credential ID (soft blur) are blurred for 19.15–20.98 s, the card's on-screen frames only; compressed to 720×1280 H.264, 1.4 Mb/s, 4.3 MB (AVFoundation script on the Mac; the original is not in the repo).
+- Phone: plays full screen the first time the app ever opens (signed out, before the tour), once per install (AsyncStorage rapidrecall-intro-seen). Skip always on screen; sound off until the video or "Tap for sound" is tapped; at the end it hands over to the tour; a video that cannot play goes straight to the tour. Account → "Watch the intro" replays it and comes back. New dependency expo-video ~57.0.5 (approved in D-134); needs a new development build.
+- Web: the same video full screen on the first visit (localStorage), Skip and Tap for sound; "Watch the intro" on the account page.
+- **Decided by:** Dan ("plays once upon 1st time ever, with skip screen, and can replay from account"; "don't blur my name, blur QR code a little and credential ID a little").
+
 ## 2026-10-18 — D-149: The review sheet is shown as the real PDF in the app, then Print or Save or share
 - Dan: "I want them to be able to review the actual pdf ... before they decide to print it or download it." iPhone's print preview (D-142) opened a print screen.
 - New dependency (Dan's OK): react-native-webview 13.16.1 (Expo's matching version). The review screen makes the PDF and shows it right there (scroll, pinch to zoom), with Print and "Save or share" below. Needs a new development build and, later, a TestFlight build; the current Dev app cannot open the screen until then.

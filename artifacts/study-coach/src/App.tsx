@@ -1,6 +1,7 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAnalyzeMaterial, useGenerateQuiz, useGenerateExamPlan } from '@workspace/api-client-react';
+import { IntroVideo } from './IntroVideo';
 import { Route, Switch, Link, useLocation, useParams, Router as WouterRouter } from 'wouter';
 import { ArrowRight, ArrowLeft, BookOpen, CalendarDays, Check, ChevronRight, ClipboardList, Clock3, FileText, GraduationCap, Layers3, Plus, RotateCcw, Send, ShieldCheck, Sparkles, Trash2, UploadCloud, X, Target } from 'lucide-react';
 import { StudyProvider, useStudy, courseById, today, uid, shortDate, reviewConcepts, type CourseId } from './lib/study';
@@ -264,7 +265,7 @@ function ExamPlan(){
 }
 function NotFound(){return <Shell><PageHead eyebrow="WRONG TURN" title="There’s nothing here." description="Let’s get you back to something useful."/><Link className="btn btn-primary" href="/home" data-testid="link-not-found-home">Back to today <ArrowRight size={16}/></Link></Shell>}
 function Router(){const {ready,data}=useStudy();if(!ready)return <div className="onboard"><div className="panel panel-pad" style={{marginTop:80}}><div style={{width:150,height:20,background:'#e5ded0',borderRadius:8,marginBottom:26}}/><div style={{width:'80%',height:45,background:'#e5ded0',borderRadius:8,marginBottom:18}}/><div style={{width:'65%',height:17,background:'#e5ded0',borderRadius:8}}/></div></div>;return <Switch><Route path="/">{data.onboarded?<Home/>:<QuickStart/>}</Route><Route path="/setup" component={Settings}/><Route path="/home">{data.onboarded?<Home/>:<QuickStart/>}</Route><Route path="/courses" component={Courses}/><Route path="/courses/:id" component={Course}/><Route path="/quiz" component={Quiz}/><Route path="/review" component={Review}/><Route path="/questions" component={QuestionsPage}/><Route path="/report" component={Report}/><Route path="/exam-plan" component={ExamPlan}/><Route component={NotFound}/></Switch>}
-function App({base=import.meta.env.BASE_URL.replace(/\/$/,'')}:{base?:string}){useEffect(()=>{if(!import.meta.env.DEV&&'serviceWorker'in navigator)navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(()=>{})},[]);return <QueryClientProvider client={qc}><StudyProvider><WouterRouter base={base}><Router/></WouterRouter></StudyProvider></QueryClientProvider>}
+function App({base=import.meta.env.BASE_URL.replace(/\/$/,'')}:{base?:string}){useEffect(()=>{if(!import.meta.env.DEV&&'serviceWorker'in navigator)navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(()=>{})},[]);return <QueryClientProvider client={qc}><StudyProvider><WouterRouter base={base}><Router/></WouterRouter><IntroVideo/></StudyProvider></QueryClientProvider>}
 export default App;
 
 function QuestionsPage(){

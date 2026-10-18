@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { replayIntro } from './IntroVideo';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   useGetStudyState, usePutStudyState, useImportStudyState, useListStudySessions,
@@ -213,6 +214,7 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
       <strong className="brand" style={{ color: '#293448' }}>rapidrecall ai<span style={{ color: '#d36748' }}>.</span></strong>
       <div className="row" style={{ flexWrap: 'wrap' }}>
         <button type="button" className="btn btn-quiet" onClick={onClassic} data-testid="button-classic-workspace">Lecture desk · browser-only</button>
+        <button type="button" className="btn btn-quiet" onClick={replayIntro} data-testid="button-replay-intro">Watch the intro</button>
         <button type="button" className="btn btn-outline" onClick={onSignOut} data-testid="button-sign-out">Sign out</button>
         <DeleteAccount onDeleted={onSignOut} />
       </div>
