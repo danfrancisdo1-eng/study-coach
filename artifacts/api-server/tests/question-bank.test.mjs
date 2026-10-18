@@ -32,12 +32,12 @@ test('nothing served in the last 12 hours, nothing retired, nothing already in t
   assert.deepEqual(picked.map((e) => e.concept), ['d'], 'fewer than asked when the bank runs short (the rest is written)');
 });
 
-test("the day's 10 on misses: questions on the focus concepts come first", () => {
+test("the day's 10 on misses: only questions on the focus concepts", () => {
   const other = [entry('Krebs cycle'), entry('Glycolysis')];
   const onFocus = [entry('osmosis'), entry('Active transport', { servedCount: 1, lastServedAt: hoursAgo(26), lastRight: false })];
   const picked = pickFromBank([...other, ...onFocus], { count: 3, focus: ['Osmosis', 'active transport'], exclude: new Set(), now });
-  assert.deepEqual(picked.slice(0, 2).map((e) => e.concept).sort(), ['Active transport', 'osmosis']);
-  assert.equal(picked.length, 3);
+  assert.deepEqual(picked.map((e) => e.concept).sort(), ['Active transport', 'osmosis']);
+  assert.equal(picked.length, 2, 'a set on misses gets only questions on them (D-146: the rest is written on the misses, never other topics)');
 });
 
 test('an all-topics set on an exam is spread by the guide weights', () => {

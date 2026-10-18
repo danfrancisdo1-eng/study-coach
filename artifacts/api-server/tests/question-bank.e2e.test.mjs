@@ -67,11 +67,11 @@ test('question bank: fill, serve exact sets without repeats, record results, del
 
   // A day later: the two misses come first in a missed-scope set.
   await database.db.query("update question_bank set last_served_at = now() - interval '1 day' where owner_id = $1", ['user_q']);
-  coach = { reply: 'Your misses.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'Missed concepts', count: 3, kind: 'practice', scope: 'missed' }] };
+  coach = { reply: 'Your misses.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'Missed concepts', count: 2, kind: 'practice', scope: 'missed' }] };
   chat = await call('POST', '/study/chat', { content: 'test me on what I missed', version: chat.body.version, courseId: 'bio' });
   const third = (await call('GET', `/study/sessions/${chat.body.messages.at(-1).actions[0].sessionId}`)).body;
   const missedPrompts = first.quiz.questions.slice(0, 2).map((q) => q.prompt).sort();
-  assert.deepEqual(third.quiz.questions.filter((q) => missedPrompts.includes(q.prompt)).map((q) => q.prompt).sort(), missedPrompts);
+  assert.deepEqual(third.quiz.questions.map((q) => q.prompt).sort(), missedPrompts, 'only the misses (D-146)');
 
   // The cost log (D-145): each AI task made for the account is counted for the day.
   const costs = (await database.db.query('select task, calls, input_tokens from ai_cost where owner_id = $1', ['user_q'])).rows;
