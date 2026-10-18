@@ -109,5 +109,14 @@ Voice chat; multiple parallel chats per course; teacher/group features.
 - The day before an exam (a date in the course material or course facts), the first chat of that day says the exam is tomorrow and offers "Review sheet (PDF)", which opens the review sheet in one tap (mobile; the web gets a printable review sheet).
 - v1 does not: send reminders or notifications; track a goal across courses.
 
-## 9. Open decisions
+## 9. Pricing and the free taste — SIGNED by Dan 2026-10-18 (D-144)
+- One app, two prices, chosen by the course type the student picked (course vs certification exam). App Store Custom Product Pages for the two audiences; no second app.
+- Students (high school, college): a 7-day free trial through Apple's introductory offer (once per Apple ID, so extra emails do not get extra weeks), one course; then $12.99/month or $79.99/year (yearly preselected; badge shows the real saving vs 12 × monthly).
+- Certification exam: the first 50 questions free (exactly 50, all checked, no repeats); then an exam pass, $29.99 for 60 days, one exam, no auto-renew (Apple non-renewing subscription).
+- Paywall: the cards, one primary button, Restore purchases as a text link, privacy and terms links on the sheet, what happens when the trial ends on the same screen.
+- Before launch: a question bank per course (written and checked once, served for the daily 10s and the free 50; new questions only for misses), prompt caching for the course material, so a full 100-a-day user costs less than the price (estimate today: about $1.20/day).
+- v1 does not: DeviceCheck against several emails on one phone (the free 50 can repeat per email); family plans; Android.
+- Prices are revisited once real usage and AI cost come in (Dan: "we will know if we aren't charging enough pretty quickly").
+
+## 10. Open decisions
 See the questions at the end of the session-1 summary, and DECISIONS.md.

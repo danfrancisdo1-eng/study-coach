@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-144: Pricing: students $12.99/mo or $79.99/yr after Apple's free week; cert exams 50 free questions then $29.99 for 60 days
+- SPEC §9 (signed). One app with two prices (by course type) instead of two apps: Apple rejects near-duplicate apps (guideline 4.3) and two apps double the work; Custom Product Pages market to each audience.
+- Apple's introductory free week is once per Apple ID, which answers "five emails, five free courses". The free 50 cert questions are per account in v1 (DeviceCheck later).
+- Rough AI cost: about 10–12 cents per round of 10 (writing, answer check, coach turns), about $1.20 for a full 100-a-day. A question bank per course comes before launch so heavy users cost less than they pay.
+- **Decided by:** Dan ("All looks good").
+
 ## 2026-10-18 — D-143: The development build gets its own app ID ("RapidRecall Dev")
 - Installing TestFlight build 5 replaced the development build on Dan's iPhone (same app ID), so the ngrok preview had nothing to open and the phone stayed on the TestFlight version (D-118).
 - app.config.ts: with APP_VARIANT=development (EAS development profile; the preview script) the app is "RapidRecall Dev", com.danfrancis.studycoach.dev. Production and TestFlight are unchanged (com.danfrancis.studycoach). The URL scheme stays the same.
