@@ -219,6 +219,8 @@ async function runPersona(p) {
     // D-145: what this student cost in AI (from the server's own cost log) and how many questions they answered.
     await new Promise((r) => setTimeout(r, 20_000)); // let background work (bank fill, notes) land in the log
     const cost = (await database.db.query('select coalesce(sum(cost_micros), 0) as micros from ai_cost where owner_id = $1', [user])).rows[0];
+    const byTask = (await database.db.query('select task, calls, cost_micros from ai_cost where owner_id = $1 order by cost_micros desc', [user])).rows;
+    console.log(`  ${p.name} cost by task: ${byTask.map((r) => `${r.task} ${r.calls}× $${(Number(r.cost_micros) / 1e6).toFixed(3)}`).join(', ')}`);
     const answered = log.filter((x) => x.role === 'app' && / set: \d+ questions/.test(x.text)).reduce((n, x) => n + Number(/ set: (\d+) questions/.exec(x.text)[1]), 0);
     return { persona: p, log, problems, materials: m, courseNotes: course?.notes?.text ?? '', seconds: Math.round((Date.now() - started) / 1000), costDollars: Number(cost.micros) / 1e6, answered };
   } catch (error) {

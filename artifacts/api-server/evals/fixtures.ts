@@ -110,9 +110,22 @@ export interface SessionQuizCase {
   expectedCount: number;
   originalPrompts: string[];
   weakConcepts: string[];
+  /** D-147: a top-up batch: the topic's notes are used up. */
+  stretch?: boolean;
 }
 
 export const sessionQuizCases: SessionQuizCase[] = [
+  {
+    name: "a narrow topic whose notes are used up: new angles or beyond the notes, no repeats (Missouri Compromise, simulated student)",
+    topic: "Missouri Compromise", expectedCount: 5, stretch: true, weakConcepts: [],
+    sources: [{ id: "mc-1", label: "Class notes", text: "Missouri Compromise (1820): Missouri admitted as a slave state, Maine as a free state, keeping 12–12 in the Senate. Slavery banned north of 36°30' in the rest of the Louisiana Purchase. Proposed by Henry Clay." }],
+    originalPrompts: [
+      "In what year was the Missouri Compromise passed?", "Which state entered as a free state under the Missouri Compromise?",
+      "Which state entered as a slave state under the Missouri Compromise?", "What latitude line did the Missouri Compromise set for slavery?",
+      "Who is credited with proposing the Missouri Compromise?", "What balance did the Missouri Compromise keep in the Senate?",
+      "Which territory's lands did the 36°30' line apply to?",
+    ],
+  },
   { name: "diagnostic respiration", topic: "Cellular respiration", sources: respiration, expectedCount: 8, originalPrompts: [], weakConcepts: [] },
   {
     name: "targeted retest membranes", topic: "Membranes and transport", sources: membranes, expectedCount: 5,
@@ -298,6 +311,35 @@ export interface QuizCheckCase {
 }
 
 export const quizCheckCases: QuizCheckCase[] = [
+  // D-147 (Dan: "1 and 2"): a covered fact from a clearly different angle is not a repeat; the same question reworded still is.
+  {
+    name: "same fact, new angle is kept; the same question reworded is dropped (Missouri Compromise)",
+    alreadyInSet: ["In what year was the Missouri Compromise passed?", "Which state entered the Union as a free state under the Missouri Compromise?"],
+    questions: [
+      { prompt: "Maine's admission as a free state in 1820 was paired with which state's admission as a slave state?", options: ["Missouri", "Arkansas", "Kentucky", "Louisiana"], answerIndex: 0, explanation: "The Missouri Compromise admitted Missouri as a slave state and Maine as a free state to keep the Senate balanced." },
+      { prompt: "The Missouri Compromise became law in which year?", options: ["1819", "1820", "1821", "1824"], answerIndex: 1, explanation: "Congress passed the Missouri Compromise in 1820." },
+      { prompt: "Why did admitting Missouri alone threaten the Senate in 1819?", options: ["It would give slave states a majority of Senate seats", "Missouri had too few people for statehood", "It would split the Louisiana Territory in two", "It required a constitutional amendment"], answerIndex: 0, explanation: "There were 11 free and 11 slave states; Missouri alone would tip the Senate to the slave states." },
+    ],
+    expected: [{ consistent: true, correctIndex: 0 }, { consistent: true, correctIndex: 1 }, { consistent: true, correctIndex: 0 }],
+    duplicates: { 1: -2 },
+  },
+  // D-147: a narrow-topic set (simulated students: "10 on Marbury v. Madison" ended at 6, later batches all flagged as repeats).
+  {
+    name: "a narrow topic: different facts about the same case are not repeats (US History, simulated student)",
+    alreadyInSet: [
+      "In Marbury v. Madison (1803), what power did the Supreme Court claim for itself?",
+      "Who was Chief Justice when Marbury v. Madison was decided?",
+      "Which President's 'midnight appointments' led to Marbury v. Madison?",
+      "Why did Marbury not receive his commission as justice of the peace?",
+    ],
+    questions: [
+      { prompt: "Which part of the Judiciary Act of 1789 did the Court strike down in Marbury v. Madison?", options: ["Section 13, which let the Court issue writs of mandamus in original jurisdiction", "Section 25, on appeals from state courts", "The creation of circuit courts", "The size of the Supreme Court"], answerIndex: 0, explanation: "The Court held Section 13 unconstitutionally expanded its original jurisdiction." },
+      { prompt: "Who was the Secretary of State Marbury sued to get his commission?", options: ["John Marshall", "James Madison", "Thomas Jefferson", "Albert Gallatin"], answerIndex: 1, explanation: "Marbury asked the Court to order Secretary of State James Madison to deliver it." },
+      { prompt: "What did the Supreme Court claim for itself in Marbury v. Madison, its power to strike down laws?", options: ["Judicial review", "Executive privilege", "Nullification", "Implied powers"], answerIndex: 0, explanation: "Marbury v. Madison established judicial review." },
+    ],
+    expected: [{ consistent: true, correctIndex: 0 }, { consistent: true, correctIndex: 1 }, { consistent: true, correctIndex: 0 }],
+    duplicates: { 2: -2 },
+  },
   // D-139: two keys the third simulated-students run caught (the student's answer was also right).
   {
     name: "two options answer it: 'which is second' with a 'first and second' option (Org Chem, simulated student)",

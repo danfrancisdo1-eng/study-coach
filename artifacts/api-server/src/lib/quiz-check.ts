@@ -23,19 +23,20 @@ export function parseQuizCheck(parsed: unknown, count: number): Map<number, KeyC
  * Applies the check: a question whose key disagrees with its explanation gets the key the
  * explanation supports; when the explanation names no clear option the question is dropped.
  */
-export function applyQuizCheck(questions: ProposedQuestion[], checks: Map<number, KeyCheck>): { kept: ProposedQuestion[]; fixed: number; dropped: number } {
+export function applyQuizCheck(questions: ProposedQuestion[], checks: Map<number, KeyCheck>): { kept: ProposedQuestion[]; fixed: number; dropped: number; repeats: number } {
   const kept: ProposedQuestion[] = [];
   let fixed = 0;
   let dropped = 0;
+  let repeats = 0; // D-147: dropped as a repeat (of this batch or of the set), counted apart from unclear keys
   questions.forEach((q, i) => {
     const check = checks.get(i);
-    if (check?.duplicateOf !== undefined) { dropped += 1; return; }
+    if (check?.duplicateOf !== undefined) { dropped += 1; repeats += 1; return; }
     if (!check || check.consistent || check.correctIndex === q.answerIndex) { kept.push(q); return; }
     if (check.correctIndex === null) { dropped += 1; return; }
     kept.push({ ...q, answerIndex: check.correctIndex });
     fixed += 1;
   });
-  return { kept, fixed, dropped };
+  return { kept, fixed, dropped, repeats };
 }
 
 // D-135 (simulated students): checks that need no AI.

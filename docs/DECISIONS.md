@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-147: When a topic's notes run out, new angles and knowledge beyond the notes (session-quiz.v10, quiz-check.v7)
+- Simulated students with the bank on: a 10 on Marbury v. Madison came out 6; logs (new "Question writer batch" line) showed later batches dropped almost whole by the answer checker as repeats: the notes held about a dozen facts and the writer could only reword them.
+- Dan chose 1 and 2: a top-up batch of a set that came up short (session-quiz.v10 "stretch") may test a covered fact from a clearly different angle (applied, reversed, cause or effect, comparison) or use established knowledge beyond the notes, its explanation starting "Beyond your notes:". Every other batch gets v9's text unchanged (adding the rule to all batches cost quality: 25/28 vs 21/21 for v9).
+- quiz-check.v7: a repeat is the same question (same ask and answer) or the same calculation with new numbers or names; a covered fact from a clearly different angle is not.
+- The bank fill stops after two batches in a row keep almost nothing (the material has no new questions left), instead of paying for questions that are thrown away.
+- The simulated students print each student's AI cost by task.
+- Result: two students rerun, every set at its full 10; repeats no longer empty the top-ups. Evals: session_quiz 7/8 and 8/8 (the miss: a 12-question answer to a 10-question ask, cut to 10 by the app), quiz_check 9/9 and 8/9 (a known key flake). Tests 242/242.
+- **Decided by:** Dan ("lets get right back to 1 and 2").
+
 ## 2026-10-18 — D-146: A set on misses gets only questions on the misses
 - Simulated students with the bank on (all 15 at 6–8 but one): a "lock in the serial position misses" set had none of them; the bank filled a focus set with other topics.
 - A missed-scope or daily set now takes only banked questions on the focus concepts; when there are too few to start it, the set is written on the misses as before.

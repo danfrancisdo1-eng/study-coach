@@ -2,9 +2,10 @@
 // a session. Moved verbatim from routes/study.ts (behavior-preserving refactor) so the
 // chat-first home (routes/chat.ts) can start question sets with the same code.
 import { randomUUID } from "node:crypto";
+import { logger } from "./logger";
 import { complete } from "../ai";
-import * as sessionQuizPrompt from "../prompts/session-quiz.v9";
-import * as quizCheckPrompt from "../prompts/quiz-check.v6";
+import * as sessionQuizPrompt from "../prompts/session-quiz.v10";
+import * as quizCheckPrompt from "../prompts/quiz-check.v7";
 import { applyQuizCheck, explanationProblem, keyFromExplanation, numericKey, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
 import { shuffleOptions } from "./shuffle-options";
 import * as flashcardsPrompt from "../prompts/flashcards.v3";
@@ -288,14 +289,16 @@ export interface GenerateQuizInput {
   sourceText: string;
   status: SourceStatus;
   sectionWeights?: { name: string; weight: number | null }[];
+  /** D-147: a top-up batch (the set came up short): new angles or knowledge beyond the notes. */
+  stretch?: boolean;
 }
 
 /**
  * One AI call plus validation of every proposed question. Returns null when no valid
  * question came back (the caller answers 502 and saves nothing). Throws on AI failure.
  */
-async function checkAnswerKeys(valid: ProposedQuestion[], alreadyInSet: string[] = []): Promise<{ kept: ProposedQuestion[]; fixed: number; dropped: number }> {
-  if (!valid.length) return { kept: valid, fixed: 0, dropped: 0 };
+async function checkAnswerKeys(valid: ProposedQuestion[], alreadyInSet: string[] = []): Promise<{ kept: ProposedQuestion[]; fixed: number; dropped: number; repeats: number }> {
+  if (!valid.length) return { kept: valid, fixed: 0, dropped: 0, repeats: 0 };
   try {
     const response = await complete("quiz_check", {
       system: quizCheckPrompt.systemPrompt(valid.length),
@@ -304,7 +307,7 @@ async function checkAnswerKeys(valid: ProposedQuestion[], alreadyInSet: string[]
     const parsed: unknown = response.text ? JSON.parse(response.text) : null;
     return applyQuizCheck(valid, parseQuizCheck(parsed, valid.length));
   } catch {
-    return { kept: valid, fixed: 0, dropped: 0 };
+    return { kept: valid, fixed: 0, dropped: 0, repeats: 0 };
   }
 }
 
@@ -315,7 +318,7 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
   // fill (same material, minutes apart) read it from Anthropic's cache at a tenth of the price.
   const response = await complete("session_quiz", {
     ...(input.sourceText.trim() ? { context: `SOURCE MATERIAL (the course's source snippets)\n${input.sourceText}` } : {}),
-    system: sessionQuizPrompt.systemPrompt({ expectedCount, originalPrompts, weakConcepts, status, sectionWeights: input.sectionWeights }),
+    system: sessionQuizPrompt.systemPrompt({ expectedCount, originalPrompts, weakConcepts, status, sectionWeights: input.sectionWeights, stretch: input.stretch }),
     messages: [{ role: "user", content: JSON.stringify({ courseId: input.courseId, topic: input.topic, sourceMaterial: input.sourceText.trim() ? "(given above, before these instructions)" : "" }) }],
   });
   const raw = response.text;
@@ -358,8 +361,10 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
   }
   // Answer-key consistency check (D-027): fix keys the explanation contradicts, drop unclear ones
   // and (D-135) repeats of an earlier question in the batch. A failed check keeps the set as written.
-  const { kept, dropped } = await checkAnswerKeys(screened, originalPrompts);
+  const { kept, dropped, repeats } = await checkAnswerKeys(screened, originalPrompts);
   invalidItemCount += dropped;
+  // D-147: where a batch loses questions (the writer, the format and repeat checks, the code checks, the answer checker).
+  logger.info({ asked: expectedCount, proposed: proposed.length, valid: valid.length, screened: screened.length, kept: kept.length, repeats, inSet: originalPrompts.length, topic: input.topic.slice(0, 80) }, "Question writer batch");
   // Option order (D-032): shuffled after the check, so the key isn't usually in slot A or B.
   const questions: StoredQuestion[] = kept.map((q) => shuffleOptions(q)).map((q) => {
     const options = q.options.map((text) => ({ id: randomUUID(), text }));
