@@ -2,7 +2,7 @@
 // only known action types, on the student's own courses, with bounded text and
 // numbers, get through. Pure functions so they can be unit-tested without a server.
 
-export type QuizScope = "all" | "missed";
+export type QuizScope = "all" | "missed" | "daily"; // "daily": the Next 10 (D-139)
 export type QuizKind = "practice" | "exam";
 export type CoachAction = {
   type: "create_course" | "start_quiz" | "start_flashcards" | "update_memory_sheet" | "update_course_notes" | "undo_course_notes" | "fix_upload_notes" | "start_session" | "lookup_exam_guide" | "web_search";
@@ -55,7 +55,7 @@ export function parseCoachReply(text: string | null): CoachReply | null {
       name: typeof name === "string" ? name : "",
       topic: typeof topic === "string" ? topic : "",
       ...(typeof count === "number" && Number.isFinite(count) ? { count } : {}),
-      ...(scope === "all" || scope === "missed" ? { scope } : {}),
+      ...(scope === "all" || scope === "missed" || scope === "daily" ? { scope } : {}),
       ...(kind === "practice" || kind === "exam" ? { kind } : {}),
       ...(courseKind === "course" || courseKind === "exam" ? { courseKind } : {}),
       ...(typeof examDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(examDate) ? { examDate } : {}),
@@ -151,12 +151,12 @@ export function planActions(courses: KnownCourse[], actions: CoachAction[]): Act
       const start = resolveStart(plan, courses, action);
       if (!start) continue;
       const requests = action.topic.split(/[;\n]/).map((t) => t.trim().replace(/\s+/g, " ")).filter((t) => t && t.toLowerCase() !== "general review").slice(0, 10);
-      plan.sheet = { courseId: start.courseId, ...("courseName" in start ? { courseName: start.courseName } : {}), scope: action.scope ?? (requests.length ? "all" : "missed"), requests };
+      plan.sheet = { courseId: start.courseId, ...("courseName" in start ? { courseName: start.courseName } : {}), scope: action.scope === "daily" ? "all" : action.scope ?? (requests.length ? "all" : "missed"), requests };
     } else if (action.type === "start_flashcards" && plan.deck === null && plan.quiz === null) {
       const start = resolveStart(plan, courses, action);
       if (!start) continue;
       const count = Math.min(MAX_DECK_COUNT, Math.max(1, Math.round(action.count ?? DEFAULT_DECK_COUNT)));
-      plan.deck = { ...start, count, scope: action.scope ?? "all" };
+      plan.deck = { ...start, count, scope: action.scope === "daily" ? "all" : action.scope ?? "all" };
     } else if (action.type === "start_quiz" && plan.quiz === null && plan.deck === null) {
       if (!action.kind) {
         plan.notes.push("start_quiz without practice/exam kind");
@@ -189,6 +189,10 @@ const PROMISE = /\b(first question|questions?|your (set|cards|deck|flashcards))\
 export function promisesSet(reply: string): boolean {
   return PROMISE.test(reply);
 }
+
+/** D-139: the chip that starts the next 10 of the day, and the message the app sends after a graded set. */
+export const NEXT_TEN = "Next 10";
+export const FINISHED_SET = "I finished the set.";
 
 export const NO_MISS_CHIPS = ["Another set on everything", "Harder questions", "Pick a new topic", "Flashcards on this topic"];
 /** After a set with no misses: drop chips about misses and offer next steps instead. */

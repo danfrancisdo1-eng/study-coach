@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-139: Daily reps are the study plan; review sheet one tap; score always known (coach.v26, quiz-check.v6)
+- Dan's plan (SPEC §8, signed): 100 questions a day, 10 at a time, wherever you are; what you miss today is tomorrow's 100, every day until 100/100; the day before the exam the coach offers the review PDF with the focus spots highlighted. A study plan the student uploaded is used instead.
+- "Next 10" always starts a 10-question practice set in the course chat (the app sets it even if the reply forgets): on the concepts missed on the last earlier study day, else all topics (weighted like the exam). The app adds the day's count to the coach's line after each graded set ("That's 40 of today's 100."; "100/100 today. You've got it.").
+- Days are the student's: the apps send their UTC offset (HomeChatInput.utcOffsetMinutes); the coach's "today" uses it too (it was UTC, so evenings in the US read as tomorrow).
+- The day before an exam, the first chat of the day says so and offers "Review sheet (PDF)"; that chip opens the review sheet in one tap (mobile: the review screen; web: a new printable review sheet tab, a copy of the mobile page's HTML).
+- Fixes from the third simulated-students run: the coach said "I don't see the score on my side" twice (v25's "don't claim to know their grade" read as the set score); a typed "timed practice exam" now points to the Simulated exam button; the checker drops a question with two right answers (an Org Chem and a CPA key); top-ups ask for 3 extra and run up to 4 rounds (a 50 ended at 44).
+- Evals: coach 60/60 then 59/60 (the miss: the judge objected to the required "All topics" chip); quiz_check 7/7 twice (two new two-right-answers cases). Tests 232/232. iOS bundle exports.
+- **Decided by:** Dan ("signed"; "10 at a time, total 100 questions a day"; "use their plan if they upload one").
+
 ## 2026-10-18 — D-138: No study plans; repeats across batches; full-size big sets (coach.v25, quiz-check.v5)
 - Study plans (Dan): there is no schedule. Asked for a plan, the coach says to keep doing questions over and over wherever you are (in line, between classes, on the bus, even sitting on the toilet) and offers "Quick 5", "Flashcards", "Memory tricks". "Quick 5" starts a 5-question practice set (missed topics if there are past misses, otherwise all topics). A moved exam date changes focus, not a plan.
 - From the third simulated-students run: the coach never says "spot on" to a wrong statement; step-by-step answers come one numbered step per line; a discouraged student is pointed to help named in the material (office hours, tutoring).

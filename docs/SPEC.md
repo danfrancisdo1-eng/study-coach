@@ -100,5 +100,14 @@ Voice chat; multiple parallel chats per course; teacher/group features.
 5. Retest scope + per-concept tracking (§6 steps 7–8).
 6. Course list layer refactor (move today's screens behind the chat).
 
-## 8. Open decisions
+## 8. Daily reps: the study plan — SIGNED by Dan 2026-10-18 (D-139)
+- Who: any student who asks for a study plan, a schedule, or how to study.
+- If they uploaded their own plan, the coach works from it. Otherwise: "100 questions a day, 10 at a time, whenever you have a minute: in line, between classes, on the bus, even sitting on the toilet. Whatever you miss today, tomorrow's 100 are on just those. Every day, until you get 100/100. The day before your exam, I'll make you a review PDF of everything, with the spots you need to focus on highlighted." Chips: Next 10, Flashcards, Memory tricks.
+- "Next 10" starts a 10-question practice set at once (no picking). The 10s focus on the concepts missed on the last earlier day the student studied this course; with none, all topics.
+- The coach's line after each graded set carries the day's count ("40 of today's 100"). A day with 100+ answered and none missed: "100/100 today. You've got it."; 100+ with misses: tomorrow's 10s are on today's misses.
+- Days are the student's local days (the app sends its UTC offset).
+- The day before an exam (a date in the course material or course facts), the first chat of that day says the exam is tomorrow and offers "Review sheet (PDF)", which opens the review sheet in one tap (mobile; the web gets a printable review sheet).
+- v1 does not: send reminders or notifications; track a goal across courses.
+
+## 9. Open decisions
 See the questions at the end of the session-1 summary, and DECISIONS.md.

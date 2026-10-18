@@ -69,7 +69,7 @@ export const coachSchema = object({
       topic: string,
       // start_quiz only: number of questions (1-50), which concepts, and practice vs exam.
       count: { type: "integer" },
-      scope: { type: "string", enum: ["all", "missed"] },
+      scope: { type: "string", enum: ["all", "missed", "daily"] },
       kind: { type: "string", enum: ["practice", "exam"] },
       // create_course only: a college course or a certification exam, with the exam date when known.
       courseKind: { type: "string", enum: ["course", "exam"] },

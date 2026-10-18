@@ -37,6 +37,7 @@ import { passMarkLine } from '@/lib/exam-sheet';
 const FINISHED_SET_MESSAGE = 'I finished the set.'; // sent for the student after Grade so the coach can respond to the result
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
 const SIM_EXAM_CHIP = 'Simulated exam'; // D-130: opens the timed sheet, not a chat message
+const REVIEW_CHIP = 'Review sheet (PDF)'; // D-139: opens the course's review sheet, not a chat message
 
 /**
  * Chat-first home (SPEC §7, D-016): the conversation is the app. The coach asks for the
@@ -300,7 +301,7 @@ export default function CoachHome() {
     if (!content || busy || !consented) return;
     setError('');
     try {
-      const result: HomeChat = await send.mutateAsync({ data: { content, version, ...(focusCourseId ? { courseId: focusCourseId } : {}), ...(timed ? { timedExam: { size: timed } } : {}) } });
+      const result: HomeChat = await send.mutateAsync({ data: { content, version, utcOffsetMinutes: -new Date().getTimezoneOffset(), ...(focusCourseId ? { courseId: focusCourseId } : {}), ...(timed ? { timedExam: { size: timed } } : {}) } });
       queryClient.setQueryData(chatKey, result);
       if (result.activeQuiz) { setGradedSessionId(null); setFinishedDeckId(null); } // a new set replaces the old cards
       if (result.activeDeck) { setFinishedDeckId(null); setGradedSessionId(null); }
@@ -408,8 +409,9 @@ export default function CoachHome() {
         <View style={styles.chipRow}>
           {chips.map((chip) => (
             <Pressable key={chip} accessibilityRole="button" disabled={busy}
-              onPress={() => (chip === SIM_EXAM_CHIP && focusCourse ? router.push({ pathname: '/course/[courseId]', params: { courseId: focusCourse.id, timed: '1' } }) : void sendText(chip))}
-              style={[styles.suggestion, busy && styles.disabled]} testID={chip === SIM_EXAM_CHIP ? 'button-suggestion-simulated' : 'button-suggestion'}>
+              onPress={() => (chip === SIM_EXAM_CHIP && focusCourse ? router.push({ pathname: '/course/[courseId]', params: { courseId: focusCourse.id, timed: '1' } })
+                : chip === REVIEW_CHIP && focusCourse ? router.push({ pathname: '/review/[courseId]', params: { courseId: focusCourse.id } }) : void sendText(chip))}
+              style={[styles.suggestion, busy && styles.disabled]} testID={chip === SIM_EXAM_CHIP ? 'button-suggestion-simulated' : chip === REVIEW_CHIP ? 'button-suggestion-review' : 'button-suggestion'}>
               <Text style={styles.suggestionText}>{chip}</Text>
             </Pressable>
           ))}
