@@ -6,18 +6,32 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { File, Paths } from 'expo-file-system';
 import { useCreateReviewSheet, type ReviewSheet } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { premiumCode } from '@/lib/premium-ui';
 import { reviewHtml } from '@/lib/review-html';
 import { goBack } from '@/lib/nav';
+import { ProgressBar, useElapsed } from '@/components/ProgressBar';
+import { estimate } from '@/lib/progress';
 
 /**
  * The review sheet (D-101, spec C): the course's key points, memory tricks and the student's
  * own misses by section, shown here first, then shared or saved as a PDF through the iPhone
  * share sheet (Files, Mail, AirDrop, Print). Written once per visit; counts as one set.
  */
+/** D-142: the PDF is shared under the sheet's title, not a random id; the random name if the copy fails. */
+async function named(uri: string, title: string): Promise<string> {
+  try {
+    const name = `${title.replace(/[^\p{L}\p{N} ._-]+/gu, '').trim().slice(0, 80) || 'Review sheet'}.pdf`;
+    const target = new File(Paths.cache, name);
+    if (target.exists) target.delete();
+    await new File(uri).copy(target);
+    return target.uri;
+  } catch { return uri; }
+}
+
 export default function ReviewSheetScreen() {
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -28,6 +42,7 @@ export default function ReviewSheetScreen() {
   const [sheet, setSheet] = useState<ReviewSheet | null>(null);
   const [error, setError] = useState('');
   const [sharing, setSharing] = useState(false);
+  const elapsed = useElapsed(create.isPending && !sheet);
 
   const build = async () => {
     if (!courseId) return;
@@ -46,12 +61,23 @@ export default function ReviewSheetScreen() {
 
   if (isLoaded && !isSignedIn) return <Redirect href="/" />;
 
+  // The PDF in iPhone's preview: the real pages, scroll and pinch to zoom (D-142). Opens by itself once written.
+  const [opening, setOpening] = useState(false);
+  const openPdf = async (next: ReviewSheet | null = sheet) => {
+    if (!next || opening) return;
+    setOpening(true); setError('');
+    try { await Print.printAsync({ html: reviewHtml(next) }); }
+    catch (problem) { setError(friendlyError(problem)); }
+    finally { setOpening(false); }
+  };
+  useEffect(() => { if (sheet) void openPdf(sheet); }, [sheet]);
+
   const share = async () => {
     if (!sheet || sharing) return;
     setSharing(true); setError('');
     try {
       const { uri } = await Print.printToFileAsync({ html: reviewHtml(sheet) });
-      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: sheet.title });
+      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(await named(uri, sheet.title), { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: sheet.title });
       else setError('Sharing is not available on this device.');
     } catch (problem) {
       setError(friendlyError(problem));
@@ -67,8 +93,8 @@ export default function ReviewSheetScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}>
         {create.isPending && !sheet ? (
           <View style={styles.waiting} testID="status-review-writing">
-            <ActivityIndicator color={colors.primaryText} />
-            <Text style={styles.muted}>Writing your review sheet from the official exam outline, your material and your results… this can take a minute or two.</Text>
+            {/* D-142 (Dan): a fill bar while it is written (about a minute and a half). */}
+            <ProgressBar fraction={estimate(elapsed, 90_000)} label="Writing your review sheet from your material and your results…" testID="progress-review-sheet" />
           </View>
         ) : null}
         {error ? (
@@ -77,60 +103,14 @@ export default function ReviewSheetScreen() {
             {!sheet ? <Pressable accessibilityRole="button" onPress={() => void build()} style={styles.secondary} testID="button-retry-review"><Text style={styles.secondaryText}>Try again</Text></Pressable> : null}
           </View>
         ) : null}
+        {/* D-142 (Dan: "open the actual pdf"): the sheet is shown as the PDF itself, in iPhone's preview
+            (scroll, pinch to zoom), not redrawn here (the redrawn "Remember it" box was unreadable). */}
         {sheet ? <>
           <Text style={styles.sheetTitle} accessibilityRole="header">{sheet.title}</Text>
           <Text style={styles.muted}>Built from {sheet.basedOn.materials ? 'your material' : 'general knowledge (no material yet)'}{sheet.basedOn.misses ? `, ${sheet.basedOn.misses} of your misses` : ''}{sheet.basedOn.memoryRows ? ` and your memory sheet` : ''}.</Text>
-          {sheet.subtitle ? <Text style={styles.body}>{sheet.subtitle}</Text> : null}
-          {sheet.facts.length ? (
-            <View style={styles.factsBox}>
-              {sheet.facts.map((f, k) => <View key={k} style={styles.factRow}><Text style={styles.factLabel}>{f.label}</Text><Text style={[styles.body, styles.flex]}>{f.value}</Text></View>)}
-            </View>
-          ) : null}
-          {sheet.glance.length ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle} accessibilityRole="header">Skills at a glance</Text>
-              {sheet.glance.map((g, k) => <View key={k} style={styles.factRow}><Text style={[styles.bodyBold, styles.flex]}>{k + 1}. {g.name}</Text><Text style={styles.weight}>{g.weight}</Text></View>)}
-              {sheet.priorityNote ? <Text style={styles.muted}>{sheet.priorityNote}</Text> : null}
-            </View>
-          ) : null}
-          {sheet.sections.map((s, i) => (
-            <View key={`${i}-${s.name}`} style={styles.section}>
-              <Text style={styles.sectionTitle} accessibilityRole="header">{i + 1}. {s.name}{s.weight ? `  ·  ${s.weight}` : ''}</Text>
-              {s.subsections.map((sub, j) => (
-                <View key={j} style={styles.sub}>
-                  {sub.title ? <Text style={styles.subTitle}>{sub.title}</Text> : null}
-                  {sub.items.map((it, k) => <View key={k} style={styles.bulletRow}><Text style={styles.body}>•</Text><Text style={[styles.body, styles.flex]}>{it.term ? <Text style={styles.bodyBold}>{it.term}: </Text> : null}{it.detail}</Text></View>)}
-                </View>
-              ))}
-              {s.contrasts.length || s.triggers.length || s.analogy ? (
-                <View style={styles.tricks}>
-                  <Text style={styles.kicker}>Remember it</Text>
-                  {s.contrasts.map((c, k) => <Text key={k} style={styles.trick}><Text style={styles.bodyBold}>{c.pair}: </Text>{c.trick}</Text>)}
-                  {s.analogy ? <Text style={[styles.trick, styles.italic]}>{s.analogy}</Text> : null}
-                  {s.triggers.map((t, k) => <Text key={k} style={styles.trick}>When you see {t.whenYouSee} → <Text style={styles.bodyBold}>{t.think}</Text></Text>)}
-                </View>
-              ) : null}
-              {s.misses.length ? (
-                <View style={styles.misses}>
-                  <Text style={styles.kicker}>You missed these</Text>
-                  {s.misses.map((m, k) => <View key={k} style={styles.miss}><Text style={styles.missQ}>{m.question}</Text><Text style={styles.missA}>Answer: {m.answer}</Text>{m.giveaway ? <Text style={styles.muted}>The giveaway: {m.giveaway}</Text> : null}</View>)}
-                </View>
-              ) : null}
-            </View>
-          ))}
-          {sheet.tips.length ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle} accessibilityRole="header">Exam tips</Text>
-              {sheet.tips.map((t, k) => <View key={k} style={styles.bulletRow}><Text style={styles.body}>•</Text><Text style={[styles.body, styles.flex]}>{t}</Text></View>)}
-            </View>
-          ) : null}
-          {sheet.decoder.length ? (
-            <View style={styles.decoder}>
-              <Text style={styles.decoderKicker}>Your decoder</Text>
-              <Text style={styles.decoderText}>{sheet.decoder.map((x) => `${x.cue} → ${x.answer}`).join('   ·   ')}</Text>
-            </View>
-          ) : null}
-          {sheet.sources.length ? <Text style={styles.muted}>Sources: {sheet.sources.map((x) => x.title).join('; ')}</Text> : null}
+          <Pressable accessibilityRole="button" disabled={opening} onPress={() => void openPdf()} style={({ pressed }) => [styles.secondary, pressed && styles.pressed, opening && styles.disabled]} testID="button-open-pdf">
+            <Text style={styles.secondaryText}>{opening ? 'Opening…' : 'Open the PDF'}</Text>
+          </Pressable>
         </> : null}
       </ScrollView>
       {sheet ? (
