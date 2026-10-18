@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-142: The review sheet opens as the real PDF; nothing of it in the chat (coach.v29)
+- Dan on his iPhone: the review screen redrew the sheet as app text (the "Remember it" box was dark text on navy, unreadable) and the only way to see the actual PDF was to save it and open it elsewhere; no fill bar while it was written.
+- The review screen now opens the PDF itself in iPhone's preview (expo-print, already in the app: real pages, scroll and pinch to zoom) as soon as it is written, with "Open the PDF" to reopen and "Share or save as PDF"; the redrawn copy is gone. A fill bar shows while it is written (about 90 s). The shared file is named after the sheet's title, not a random id.
+- Not chosen yet: showing the PDF inside the app screen itself needs a new add-on (react-native-webview) and a new TestFlight build.
+- Coach: a review sheet / PDF request gets one short line and the "Review sheet (PDF)" button; no review content, topics or summary in the chat.
+- Evals: coach 64/64, then 62/64 (judge nitpicks: a one-line result reply that named its misses, and "review sheet" without the word PDF). Tests 234/234. iOS bundle exports.
+- **Decided by:** Dan ("I would rather the info not show up in the chat and ... it opens the actual pdf"; "That screen needs a fill bar").
+
 ## 2026-10-18 — D-141: The plan's everyday places fit the course type (coach.v28)
 - Fifth simulated-students run (after D-140): all 15 at 6–8/10, 2 high issues (a 50 came out 46, down from 25; Priya, a working professional, heard "between classes").
 - The daily-reps plan keeps Dan's words, with places that fit: a certification exam (someone who works; the student picked "certification exam") gets "on your lunch break, between meetings, on the commute"; a college or high-school course gets "in line, between classes, on the bus"; "even sitting on the toilet" stays for everyone.

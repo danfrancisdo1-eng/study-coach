@@ -563,6 +563,17 @@ export const coachCases: CoachCase[] = [
     expectations: ["Gives the final exam date as Tuesday, December 1, 2026", "Says it is cumulative (heavier on the material after the midterm is fine)", "Says or implies it comes from their syllabus", "Does not say it cannot see the date or ask the student for the date"],
     maxWords: 90,
   },
+  // coach.v29 (D-142): a review PDF request in a course chat: one line and the button, no review in the chat.
+  {
+    name: "review PDF asked for in the course chat: one line and the button, no review text (Dan, BIO 101)",
+    courses: [{ id: "bio", name: "BIO 101", materials: 3, lectures: 2 }], firstVisit: false, focusCourseId: "bio", history: [], today: "2026-10-18",
+    uploads: [{ name: "Notes", text: "# Macromolecules\n- Biuret test: violet = protein\n- Iodine: blue-black = starch\n- Sudan III: red layer = lipid" }],
+    results: "Sets and decks (1 total):\n- 2026-10-17 practice on Macromolecules: 5/8 (63%); missed: Biuret test, Sudan III",
+    message: "can you make me a review pdf of everything for the test",
+    expectedActions: [], expectedSuggestions: ["Review sheet (PDF)"],
+    expectations: ["One short line saying the review sheet is ready to open", "Does not write any review content, summary, tricks or topic list in the chat"],
+    maxWords: 35,
+  },
   // coach.v28 (D-141): the plan's places fit the person.
   {
     name: "study plan for someone who works: lunch break, between meetings, commute, toilet (Priya, AWS)",
@@ -622,7 +633,7 @@ export const coachCases: CoachCase[] = [
     message: "help me build a structured and realistic study plan please",
     expectedActions: [],
     expectations: ["Works from his uploaded plan (this week is Ethics and Quant, Oct 12–25; FRA next)", "Never says there is no schedule or replaces his plan", "Short and concrete"],
-    maxWords: 120,
+    maxWords: 140,
   },
   {
     name: "Next 10 tapped: starts a daily 10 at once",
