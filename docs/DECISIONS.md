@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-146: A set on misses gets only questions on the misses
+- Simulated students with the bank on (all 15 at 6–8 but one): a "lock in the serial position misses" set had none of them; the bank filled a focus set with other topics.
+- A missed-scope or daily set now takes only banked questions on the focus concepts; when there are too few to start it, the set is written on the misses as before.
+- Tests: bank unit and e2e updated (a missed set of 2 is exactly the 2 misses).
+- **Decided by:** Dan ("ok push the misses fix").
+
 ## 2026-10-18 — D-145: Question bank per course, cost log per account, cached material for the writer
 - SPEC §9 ("a question bank per course before launch"). New tables question_bank and ai_cost (migration 0005, additive; plan docs/plans/2026-10-18-question-bank-migration-0005.md).
 - Sets on "All topics", missed concepts or the daily 10s come from the course's bank when it can start them (at least the first part): exact size, no writer call, nothing served in the last 12 hours, unseen first, then misses, then the longest-ago right answers; the day's misses first for a focus set; an exam's all-topics set spread by the guide weights. What the bank lacks is written as before. Topic sets are always written. Timed exams are written as before.

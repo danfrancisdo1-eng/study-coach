@@ -78,7 +78,8 @@ export function pickFromBank<Q>(entries: BankEntry<Q>[], options: PickOptions): 
       n -= 1;
     }
   };
-  if (focusSet.size) take(pool.filter((e) => focusSet.has(norm(e.concept))), count);
+  // D-146: a set on misses gets only questions on them; what the bank lacks is written on the misses.
+  if (focusSet.size) { take(pool.filter((e) => focusSet.has(norm(e.concept))), count); return picked; }
   const sections = options.sectionWeights ?? [];
   if (!focusSet.size && sections.length) {
     const counts = spread(sections, count);
