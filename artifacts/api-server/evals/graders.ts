@@ -301,7 +301,7 @@ export function gradeQuizCheck(testCase: QuizCheckCase, text: string | null): Sc
     if (got.consistent !== e.consistent || got.correctIndex !== want) notes.push(`q${i}: got ${JSON.stringify(got)}, wanted ${JSON.stringify({ consistent: e.consistent, correctIndex: want })}`);
     // D-135: repeats of an earlier question.
     const dup = testCase.duplicates?.[i];
-    if (dup !== undefined && got.duplicateOf !== dup) notes.push(`q${i}: should be flagged as a repeat of q${dup}`);
+    if (dup !== undefined && got.duplicateOf !== dup) notes.push(`q${i}: should be flagged as a repeat of ${dup === -2 ? "a question already in the set" : `q${dup}`}`);
     if (dup === undefined && got.duplicateOf !== undefined) notes.push(`q${i}: wrongly flagged as a repeat of q${got.duplicateOf}`);
   });
   const score = 1 - notes.length / testCase.expected.length;

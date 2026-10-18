@@ -15,9 +15,9 @@ import * as classicQuizPrompt from "../src/prompts/classic-quiz.v1";
 import * as examPlanPrompt from "../src/prompts/exam-plan.v1";
 import * as tutorPrompt from "../src/prompts/tutor.v3";
 import * as sessionQuizPrompt from "../src/prompts/session-quiz.v9";
-import * as quizCheckPrompt from "../src/prompts/quiz-check.v4";
+import * as quizCheckPrompt from "../src/prompts/quiz-check.v5";
 import * as imageOcrPrompt from "../src/prompts/image-ocr.v1";
-import * as coachPrompt from "../src/prompts/coach.v24";
+import * as coachPrompt from "../src/prompts/coach.v25";
 import * as courseNotesPrompt from "../src/prompts/course-notes.v1";
 import * as uploadNotesPrompt from "../src/prompts/upload-notes.v1";
 import * as lectureNotesPrompt from "../src/prompts/lecture-notes.v1";
@@ -162,7 +162,7 @@ async function main() {
     });
     if (tasks.includes("quiz_check")) for (const c of quizCheckCases) jobs.push({
       task: "quiz_check", name: c.name,
-      run: () => complete("quiz_check", { system: quizCheckPrompt.systemPrompt(c.questions.length), messages: [{ role: "user", content: JSON.stringify({ questions: c.questions.map((q, index) => ({ index, ...q })) }) }] }),
+      run: () => complete("quiz_check", { system: quizCheckPrompt.systemPrompt(c.questions.length), messages: [{ role: "user", content: JSON.stringify({ alreadyInSet: c.alreadyInSet ?? [], questions: c.questions.map((q, index) => ({ index, ...q })) }) }] }),
       grade: (text) => gradeQuizCheck(c, text),
     });
     if (tasks.includes("web_lookup")) for (const c of webLookupCases) jobs.push({

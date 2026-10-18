@@ -535,6 +535,7 @@ test('home chat: answer-key check fixes a wrong key and drops an unclear questio
     return { status: res.status, body: text ? JSON.parse(text) : null };
   };
 
+  const firstBatch = quizBatch + 1; // the first write; the top-up may already have started when the reply arrives
   let chat = await call('POST', '/study/chat', { content: 'practice', version: 0 });
   assert.equal(chat.status, 200, JSON.stringify(chat.body));
   const started = chat.body.messages.at(-1).actions[0];
@@ -544,7 +545,6 @@ test('home chat: answer-key check fixes a wrong key and drops an unclear questio
   assert.equal(sent.length, 4);
   assert.deepEqual(sent[0].options, ['A0', 'B0', 'C0', 'D0']);
   assert.equal(sent[0].answerIndex, 0);
-  const firstBatch = quizBatch;
   let session;
   for (let i = 0; i < 200; i += 1) { session = (await call('GET', `/study/sessions/${started.sessionId}`)).body; if (session.quiz.status === 'ready') break; await new Promise((r) => setTimeout(r, 50)); }
   assert.equal(session.quiz.invalidItemCount, 0);

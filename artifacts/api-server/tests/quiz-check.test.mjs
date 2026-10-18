@@ -82,3 +82,10 @@ test('explanationProblem catches more leaked reasoning', () => {
   assert.match(explanationProblem('Recomputing: 50 - 25 = 25 J, which is the value matching the first choice.'), /reasoning/);
   assert.match(explanationProblem('v = 6.3 m/s; check with values: ½(3.0)v² = 60.'), /reasoning/);
 });
+
+// D-138: a repeat of a question already in the set (an earlier batch) is reported as duplicateOf -2.
+test('parseQuizCheck reads duplicateOf -2 (repeats an earlier batch) and the question is dropped', () => {
+  const qs = [0, 1].map((i) => ({ prompt: `Q${i}`, options: ['A', 'B', 'C', 'D'], answerIndex: 0, concept: 'c', explanation: 'e' }));
+  const { kept } = applyQuizCheck(qs, parseQuizCheck({ checks: [{ index: 0, consistent: true, correctIndex: 0, duplicateOf: -2 }, { index: 1, consistent: true, correctIndex: 0, duplicateOf: -1 }] }, 2));
+  assert.deepEqual(kept.map((q) => q.prompt), ['Q1']);
+});

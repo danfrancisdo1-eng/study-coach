@@ -12,7 +12,8 @@ export function parseQuizCheck(parsed: unknown, count: number): Map<number, KeyC
     if (!Number.isInteger(c.index) || (c.index as number) < 0 || (c.index as number) >= count || typeof c.consistent !== "boolean") continue;
     const idx = Number.isInteger(c.correctIndex) && (c.correctIndex as number) >= 0 && (c.correctIndex as number) <= 4 ? (c.correctIndex as number) : null; // 4 or 5 options (D-035)
     // D-135: the checker also points at an earlier question in the batch that tests the same idea.
-    const dup = Number.isInteger(c.duplicateOf) && (c.duplicateOf as number) >= 0 && (c.duplicateOf as number) < (c.index as number) ? (c.duplicateOf as number) : undefined;
+    // D-138: -2 means it repeats a question already in the set (an earlier batch or the previous set).
+    const dup = c.duplicateOf === -2 ? -2 : Number.isInteger(c.duplicateOf) && (c.duplicateOf as number) >= 0 && (c.duplicateOf as number) < (c.index as number) ? (c.duplicateOf as number) : undefined;
     out.set(c.index as number, { consistent: c.consistent, correctIndex: idx, ...(dup !== undefined ? { duplicateOf: dup } : {}) });
   }
   return out;

@@ -4,7 +4,7 @@
 import { randomUUID } from "node:crypto";
 import { complete } from "../ai";
 import * as sessionQuizPrompt from "../prompts/session-quiz.v9";
-import * as quizCheckPrompt from "../prompts/quiz-check.v4";
+import * as quizCheckPrompt from "../prompts/quiz-check.v5";
 import { applyQuizCheck, explanationProblem, keyFromExplanation, numericKey, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
 import { shuffleOptions } from "./shuffle-options";
 import * as flashcardsPrompt from "../prompts/flashcards.v3";
@@ -294,12 +294,12 @@ export interface GenerateQuizInput {
  * One AI call plus validation of every proposed question. Returns null when no valid
  * question came back (the caller answers 502 and saves nothing). Throws on AI failure.
  */
-async function checkAnswerKeys(valid: ProposedQuestion[]): Promise<{ kept: ProposedQuestion[]; fixed: number; dropped: number }> {
+async function checkAnswerKeys(valid: ProposedQuestion[], alreadyInSet: string[] = []): Promise<{ kept: ProposedQuestion[]; fixed: number; dropped: number }> {
   if (!valid.length) return { kept: valid, fixed: 0, dropped: 0 };
   try {
     const response = await complete("quiz_check", {
       system: quizCheckPrompt.systemPrompt(valid.length),
-      messages: [{ role: "user", content: JSON.stringify({ questions: valid.map((q, index) => ({ index, prompt: q.prompt, options: q.options, answerIndex: q.answerIndex, explanation: q.explanation })) }) }],
+      messages: [{ role: "user", content: JSON.stringify({ alreadyInSet: alreadyInSet.slice(-60), questions: valid.map((q, index) => ({ index, prompt: q.prompt, options: q.options, answerIndex: q.answerIndex, explanation: q.explanation })) }) }],
     });
     const parsed: unknown = response.text ? JSON.parse(response.text) : null;
     return applyQuizCheck(valid, parseQuizCheck(parsed, valid.length));
@@ -355,7 +355,7 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
   }
   // Answer-key consistency check (D-027): fix keys the explanation contradicts, drop unclear ones
   // and (D-135) repeats of an earlier question in the batch. A failed check keeps the set as written.
-  const { kept, dropped } = await checkAnswerKeys(screened);
+  const { kept, dropped } = await checkAnswerKeys(screened, originalPrompts);
   invalidItemCount += dropped;
   // Option order (D-032): shuffled after the check, so the key isn't usually in slot A or B.
   const questions: StoredQuestion[] = kept.map((q) => shuffleOptions(q)).map((q) => {
