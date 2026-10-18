@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@clerk/expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { WebView } from 'react-native-webview';
 import { File, Paths } from 'expo-file-system';
 import { useCreateReviewSheet, type ReviewSheet } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
@@ -59,26 +60,39 @@ export default function ReviewSheetScreen() {
   };
   useEffect(() => { if (isSignedIn && courseId) void build(); }, [isSignedIn, courseId]);
 
+  // D-149 (Dan: "review the actual pdf before they decide to print or download it"): once written, the
+  // sheet is made into the PDF and shown right here (scroll, pinch to zoom); Print and Share sit below it.
+  const [pdfUri, setPdfUri] = useState<string | null>(null);
+  const [printing, setPrinting] = useState(false);
+  useEffect(() => {
+    if (!sheet) return;
+    let live = true;
+    void (async () => {
+      try {
+        const { uri } = await Print.printToFileAsync({ html: reviewHtml(sheet) });
+        const file = await named(uri, sheet.title);
+        if (live) setPdfUri(file);
+      } catch (problem) { if (live) setError(friendlyError(problem)); }
+    })();
+    return () => { live = false; };
+  }, [sheet]);
+
   if (isLoaded && !isSignedIn) return <Redirect href="/" />;
 
-  // The PDF in iPhone's preview: the real pages, scroll and pinch to zoom (D-142). Opens by itself once written.
-  const [opening, setOpening] = useState(false);
-  const openPdf = async (next: ReviewSheet | null = sheet) => {
-    if (!next || opening) return;
-    setOpening(true); setError('');
-    try { await Print.printAsync({ html: reviewHtml(next) }); }
-    // Closing the preview without printing is not an error (D-148: it showed "Something went wrong").
+  const print = async () => {
+    if (!pdfUri || printing) return;
+    setPrinting(true); setError('');
+    try { await Print.printAsync({ uri: pdfUri }); }
+    // Closing the print screen without printing is not an error (D-148).
     catch (problem) { if (!/did not complete|cancel/i.test(String((problem as Error)?.message ?? problem))) setError(friendlyError(problem)); }
-    finally { setOpening(false); }
+    finally { setPrinting(false); }
   };
-  useEffect(() => { if (sheet) void openPdf(sheet); }, [sheet]);
 
   const share = async () => {
-    if (!sheet || sharing) return;
+    if (!pdfUri || sharing) return;
     setSharing(true); setError('');
     try {
-      const { uri } = await Print.printToFileAsync({ html: reviewHtml(sheet) });
-      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(await named(uri, sheet.title), { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: sheet.title });
+      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(pdfUri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: sheet?.title ?? 'Review sheet' });
       else setError('Sharing is not available on this device.');
     } catch (problem) {
       setError(friendlyError(problem));
@@ -91,33 +105,32 @@ export default function ReviewSheetScreen() {
         <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => goBack()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
         <View style={styles.headerCopy}><Text style={styles.title} numberOfLines={1}>Review sheet</Text></View>
       </View>
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}>
-        {create.isPending && !sheet ? (
-          <View style={styles.waiting} testID="status-review-writing">
-            {/* D-142 (Dan): a fill bar while it is written (about a minute and a half). */}
-            <ProgressBar fraction={estimate(elapsed, 90_000)} label="Writing your review sheet from your material and your results…" testID="progress-review-sheet" />
-          </View>
-        ) : null}
-        {error ? (
-          <View style={styles.waiting}>
-            <Text style={styles.errorText} accessibilityRole="alert">{error}</Text>
-            {!sheet ? <Pressable accessibilityRole="button" onPress={() => void build()} style={styles.secondary} testID="button-retry-review"><Text style={styles.secondaryText}>Try again</Text></Pressable> : null}
-          </View>
-        ) : null}
-        {/* D-142 (Dan: "open the actual pdf"): the sheet is shown as the PDF itself, in iPhone's preview
-            (scroll, pinch to zoom), not redrawn here (the redrawn "Remember it" box was unreadable). */}
-        {sheet ? <>
-          <Text style={styles.sheetTitle} accessibilityRole="header">{sheet.title}</Text>
-          <Text style={styles.muted}>Built from {sheet.basedOn.materials ? 'your material' : 'general knowledge (no material yet)'}{sheet.basedOn.misses ? `, ${sheet.basedOn.misses} of your misses` : ''}{sheet.basedOn.memoryRows ? ` and your memory sheet` : ''}.</Text>
-          <Pressable accessibilityRole="button" disabled={opening} onPress={() => void openPdf()} style={({ pressed }) => [styles.secondary, pressed && styles.pressed, opening && styles.disabled]} testID="button-open-pdf">
-            <Text style={styles.secondaryText}>{opening ? 'Opening…' : 'Open the PDF'}</Text>
+      {pdfUri ? (
+        <WebView source={{ uri: pdfUri }} originWhitelist={['*']} allowingReadAccessToURL={pdfUri.slice(0, pdfUri.lastIndexOf('/') + 1)} style={[styles.pdf, { marginBottom: insets.bottom + 76 }]} testID="view-review-pdf" />
+      ) : (
+        <View style={styles.content}>
+          {!sheet && !error ? (
+            <View style={styles.waiting} testID="status-review-writing">
+              {/* D-142 (Dan): a fill bar while it is written (about a minute and a half). */}
+              <ProgressBar fraction={estimate(elapsed, 90_000)} label="Writing your review sheet from your material and your results…" testID="progress-review-sheet" />
+            </View>
+          ) : null}
+          {sheet && !error ? <View style={styles.waiting}><ActivityIndicator color={colors.primaryText} /></View> : null}
+        </View>
+      )}
+      {error ? (
+        <View style={[styles.content, styles.waiting]}>
+          <Text style={styles.errorText} accessibilityRole="alert">{error}</Text>
+          {!sheet ? <Pressable accessibilityRole="button" onPress={() => void build()} style={styles.secondary} testID="button-retry-review"><Text style={styles.secondaryText}>Try again</Text></Pressable> : null}
+        </View>
+      ) : null}
+      {pdfUri ? (
+        <View style={[styles.footer, styles.footerRow, { paddingBottom: insets.bottom + 12 }]}>
+          <Pressable accessibilityRole="button" disabled={printing} onPress={() => void print()} style={({ pressed }) => [styles.secondary, styles.footerButton, pressed && styles.pressed, printing && styles.disabled]} testID="button-print-pdf">
+            <Feather name="printer" size={18} color={colors.foreground} /><Text style={styles.secondaryText}>Print</Text>
           </Pressable>
-        </> : null}
-      </ScrollView>
-      {sheet ? (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
-          <Pressable accessibilityRole="button" disabled={sharing} onPress={() => void share()} style={({ pressed }) => [styles.primary, pressed && styles.pressed, sharing && styles.disabled]} testID="button-share-pdf">
-            {sharing ? <ActivityIndicator color={colors.primaryForeground} /> : <><Feather name="share" size={18} color={colors.primaryForeground} /><Text style={styles.primaryText}>Share or save as PDF</Text></>}
+          <Pressable accessibilityRole="button" disabled={sharing} onPress={() => void share()} style={({ pressed }) => [styles.primary, styles.footerButton, pressed && styles.pressed, sharing && styles.disabled]} testID="button-share-pdf">
+            {sharing ? <ActivityIndicator color={colors.primaryForeground} /> : <><Feather name="share" size={18} color={colors.primaryForeground} /><Text style={styles.primaryText}>Save or share</Text></>}
           </Pressable>
         </View>
       ) : null}
@@ -159,6 +172,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   missQ: { color: colors.foreground, fontSize: 14, lineHeight: 20, fontWeight: '600' },
   missA: { color: colors.correct, fontSize: 14, lineHeight: 20 },
   errorText: { color: colors.destructive, fontSize: 14, textAlign: 'center' },
+  pdf: { flex: 1, backgroundColor: colors.background },
+  footerRow: { flexDirection: 'row', gap: 10 },
+  footerButton: { flex: 1, flexDirection: 'row', gap: 8, minHeight: 52 },
   footer: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 18, paddingTop: 10, backgroundColor: colors.background, borderTopWidth: 1, borderTopColor: colors.border },
   primary: { minHeight: 52, flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
   primaryText: { color: colors.primaryForeground, fontSize: 16, fontWeight: '700' },

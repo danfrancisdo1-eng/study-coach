@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-149: The review sheet is shown as the real PDF in the app, then Print or Save or share
+- Dan: "I want them to be able to review the actual pdf ... before they decide to print it or download it." iPhone's print preview (D-142) opened a print screen.
+- New dependency (Dan's OK): react-native-webview 13.16.1 (Expo's matching version). The review screen makes the PDF and shows it right there (scroll, pinch to zoom), with Print and "Save or share" below. Needs a new development build and, later, a TestFlight build; the current Dev app cannot open the screen until then.
+- Web: the review sheet opens in a tab to read, with a "Print or save as PDF" bar (hidden when printing); it no longer jumps straight to the print dialog.
+- Also: the screen's hooks no longer come after its sign-in redirect (React's rule of hooks).
+- **Decided by:** Dan ("yes need the pdf viewer added").
+
 ## 2026-10-18 — D-148: "10 more: that's 25 of today's 100"; never "your daily 10" (coach.v30)
 - Dan on the Dev app: after a 10-question set the line read "That's 25 of today's 100" (earlier sets that day counted, which read as wrong), and the coach said "your daily 10 are in" (sounds like the plan is 10 a day).
 - The line now says what the set added when the day had earlier sets ("10 more: that's 25 of today's 100."). coach.v30: the plan is 100 a day, 10 at a time; a set is "10 more toward today's 100", never "your daily 10"; the coach never states the day's count (the app adds it).
