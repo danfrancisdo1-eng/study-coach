@@ -1,5 +1,21 @@
 # Progress
 
+## Session 12 — 2026-10-18 (Dan on the phone and at the Mac; Claude Code at the Mac)
+
+### Done
+- **First TestFlight build (5)** installed on Dan's iPhone (see Session 11 notes). Five old RapidRecall threads archived by Dan; this thread ("RapidRecall AI – main build", pinned) is the only one building.
+- **Simulated students (D-132):** `node sims/run.mjs` in artifacts/api-server; 15 personas use the real app logic end to end, graded by Claude Opus, HTML report in sims/reports.
+- Fixed from their findings: **full-size sets** (D-133), **cleaner questions** (D-135: no repeats in a batch, no leaked reasoning, no "closest to"), **coach flow** (D-136: a promised set is started, no misses chips after 10/10, chatty first message creates the course, one course needs no picking, saved dates not retracted), **math keys** (D-137: worked numbers decide; checker on Sonnet; first part retried).
+- Results: run 1 scores 4–9 (15 high issues); run 2 13 of 15 at 7–8 (8 high); rerun of six math-heavy students 6–8 with no wrong answer keys. Tests 224/224; evals coach 50/50, session_quiz 7/7, quiz_check 4/4.
+- Intro video decisions from the other thread logged as D-134 (waiting for Dan's edited cut).
+
+### Next (open findings, for Dan to choose)
+- Repeats across the separately written batches of a set (the AI repeat check only sees one batch); a 50 ended at 42 (top-ups capped) and the coach did not mention the shortfall.
+- The coach agreed with a wrong physics statement ("Spot on"); step-by-step math came as one run-on paragraph; "I'm failing" got reassurance without pointing to office hours.
+- Study-plan requests (a weekly plan, "update my plan") are not handled: the coach saves the date but builds no plan. A product decision.
+- Dan: rotate the OpenAI key on the stray line of artifacts/api-server/.env (printed in the session again on 2026-10-17).
+
+
 ## Session 11 — 2026-10-16 (Dan on the phone; Claude Code at the Mac)
 
 ### Done
