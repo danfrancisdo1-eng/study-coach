@@ -14,8 +14,8 @@ import * as syllabusPrompt from "../src/prompts/syllabus.v1";
 import * as classicQuizPrompt from "../src/prompts/classic-quiz.v1";
 import * as examPlanPrompt from "../src/prompts/exam-plan.v1";
 import * as tutorPrompt from "../src/prompts/tutor.v3";
-import * as sessionQuizPrompt from "../src/prompts/session-quiz.v9";
-import * as quizCheckPrompt from "../src/prompts/quiz-check.v6";
+import * as sessionQuizPrompt from "../src/prompts/session-quiz.v10";
+import * as quizCheckPrompt from "../src/prompts/quiz-check.v7";
 import * as imageOcrPrompt from "../src/prompts/image-ocr.v1";
 import * as coachPrompt from "../src/prompts/coach.v29";
 import * as courseNotesPrompt from "../src/prompts/course-notes.v1";
@@ -110,7 +110,7 @@ async function main() {
       run: () => complete("session_quiz", {
         // D-145: the material as a cached block before the instructions, as lib/session-quiz.ts sends it.
         ...(sourceText(c.sources).trim() ? { context: `SOURCE MATERIAL (the course's source snippets)\n${sourceText(c.sources)}` } : {}),
-        system: sessionQuizPrompt.systemPrompt({ expectedCount: c.expectedCount, originalPrompts: c.originalPrompts, weakConcepts: c.weakConcepts, status: { coverage: c.sources.length ? "complete" : "none", truncated: false }, sectionWeights: c.sectionWeights }),
+        system: sessionQuizPrompt.systemPrompt({ expectedCount: c.expectedCount, originalPrompts: c.originalPrompts, weakConcepts: c.weakConcepts, status: { coverage: c.sources.length ? "complete" : "none", truncated: false }, sectionWeights: c.sectionWeights, stretch: c.stretch }),
         messages: [{ role: "user", content: JSON.stringify({ courseId: "eval", topic: c.topic, sourceMaterial: sourceText(c.sources).trim() ? "(given above, before these instructions)" : "" }) }],
       }),
       grade: (text) => gradeSessionQuiz(c, text),

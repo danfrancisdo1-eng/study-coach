@@ -447,14 +447,18 @@ async function fillBank(ownerId: string, courseId: string): Promise<void> {
     const prompts = entries.map((e) => e.question.prompt);
     const batches: Batch[] = sections.length ? examBatches(sections, need).filter((b) => b.count > 0) : splitCount(need).map((count) => ({ section: null, count }));
     let added = 0;
+    let dry = 0; // D-147: batches in a row that kept almost nothing: the material has no new questions left
     for (const batch of batches) {
+      if (dry >= 2) { log.info({ added }, "Question bank: the material has no new questions left; stopping"); break; }
       try {
         const part = await generateSessionQuiz({
           courseId, topic: "All topics", kind: "practice", mode: "diagnostic", expectedCount: Math.min(BANK_BATCH, batch.count),
           originalPrompts: prompts.slice(-60), weakConcepts: [], sourceText: sourceTextOf(chunks), status, ...(batch.section ? { sectionWeights: batchWeights(batch) } : {}),
         });
         const fresh = withoutNearDuplicates(part?.questions ?? [], prompts);
-        added += await addToBank(ownerId, courseId, fresh, { served: false, section: batch.section });
+        const kept = await addToBank(ownerId, courseId, fresh, { served: false, section: batch.section });
+        added += kept;
+        dry = kept < 2 ? dry + 1 : 0;
         prompts.push(...fresh.map((q) => q.prompt));
       } catch (error) {
         log.warn({ error: error instanceof Error ? error.message.slice(0, 200) : "Unknown error" }, "Question bank: a batch failed");
@@ -486,7 +490,7 @@ async function bankWritten(ownerId: string, courseId: string, questions: StoredQ
 async function writeRestOfSet(ownerId: string, sessionId: string, input: GenerateQuizInput, carried: StoredQuestion[], planned: Batch[], timed = false): Promise<void> {
   const log = logger.child({ ownerId, sessionId });
   const prompts = [...input.originalPrompts];
-  const queue = [...planned];
+  const queue: (Batch & { topUp?: boolean })[] = [...planned];
   let topUps = 0;
   let firstLoop = true;
   while (queue.length || firstLoop) {
@@ -496,7 +500,7 @@ async function writeRestOfSet(ownerId: string, sessionId: string, input: Generat
     if (batch) {
       for (let attempt = 0; attempt < BATCH_TRIES && !added.length; attempt += 1) {
         try {
-          const part = await generateSessionQuiz({ ...input, expectedCount: batch.count, originalPrompts: prompts, ...(timed ? { sectionWeights: batchWeights(batch) } : {}) });
+          const part = await generateSessionQuiz({ ...input, expectedCount: batch.count, originalPrompts: prompts, ...(timed ? { sectionWeights: batchWeights(batch) } : {}), ...(batch.topUp ? { stretch: true } : {}) });
           added = part?.questions ?? [];
         } catch (error) {
           log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error", attempt: attempt + 1 }, "Home chat: a batch of the set failed");
@@ -536,7 +540,7 @@ async function writeRestOfSet(ownerId: string, sessionId: string, input: Generat
       return;
     }
     if (finished) return;
-    if (!queue.length && shortBy > 0) { topUps += 1; queue.push({ section: null, count: Math.min(MAX_BATCH, shortBy + TOP_UP_EXTRA) }); }
+    if (!queue.length && shortBy > 0) { topUps += 1; queue.push({ section: null, count: Math.min(MAX_BATCH, shortBy + TOP_UP_EXTRA), topUp: true }); } // D-147: new angles or beyond the notes
   }
 }
 
