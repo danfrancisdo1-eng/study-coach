@@ -366,7 +366,11 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
   // A timed exam is written section by section in batches (D-114); other sets in two parts (D-052).
   const firstBatch = timed?.batches[0];
   const firstCount = firstBatch ? firstBatch.count : plan.count >= SPLIT_FROM ? FIRST_PART : plan.count;
-  const quiz: Quiz | null = await generateSessionQuiz({ ...input, expectedCount: firstCount, ...(firstBatch ? { sectionWeights: batchWeights(firstBatch) } : {}) });
+  // D-137: one more try before the student sees an error (a simulated student got a 502).
+  const writeFirst = () => generateSessionQuiz({ ...input, expectedCount: firstCount, ...(firstBatch ? { sectionWeights: batchWeights(firstBatch) } : {}) });
+  let quiz: Quiz | null = null;
+  try { quiz = await writeFirst(); } catch (error) { logger.warn({ error: error instanceof Error ? error.message.slice(0, 200) : "Unknown error" }, "Home chat: first part of a set failed; trying once more"); }
+  if (!quiz) quiz = await writeFirst();
   if (!quiz) return null;
   const rest = plan.count - firstCount;
   const missing = firstCount - quiz.questions.length; // dropped by the checks: topped up below

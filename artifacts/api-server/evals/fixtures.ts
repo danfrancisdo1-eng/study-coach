@@ -297,6 +297,17 @@ export interface QuizCheckCase {
 
 export const quizCheckCases: QuizCheckCase[] = [
   {
+    name: "AP Physics keys that disagree with the worked numbers (simulated student Ethan)",
+    questions: [
+      { prompt: "A 0.50 kg block at 4.0 m/s hits a spring (k = 200 N/m) on a frictionless floor. If the block's speed were doubled, the maximum compression would:", options: ["Stay the same", "Increase by a factor of √2", "Double", "Quadruple"], answerIndex: 1, explanation: "½mv² = ½kx², so x is proportional to v. Doubling the speed quadruples the energy, but compression only doubles." },
+      { prompt: "A spring launcher stores 9 times as much energy when compressed farther. The launch speed is multiplied by:", options: ["9", "3", "√3", "81"], answerIndex: 2, explanation: "Speed goes with the square root of energy, so speed is multiplied by the square root of 9, which is 3." },
+      { prompt: "A 1.2 kg cart compresses a 150 N/m spring after sliding down a 0.80 m frictionless ramp from rest. Maximum compression?", options: ["0.10 m", "0.20 m", "0.25 m", "0.50 m"], answerIndex: 0, explanation: "mgh = ½kx²: 1.2(9.8)(0.80) = 9.4 J ≈ 75x², so 150x² ≈ 9.6 doubled… x² = 0.064, giving x ≈ 0.25 m." },
+      { prompt: "A cart gains 4 times its kinetic energy. Its speed is multiplied by:", options: ["2", "4", "8", "16"], answerIndex: 0, explanation: "KE goes with v², so 4 times the energy means √4 = 2 times the speed." },
+    ],
+    expected: [{ consistent: false, correctIndex: 2 }, { consistent: false, correctIndex: 1 }, { consistent: false, correctIndex: 2 }, { consistent: true, correctIndex: 0 }],
+    duplicates: { 3: 1 }, // both test "speed goes with the square root of energy"
+  },
+  {
     name: "a reworded repeat of an earlier question is flagged (simulated students: PMP and Psych sets)",
     questions: [
       { prompt: "On a power-interest grid, a stakeholder with high power and low interest should be:", options: ["Managed closely", "Kept satisfied", "Kept informed", "Monitored"], answerIndex: 1, explanation: "High power, low interest: keep satisfied so they don't become blockers." },

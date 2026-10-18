@@ -64,3 +64,21 @@ test('parseQuizCheck reads duplicateOf; applyQuizCheck drops a repeat of an earl
   assert.deepEqual(kept.map((q) => q.prompt), ['Q0', 'Q2'], 'a duplicateOf pointing at itself or later is ignored');
   assert.equal(dropped, 1);
 });
+
+// D-137 (AP Physics simulated student): keys that disagree with the worked numbers.
+import { numericKey } from '../src/lib/quiz-check.ts';
+
+test('numericKey re-keys to the option whose number the worked solution reaches, or drops', () => {
+  const base = { prompt: 'Compression?', concept: 'springs', hook: 'h' };
+  assert.equal(numericKey({ ...base, options: ['0.10 m', '0.25 m', '0.40 m', '0.50 m'], answerIndex: 0, explanation: '150x² = 9.6, x² = 0.064, giving x ≈ 0.25 m.' }), 1);
+  assert.equal(numericKey({ ...base, options: ['12.5 J', '25 J', '50 J', '75 J'], answerIndex: 0, explanation: 'The difference, 25 J, went to thermal energy.' }), 1);
+  assert.equal(numericKey({ ...base, options: ['0.10 m', '0.20 m', '0.40 m', '0.50 m'], answerIndex: 1, explanation: 'x² = 0.05, so x ≈ 0.224 m.' }), 'drop', 'the worked value is in no option');
+  assert.equal(numericKey({ ...base, options: ['0.10 m', '0.25 m', '0.40 m', '0.50 m'], answerIndex: 1, explanation: 'x ≈ 0.25 m.' }), null, 'already right');
+  assert.equal(numericKey({ ...base, options: ['Osmosis', 'Diffusion', 'Pump', 'Endocytosis'], answerIndex: 0, explanation: 'Water moves.' }), null, 'no numbers: not judged');
+  assert.equal(numericKey({ ...base, options: ['2 times', '4 times', '8 times', '16 times'], answerIndex: 1, explanation: 'KE goes with v², so doubling v makes it 4 times as large; 2 times would be linear.' }), null, 'both numbers mentioned: leave it to the AI check');
+});
+
+test('explanationProblem catches more leaked reasoning', () => {
+  assert.match(explanationProblem('Recomputing: 50 - 25 = 25 J, which is the value matching the first choice.'), /reasoning/);
+  assert.match(explanationProblem('v = 6.3 m/s; check with values: ½(3.0)v² = 60.'), /reasoning/);
+});

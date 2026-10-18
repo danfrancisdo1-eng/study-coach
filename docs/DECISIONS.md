@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-137: Math keys checked against the worked numbers (quiz-check.v4 on Sonnet)
+- Second simulated-students run: 13 of 15 at 7–8/10 (from mostly 5–6), high issues 15 → 8; but AP Physics scored 3/10: several keys disagreed with their own worked solutions ("x ≈ 0.25 m", key 0.10 m; "25 J went to thermal", key 12.5 J; "square root of 9, which is 3", key √3), so a right answer was graded wrong and the coach coached the wrong concepts. Haiku's explanation-only check missed them.
+- A code check (numericKey): when the explanation's numbers reach exactly one other option, the key moves there; when they reach no option (all options numeric), the question is dropped and topped up. More leaked-reasoning patterns ("Recomputing…", "check with values", "the value matching the first choice"). quiz-check.v4 redoes the explanation's arithmetic and now runs on Sonnet (low effort; about 1.5¢ per batch). A failed first part of a set is tried once more before the student sees an error (a 502 in the run).
+- Evals: quiz_check 4/4 twice (new: Ethan's four physics items; the two "speed ∝ √energy" items correctly flagged as repeats); session_quiz 7/7 twice. Tests: 2 unit.
+
 ## 2026-10-18 — D-136: Coach flow fixes from the simulated students (coach.v24)
 - A reply that promises a set ("the first question is coming up") without a start_quiz/start_flashcards action is asked again once by the app with a note, and the second reply is used (Maya's coach promised three times and nothing appeared). promisesSet in routes/chatActions.ts.
 - After a graded set with nothing missed, chips about misses are replaced by "Another set on everything", "Harder questions", "Pick a new topic", "Flashcards on this topic" (code, withoutMissChips), and coach.v24 says the same (Aiden got 10/10 and two dead ends).

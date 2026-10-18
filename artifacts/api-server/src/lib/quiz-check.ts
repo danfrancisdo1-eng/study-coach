@@ -38,7 +38,7 @@ export function applyQuizCheck(questions: ProposedQuestion[], checks: Map<number
 }
 
 // D-135 (simulated students): checks that need no AI.
-const REASONING = /\b(but wait|wait[:,]|let me (re)?check|re-?check|recompute|re-?calculat|must be recomputed|on second thought|the key must|so the key|answer key|answerIndex|option index)\b|^check:/i;
+const REASONING = /\b(but wait|wait[:,]|let me (re)?check|re-?check|recomput\w*|re-?calculat\w*|on second thought|the key must|so the key|answer key|answerIndex|option index|check with (the )?values|matching the (first|second|third|fourth|fifth|last) (choice|option))\b|^check:/i;
 const APPROXIMATE = /\bclosest to\b|\bnearest (option|choice|answer)\b|\bapproximately matches\b/i;
 
 /** A problem with an explanation that disqualifies the question: the writer's reasoning leaked into it, or the key is only "closest to" the computed answer. */
@@ -60,4 +60,22 @@ export function keyFromExplanation(q: ProposedQuestion): number | null {
   if (said(q.options[q.answerIndex] ?? "")) return null;
   const named = q.options.map((o, i) => (o.trim().length >= 2 && said(o) ? i : -1)).filter((i) => i >= 0);
   return named.length === 1 ? named[0]! : null;
+}
+
+// D-137 (AP Physics simulated student): a worked solution that reaches one option's number
+// while the key points at another ("x ≈ 0.25 m", key 0.10 m; "25 J went to thermal", key 12.5 J).
+const NUM = /\d+(?:[.,]\d+)?/g;
+const norm = (n: string) => { const v = Number(n.replace(/,/g, "")); return Number.isFinite(v) ? String(v) : n; };
+const numbersIn = (text: string) => new Set((text.match(NUM) ?? []).map(norm));
+/** The option index the worked numbers support (re-key), "drop" when the worked value is in no option, or null to leave it to the AI check. */
+export function numericKey(q: ProposedQuestion): number | "drop" | null {
+  const worked = numbersIn(q.explanation);
+  if (!worked.size) return null;
+  const optionNumbers = q.options.map((o) => [...numbersIn(o)]);
+  if (!optionNumbers[q.answerIndex]?.length) return null;
+  const reached = (i: number) => optionNumbers[i]!.length > 0 && optionNumbers[i]!.every((n) => worked.has(n));
+  if (reached(q.answerIndex)) return null;
+  const others = q.options.map((_, i) => i).filter((i) => i !== q.answerIndex && reached(i));
+  if (others.length === 1) return others[0]!;
+  return others.length === 0 && optionNumbers.every((n) => n.length > 0) ? "drop" : null;
 }
