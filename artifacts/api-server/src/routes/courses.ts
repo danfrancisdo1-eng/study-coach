@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request } from "express";
 import { and, eq, TransactionRollbackError } from "drizzle-orm";
-import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable } from "@workspace/db";
+import { db, homeChatsTable, lecturesTable, questionBankTable, studySessionsTable, studyStatesTable } from "@workspace/db";
 import { requireStudyAuth } from "./study";
 import { lookupExamGuide, type ExamGuide } from "../lib/exam-guide";
 import { saveExamFacts, saveExamGuide } from "../lib/exam-guide-state";
@@ -171,6 +171,7 @@ router.delete("/study/courses/:courseId", async (req, res): Promise<void> => {
         tx.rollback();
       }
       await tx.delete(homeChatsTable).where(and(eq(homeChatsTable.ownerId, ownerId), eq(homeChatsTable.courseId, courseId))); // its chat thread (D-038)
+      await tx.delete(questionBankTable).where(and(eq(questionBankTable.ownerId, ownerId), eq(questionBankTable.courseId, courseId))); // its question bank (D-145)
       const lectures = await tx.delete(lecturesTable)
         .where(and(eq(lecturesTable.ownerId, ownerId), eq(lecturesTable.courseId, courseId)))
         .returning({ id: lecturesTable.id });

@@ -108,8 +108,10 @@ async function main() {
     if (tasks.includes("session_quiz")) for (const c of sessionQuizCases) jobs.push({
       task: "session_quiz", name: c.name,
       run: () => complete("session_quiz", {
+        // D-145: the material as a cached block before the instructions, as lib/session-quiz.ts sends it.
+        ...(sourceText(c.sources).trim() ? { context: `SOURCE MATERIAL (the course's source snippets)\n${sourceText(c.sources)}` } : {}),
         system: sessionQuizPrompt.systemPrompt({ expectedCount: c.expectedCount, originalPrompts: c.originalPrompts, weakConcepts: c.weakConcepts, status: { coverage: c.sources.length ? "complete" : "none", truncated: false }, sectionWeights: c.sectionWeights }),
-        messages: [{ role: "user", content: JSON.stringify({ courseId: "eval", topic: c.topic, sourceMaterial: sourceText(c.sources) }) }],
+        messages: [{ role: "user", content: JSON.stringify({ courseId: "eval", topic: c.topic, sourceMaterial: sourceText(c.sources).trim() ? "(given above, before these instructions)" : "" }) }],
       }),
       grade: (text) => gradeSessionQuiz(c, text),
     });

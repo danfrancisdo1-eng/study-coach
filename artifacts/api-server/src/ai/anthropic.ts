@@ -75,9 +75,11 @@ export async function anthropicCompletion(
     : { timeout: request.timeoutMs, maxRetries: request.maxRetries };
   const body = anthropicBody(request);
   let response = await anthropic().beta.messages.create(body, options);
-  const usage = { inputTokens: 0, outputTokens: 0 };
+  const usage = { inputTokens: 0, outputTokens: 0, cachedInputTokens: 0, cacheWriteTokens: 0 };
   const add = (r: typeof response) => {
     usage.inputTokens += r.usage.input_tokens + (r.usage.cache_read_input_tokens ?? 0) + (r.usage.cache_creation_input_tokens ?? 0);
+    usage.cachedInputTokens += r.usage.cache_read_input_tokens ?? 0; // D-145: priced apart in the cost log
+    usage.cacheWriteTokens += r.usage.cache_creation_input_tokens ?? 0;
     usage.outputTokens += r.usage.output_tokens;
   };
   add(response);

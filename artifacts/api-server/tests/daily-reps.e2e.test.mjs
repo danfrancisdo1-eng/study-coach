@@ -25,7 +25,7 @@ test('daily reps: the day count after a set, and the next day\'s 10 on yesterday
   let coach = { reply: 'Set coming.', suggestions: [], actions: [{ type: 'start_quiz', name: 'bio', topic: 'cells', count: 4, kind: 'practice', scope: 'all' }] };
   const ai = await startAiStub(t, (request) => {
     const system = request.body.messages[0].content;
-    if (system.startsWith('Create exactly')) return quizReply(Number(/^Create exactly (\d+)/.exec(system)[1]));
+    if (system.includes('Create exactly')) return quizReply(Number(/Create exactly (\d+)/.exec(system)[1]));
     if (system.startsWith('You check the answer key')) return chatReply(JSON.stringify({ checks: [] }));
     return chatReply(JSON.stringify(coach));
   });
@@ -71,7 +71,7 @@ test('daily reps: the day count after a set, and the next day\'s 10 on yesterday
   assert.equal(next.count, 10);
   assert.equal(next.topic, 'concept-0; concept-2');
   assert.match(coachSystem(), /0 of 100 questions done today, 0 right; the 10s today focus on what was missed on \d{4}-\d{2}-\d{2}: concept-0, concept-2/);
-  const writer = ai.requests.filter((r) => r.body.messages[0].content.startsWith('Create exactly')).at(-1).body.messages[0].content;
+  const writer = ai.requests.filter((r) => r.body.messages[0].content.includes('Create exactly')).at(-1).body.messages[0].content;
   assert.match(writer, /concept-0/);
   assert.match(writer, /concept-2/);
 });

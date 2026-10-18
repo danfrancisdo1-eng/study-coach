@@ -90,7 +90,7 @@ async function runPersona(p) {
   const started = Date.now();
   try {
     const database = await startDatabase(t);
-    const { base, signToken } = await startServer(t, 1, {
+    const { base, signToken } = await startServer(t, 1, { QUESTION_BANK: "1",
       DATABASE_URL: database.url,
       AI_PROVIDER: 'anthropic',
       ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
@@ -216,7 +216,11 @@ async function runPersona(p) {
     if (!done.has(1)) problems.push({ severity: 'medium', category: 'flow', quote: '', problem: 'The student never got a practice set started and finished within the turns.' });
     const state = (await api('GET', '/study/state')).body.state;
     const course = state.courses.find((c) => c.id === courseId);
-    return { persona: p, log, problems, materials: m, courseNotes: course?.notes?.text ?? '', seconds: Math.round((Date.now() - started) / 1000) };
+    // D-145: what this student cost in AI (from the server's own cost log) and how many questions they answered.
+    await new Promise((r) => setTimeout(r, 20_000)); // let background work (bank fill, notes) land in the log
+    const cost = (await database.db.query('select coalesce(sum(cost_micros), 0) as micros from ai_cost where owner_id = $1', [user])).rows[0];
+    const answered = log.filter((x) => x.role === 'app' && / set: \d+ questions/.test(x.text)).reduce((n, x) => n + Number(/ set: (\d+) questions/.exec(x.text)[1]), 0);
+    return { persona: p, log, problems, materials: m, courseNotes: course?.notes?.text ?? '', seconds: Math.round((Date.now() - started) / 1000), costDollars: Number(cost.micros) / 1e6, answered };
   } catch (error) {
     problems.push({ severity: 'high', category: 'crash', quote: '', problem: `The run stopped: ${error instanceof Error ? error.message : String(error)}` });
     return { persona: p, log, problems, materials: m, courseNotes: '', seconds: Math.round((Date.now() - started) / 1000) };
@@ -303,7 +307,7 @@ await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
     const run = await runPersona(p);
     const g = await grade(run);
     results.push({ ...run, grade: g });
-    console.log(`  ${p.name}: ${g.score}/10, ${g.issues.filter((i) => i.severity === 'high').length} high, ${g.issues.filter((i) => i.severity === 'medium').length} medium, ${g.issues.filter((i) => i.severity === 'low').length} low (${run.seconds} s)`);
+    console.log(`  ${p.name}: ${g.score}/10, ${g.issues.filter((i) => i.severity === 'high').length} high, ${g.issues.filter((i) => i.severity === 'medium').length} medium, ${g.issues.filter((i) => i.severity === 'low').length} low (${run.seconds} s)${run.costDollars !== undefined ? `, AI cost $${run.costDollars.toFixed(2)} for ${run.answered} questions answered` : ''}`);
   }
 }));
 results.sort((a, b) => chosen.indexOf(a.persona.id) - chosen.indexOf(b.persona.id));

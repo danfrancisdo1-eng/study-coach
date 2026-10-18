@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { recordResults } from "../lib/bank-store";
+import { aiOwner } from "../lib/ai-owner";
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { getAuth } from "@clerk/express";
 import { and, desc, eq } from "drizzle-orm";
@@ -661,7 +663,8 @@ export function requireStudyAuth(req: Request, res: Response, next: NextFunction
     return;
   }
   req.studyOwnerId = userId;
-  next();
+  // D-145: AI calls made for this request (and the background work it starts) are logged to this account.
+  aiOwner.run(userId, () => next());
 }
 
 router.use("/study", requireStudyAuth);
@@ -1416,6 +1419,8 @@ router.post("/study/sessions/:id/grade", async (req, res): Promise<void> => {
   }
   res.json(safeSession(session));
   rememberMisses(owner(req), session, req.log);
+  // D-145: each answered question's result goes back to the course's question bank.
+  if (session.quiz) void recordResults(owner(req), session.courseId, session.quiz.questions).catch((error) => req.log.warn({ error: error instanceof Error ? error.message.slice(0, 200) : "Unknown error" }, "Question bank: results not recorded"));
 });
 
 export default router;

@@ -311,9 +311,12 @@ async function checkAnswerKeys(valid: ProposedQuestion[], alreadyInSet: string[]
 export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Quiz | null> {
   const { expectedCount, originalPrompts, weakConcepts, status } = input;
   const usedPrompts = new Set(originalPrompts.map((prompt) => prompt.trim().toLowerCase().replace(/\s+/g, " ")));
+  // D-145: the course material goes first as its own block, so the batches of a set and of a bank
+  // fill (same material, minutes apart) read it from Anthropic's cache at a tenth of the price.
   const response = await complete("session_quiz", {
+    ...(input.sourceText.trim() ? { context: `SOURCE MATERIAL (the course's source snippets)\n${input.sourceText}` } : {}),
     system: sessionQuizPrompt.systemPrompt({ expectedCount, originalPrompts, weakConcepts, status, sectionWeights: input.sectionWeights }),
-    messages: [{ role: "user", content: JSON.stringify({ courseId: input.courseId, topic: input.topic, sourceMaterial: input.sourceText }) }],
+    messages: [{ role: "user", content: JSON.stringify({ courseId: input.courseId, topic: input.topic, sourceMaterial: input.sourceText.trim() ? "(given above, before these instructions)" : "" }) }],
   });
   const raw = response.text;
   const parsed: unknown = raw ? JSON.parse(raw) : null;

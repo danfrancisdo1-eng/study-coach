@@ -36,6 +36,8 @@ import { logger } from "../lib/logger";
 import { activeFor, consume, enforced, planFor, refund } from "../lib/premium-store";
 import { limitMessage } from "../lib/premium";
 import { withoutNearDuplicates } from "../lib/near-duplicate";
+import { bankFillCount, pickFromBank, promptKey } from "../lib/question-bank";
+import { addToBank, fromBank, loadBank, markServed } from "../lib/bank-store";
 
 const router: IRouter = Router();
 router.use("/study/chat", requireStudyAuth);
@@ -365,15 +367,25 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
     ? previousQuiz.questions.filter((q) => q.answers.length && q.answers.at(-1)?.optionId === q.correctOptionId).slice(0, OLD_MATERIAL_QUESTIONS)
       .map((q) => ({ ...q, id: randomUUID(), answers: [], feedback: undefined, flag: undefined, invalid: undefined }))
     : [];
+  // D-145: an all-topics, missed or daily set comes from the course's question bank (checked once,
+  // exact size, no repeats); what the bank lacks is written as before. A topic set is always written.
+  const banked = bankOn() && !timed && (ALL_TOPICS.test(plan.topic) || missed.length)
+    ? await bankPicks(ownerId, plan.courseId, plan.count, missed, originalPrompts, missed.length ? undefined : sectionWeights)
+    : [];
   // A timed exam is written section by section in batches (D-114); other sets in two parts (D-052).
   const firstBatch = timed?.batches[0];
-  const firstCount = firstBatch ? firstBatch.count : plan.count >= SPLIT_FROM ? FIRST_PART : plan.count;
+  const firstCount = banked.length ? banked.length : firstBatch ? firstBatch.count : plan.count >= SPLIT_FROM ? FIRST_PART : plan.count;
   // D-137: one more try before the student sees an error (a simulated student got a 502).
   const writeFirst = () => generateSessionQuiz({ ...input, expectedCount: firstCount, ...(firstBatch ? { sectionWeights: batchWeights(firstBatch) } : {}) });
-  let quiz: Quiz | null = null;
-  try { quiz = await writeFirst(); } catch (error) { logger.warn({ error: error instanceof Error ? error.message.slice(0, 200) : "Unknown error" }, "Home chat: first part of a set failed; trying once more"); }
-  if (!quiz) quiz = await writeFirst();
-  if (!quiz) return null;
+  let quiz: Quiz | null = banked.length
+    ? { mode: input.mode, kind: plan.kind, expectedCount: firstCount, questions: banked, sourceStatus: status, invalidItemCount: 0, grade: null }
+    : null;
+  if (!quiz) {
+    try { quiz = await writeFirst(); } catch (error) { logger.warn({ error: error instanceof Error ? error.message.slice(0, 200) : "Unknown error" }, "Home chat: first part of a set failed; trying once more"); }
+    if (!quiz) quiz = await writeFirst();
+    if (!quiz) return null;
+    void bankWritten(ownerId, plan.courseId, quiz.questions, sectionWeights);
+  }
   const rest = plan.count - firstCount;
   const missing = firstCount - quiz.questions.length; // dropped by the checks: topped up below
   quiz.expectedCount = plan.count + carried.length;
@@ -389,6 +401,78 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
     void writeRestOfSet(ownerId, session.id, { ...input, expectedCount: rest, originalPrompts: [...originalPrompts, ...quiz.questions.map((q) => q.prompt)] }, carried, batches, Boolean(timed));
   }
   return session;
+}
+
+const ALL_TOPICS = /^all topics/i;
+/** QUESTION_BANK=0 turns the bank off (tests that count writer calls). On by default. */
+const bankOn = () => process.env.QUESTION_BANK !== "0";
+
+/** D-145: the banked questions for a set (marked served), or none when the bank cannot start it (fewer than the first part). */
+async function bankPicks(ownerId: string, courseId: string, count: number, focus: string[], originalPrompts: string[], sectionWeights?: { name: string; weight: number | null }[]): Promise<StoredQuestion[]> {
+  try {
+    const picks = pickFromBank(await loadBank(ownerId, courseId), { count, focus, exclude: new Set(originalPrompts.map(promptKey)), now: new Date(), ...(sectionWeights?.length ? { sectionWeights } : {}) });
+    if (picks.length < Math.min(count, FIRST_PART)) return [];
+    await markServed(picks.map((p) => p.id));
+    return picks.map(fromBank);
+  } catch (error) {
+    logger.warn({ error: error instanceof Error ? error.message.slice(0, 200) : "Unknown error" }, "Question bank: could not read the bank; writing the set");
+    return [];
+  }
+}
+
+/**
+ * D-145: keeps a course's bank stocked in the background: when fewer than 30 questions are ready,
+ * writes up to 60 in batches of 10 (an exam with a guide: by section, like the exam), each checked
+ * like any set. One fill per course at a time; failures are logged and the next set tries again.
+ */
+const filling = new Set<string>();
+const BANK_BATCH = 10;
+async function fillBank(ownerId: string, courseId: string): Promise<void> {
+  if (!bankOn()) return;
+  const key = `${ownerId}:${courseId}`;
+  if (filling.has(key)) return;
+  filling.add(key);
+  const log = logger.child({ ownerId, courseId });
+  try {
+    const entries = await loadBank(ownerId, courseId);
+    const need = bankFillCount(entries, new Date());
+    if (!need) return;
+    const rows = await db.select({ state: studyStatesTable.state }).from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
+    const state = rows[0]?.state;
+    if (!isObject(state)) return;
+    const course = knownCourses(state).find((c) => c.id === courseId);
+    if (!course) return;
+    const sections = course.guideSections ?? [];
+    const { chunks, status } = await sourcesFor(ownerId, state, courseId, "All topics");
+    const prompts = entries.map((e) => e.question.prompt);
+    const batches: Batch[] = sections.length ? examBatches(sections, need).filter((b) => b.count > 0) : splitCount(need).map((count) => ({ section: null, count }));
+    let added = 0;
+    for (const batch of batches) {
+      try {
+        const part = await generateSessionQuiz({
+          courseId, topic: "All topics", kind: "practice", mode: "diagnostic", expectedCount: Math.min(BANK_BATCH, batch.count),
+          originalPrompts: prompts.slice(-60), weakConcepts: [], sourceText: sourceTextOf(chunks), status, ...(batch.section ? { sectionWeights: batchWeights(batch) } : {}),
+        });
+        const fresh = withoutNearDuplicates(part?.questions ?? [], prompts);
+        added += await addToBank(ownerId, courseId, fresh, { served: false, section: batch.section });
+        prompts.push(...fresh.map((q) => q.prompt));
+      } catch (error) {
+        log.warn({ error: error instanceof Error ? error.message.slice(0, 200) : "Unknown error" }, "Question bank: a batch failed");
+      }
+    }
+    log.info({ need, added }, "Question bank filled");
+  } catch (error) {
+    log.warn({ error: error instanceof Error ? error.message.slice(0, 200) : "Unknown error" }, "Question bank: fill failed");
+  } finally {
+    filling.delete(key);
+  }
+}
+
+/** D-145: questions written for a set go into the bank too (already served). Never fails the set. */
+async function bankWritten(ownerId: string, courseId: string, questions: StoredQuestion[], sections?: { name: string }[]): Promise<void> {
+  if (!bankOn()) return;
+  try { await addToBank(ownerId, courseId, questions, { served: true, sections: sections ?? [] }); }
+  catch (error) { logger.warn({ error: error instanceof Error ? error.message.slice(0, 200) : "Unknown error" }, "Question bank: could not save written questions"); }
 }
 
 /**
@@ -431,6 +515,7 @@ async function writeRestOfSet(ownerId: string, sessionId: string, input: Generat
       const room = Math.max(0, quiz.expectedCount - carried.length - quiz.questions.length);
       const fresh = withoutNearDuplicates(added, quiz.questions.map((q) => q.prompt)).slice(0, room);
       quiz.questions.push(...fresh);
+      void bankWritten(ownerId, input.courseId, fresh, timed ? undefined : input.sectionWeights);
       quiz.writing = { ...quiz.writing, lastPartAt: new Date().toISOString() }; // D-140: still arriving
       shortBy = Math.max(0, quiz.expectedCount - carried.length - quiz.questions.length);
       finished = !queue.length && (shortBy === 0 || topUps >= TOP_UPS);
@@ -725,6 +810,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
             res.status(409).json({ error: "Your courses changed on another device. Reload and send again.", version });
             return;
           }
+          if (guide.found) void fillBank(ownerId, course.id); // D-145: a new exam's free 50 come from the bank
         }
       } catch (error) {
         req.log.error({ courseId: course.id, error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat exam guide lookup failed");
@@ -864,6 +950,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
         const session = await startQuiz(ownerId, latestState, { ...plan.quiz, courseId }, sameCourse(lastQuizSession, courseId), allTopics && !timed ? guideSections : undefined, pastWeak, timedStart);
         if (!session) throw new Error("No valid questions were generated");
         done.push({ type: "start_quiz", sessionId: session.id, courseId, topic: plan.quiz.topic, kind: plan.quiz.kind, count: session.quiz!.writing ? session.quiz!.expectedCount : session.quiz!.questions.length });
+        void fillBank(ownerId, courseId); // D-145: the next sets come from the bank
       } catch (error) {
         // The reply promised a set it cannot deliver: save nothing (courses created above stay), let the student retry.
         req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat quiz generation failed");

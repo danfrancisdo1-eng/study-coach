@@ -24,7 +24,7 @@ test('home chat: one thread per course', async (t) => {
   let coach = { reply: 'Hi.', suggestions: [], actions: [] };
   const ai = await startAiStub(t, (request) => {
     const system = request.body.messages[0].content;
-    if (system.startsWith('Create exactly')) return quizReply;
+    if (system.includes('Create exactly')) return quizReply;
     if (system.startsWith('You check the answer key')) return chatReply(JSON.stringify({ checks: [] }));
     return chatReply(JSON.stringify(coach));
   });
