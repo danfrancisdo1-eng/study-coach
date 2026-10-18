@@ -13,13 +13,14 @@
 
 - **D-140** (coach.v27): run 4 of the students: 13 of 15 at 7–8, 4 high. Fixed: a 50 was graded at 25 (the 3-minute writing timeout now counts from the last part), a short set is named with its real size, a key argued against its own working is dropped, vignette sets get "not yet". Tests 234/234; evals coach 62/62 twice, quiz_check 7/7 twice.
 
+- **D-141** (coach.v28): run 5 of the students: all 15 at 6–8, 2 high. The plan's places fit the course type (certification exam: lunch break, between meetings, commute; course: line, between classes, bus; the toilet for everyone).
 ### Needs real-iPhone check
 - "Next 10" chip starts a set at once; the line after a set shows "That's N of today's 100."
 - "Review sheet (PDF)" chip in a course chat opens the review screen.
 - The day count rolls over at local midnight (not UTC).
 
 ### Next (open findings, for Dan to choose)
-- Rerun the simulated students on D-140 and compare with run 4.
+- A 50 still came out 46 in run 5 (late repeats); a fifth top-up round or asking for more extras if it matters.
 - Later (Dan): vignette / item sets (several questions on one shared case, CFA style).
 - The web app does not build on this Mac (rollup's native module is missing from node_modules); typecheck passes. A reinstall fixes it; not done while the preview runs.
 - "Next 10" is not among the fixed chips after a graded set (those stay the four after-set chips); add it there if the daily flow needs it.

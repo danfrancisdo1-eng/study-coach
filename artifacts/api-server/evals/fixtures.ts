@@ -563,6 +563,16 @@ export const coachCases: CoachCase[] = [
     expectations: ["Gives the final exam date as Tuesday, December 1, 2026", "Says it is cumulative (heavier on the material after the midterm is fine)", "Says or implies it comes from their syllabus", "Does not say it cannot see the date or ask the student for the date"],
     maxWords: 90,
   },
+  // coach.v28 (D-141): the plan's places fit the person.
+  {
+    name: "study plan for someone who works: lunch break, between meetings, commute, toilet (Priya, AWS)",
+    courses: [{ id: "aws", name: "AWS Solutions Architect Associate", kind: "exam", materials: 0, lectures: 0 }], firstVisit: false, focusCourseId: "aws", history: [], today: "2026-10-18",
+    daily: "Daily reps (today is 2026-10-18 for the student): 0 of 100 questions done today, 0 right; the 10s today cover all topics (nothing missed on the last study day).",
+    message: "need a study plan for the SAA-C03, can you help?",
+    expectedActions: [], expectedSuggestions: ["Next 10"],
+    expectations: ["Gives the 100-a-day, 10-at-a-time plan", "Names work-day places (lunch break, between meetings, commute) and not 'between classes'", "Keeps 'sitting on the toilet' (or the same idea)"],
+    maxWords: 120,
+  },
   // coach.v27 (D-140, simulated students).
   {
     name: "a set that came out short: the real size and the score, never 'I don't have it' (Ethan, AP Physics)",

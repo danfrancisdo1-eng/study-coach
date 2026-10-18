@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-141: The plan's everyday places fit the course type (coach.v28)
+- Fifth simulated-students run (after D-140): all 15 at 6–8/10, 2 high issues (a 50 came out 46, down from 25; Priya, a working professional, heard "between classes").
+- The daily-reps plan keeps Dan's words, with places that fit: a certification exam (someone who works; the student picked "certification exam") gets "on your lunch break, between meetings, on the commute"; a college or high-school course gets "in line, between classes, on the bus"; "even sitting on the toilet" stays for everyone.
+- Evals: coach 63/63, then 62/63 (the known judge miss on the required "All topics" chip). Tests 234/234.
+- **Decided by:** Dan ("add between meetings"; "we will definitely know if they are a student or professional because they will have checked cert exam").
+
 ## 2026-10-18 — D-140: Long sets finish whole; short sets named; vignettes "not yet" (coach.v27)
 - Fourth simulated-students run (after D-139): 13 of 15 at 7–8/10, high issues 11 → 4.
 - A 50-question set was graded at 25: a set still being written was taken as finished 3 minutes after it started, and a 50 takes longer. The 3-minute silence now counts from the last part that arrived (quiz.writing.lastPartAt), so a set that keeps arriving stays "writing". The simulated students now wait up to 10 minutes for a set.
