@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-143: The development build gets its own app ID ("RapidRecall Dev")
+- Installing TestFlight build 5 replaced the development build on Dan's iPhone (same app ID), so the ngrok preview had nothing to open and the phone stayed on the TestFlight version (D-118).
+- app.config.ts: with APP_VARIANT=development (EAS development profile; the preview script) the app is "RapidRecall Dev", com.danfrancis.studycoach.dev. Production and TestFlight are unchanged (com.danfrancis.studycoach). The URL scheme stays the same.
+- Needs one new development build (EAS, internal distribution). Sign in with Apple may not work in the Dev app until Clerk knows the new app ID (Clerk settings unchanged, per CLAUDE.md); Google sign-in should.
+- **Decided by:** Dan ("dev app").
+
 ## 2026-10-18 — D-142: The review sheet opens as the real PDF; nothing of it in the chat (coach.v29)
 - Dan on his iPhone: the review screen redrew the sheet as app text (the "Remember it" box was dark text on navy, unreadable) and the only way to see the actual PDF was to save it and open it elsewhere; no fill bar while it was written.
 - The review screen now opens the PDF itself in iPhone's preview (expo-print, already in the app: real pages, scroll and pinch to zoom) as soon as it is written, with "Open the PDF" to reopen and "Share or save as PDF"; the redrawn copy is gone. A fill bar shows while it is written (about 90 s). The shared file is named after the sheet's title, not a random id.
