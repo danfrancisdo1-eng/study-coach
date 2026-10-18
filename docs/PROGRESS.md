@@ -11,13 +11,17 @@
 - **D-138** (coach.v25, quiz-check.v5): repeats across batches dropped, 3 top-up rounds, no "spot on" to wrong statements, numbered steps, office hours for a discouraged student. Run 3 of the students: mostly 6–7, 11 high, partly from v25 itself (the coach said it could not see a score).
 - **D-139 Daily reps** (SPEC §8, signed; coach.v26, quiz-check.v6): the study plan is 100 questions a day, 10 at a time ("Next 10"); tomorrow's 10s are on today's misses until 100/100; the day count follows every graded set; days are the student's (UTC offset sent by both apps); the day before an exam the coach offers "Review sheet (PDF)", which opens it in one tap (web: new printable review sheet). A study plan the student uploaded is used instead. Also: score always known, typed timed exams point to Simulated exam, two-right-answer questions dropped, top-ups ask for extras. Tests 232/232; evals coach 60/60 and 59/60, quiz_check 7/7 twice; iOS bundle exports.
 
+- **D-140** (coach.v27): run 4 of the students: 13 of 15 at 7–8, 4 high. Fixed: a 50 was graded at 25 (the 3-minute writing timeout now counts from the last part), a short set is named with its real size, a key argued against its own working is dropped, vignette sets get "not yet". Tests 234/234; evals coach 62/62 twice, quiz_check 7/7 twice.
+
 ### Needs real-iPhone check
 - "Next 10" chip starts a set at once; the line after a set shows "That's N of today's 100."
 - "Review sheet (PDF)" chip in a course chat opens the review screen.
 - The day count rolls over at local midnight (not UTC).
 
 ### Next (open findings, for Dan to choose)
-- Rerun the simulated students on D-139 and compare with run 3.
+- Rerun the simulated students on D-140 and compare with run 4.
+- Later (Dan): vignette / item sets (several questions on one shared case, CFA style).
+- The web app does not build on this Mac (rollup's native module is missing from node_modules); typecheck passes. A reinstall fixes it; not done while the preview runs.
 - "Next 10" is not among the fixed chips after a graded set (those stay the four after-set chips); add it there if the daily flow needs it.
 - Dan: rotate the OpenAI key on the stray line of artifacts/api-server/.env (printed in the session again on 2026-10-17).
 

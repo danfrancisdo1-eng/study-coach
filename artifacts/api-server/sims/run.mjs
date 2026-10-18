@@ -160,7 +160,7 @@ async function runPersona(p) {
     let last = first;
     const playSet = async (sessionId, kind) => {
       let session;
-      for (let i = 0; i < 90; i += 1) {
+      for (let i = 0; i < 300; i += 1) { // a 50 can take several minutes (D-140)
         session = (await api('GET', `/study/sessions/${sessionId}`)).body;
         if (session?.quiz && session.quiz.status !== 'writing') break;
         await new Promise((r) => setTimeout(r, 2000));

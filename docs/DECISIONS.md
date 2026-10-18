@@ -2,6 +2,16 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-140: Long sets finish whole; short sets named; vignettes "not yet" (coach.v27)
+- Fourth simulated-students run (after D-139): 13 of 15 at 7–8/10, high issues 11 → 4.
+- A 50-question set was graded at 25: a set still being written was taken as finished 3 minutes after it started, and a 50 takes longer. The 3-minute silence now counts from the last part that arrived (quiz.writing.lastPartAt), so a set that keeps arriving stays "writing". The simulated students now wait up to 10 minutes for a set.
+- A set that still comes out smaller than announced: the coach names its real size with the score ("you got 25, not 50"), never "I don't have that score" (the coach gets the announced size).
+- An explanation that argues for a key its own working does not reach ("5.405, which rounds to 5.41 rather than 5.43 only if the arithmetic is sloppy") is dropped by the code check and topped up.
+- Vignette / item sets (several questions on one shared case, CFA style): not built. The coach says "not yet" and offers a regular set. On the list for later (Dan).
+- The coach reads a concept's ✓/✗ string newest first (it said "right since" about a recent miss).
+- Evals: coach 62/62 twice; quiz_check 7/7 twice. Tests 234/234.
+- **Decided by:** Dan ("ok do the three. vignettes say not yet but keep on the list").
+
 ## 2026-10-18 — D-139: Daily reps are the study plan; review sheet one tap; score always known (coach.v26, quiz-check.v6)
 - Dan's plan (SPEC §8, signed): 100 questions a day, 10 at a time, wherever you are; what you miss today is tomorrow's 100, every day until 100/100; the day before the exam the coach offers the review PDF with the focus spots highlighted. A study plan the student uploaded is used instead.
 - "Next 10" always starts a 10-question practice set in the course chat (the app sets it even if the reply forgets): on the concepts missed on the last earlier study day, else all topics (weighted like the exam). The app adds the day's count to the coach's line after each graded set ("That's 40 of today's 100."; "100/100 today. You've got it.").

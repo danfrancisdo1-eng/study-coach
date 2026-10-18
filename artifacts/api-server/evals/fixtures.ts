@@ -492,7 +492,7 @@ export interface CoachCase {
   expectedSuggestions?: string[];
   /** The latest question set from this chat, as routes/chat.ts would describe it. */
   quiz?: {
-    courseName: string; topic: string; kind: "practice" | "exam"; answered: number; total: number;
+    courseName: string; topic: string; kind: "practice" | "exam"; answered: number; total: number; asked?: number;
     graded: { correct: number; percent: number; missed: { concept: string; prompt: string; chose: string | null; correct: string; explanation: string }[] } | null;
   } | null;
   /** The most recent flashcard deck from this chat. */
@@ -563,6 +563,27 @@ export const coachCases: CoachCase[] = [
     expectations: ["Gives the final exam date as Tuesday, December 1, 2026", "Says it is cumulative (heavier on the material after the midterm is fine)", "Says or implies it comes from their syllabus", "Does not say it cannot see the date or ask the student for the date"],
     maxWords: 90,
   },
+  // coach.v27 (D-140, simulated students).
+  {
+    name: "a set that came out short: the real size and the score, never 'I don't have it' (Ethan, AP Physics)",
+    courses: [{ id: "phys", name: "AP Physics 1", materials: 2, lectures: 1 }], firstVisit: false, focusCourseId: "phys", today: "2026-10-18",
+    history: [{ role: "user", content: "give me a 50 question hard exam on everything so far" }, { role: "assistant", content: "Your 50-question hard exam on work, energy and power is starting now." }],
+    quiz: { courseName: "AP Physics 1", topic: "All topics", kind: "exam", answered: 25, total: 25, asked: 50, graded: { correct: 17, percent: 68, missed: [
+      { concept: "Work-energy theorem", prompt: "A 2 kg cart speeds from 3 to 5 m/s. Net work?", chose: "4 J", correct: "16 J", explanation: "W = ½m(v²−u²) = ½·2·(25−9) = 16 J." },
+    ] } },
+    message: "I finished the set.",
+    expectedActions: [],
+    expectations: ["Gives the score (17 of 25) for the set he just finished", "Says plainly it came out as 25 questions, not the 50 announced", "Never says it doesn't have the score"],
+    maxWords: 70,
+  },
+  {
+    name: "vignette item set asked for: not available yet, a regular set instead (CFA, simulated student)",
+    courses: [{ id: "cfa", name: "CFA Level I", kind: "exam", materials: 2, lectures: 0 }], firstVisit: false, focusCourseId: "cfa", history: [], today: "2026-10-18",
+    message: "can you give me a vignette-style item set on put-call parity and dividends, like the real exam?",
+    expectedActions: [],
+    expectations: ["Says plainly that vignette / item sets are not available yet", "Does not promise or describe one as coming", "Offers a regular set on put-call parity and dividends instead"],
+    maxWords: 60,
+  },
   // coach.v26 (D-139, SPEC §8): daily reps, the day before the exam, scores always known, typed timed exams.
   {
     name: "study plan request: daily reps, 100 a day 10 at a time (Dan's plan)",
@@ -605,7 +626,7 @@ export const coachCases: CoachCase[] = [
   },
   {
     name: "the day before the exam: says it, offers the review sheet (first message today)",
-    courses: [{ id: "bio", name: "BIO 101", materials: 3, lectures: 2 }], firstVisit: false, focusCourseId: "bio", history: [{ role: "user", content: "quiz me on osmosis" }, { role: "assistant", content: "Here are 5 on osmosis." }], today: "2026-10-29",
+    courses: [{ id: "bio", name: "BIO 101", materials: 3, lectures: 2 }], firstVisit: false, focusCourseId: "bio", history: [{ role: "user", content: "thanks, that helped" }, { role: "assistant", content: "Anytime. Come back for your next 10." }], today: "2026-10-29",
     uploads: [{ name: "Syllabus", text: "# BIO 101\n## Exams\n- Midterm 1: Fri Oct 30 (chapters 1–5)\n- Final: Dec 14" }],
     firstMessageToday: true,
     message: "hey whats up",

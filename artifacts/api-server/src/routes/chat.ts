@@ -13,7 +13,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v26";
+import * as coachPrompt from "../prompts/coach.v27";
 import { courseContext, NOTES_BLOCK, PLANNING } from "../lib/course-context";
 import { indexText, routedContext, sectionsOf, wordSearch } from "../lib/course-sections";
 import { routeCourse } from "../lib/course-router";
@@ -143,7 +143,7 @@ function quizContext(courses: KnownCourse[], action: Extract<HomeChatAction, { t
   const status = quizStatus(quiz);
   // While the rest is on its way, the set's size is what it will be, not what has landed.
   const total = status === "writing" ? Math.max(quiz.expectedCount, valid.length) : valid.length;
-  const base = { courseName, topic: session.topic, kind: action.kind, status, answered: answered.length, total };
+  const base = { courseName, topic: session.topic, kind: action.kind, status, answered: answered.length, total, ...(action.count ? { asked: action.count } : {}) };
   if (!quiz.grade) return { ...base, graded: null };
   const missed = answered
     .filter((q) => q.answers.at(-1)?.optionId !== q.correctOptionId)
@@ -431,6 +431,7 @@ async function writeRestOfSet(ownerId: string, sessionId: string, input: Generat
       const room = Math.max(0, quiz.expectedCount - carried.length - quiz.questions.length);
       const fresh = withoutNearDuplicates(added, quiz.questions.map((q) => q.prompt)).slice(0, room);
       quiz.questions.push(...fresh);
+      quiz.writing = { ...quiz.writing, lastPartAt: new Date().toISOString() }; // D-140: still arriving
       shortBy = Math.max(0, quiz.expectedCount - carried.length - quiz.questions.length);
       finished = !queue.length && (shortBy === 0 || topUps >= TOP_UPS);
       if (finished) {
