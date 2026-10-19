@@ -124,7 +124,7 @@ function Header({ title, subtitle, onBack, onSignOut }: {
   return (
     <View style={styles.header}>
       {onBack ? (
-        <Pressable accessibilityRole="button" testID="button-back-home" onPress={onBack} style={styles.iconButton}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Back" testID="button-back-home" onPress={onBack} style={styles.iconButton}>
           <Feather name="arrow-left" size={19} color={colors.foreground} />
         </Pressable>
       ) : (
@@ -1142,7 +1142,7 @@ function createStyles(colors: Colors) {
   headerCopy: { flex: 1, minWidth: 0 },
   brand: { fontSize: 17, fontWeight: '700', color: colors.foreground, letterSpacing: -0.4 },
   headerSub: { marginTop: 2, color: colors.mutedForeground, fontSize: 11 },
-  iconButton: { minWidth: 42, minHeight: 42, alignItems: 'center', justifyContent: 'center' },
+  iconButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   content: { paddingHorizontal: 18, paddingTop: 14, gap: 15 },
   scrollContent: { paddingBottom: 26 },
   hero: { padding: 23, borderRadius: 22, backgroundColor: colors.foreground, gap: 10 },

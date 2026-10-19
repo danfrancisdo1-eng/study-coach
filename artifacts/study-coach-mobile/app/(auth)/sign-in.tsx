@@ -93,10 +93,10 @@ export default function SignInScreen() {
           <Pressable testID="button-sign-in-verify" accessibilityRole="button" disabled={busy || !code.trim()} onPress={() => void verify()} style={[styles.button, { backgroundColor: colors.primary }, (busy || !code.trim()) && styles.disabled]}>
             <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>{busy ? 'Verifying…' : 'Verify and sign in'}</Text>
           </Pressable>
-          <Pressable testID="button-resend-sign-in-code" onPress={() => void signIn.mfa.sendEmailCode()} style={styles.textButton}>
+          <Pressable accessibilityRole="button" testID="button-resend-sign-in-code" onPress={() => void signIn.mfa.sendEmailCode()} style={styles.textButton}>
             <Text style={[styles.link, { color: colors.primaryText }]}>Send a new code</Text>
           </Pressable>
-          <Pressable onPress={() => { setMessage(''); void signIn.reset(); }} style={styles.textButton}>
+          <Pressable accessibilityRole="button" onPress={() => { setMessage(''); void signIn.reset(); }} style={styles.textButton}>
             <Text style={[styles.link, { color: colors.mutedForeground }]}>Start over</Text>
           </Pressable>
         </>
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   button: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 12, marginTop: 7 },
   buttonText: { fontSize: 15, fontWeight: '700' },
   disabled: { opacity: 0.48 },
-  textButton: { alignSelf: 'center', minHeight: 40, justifyContent: 'center', paddingHorizontal: 8 },
+  textButton: { alignSelf: 'center', minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
   linkRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 13, flexWrap: 'wrap' },
   body: { fontSize: 14 },
   link: { fontSize: 14, fontWeight: '700' },
