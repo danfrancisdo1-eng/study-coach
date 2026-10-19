@@ -1,5 +1,19 @@
 # Progress
 
+## Session 13 — 2026-10-19 overnight (Dan asleep; Claude Code at the Mac)
+
+### Done
+- **Paywall with the signed prices (D-153):** students' Yearly/Monthly cards (Yearly first, "Save 48%"), "Start your free week", the after-the-trial terms on screen, Restore, terms and privacy; certification exams get 50 free questions, then the exam pass ($29.99, 60 days, no renewal). Server enforces it only when PREMIUM_LIMITS=on (still off).
+- **Accessibility fixes that keep the look (D-154).**
+- **TestFlight build 6** (everything through the intro video) built on EAS but **not sent to App Store Connect**: auto-submit needs the app's App Store Connect id in eas.json (a build setting: Dan's OK) or an interactive `eas submit`.
+- Tests 252/252; iOS bundle exports.
+
+### Needs Dan
+- App Store Connect and RevenueCat product setup: docs/plans/2026-10-19-pricing-setup-steps.md.
+- OK to add the App Store Connect app id to eas.json (or run the submit himself) so build 6 reaches TestFlight.
+- Visual accessibility items (D-154): right/wrong colors, legacy screen yellow text, input borders, Text Size on quiz cards, restated subheaders.
+- Open product questions: students before the free week keep the old free plan (1 course, 3 sets a day) or must start the free week; the exam pass for one exam only (today: the whole account for 60 days); yearly picked by default vs UX_PRINCIPLES "no pre-selected upsells".
+
 ## Session 12 — 2026-10-18 (Dan on the phone and at the Mac; Claude Code at the Mac)
 
 ### Done
