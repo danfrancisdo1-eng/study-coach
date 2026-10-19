@@ -30,11 +30,14 @@ export async function preparePurchases(userId: string): Promise<boolean> {
   return true;
 }
 
-/** The current offering's packages (monthly and yearly), or [] when purchases are unavailable. */
-export async function premiumPackages(userId: string): Promise<PurchasesPackage[]> {
+/**
+ * The packages to sell (D-153): students get the current offering (monthly and yearly, with Apple's free
+ * week); a certification exam gets the "exam" offering (the 60-day exam pass). [] when unavailable.
+ */
+export async function premiumPackages(userId: string, mode: 'student' | 'exam' = 'student'): Promise<PurchasesPackage[]> {
   if (!await preparePurchases(userId)) return [];
   const offerings = await Purchases.getOfferings();
-  return offerings.current?.availablePackages ?? [];
+  return (mode === 'exam' ? offerings.all.exam : offerings.current)?.availablePackages ?? [];
 }
 
 export type PurchaseOutcome = 'purchased' | 'cancelled';

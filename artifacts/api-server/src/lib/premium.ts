@@ -10,6 +10,24 @@ export const LIMITS: Record<Plan, PlanLimits> = {
   premium: { courses: null, sets: 20, messages: 300 },
 };
 
+// D-153 (SPEC §9): a certification exam's first 50 questions are free; then the exam pass, a one-time
+// Apple purchase (non-renewing) that gives 60 days of everything. Students: Apple's free week, then a subscription.
+export const EXAM_FREE_QUESTIONS = 50;
+export const EXAM_PASS_DAYS = 60;
+const DAY_MS = 86_400_000;
+
+/** The exam pass product (EXAM_PASS_PRODUCT_ID, default rapidrecall.exampass.60d; any id naming an exam pass). */
+export function isExamPass(productId: string | null | undefined): boolean {
+  if (!productId) return false;
+  const configured = process.env["EXAM_PASS_PRODUCT_ID"];
+  return productId === configured || /exam.?pass/i.test(productId);
+}
+
+/** How many free questions an exam still has on the free plan. */
+export function examFreeLeft(served: number): number {
+  return Math.max(0, EXAM_FREE_QUESTIONS - served);
+}
+
 export type Entitlement = { plan: Plan; expiresAt: Date | null; productId?: string | null; lastEventAt?: Date | null };
 
 /** Premium while the stored plan is premium and has not expired (no expiry = no end). */
@@ -48,6 +66,7 @@ export type RevenueCatEvent = {
   expiration_at_ms?: number | null;
   product_id?: string;
   cancel_reason?: string;
+  purchased_at_ms?: number;
 };
 
 const GRANTS = new Set(["INITIAL_PURCHASE", "RENEWAL", "PRODUCT_CHANGE", "UNCANCELLATION", "NON_RENEWING_PURCHASE", "SUBSCRIPTION_EXTENDED", "CANCELLATION", "BILLING_ISSUE"]);
@@ -67,13 +86,16 @@ export function applyEvent(current: Entitlement | null, event: RevenueCatEvent):
     return { plan: "free", expiresAt: typeof event.expiration_at_ms === "number" ? new Date(event.expiration_at_ms) : at, productId, lastEventAt: at };
   }
   if (!GRANTS.has(event.type)) return null;
-  const expiresAt = typeof event.expiration_at_ms === "number" ? new Date(event.expiration_at_ms) : null;
+  // D-153: an exam pass carries no expiry (non-renewing): it lasts EXAM_PASS_DAYS from the purchase.
+  const passEnds = isExamPass(event.product_id) ? new Date((event.purchased_at_ms ?? event.event_timestamp_ms) + EXAM_PASS_DAYS * DAY_MS) : null;
+  const expiresAt = typeof event.expiration_at_ms === "number" ? new Date(event.expiration_at_ms) : passEnds;
   return { plan: "premium", expiresAt, productId, lastEventAt: at };
 }
 
 /** The sentence a student sees when a limit stops them; never a code or a number they cannot act on. */
-export function limitMessage(kind: "course" | "sets" | "messages" | "read_only", limits: PlanLimits): string {
+export function limitMessage(kind: "course" | "sets" | "messages" | "read_only" | "exam_free", limits: PlanLimits): string {
   switch (kind) {
+    case "exam_free": return `You've used your ${EXAM_FREE_QUESTIONS} free questions for this exam. The exam pass unlocks everything for ${EXAM_PASS_DAYS} days.`;
     case "course": return "Your free plan has one course or exam. Premium adds as many as you like.";
     case "sets": return `You've used today's ${limits.sets} sets. More tomorrow${limits.courses === null ? "." : ", or go Premium for 20 a day."}`;
     case "messages": return `You've used today's ${limits.messages} coach messages. More tomorrow${limits.courses === null ? "." : ", or go Premium for 300 a day."}`;

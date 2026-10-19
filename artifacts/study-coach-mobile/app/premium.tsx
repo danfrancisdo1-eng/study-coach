@@ -10,14 +10,15 @@ import { getGetPremiumStatusQueryKey, useRefreshPremium } from '@workspace/api-c
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
-import { orderPackages, packageLabel, paywallReason } from '@/lib/premium-ui';
+import { orderPackages, packageLabel, paywallMode, paywallReason, savingLabel, trialTerms } from '@/lib/premium-ui';
 import { TERMS_URL, buy, premiumPackages, purchasesAvailable, restore } from '@/lib/purchases';
 
 /**
- * The paywall (D-090, UX_PRINCIPLES "Paywall rules"): what is free and what Premium adds,
- * both prices as Apple shows them with their billing period and renewal terms, each its own
- * button (nothing pre-selected), Restore Purchases, terms and privacy, and a visible close.
- * Opened from the Account page, or with ?reason=<code> when the server stopped a request.
+ * The paywall (D-090, D-153, SPEC §9, UX_PRINCIPLES "Paywall rules"). Students: what is free and what
+ * Premium adds, the yearly and monthly cards (yearly picked first, its badge the real saving), one button
+ * ("Start your free week" while Apple's free week applies), what happens after the free week, Restore
+ * Purchases, terms and privacy, a visible close. A certification exam (?kind=exam, or the free 50 used):
+ * the exam pass, one payment for 60 days, no renewal. Opened from Account, or with ?reason=<code>.
  */
 export default function PremiumScreen() {
   const colors = useColors();
@@ -25,7 +26,9 @@ export default function PremiumScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { isLoaded, isSignedIn, userId } = useAuth();
-  const { reason } = useLocalSearchParams<{ reason?: string }>();
+  const { reason, kind } = useLocalSearchParams<{ reason?: string; kind?: string }>();
+  const mode = paywallMode(reason, kind);
+  const [selected, setSelected] = useState<string | null>(null);
   const refresh = useRefreshPremium();
   const [packages, setPackages] = useState<PurchasesPackage[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -35,8 +38,8 @@ export default function PremiumScreen() {
 
   useEffect(() => {
     if (!userId || !available) { setPackages([]); return; }
-    premiumPackages(userId).then((list) => setPackages(orderPackages(list))).catch((problem) => { setPackages([]); setError(friendlyError(problem)); });
-  }, [userId, available]);
+    premiumPackages(userId, mode).then((list) => { const ordered = orderPackages(list); setPackages(ordered); setSelected(ordered[0]?.identifier ?? null); }).catch((problem) => { setPackages([]); setError(friendlyError(problem)); });
+  }, [userId, available, mode]);
 
   if (isLoaded && !isSignedIn) return <Redirect href="/" />;
 
@@ -77,31 +80,68 @@ export default function PremiumScreen() {
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
         <Text style={styles.kicker}>{paywallReason(reason)}</Text>
-        <Text style={styles.title}>RapidRecall AI Premium</Text>
-        <View style={styles.compare} accessible accessibilityLabel="Free: 1 course, 3 sets and 40 coach messages a day. Premium: every course, 20 sets and 300 coach messages a day.">
-          <View style={styles.compareRow}>
-            <Text style={styles.compareLabel} />
-            <Text style={[styles.compareFree, styles.compareHead]}>Free</Text>
-            <Text style={[styles.comparePremium, styles.compareHead]}>Premium</Text>
+        <Text style={styles.title}>{mode === 'exam' ? 'Exam pass' : 'RapidRecall AI Premium'}</Text>
+        {mode === 'exam' ? (
+          <View style={styles.compare} accessible accessibilityLabel="Free: your first 50 questions. Exam pass: everything for 60 days, one payment, no renewal.">
+            {row('Questions', '50', 'Unlimited')}
+            {row('Simulated exams, review PDF', 'Yes', 'Yes')}
+            {row('How long', 'Once', '60 days')}
           </View>
-          {row('Courses and exams', '1', 'Unlimited')}
-          {row('Question sets a day', '3', '20')}
-          {row('Coach messages a day', '40', '300')}
-          {row('Every feature', 'Yes', 'Yes')}
-        </View>
+        ) : (
+          <View style={styles.compare} accessible accessibilityLabel="Free: 1 course, 3 sets and 40 coach messages a day. Premium: every course, 20 sets and 300 coach messages a day.">
+            <View style={styles.compareRow}>
+              <Text style={styles.compareLabel} />
+              <Text style={[styles.compareFree, styles.compareHead]}>Free</Text>
+              <Text style={[styles.comparePremium, styles.compareHead]}>Premium</Text>
+            </View>
+            {row('Courses and exams', '1', 'Unlimited')}
+            {row('Question sets a day', '3', '20')}
+            {row('Coach messages a day', '40', '300')}
+            {row('Every feature', 'Yes', 'Yes')}
+          </View>
+        )}
 
         {!available ? (
           <Text style={styles.note} testID="text-purchases-unavailable">Purchases aren't available in this preview build. They work in the RapidRecall AI app from TestFlight or the App Store.</Text>
         ) : packages === null ? <ActivityIndicator color={colors.primaryText} /> : packages.length === 0 && !error ? (
-          <Text style={styles.note}>Premium isn't available right now. Try again later.</Text>
-        ) : packages.map((pkg) => (
-          <Pressable key={pkg.identifier} accessibilityRole="button" disabled={!!busy} onPress={() => void subscribe(pkg)} style={({ pressed }) => [styles.buy, pressed && styles.pressed, !!busy && styles.disabled]} testID={`button-buy-${pkg.packageType.toLowerCase()}`}>
-            {busy === pkg.identifier ? <ActivityIndicator color={colors.primaryForeground} /> : <>
-              <Text style={styles.buyTitle}>{packageLabel(pkg.packageType)} · {pkg.product.priceString} {pkg.packageType === 'ANNUAL' ? 'a year' : pkg.packageType === 'MONTHLY' ? 'a month' : ''}</Text>
-              <Text style={styles.buyCaption}>Renews automatically. Cancel any time in Settings.</Text>
-            </>}
-          </Pressable>
-        ))}
+          <Text style={styles.note}>{mode === 'exam' ? "The exam pass isn't available right now. Try again later." : "Premium isn't available right now. Try again later."}</Text>
+        ) : mode === 'exam' ? (() => {
+          const pass = packages[0]!;
+          return <>
+            <View style={[styles.card, styles.cardOn]} testID="card-exam-pass">
+              <Text style={styles.cardTitle}>Exam pass · {pass.product.priceString}</Text>
+              <Text style={styles.cardCaption}>60 days of everything for your exam. One payment; it does not renew.</Text>
+            </View>
+            <Pressable accessibilityRole="button" disabled={!!busy} onPress={() => void subscribe(pass)} style={({ pressed }) => [styles.buy, pressed && styles.pressed, !!busy && styles.disabled]} testID="button-buy-exam-pass">
+              {busy === pass.identifier ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={styles.buyTitle}>Get the exam pass</Text>}
+            </Pressable>
+          </>;
+        })() : (() => {
+          const monthly = packages.find((p) => p.packageType === 'MONTHLY');
+          const yearly = packages.find((p) => p.packageType === 'ANNUAL');
+          const badge = monthly && yearly ? savingLabel(monthly.product.price, yearly.product.price) : null;
+          const chosen = packages.find((p) => p.identifier === selected) ?? packages[0]!;
+          const freeWeek = chosen.product.introPrice?.price === 0;
+          return <>
+            {packages.map((pkg) => {
+              const on = pkg.identifier === chosen.identifier;
+              const period = pkg.packageType === 'ANNUAL' ? 'year' : 'month';
+              return (
+                <Pressable key={pkg.identifier} accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={() => setSelected(pkg.identifier)} style={[styles.card, on && styles.cardOn]} testID={`card-${pkg.packageType.toLowerCase()}`}>
+                  <View style={styles.cardHead}>
+                    <Text style={styles.cardTitle}>{packageLabel(pkg.packageType)} · {pkg.product.priceString} a {period}</Text>
+                    {pkg.packageType === 'ANNUAL' && badge ? <Text style={styles.badge}>{badge}</Text> : null}
+                  </View>
+                  {on ? <Feather name="check-circle" size={20} color={colors.primaryText} style={styles.cardCheck} /> : null}
+                </Pressable>
+              );
+            })}
+            <Pressable accessibilityRole="button" disabled={!!busy} onPress={() => void subscribe(chosen)} style={({ pressed }) => [styles.buy, pressed && styles.pressed, !!busy && styles.disabled]} testID="button-buy">
+              {busy === chosen.identifier ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={styles.buyTitle}>{freeWeek ? 'Start your free week' : 'Subscribe'}</Text>}
+            </Pressable>
+            <Text style={styles.trial} testID="text-trial-terms">{trialTerms(chosen.product.priceString, chosen.packageType === 'ANNUAL' ? 'year' : 'month', freeWeek)}</Text>
+          </>;
+        })()}
 
         {message ? <Text style={styles.success} accessibilityRole="alert" testID="status-premium-message">{message}</Text> : null}
         {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
@@ -109,7 +149,10 @@ export default function PremiumScreen() {
         <Pressable accessibilityRole="button" disabled={!!busy} onPress={() => void restorePurchases()} style={({ pressed }) => [styles.secondary, pressed && styles.pressed]} testID="button-restore-purchases">
           {busy === 'restore' ? <ActivityIndicator color={colors.foreground} /> : <Text style={styles.secondaryText}>Restore Purchases</Text>}
         </Pressable>
-        <Text style={styles.terms}>Payment is charged to your Apple ID. A subscription renews automatically unless you cancel at least 24 hours before the end of the current period; manage or cancel it in Settings › Apple ID › Subscriptions.</Text>
+        <Text style={styles.terms}>{mode === 'exam'
+          ? 'Payment is charged to your Apple ID. The exam pass is a one-time purchase for 60 days and does not renew.'
+          : 'Payment is charged to your Apple ID. A subscription renews automatically unless you cancel at least 24 hours before the end of the current period; manage or cancel it in Settings › Apple ID › Subscriptions.'}</Text>
+        {mode === 'student' ? <Text style={styles.link} accessibilityRole="link" onPress={() => router.setParams({ kind: 'exam' })} testID="link-exam-pass">Studying for a certification exam? See the exam pass</Text> : null}
         <View style={styles.links}>
           <Text style={styles.link} accessibilityRole="link" onPress={() => void Linking.openURL(TERMS_URL)}>Terms of Use</Text>
           {PRIVACY_URL ? <Text style={styles.link} accessibilityRole="link" onPress={openPrivacy}>Privacy Policy</Text> : null}
@@ -135,6 +178,14 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   buy: { minHeight: 64, justifyContent: 'center', alignItems: 'center', borderRadius: 14, backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10, gap: 2 },
   buyTitle: { color: colors.primaryForeground, fontSize: 17, fontWeight: '700' },
   buyCaption: { color: colors.primaryForeground, fontSize: 12, opacity: 0.85 },
+  card: { minHeight: 60, justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, paddingHorizontal: 16, paddingVertical: 12 },
+  cardOn: { borderWidth: 2, borderColor: colors.primaryText },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingRight: 28, flexWrap: 'wrap' },
+  cardTitle: { color: colors.foreground, fontSize: 17, fontWeight: '700' },
+  cardCaption: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20, marginTop: 4 },
+  cardCheck: { position: 'absolute', right: 14, top: 18 },
+  badge: { color: colors.primaryForeground, backgroundColor: colors.primary, fontSize: 12, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden' },
+  trial: { color: colors.foreground, fontSize: 14, lineHeight: 20, textAlign: 'center' },
   secondary: { minHeight: 48, justifyContent: 'center', alignItems: 'center', borderRadius: 14, borderWidth: 1, borderColor: colors.border },
   secondaryText: { color: colors.foreground, fontSize: 15, fontWeight: '600' },
   note: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20 },
