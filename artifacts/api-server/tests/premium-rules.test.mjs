@@ -62,3 +62,31 @@ test('RevenueCat events: newest wins, expiry and refunds end premium, unknown ev
   // Test events and transfers are ignored.
   assert.equal(applyEvent(ent, { type: 'TEST', event_timestamp_ms: at('2026-12-30T00:00:00Z') }), null);
 });
+
+// D-153 (SPEC §9, D-144): certification exams get their first 50 questions free, then an exam pass:
+// a one-time purchase (Apple non-renewing) that gives 60 days of everything.
+test('exam pass: a non-renewing purchase lasts 60 days from the purchase', async () => {
+  const { EXAM_PASS_DAYS, isExamPass } = await import('../src/lib/premium.ts');
+  assert.equal(EXAM_PASS_DAYS, 60);
+  assert.equal(isExamPass('rapidrecall.exampass.60d'), true);
+  assert.equal(isExamPass('rapidrecall.premium.monthly'), false);
+  const at = new Date('2026-10-19T10:00:00Z').getTime();
+  const ent = applyEvent(null, { type: 'NON_RENEWING_PURCHASE', event_timestamp_ms: at, purchased_at_ms: at, expiration_at_ms: null, product_id: 'rapidrecall.exampass.60d' });
+  assert.equal(ent.plan, 'premium');
+  assert.equal(ent.expiresAt.toISOString(), '2026-12-18T10:00:00.000Z', 'never "no end": a pass without an expiry would be Premium forever');
+});
+
+test('the free 50 on an exam: how many a set may still have', async () => {
+  const { EXAM_FREE_QUESTIONS, examFreeLeft } = await import('../src/lib/premium.ts');
+  assert.equal(EXAM_FREE_QUESTIONS, 50);
+  assert.equal(examFreeLeft(0), 50);
+  assert.equal(examFreeLeft(45), 5);
+  assert.equal(examFreeLeft(50), 0);
+  assert.equal(examFreeLeft(73), 0);
+});
+
+test('the sentence when the free 50 are used', async () => {
+  const { limitMessage } = await import('../src/lib/premium.ts');
+  assert.match(limitMessage('exam_free', LIMITS.free), /50 free questions/);
+  assert.match(limitMessage('exam_free', LIMITS.free), /exam pass/i);
+});

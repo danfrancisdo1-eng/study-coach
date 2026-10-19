@@ -36,8 +36,8 @@ import {
 import { timeIsUp } from "../lib/exam-timer";
 import { newUploadsWithoutCourse } from "../lib/course-materials";
 
-import { addsCourseBeyondPlan, limitMessage } from "../lib/premium";
-import { activeFor, consume, enforced, planFor, refund } from "../lib/premium-store";
+import { addsCourseBeyondPlan, examFreeLeft, limitMessage } from "../lib/premium";
+import { activeFor, consume, enforced, examQuestionsServed, planFor, refund } from "../lib/premium-store";
 
 /**
  * Premium gate for one AI use on a course (D-090, only with PREMIUM_LIMITS=on): the course must
@@ -51,6 +51,15 @@ async function premiumGate(res: Response, ownerId: string, state: JsonObject, co
   if (!activeFor(courses, info).includes(courseId)) {
     res.status(402).json({ error: limitMessage("read_only", info.limits), code: "course_read_only" });
     return null;
+  }
+  // D-153: a certification exam on the free plan: its first 50 questions instead of the daily sets.
+  const course = (Array.isArray(state.courses) ? state.courses : []).find((c) => jsonObject(c) && c.id === courseId);
+  if (kind === "sets" && info.plan === "free" && jsonObject(course) && course.kind === "exam") {
+    if (examFreeLeft(await examQuestionsServed(ownerId, courseId)) === 0) {
+      res.status(402).json({ error: limitMessage("exam_free", info.limits), code: "exam_free_used" });
+      return null;
+    }
+    return async () => {};
   }
   if (!await consume(ownerId, kind, info.limits[kind])) {
     res.status(402).json({ error: limitMessage(kind, info.limits), code: "daily_limit" });

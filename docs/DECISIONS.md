@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-19 — D-153: The paywall with the signed prices (SPEC §9)
+- Server: a certification exam on the free plan gets its first 50 questions free (served questions, answered or not; a set is cut to what is left; no daily-set count), then 402 exam_free_used ("You've used your 50 free questions for this exam. The exam pass unlocks everything for 60 days."). The exam pass (product rapidrecall.exampass.60d, Apple non-renewing) is Premium for 60 days from the purchase, from the webhook and from the on-demand refresh (RevenueCat gives it no expiry; before this it would have been Premium forever). Students keep the existing free plan (1 course, 3 sets and 40 messages a day) until they start the free week.
+- Phone paywall: students see the free vs Premium table, Yearly and Monthly cards (Yearly picked first, badge = the real saving against 12 months, "Save 48%" at $79.99 vs $12.99), one button ("Start your free week" while Apple's free week applies, else "Subscribe"), what happens after the free week on the same screen, Restore Purchases, terms and privacy, and a link to the exam pass. Exams (or the free 50 used): one exam pass card, "Get the exam pass", one-time, no renewal.
+- Conflict noted for Dan: UX_PRINCIPLES says no pre-selected upsells; SPEC §9 (signed later) says yearly picked by default. Built to SPEC §9.
+- Not yet: the student free week limited to 1 course; the exam pass tied to one exam (it unlocks the account for 60 days); web sells nothing (it shows the server's sentence).
+- Dan's setup steps: docs/plans/2026-10-19-pricing-setup-steps.md (App Store Connect prices and free week, the exam pass product, RevenueCat "exam" offering, PREMIUM_LIMITS=on at launch).
+- Tests: premium rules (exam pass 60 days, free 50, the sentence), an end-to-end (five free sets of 10 on an exam, the 51st refused, the pass webhook gives 60 days and sets resume), paywall logic (mode, saving, trial terms, plan line). Tests 252/252. iOS bundle exports.
+- **Decided by:** Dan ("do the paywall and build and whatever else you can do"; SPEC §9 signed 2026-10-18).
+
 ## 2026-10-18 — D-152: The intro plays before login every time (replaces D-151's once per phone)
 - Dan: "Just make it play if they sign out and need to sign back in", "Put a skip button though", "It should be before login."
 - Phone: whenever the app needs a sign-in (a new download, a sign-out, a deleted account): intro video → welcome tour → sign-in. Skip (top right) is always on screen; sound off until tapped. Account → "Watch the intro" replays it. The once-per-phone flag is gone.

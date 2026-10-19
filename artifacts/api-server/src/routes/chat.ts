@@ -33,8 +33,8 @@ import { itemsFromSession, rowsFromState, sheetAsText, updateMemorySheet, type M
 import { FINISHED_SET, NEXT_TEN, parseCoachReply, planActions, promisesSet, withoutMissChips, type DeckPlan, type KnownCourse, type QuizPlan, type SheetPlan } from "./chatActions";
 import { getSession, requireStudyAuth, saveSession } from "./study";
 import { logger } from "../lib/logger";
-import { activeFor, consume, enforced, planFor, refund } from "../lib/premium-store";
-import { limitMessage } from "../lib/premium";
+import { activeFor, consume, enforced, examQuestionsServed, planFor, refund } from "../lib/premium-store";
+import { examFreeLeft, limitMessage } from "../lib/premium";
 import { withoutNearDuplicates } from "../lib/near-duplicate";
 import { bankFillCount, pickFromBank, promptKey } from "../lib/question-bank";
 import { addToBank, fromBank, loadBank, markServed } from "../lib/bank-store";
@@ -918,28 +918,42 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     } else if (courseId) req.log.info("Home chat memory sheet update skipped: nothing to add");
   }
   // A set or deck (D-090): only on an active course, and within the day's sets.
-  const setGate = async (courseId: string): Promise<boolean> => {
+  let setCounted = false; // a daily set was used (an exam's free 50 do not use one)
+  const setGate = async (courseId: string, quiz?: { count: number }): Promise<boolean> => {
     if (!premium) return true;
     if (!activeFor([...courses, ...created], premium).includes(courseId)) {
       await giveBack();
       res.status(402).json({ error: limitMessage("read_only", premium.limits), code: "course_read_only" });
       return false;
     }
+    // D-153: a certification exam on the free plan has its first 50 questions free (instead of the daily
+    // sets); a set is cut to what is left; then the exam pass.
+    if (quiz && premium.plan === "free" && [...courses, ...created].find((c) => c.id === courseId)?.kind === "exam") {
+      const left = examFreeLeft(await examQuestionsServed(ownerId, courseId));
+      if (left === 0) {
+        await giveBack();
+        res.status(402).json({ error: limitMessage("exam_free", premium.limits), code: "exam_free_used" });
+        return false;
+      }
+      quiz.count = Math.min(quiz.count, left);
+      return true;
+    }
     if (!await consume(ownerId, "sets", premium.limits.sets)) {
       await giveBack();
       res.status(402).json({ error: limitMessage("sets", premium.limits), code: "daily_limit" });
       return false;
     }
+    setCounted = true;
     return true;
   };
   const setFailed = async () => {
-    if (premium) await refund(ownerId, "sets");
+    if (premium && setCounted) await refund(ownerId, "sets");
     await giveBack();
   };
   if (plan.quiz) {
     const courseId = resolveCourse(plan.quiz);
     if (courseId) {
-      if (!await setGate(courseId)) return;
+      if (!await setGate(courseId, plan.quiz)) return;
       try {
         const latestState = await latestStateFor(ownerId, state, created);
         // D-139: the day's 10 are on the last study day's misses, else on everything (weighted like the exam).

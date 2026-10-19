@@ -27,3 +27,31 @@ test('packages: yearly first, labelled plainly; paywall reasons', () => {
   assert.match(paywallReason('daily_limit'), /today/);
   assert.match(paywallReason(undefined), /every course/);
 });
+
+// D-153 (SPEC §9): two prices. Students: monthly or yearly after Apple's free week, yearly picked first
+// with an honest saving; certification exams: 50 free questions, then the exam pass (60 days, no renewal).
+test('the free 50 used opens the exam pass paywall', async () => {
+  const { paywallMode } = await import('./premium-ui.ts');
+  assert.equal(premiumCode({ status: 402, data: { code: 'exam_free_used' } }), 'exam_free_used');
+  assert.match(paywallReason('exam_free_used'), /50 free questions/);
+  assert.equal(paywallMode('exam_free_used', undefined), 'exam');
+  assert.equal(paywallMode(undefined, 'exam'), 'exam');
+  assert.equal(paywallMode('daily_limit', undefined), 'student');
+});
+
+test('the yearly saving is the real one, against twelve months', async () => {
+  const { savingLabel } = await import('./premium-ui.ts');
+  assert.equal(savingLabel(12.99, 79.99), 'Save 48%');
+  assert.equal(savingLabel(12.99, 155.88), null, 'no badge without a saving');
+  assert.equal(savingLabel(0, 79.99), null);
+});
+
+test('what happens after the free week is said on the paywall', async () => {
+  const { trialTerms } = await import('./premium-ui.ts');
+  assert.equal(trialTerms('$79.99', 'year', true), 'Free for 7 days, then $79.99 a year. Cancel in Settings before day 8 and you pay nothing.');
+  assert.equal(trialTerms('$12.99', 'month', false), '$12.99 a month. Renews automatically; cancel any time in Settings.');
+});
+
+test('the plan line for an exam pass', () => {
+  assert.equal(planLine({ plan: 'premium', source: 'revenuecat', expiresAt: new Date(2026, 11, 18, 12).toISOString(), productId: 'rapidrecall.exampass.60d' }), 'Exam pass · until Dec 18, 2026');
+});

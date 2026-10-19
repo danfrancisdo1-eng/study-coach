@@ -182,3 +182,54 @@ test('premium: limits are off unless PREMIUM_LIMITS=on (the beta keeps working)'
   assert.equal(status.enforced, false);
   assert.deepEqual(status.readOnlyCourseIds, []);
 });
+
+// D-153 (SPEC §9): a certification exam on the free plan has its first 50 questions free (a set is
+// cut to what is left, no daily-set count), then the exam pass; the pass (non-renewing) lasts 60 days.
+test('premium: an exam gets 50 free questions, then the exam pass for 60 days', async (t) => {
+  buildServer();
+  const database = await startDatabase(t);
+  let written = 0;
+  let coachReply = { reply: 'Here you go.', suggestions: [], actions: [{ type: 'start_quiz', name: 'aws', topic: 'All topics', count: 10, kind: 'practice', scope: 'all' }] };
+  const ai = await startAiStub(t, (request) => {
+    const system = request.body.messages[0].content;
+    const asked = /Create exactly (\d+)/.exec(system);
+    if (asked) return chatReply(JSON.stringify({ questions: Array.from({ length: Number(asked[1]) }, () => { const k = written++; return { prompt: `Which of alpha${k} beta${k} gamma${k} delta${k} epsilon${k} holds?`, options: [`A${k}`, `B${k}`, `C${k}`, `D${k}`], answerIndex: 0, concept: `c${k}`, explanation: `Because ${k}.` }; }) }));
+    if (system.includes('You check the answer key')) return chatReply(JSON.stringify({ checks: [] }));
+    return chatReply(JSON.stringify(coachReply));
+  });
+  const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url, PREMIUM_LIMITS: 'on', REVENUECAT_WEBHOOK_AUTH: HOOK });
+  await database.db.query('insert into study_states (id, owner_id, state) values ($1, $2, $3)', ['state-user_exam', 'user_exam', JSON.stringify({ aiConsent: true, courses: [{ id: 'aws', name: 'AWS SAA', kind: 'exam' }], materials: [] })]);
+  const call = async (method, path, body) => {
+    const res = await fetch(`${base}/api${path}`, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${signToken('user_exam')}` }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const text = await res.text();
+    return { status: res.status, body: text ? JSON.parse(text) : null };
+  };
+  const until = async (id) => { for (let i = 0; i < 300; i += 1) { const s = (await call('GET', `/study/sessions/${id}`)).body; if (s.quiz.status === 'ready') return s; await new Promise((r) => setTimeout(r, 50)); } throw new Error('never ready'); };
+  let version = 0;
+  const sizes = [];
+  for (const count of [10, 10, 10, 10, 10]) {
+    coachReply = { ...coachReply, actions: [{ ...coachReply.actions[0], count: count === 10 && sizes.length === 4 ? 10 : count }] };
+    const chat = await call('POST', '/study/chat', { content: 'quiz me', version, courseId: 'aws' });
+    assert.equal(chat.status, 200, JSON.stringify(chat.body));
+    version = chat.body.version;
+    const action = chat.body.messages.at(-1).actions.find((a) => a.type === 'start_quiz');
+    sizes.push((await until(action.sessionId)).quiz.questions.length);
+  }
+  assert.deepEqual(sizes, [10, 10, 10, 10, 10], 'five free sets of 10, no daily-set limit (free is 3 sets a day otherwise)');
+  // The 51st question: the exam pass.
+  let chat = await call('POST', '/study/chat', { content: 'more', version, courseId: 'aws' });
+  assert.equal(chat.status, 402, JSON.stringify(chat.body));
+  assert.equal(chat.body.code, 'exam_free_used');
+  assert.match(chat.body.error, /50 free questions/);
+
+  // The exam pass arrives (non-renewing, no expiry from RevenueCat): 60 days of Premium.
+  const at = Date.now();
+  const hooked = await fetch(`${base}/api/premium/revenuecat`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: HOOK }, body: JSON.stringify({ api_version: '1.0', event: { type: 'NON_RENEWING_PURCHASE', app_user_id: 'user_exam', event_timestamp_ms: at, purchased_at_ms: at, expiration_at_ms: null, product_id: 'rapidrecall.exampass.60d' } }) });
+  assert.equal(hooked.status, 200);
+  const status = (await call('GET', '/premium')).body;
+  assert.equal(status.plan, 'premium');
+  const days = (Date.parse(status.expiresAt) - at) / 86_400_000;
+  assert.ok(Math.abs(days - 60) < 0.01, `60 days, got ${days}`);
+  chat = await call('POST', '/study/chat', { content: 'more', version, courseId: 'aws' });
+  assert.equal(chat.status, 200, JSON.stringify(chat.body));
+});

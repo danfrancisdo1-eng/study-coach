@@ -1,9 +1,9 @@
 // Premium state in Postgres (D-090, migration 0004): the account's plan and its daily AI use.
 // Limits apply only with PREMIUM_LIMITS=on, so the Expo Go beta keeps working until the
 // purchase flow ships; then Render's env is switched on.
-import { eq, sql } from "drizzle-orm";
-import { aiUsageTable, db, entitlementsTable } from "@workspace/db";
-import { LIMITS, activeCourseIds, applyEvent, isPremium, ownerAccounts, type Entitlement, type Plan, type PlanLimits, type RevenueCatEvent } from "./premium";
+import { and, eq, sql } from "drizzle-orm";
+import { aiUsageTable, db, entitlementsTable, studySessionsTable } from "@workspace/db";
+import { EXAM_PASS_DAYS, LIMITS, activeCourseIds, applyEvent, isExamPass, isPremium, ownerAccounts, type Entitlement, type Plan, type PlanLimits, type RevenueCatEvent } from "./premium";
 
 export const enforced = (): boolean => process.env["PREMIUM_LIMITS"] === "on";
 
@@ -98,9 +98,12 @@ export async function refreshFromRevenueCat(ownerId: string): Promise<void> {
   const base = process.env["REVENUECAT_API_BASE"] ?? "https://api.revenuecat.com";
   const response = await fetch(`${base}/v1/subscribers/${encodeURIComponent(ownerId)}`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(10_000) });
   if (!response.ok) throw new Error(`RevenueCat responded ${response.status}`);
-  const body = await response.json() as { subscriber?: { entitlements?: Record<string, { expires_date?: string | null; product_identifier?: string }> } };
+  const body = await response.json() as { subscriber?: { entitlements?: Record<string, { expires_date?: string | null; product_identifier?: string; purchase_date?: string }> } };
   const premium = body.subscriber?.entitlements?.["premium"];
-  const expiresAt = premium?.expires_date ? new Date(premium.expires_date) : null;
+  // D-153: the exam pass (non-renewing) has no expiry at RevenueCat: it lasts EXAM_PASS_DAYS from the purchase.
+  const passEnds = premium && !premium.expires_date && isExamPass(premium.product_identifier) && premium.purchase_date
+    ? new Date(new Date(premium.purchase_date).getTime() + EXAM_PASS_DAYS * 86_400_000) : null;
+  const expiresAt = premium?.expires_date ? new Date(premium.expires_date) : passEnds;
   const active = !!premium && (expiresAt === null || expiresAt.getTime() > Date.now());
   const current = await currentEntitlement(ownerId);
   await save(ownerId, {
@@ -110,4 +113,22 @@ export async function refreshFromRevenueCat(ownerId: string): Promise<void> {
     // A refresh is the latest truth; later webhooks still apply on top of it.
     lastEventAt: current?.lastEventAt ?? null,
   });
+}
+
+/**
+ * D-153: questions an exam course has had so far (every set and retest written for it), for the
+ * free 50. Counts what was served, answered or not, so starting sets and leaving them does not reset it.
+ */
+export async function examQuestionsServed(ownerId: string, courseId: string): Promise<number> {
+  const rows = await db.select({ session: studySessionsTable.session }).from(studySessionsTable)
+    .where(and(eq(studySessionsTable.ownerId, ownerId), eq(studySessionsTable.courseId, courseId)));
+  let served = 0;
+  for (const { session } of rows) {
+    const s = session as { quiz?: { questions?: unknown[]; expectedCount?: number; grade?: unknown } | null; attempts?: { questions?: unknown[] }[] };
+    const attempts = Array.isArray(s.attempts) ? s.attempts : [];
+    served += attempts.reduce((n, a) => n + (Array.isArray(a.questions) ? a.questions.length : 0), 0);
+    // The set in progress (not yet graded into attempts): what it will hold.
+    if (s.quiz && !s.quiz.grade) served += Math.max(Array.isArray(s.quiz.questions) ? s.quiz.questions.length : 0, s.quiz.expectedCount ?? 0);
+  }
+  return served;
 }
