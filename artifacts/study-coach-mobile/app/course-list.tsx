@@ -150,7 +150,7 @@ export default function CourseListScreen() {
         ) : (
           <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => { if (router.canGoBack()) router.back(); else router.navigate('/(tabs)'); }} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
         )}
-        <View style={styles.headerCopy}><Text style={styles.title}>Courses & exams</Text><Text style={styles.caption}>Tap one to open it</Text></View>
+        <View style={styles.headerCopy}><Text style={styles.title}>Courses & exams</Text></View>
         <Pressable accessibilityRole="button" onPress={() => setAddOpen(true)} style={styles.addButton} testID="button-add-course">
           <Feather name="plus" size={16} color={colors.primaryText} /><Text style={styles.addText}>Add</Text>
         </Pressable>

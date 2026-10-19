@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-19 — D-155: Students must start the free week; the day count only on the plan; Dan's screenshot fixes
+- Dan: "It's a free week with one course so must start free week." A student course on the free plan gets no sets or flashcards (402 trial_required, "Start your free week to study with the coach: 7 days free, then cancel any time in Settings."); the coach chat still works at the free daily limit, so a student can set up the course. The free week is a new plan value "trial" (RevenueCat period_type TRIAL, on the webhook and the refresh): one course, the full daily limits; the first paid period is Premium. Stored in the existing text column; no migration. The phone shows "Free week · ends <date>" and opens the student paywall on trial_required.
+- Dan: "it said I did 10 out of 100. But I never asked for a study plan." The day's count follows only a set from the plan ("Next 10"; sessions marked daily).
+- Dan: "Questions without material" showed although material was uploaded: the button now shows only while the course has no uploads and no lectures.
+- Repeated sentences removed (Dan: "Lose the repeated sentences"): sign-in "Sign in to continue your saved study sessions.", course list "Tap one to open it", topic picker "Pick one, or all of them", and the check-in card's sentence (it also claimed saved materials when there were none).
+- The app's App Store Connect id (6822512202) is in eas.json (Dan: "Ok add ID"); TestFlight build 6 was submitted.
+- Tests 255/255 (premium e2e: a free student set refused with trial_required, the free week allows sets and keeps one course; daily-reps e2e: no count after an ordinary set, the count after a Next 10). iOS bundle exports.
+- **Decided by:** Dan.
+
 ## 2026-10-19 — D-154: Accessibility fixes that do not change the look
 - From a WCAG 2.2 AA audit of every screen (overnight, Dan: "whatever else you can do"). Fixed: the missed-question concept label on the light miss box (pale blue, 1.45:1) now uses primaryText; Sign out and Account rows get a 44 pt touch area (hitSlop, same look); the legacy screen's back button gets a label and 44 pt; "Send a new code" and "Start over" get button roles and 44 pt; VoiceOver now says which option is the correct answer and which was the student's wrong one; unused review-screen styles deleted (one would have repeated the unreadable navy box).
 - For Dan (visual, so not changed): the light green/red for right and wrong are under 4.5:1 as text (suggest #1e7d45 and #b8352b); white on the green/red fills; the legacy course screen uses yellow as text (1.6–1.8:1); thin input borders; the quiz cards ignore iPhone's Text Size (D-053); color-only states in the exam bubble map; restated subheaders on sign-in, the course list and the topic picker.

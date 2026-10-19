@@ -591,7 +591,6 @@ function StudyCoach() {
             <Text style={styles.sectionTitle}>
               {courseMaterials.length > 0 ? 'Anything else before we start?' : 'Do you have any course materials you want to add?'}
             </Text>
-            <Text style={styles.body}>Anything to add before we begin? Your saved course materials are ready to use.</Text>
           </View>
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Optional course materials</Text>

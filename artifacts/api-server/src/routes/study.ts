@@ -61,6 +61,11 @@ async function premiumGate(res: Response, ownerId: string, state: JsonObject, co
     }
     return async () => {};
   }
+  // D-155: a student course studies with sets during the free week or with Premium.
+  if (kind === "sets" && info.plan === "free" && !(jsonObject(course) && course.kind === "exam")) {
+    res.status(402).json({ error: limitMessage("trial", info.limits), code: "trial_required" });
+    return null;
+  }
   if (!await consume(ownerId, kind, info.limits[kind])) {
     res.status(402).json({ error: limitMessage(kind, info.limits), code: "daily_limit" });
     return null;

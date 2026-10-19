@@ -90,3 +90,23 @@ test('the sentence when the free 50 are used', async () => {
   assert.match(limitMessage('exam_free', LIMITS.free), /50 free questions/);
   assert.match(limitMessage('exam_free', LIMITS.free), /exam pass/i);
 });
+
+// D-155 (Dan: "It's a free week with one course so must start free week"): students study with sets
+// only during Apple's free week (one course, full daily limits) or with Premium.
+test("the free week: a trial event gives the trial plan, one course, full daily limits", async () => {
+  const { LIMITS: L, isActivePlan } = await import('../src/lib/premium.ts');
+  assert.deepEqual(L.trial, { courses: 1, sets: 20, messages: 300 });
+  const at = new Date('2026-10-19T10:00:00Z').getTime();
+  const ent = applyEvent(null, { type: 'INITIAL_PURCHASE', period_type: 'TRIAL', event_timestamp_ms: at, expiration_at_ms: at + 7 * 86_400_000, product_id: 'studycoach.premium.yearly' });
+  assert.equal(ent.plan, 'trial');
+  assert.equal(isActivePlan(ent, new Date(at + 86_400_000)), true);
+  assert.equal(isActivePlan(ent, new Date(at + 8 * 86_400_000)), false);
+  // The first renewal after the free week is a normal paid period: Premium.
+  const paid = applyEvent(ent, { type: 'RENEWAL', period_type: 'NORMAL', event_timestamp_ms: at + 7 * 86_400_000, expiration_at_ms: at + 372 * 86_400_000, product_id: 'studycoach.premium.yearly' });
+  assert.equal(paid.plan, 'premium');
+});
+
+test('the sentence when a student has not started the free week', async () => {
+  const { limitMessage } = await import('../src/lib/premium.ts');
+  assert.match(limitMessage('trial', LIMITS.free), /free week/);
+});

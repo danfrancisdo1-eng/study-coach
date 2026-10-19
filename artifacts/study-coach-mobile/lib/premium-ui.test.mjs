@@ -55,3 +55,10 @@ test('what happens after the free week is said on the paywall', async () => {
 test('the plan line for an exam pass', () => {
   assert.equal(planLine({ plan: 'premium', source: 'revenuecat', expiresAt: new Date(2026, 11, 18, 12).toISOString(), productId: 'rapidrecall.exampass.60d' }), 'Exam pass · until Dec 18, 2026');
 });
+
+// D-155: students without the free week get the student paywall; the free week shows when it ends.
+test('trial_required opens the student paywall; the free week line', () => {
+  assert.equal(premiumCode({ status: 402, data: { code: 'trial_required' } }), 'trial_required');
+  assert.match(paywallReason('trial_required'), /free week/);
+  assert.equal(planLine({ plan: 'trial', source: 'revenuecat', expiresAt: new Date(2026, 9, 26, 12).toISOString() }), 'Free week · ends Oct 26, 2026');
+});

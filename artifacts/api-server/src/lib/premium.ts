@@ -2,11 +2,13 @@
 // allows, which courses stay active after a lapse, whether a state save adds a course the
 // plan does not allow, and how a RevenueCat event updates the stored entitlement.
 
-export type Plan = "free" | "premium";
+export type Plan = "free" | "trial" | "premium"; // trial: Apple's free week (D-155)
 export type PlanLimits = { courses: number | null; sets: number; messages: number };
 
 export const LIMITS: Record<Plan, PlanLimits> = {
   free: { courses: 1, sets: 3, messages: 40 },
+  // D-155: the student free week: one course, the full daily limits.
+  trial: { courses: 1, sets: 20, messages: 300 },
   premium: { courses: null, sets: 20, messages: 300 },
 };
 
@@ -29,6 +31,12 @@ export function examFreeLeft(served: number): number {
 }
 
 export type Entitlement = { plan: Plan; expiresAt: Date | null; productId?: string | null; lastEventAt?: Date | null };
+
+/** D-155: the free week or Premium, while it has not expired (no expiry = no end). */
+export function isActivePlan(entitlement: Pick<Entitlement, "plan" | "expiresAt"> | null | undefined, now: Date = new Date()): boolean {
+  if (!entitlement || entitlement.plan === "free") return false;
+  return entitlement.expiresAt === null || entitlement.expiresAt.getTime() > now.getTime();
+}
 
 /** Premium while the stored plan is premium and has not expired (no expiry = no end). */
 export function isPremium(entitlement: Pick<Entitlement, "plan" | "expiresAt"> | null | undefined, now: Date = new Date()): boolean {
@@ -67,6 +75,8 @@ export type RevenueCatEvent = {
   product_id?: string;
   cancel_reason?: string;
   purchased_at_ms?: number;
+  /** RevenueCat: TRIAL during Apple's free week, NORMAL or INTRO otherwise. */
+  period_type?: string;
 };
 
 const GRANTS = new Set(["INITIAL_PURCHASE", "RENEWAL", "PRODUCT_CHANGE", "UNCANCELLATION", "NON_RENEWING_PURCHASE", "SUBSCRIPTION_EXTENDED", "CANCELLATION", "BILLING_ISSUE"]);
@@ -89,12 +99,13 @@ export function applyEvent(current: Entitlement | null, event: RevenueCatEvent):
   // D-153: an exam pass carries no expiry (non-renewing): it lasts EXAM_PASS_DAYS from the purchase.
   const passEnds = isExamPass(event.product_id) ? new Date((event.purchased_at_ms ?? event.event_timestamp_ms) + EXAM_PASS_DAYS * DAY_MS) : null;
   const expiresAt = typeof event.expiration_at_ms === "number" ? new Date(event.expiration_at_ms) : passEnds;
-  return { plan: "premium", expiresAt, productId, lastEventAt: at };
+  return { plan: event.period_type === "TRIAL" ? "trial" : "premium", expiresAt, productId, lastEventAt: at };
 }
 
 /** The sentence a student sees when a limit stops them; never a code or a number they cannot act on. */
-export function limitMessage(kind: "course" | "sets" | "messages" | "read_only" | "exam_free", limits: PlanLimits): string {
+export function limitMessage(kind: "course" | "sets" | "messages" | "read_only" | "exam_free" | "trial", limits: PlanLimits): string {
   switch (kind) {
+    case "trial": return "Start your free week to study with the coach: 7 days free, then cancel any time in Settings.";
     case "exam_free": return `You've used your ${EXAM_FREE_QUESTIONS} free questions for this exam. The exam pass unlocks everything for ${EXAM_PASS_DAYS} days.`;
     case "course": return "Your free plan has one course or exam. Premium adds as many as you like.";
     case "sets": return `You've used today's ${limits.sets} sets. More tomorrow${limits.courses === null ? "." : ", or go Premium for 20 a day."}`;

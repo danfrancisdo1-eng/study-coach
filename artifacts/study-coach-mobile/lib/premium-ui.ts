@@ -2,7 +2,7 @@
  * Premium on the phone (D-090), the parts that are plain logic: which server refusals open the
  * paywall, the plan line for the Account page, and the order and labels of the two packages.
  */
-export type PremiumCode = 'premium_required' | 'daily_limit' | 'course_read_only' | 'exam_free_used';
+export type PremiumCode = 'premium_required' | 'daily_limit' | 'course_read_only' | 'exam_free_used' | 'trial_required';
 
 /** The server's 402 code, when a request was stopped by the plan; null for any other failure. */
 export function premiumCode(problem: unknown): PremiumCode | null {
@@ -10,14 +10,18 @@ export function premiumCode(problem: unknown): PremiumCode | null {
   const p = problem as { status?: unknown; data?: { code?: unknown } };
   if (p.status !== 402) return null;
   const code = p.data?.code;
-  return code === 'premium_required' || code === 'daily_limit' || code === 'course_read_only' || code === 'exam_free_used' ? code : null;
+  return code === 'premium_required' || code === 'daily_limit' || code === 'course_read_only' || code === 'exam_free_used' || code === 'trial_required' ? code : null;
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** "Premium · renews Nov 12, 2026", "Premium · owner", or "Free plan · 1 course". */
-export function planLine(status: { plan: 'free' | 'premium'; source: string | null; expiresAt: string | null; productId?: string | null } | null | undefined): string {
+export function planLine(status: { plan: 'free' | 'trial' | 'premium'; source: string | null; expiresAt: string | null; productId?: string | null } | null | undefined): string {
   if (!status) return 'Free plan';
+  if (status.plan === 'trial' && status.expiresAt) {
+    const d = new Date(status.expiresAt);
+    return `Free week · ends ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  }
   if (status.plan === 'premium') {
     if (status.source === 'owner') return 'Premium · owner account';
     if (!status.expiresAt) return 'Premium';
@@ -46,6 +50,7 @@ export function paywallReason(reason: string | undefined): string {
     case 'daily_limit': return "You've reached today's free limit.";
     case 'course_read_only': return 'This course is read-only on the free plan.';
     case 'exam_free_used': return "You've used your 50 free questions for this exam.";
+    case 'trial_required': return 'Start your free week to study with the coach.';
     default: return 'Study every course with your coach.';
   }
 }

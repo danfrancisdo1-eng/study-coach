@@ -348,6 +348,7 @@ const batchWeights = (batch: Batch) => (batch.section ? [{ name: batch.section, 
 
 async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { courseId: string }, previous: Session | null, sectionWeights?: { name: string; weight: number | null }[], pastWeak: string[] = [], timed?: TimedStart): Promise<Session | null> {
   const session = newSession(plan.courseId, plan.topic, true);
+  if (plan.scope === "daily") session.daily = true; // D-155: the day's count shows after these only
   const { chunks, status } = await sourcesFor(ownerId, state, plan.courseId, plan.topic);
   const previousQuiz = previous?.quiz;
   const originalPrompts = previousQuiz ? previousQuiz.questions.map((q) => q.prompt) : [];
@@ -751,7 +752,8 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   // D-139: "Next 10" always starts the day's next 10 here, whatever the reply said.
   if (!timed && threadId && content.toLowerCase() === NEXT_TEN.toLowerCase()) { plan.quiz = { courseId: threadId, topic: "Today's 10", count: DAILY_SET, scope: "daily", kind: "practice" }; plan.deck = null; }
   // D-139: the line after a graded set carries the day's count.
-  if (threadId && content === FINISHED_SET && quiz?.graded) coach = { ...coach, reply: `${coach.reply} ${dailyLine(reps, quiz.answered)}` };
+  // D-155 (Dan: "I never asked for a study plan"): only after a set from the plan ("Next 10").
+  if (threadId && content === FINISHED_SET && quiz?.graded && lastQuizSession?.daily) coach = { ...coach, reply: `${coach.reply} ${dailyLine(reps, quiz.answered)}` };
   if (plan.notes.length) req.log.info({ notes: plan.notes }, "Home chat actions skipped");
   // The free plan has one course (D-090): a coach reply that would add another is not applied.
   if (premium && premium.limits.courses !== null && plan.creates.length && courses.length + plan.creates.length > premium.limits.courses) {
@@ -937,6 +939,12 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       }
       quiz.count = Math.min(quiz.count, left);
       return true;
+    }
+    // D-155: a student course studies with sets during the free week or with Premium.
+    if (premium.plan === "free" && [...courses, ...created].find((c) => c.id === courseId)?.kind !== "exam") {
+      await giveBack();
+      res.status(402).json({ error: limitMessage("trial", premium.limits), code: "trial_required" });
+      return false;
     }
     if (!await consume(ownerId, "sets", premium.limits.sets)) {
       await giveBack();
