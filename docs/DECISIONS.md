@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-19 — D-156: The exam pass unlocks one exam
+- Dan: "Exam pass covers one exam." New table exam_passes (migration 0006, additive; plan docs/plans/2026-10-19-exam-passes-migration-0006.md): one row per pass (store transaction id), the exam it unlocks, 60 days from the purchase.
+- A pass never touches the account's plan. The webhook records it and binds it to the account's only certification exam; with several exams, the app names the exam the pass was bought from (POST /premium/refresh {courseId}, from the paywall opened in that exam). planFor(owner, course) treats an exam with an active pass as Premium there (sets, messages, the free 50 lifted); other courses keep their own plan. GET /premium lists examPasses.
+- RevenueCat setup changed: the pass gets its own entitlement exam_pass, not premium.
+- Not yet: a free account still has one course, so a second exam needs Premium or deleting the first (a pass for a second exam works once that course exists).
+- Tests: premium e2e (the pass binds to the only exam, the account stays free, the exam resumes; a second exam stays locked until a pass bought from it is bound by the refresh).
+- **Decided by:** Dan.
+
 ## 2026-10-19 — D-155: Students must start the free week; the day count only on the plan; Dan's screenshot fixes
 - Dan: "It's a free week with one course so must start free week." A student course on the free plan gets no sets or flashcards (402 trial_required, "Start your free week to study with the coach: 7 days free, then cancel any time in Settings."); the coach chat still works at the free daily limit, so a student can set up the course. The free week is a new plan value "trial" (RevenueCat period_type TRIAL, on the webhook and the refresh): one course, the full daily limits; the first paid period is Premium. Stored in the existing text column; no migration. The phone shows "Free week · ends <date>" and opens the student paywall on trial_required.
 - Dan: "it said I did 10 out of 100. But I never asked for a study plan." The day's count follows only a set from the plan ("Next 10"; sessions marked daily).

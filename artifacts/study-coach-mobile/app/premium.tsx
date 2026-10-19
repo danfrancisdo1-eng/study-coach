@@ -26,7 +26,7 @@ export default function PremiumScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { isLoaded, isSignedIn, userId } = useAuth();
-  const { reason, kind } = useLocalSearchParams<{ reason?: string; kind?: string }>();
+  const { reason, kind, courseId } = useLocalSearchParams<{ reason?: string; kind?: string; courseId?: string }>();
   const mode = paywallMode(reason, kind);
   const [selected, setSelected] = useState<string | null>(null);
   const refresh = useRefreshPremium();
@@ -45,7 +45,8 @@ export default function PremiumScreen() {
 
   const close = () => { if (router.canGoBack()) router.back(); else router.replace('/course-list'); };
   const afterPurchase = async (done: string) => {
-    const status = await refresh.mutateAsync();
+    // D-156: a pass bought here unlocks this exam; the server binds it to the course named.
+    const status = await refresh.mutateAsync({ data: mode === 'exam' && courseId ? { courseId } : {} });
     queryClient.setQueryData(getGetPremiumStatusQueryKey(), status);
     setMessage(status.plan === 'premium' ? done : 'Your purchase is being confirmed. It can take a minute; try Restore Purchases if it does not show.');
   };

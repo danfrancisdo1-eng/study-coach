@@ -1,27 +1,34 @@
 // Premium state in Postgres (D-090, migration 0004): the account's plan and its daily AI use.
 // Limits apply only with PREMIUM_LIMITS=on, so the Expo Go beta keeps working until the
 // purchase flow ships; then Render's env is switched on.
-import { and, eq, sql } from "drizzle-orm";
-import { aiUsageTable, db, entitlementsTable, studySessionsTable } from "@workspace/db";
+import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
+import { aiUsageTable, db, entitlementsTable, examPassesTable, studySessionsTable } from "@workspace/db";
 import { EXAM_PASS_DAYS, LIMITS, activeCourseIds, applyEvent, isActivePlan, isExamPass, ownerAccounts, type Entitlement, type Plan, type PlanLimits, type RevenueCatEvent } from "./premium";
 
 export const enforced = (): boolean => process.env["PREMIUM_LIMITS"] === "on";
 
 export type PlanInfo = {
   plan: Plan;
-  source: "owner" | "revenuecat" | null;
+  source: "owner" | "revenuecat" | "exam_pass" | null;
   expiresAt: Date | null;
   productId: string | null;
   limits: PlanLimits;
 };
 
-export async function planFor(ownerId: string, now: Date = new Date()): Promise<PlanInfo> {
+/** The account's plan; with a course, an exam pass for that course counts as Premium there (D-156). */
+export async function planFor(ownerId: string, courseIdOrNow?: string | null | Date, maybeNow?: Date): Promise<PlanInfo> {
+  const courseId = typeof courseIdOrNow === "string" ? courseIdOrNow : null;
+  const now = courseIdOrNow instanceof Date ? courseIdOrNow : maybeNow ?? new Date();
   if (ownerAccounts(process.env["OWNER_ACCOUNT_IDS"]).includes(ownerId)) {
     return { plan: "premium", source: "owner", expiresAt: null, productId: null, limits: LIMITS.premium };
   }
   const row = (await db.select().from(entitlementsTable).where(eq(entitlementsTable.ownerId, ownerId)).limit(1))[0];
   // D-155: the free week (trial) or Premium while it lasts; otherwise free.
   const plan: Plan = row && isActivePlan({ plan: row.plan, expiresAt: row.expiresAt }, now) ? row.plan : "free";
+  if (plan === "free" && courseId) {
+    const pass = await examPassFor(ownerId, courseId, now);
+    if (pass) return { plan: "premium", source: "exam_pass", expiresAt: pass.expiresAt, productId: pass.productId, limits: LIMITS.premium };
+  }
   return {
     plan,
     source: row ? "revenuecat" : null,
@@ -99,8 +106,14 @@ export async function refreshFromRevenueCat(ownerId: string): Promise<void> {
   const base = process.env["REVENUECAT_API_BASE"] ?? "https://api.revenuecat.com";
   const response = await fetch(`${base}/v1/subscribers/${encodeURIComponent(ownerId)}`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(10_000) });
   if (!response.ok) throw new Error(`RevenueCat responded ${response.status}`);
-  const body = await response.json() as { subscriber?: { entitlements?: Record<string, { expires_date?: string | null; product_identifier?: string; purchase_date?: string }>; subscriptions?: Record<string, { period_type?: string }> } };
-  const premium = body.subscriber?.entitlements?.["premium"];
+  const body = await response.json() as { subscriber?: { entitlements?: Record<string, { expires_date?: string | null; product_identifier?: string; purchase_date?: string }>; subscriptions?: Record<string, { period_type?: string }>; non_subscriptions?: Record<string, { id?: string; purchase_date?: string }[]> } };
+  // D-156: exam passes are their own rows (one exam each), never the account's Premium.
+  for (const [productId, purchases] of Object.entries(body.subscriber?.non_subscriptions ?? {})) {
+    if (!isExamPass(productId)) continue;
+    for (const p of purchases) if (p.id && p.purchase_date) await recordExamPass(ownerId, { id: p.id, productId, purchasedAt: new Date(p.purchase_date) });
+  }
+  const entitled = body.subscriber?.entitlements?.["premium"];
+  const premium = entitled && !isExamPass(entitled.product_identifier) ? entitled : undefined;
   // D-153: the exam pass (non-renewing) has no expiry at RevenueCat: it lasts EXAM_PASS_DAYS from the purchase.
   const passEnds = premium && !premium.expires_date && isExamPass(premium.product_identifier) && premium.purchase_date
     ? new Date(new Date(premium.purchase_date).getTime() + EXAM_PASS_DAYS * 86_400_000) : null;
@@ -133,4 +146,38 @@ export async function examQuestionsServed(ownerId: string, courseId: string): Pr
     if (s.quiz && !s.quiz.grade) served += Math.max(Array.isArray(s.quiz.questions) ? s.quiz.questions.length : 0, s.quiz.expectedCount ?? 0);
   }
   return served;
+}
+
+// D-156 (Dan: "Exam pass covers one exam"): each pass is its own row; it unlocks one exam (course) for
+// EXAM_PASS_DAYS. A pass arrives (webhook or refresh) unbound; the app names the exam it was bought from,
+// or, when the account has exactly one certification exam, it binds to that one.
+
+/** Records a pass (once per store transaction); returns whether it was new. */
+export async function recordExamPass(ownerId: string, pass: { id: string; productId: string; purchasedAt: Date }): Promise<boolean> {
+  const expiresAt = new Date(pass.purchasedAt.getTime() + EXAM_PASS_DAYS * 86_400_000);
+  const rows = await db.insert(examPassesTable).values({ id: pass.id, ownerId, productId: pass.productId, purchasedAt: pass.purchasedAt, expiresAt })
+    .onConflictDoNothing().returning({ id: examPassesTable.id });
+  return rows.length > 0;
+}
+
+/** Binds the account's unbound, unexpired passes to an exam. */
+export async function bindExamPasses(ownerId: string, courseId: string, now: Date = new Date()): Promise<number> {
+  const rows = await db.update(examPassesTable).set({ courseId })
+    .where(and(eq(examPassesTable.ownerId, ownerId), isNull(examPassesTable.courseId), gt(examPassesTable.expiresAt, now)))
+    .returning({ id: examPassesTable.id });
+  return rows.length;
+}
+
+/** The exam's active pass, if any (the one that ends last). */
+export async function examPassFor(ownerId: string, courseId: string, now: Date = new Date()): Promise<{ expiresAt: Date; productId: string } | null> {
+  const row = (await db.select().from(examPassesTable)
+    .where(and(eq(examPassesTable.ownerId, ownerId), eq(examPassesTable.courseId, courseId), gt(examPassesTable.expiresAt, now)))
+    .orderBy(desc(examPassesTable.expiresAt)).limit(1))[0];
+  return row ? { expiresAt: row.expiresAt, productId: row.productId } : null;
+}
+
+/** Every active pass of the account (for the status: which exams are unlocked until when). */
+export async function examPassesOf(ownerId: string, now: Date = new Date()): Promise<{ courseId: string | null; expiresAt: string }[]> {
+  const rows = await db.select().from(examPassesTable).where(and(eq(examPassesTable.ownerId, ownerId), gt(examPassesTable.expiresAt, now)));
+  return rows.map((r) => ({ courseId: r.courseId, expiresAt: r.expiresAt.toISOString() }));
 }

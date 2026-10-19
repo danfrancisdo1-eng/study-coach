@@ -615,7 +615,8 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   }
   // Premium (D-090), only with PREMIUM_LIMITS=on: a read-only course takes no AI work, and every
   // coach message counts toward the day's limit. Anything that stops the request gives it back.
-  const premium = enforced() ? await planFor(ownerId) : null;
+  const premium = enforced() ? await planFor(ownerId, threadId) : null; // D-156: an exam pass counts in its exam's thread
+  const planInThread = premium;
   if (premium && threadId && !activeFor(courses, premium).includes(threadId)) {
     res.status(402).json({ error: limitMessage("read_only", premium.limits), code: "course_read_only" });
     return;
@@ -922,7 +923,9 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   // A set or deck (D-090): only on an active course, and within the day's sets.
   let setCounted = false; // a daily set was used (an exam's free 50 do not use one)
   const setGate = async (courseId: string, quiz?: { count: number }): Promise<boolean> => {
-    if (!premium) return true;
+    if (!enforced()) return true;
+    // D-156: a set for another course than this thread is judged by that course's plan (its exam pass).
+    const premium = courseId === threadId && planInThread ? planInThread : await planFor(ownerId, courseId);
     if (!activeFor([...courses, ...created], premium).includes(courseId)) {
       await giveBack();
       res.status(402).json({ error: limitMessage("read_only", premium.limits), code: "course_read_only" });

@@ -88,6 +88,14 @@ export interface ReviewSheet {
   sections: ReviewSheetSectionsItem[];
 }
 
+export interface PremiumRefreshInput {
+  /**
+     * D-156: the exam an exam pass was bought from; its unbound passes unlock that exam
+     * @maxLength 200
+     */
+  courseId?: string;
+}
+
 /**
  * trial: Apple's free week (D-155): one course, the full daily limits
  */
@@ -109,6 +117,7 @@ export type PremiumStatusSource = typeof PremiumStatusSource[keyof typeof Premiu
 export const PremiumStatusSource = {
   owner: 'owner',
   revenuecat: 'revenuecat',
+  exam_pass: 'exam_pass',
 } as const;
 
 export type PremiumStatusLimits = {
@@ -126,6 +135,12 @@ export type PremiumStatusUsage = {
   messages: number;
   /** @nullable */
   resetAt: string | null;
+};
+
+export type PremiumStatusExamPassesItem = {
+  /** @nullable */
+  courseId: string | null;
+  expiresAt: string;
 };
 
 /**
@@ -146,6 +161,8 @@ export interface PremiumStatus {
   usage: PremiumStatusUsage;
   activeCourseIds: string[];
   readOnlyCourseIds: string[];
+  /** D-156: active exam passes; each unlocks one exam (courseId null until the app names it) */
+  examPasses?: PremiumStatusExamPassesItem[];
 }
 
 export type StudyStateCoursesItem = { [key: string]: unknown };

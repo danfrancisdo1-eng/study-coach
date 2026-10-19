@@ -43,7 +43,7 @@ export default function AccountScreen() {
     setRestoring(true); setPlanNote('');
     try {
       await restore(userId);
-      const next = await refresh.mutateAsync();
+      const next = await refresh.mutateAsync({ data: {} });
       queryClient.setQueryData(getGetPremiumStatusQueryKey(), next);
       setPlanNote(next.plan === 'premium' ? 'Purchases restored. You have Premium.' : 'No Premium purchase was found for this Apple ID.');
     } catch (problem) { setPlanNote(friendlyError(problem)); } finally { setRestoring(false); }

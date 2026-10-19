@@ -46,7 +46,7 @@ import { activeFor, consume, enforced, examQuestionsServed, planFor, refund } fr
  */
 async function premiumGate(res: Response, ownerId: string, state: JsonObject, courseId: string, kind: "sets" | "messages"): Promise<(() => Promise<void>) | null> {
   if (!enforced()) return async () => {};
-  const info = await planFor(ownerId);
+  const info = await planFor(ownerId, courseId); // D-156: the course's exam pass counts
   const courses = Array.isArray(state.courses) ? state.courses.filter((c): c is { id: string } => jsonObject(c) && typeof c.id === "string") : [];
   if (!activeFor(courses, info).includes(courseId)) {
     res.status(402).json({ error: limitMessage("read_only", info.limits), code: "course_read_only" });

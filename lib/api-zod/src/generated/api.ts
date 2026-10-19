@@ -200,7 +200,7 @@ export const DeleteAccountResponse = zod.object({
 export const GetPremiumStatusResponse = zod.object({
   "enforced": zod.boolean().describe('False until PREMIUM_LIMITS=on on the server; then limits apply'),
   "plan": zod.enum(['free', 'trial', 'premium']).describe('trial: Apple\'s free week (D-155): one course, the full daily limits'),
-  "source": zod.union([zod.literal('owner'),zod.literal('revenuecat'),zod.literal(null)]).nullable(),
+  "source": zod.union([zod.literal('owner'),zod.literal('revenuecat'),zod.literal('exam_pass'),zod.literal(null)]).nullable(),
   "expiresAt": zod.string().nullable(),
   "productId": zod.string().nullable(),
   "limits": zod.object({
@@ -214,17 +214,29 @@ export const GetPremiumStatusResponse = zod.object({
   "resetAt": zod.string().nullable()
 }),
   "activeCourseIds": zod.array(zod.string()),
-  "readOnlyCourseIds": zod.array(zod.string())
+  "readOnlyCourseIds": zod.array(zod.string()),
+  "examPasses": zod.array(zod.object({
+  "courseId": zod.string().nullable(),
+  "expiresAt": zod.string()
+})).optional().describe('D-156: active exam passes; each unlocks one exam (courseId null until the app names it)')
 }).describe('D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit, course_read_only, exam_free_used (D-153) or trial_required (D-155).')
 
 
 /**
  * @summary Re-check the purchase with RevenueCat (after a purchase or Restore Purchases)
  */
+export const refreshPremiumBodyCourseIdMax = 200;
+
+
+
+export const RefreshPremiumBody = zod.object({
+  "courseId": zod.string().max(refreshPremiumBodyCourseIdMax).optional().describe('D-156: the exam an exam pass was bought from; its unbound passes unlock that exam')
+})
+
 export const RefreshPremiumResponse = zod.object({
   "enforced": zod.boolean().describe('False until PREMIUM_LIMITS=on on the server; then limits apply'),
   "plan": zod.enum(['free', 'trial', 'premium']).describe('trial: Apple\'s free week (D-155): one course, the full daily limits'),
-  "source": zod.union([zod.literal('owner'),zod.literal('revenuecat'),zod.literal(null)]).nullable(),
+  "source": zod.union([zod.literal('owner'),zod.literal('revenuecat'),zod.literal('exam_pass'),zod.literal(null)]).nullable(),
   "expiresAt": zod.string().nullable(),
   "productId": zod.string().nullable(),
   "limits": zod.object({
@@ -238,7 +250,11 @@ export const RefreshPremiumResponse = zod.object({
   "resetAt": zod.string().nullable()
 }),
   "activeCourseIds": zod.array(zod.string()),
-  "readOnlyCourseIds": zod.array(zod.string())
+  "readOnlyCourseIds": zod.array(zod.string()),
+  "examPasses": zod.array(zod.object({
+  "courseId": zod.string().nullable(),
+  "expiresAt": zod.string()
+})).optional().describe('D-156: active exam passes; each unlocks one exam (courseId null until the app names it)')
 }).describe('D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit, course_read_only, exam_free_used (D-153) or trial_required (D-155).')
 
 

@@ -322,7 +322,7 @@ export default function CoachHome() {
       setError(readableError(problem));
       // The plan stopped it (D-090): the sentence stays under the chat, the draft stays in the box, the paywall opens.
       const code = premiumCode(problem);
-      if (code) router.push({ pathname: '/premium', params: { reason: code } });
+      if (code) router.push({ pathname: '/premium', params: { reason: code, ...(focusCourseId ? { courseId: focusCourseId } : {}) } });
     }
   };
 

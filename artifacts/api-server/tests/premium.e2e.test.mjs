@@ -213,14 +213,16 @@ test('premium: an exam gets 50 free questions, then the exam pass for 60 days', 
   const database = await startDatabase(t);
   let written = 0;
   let coachReply = { reply: 'Here you go.', suggestions: [], actions: [{ type: 'start_quiz', name: 'aws', topic: 'All topics', count: 10, kind: 'practice', scope: 'all' }] };
+  let subscriber = { subscriber: { entitlements: {}, non_subscriptions: {} } };
   const ai = await startAiStub(t, (request) => {
+    if (request.path.startsWith('/v1/subscribers/')) return { status: 200, body: subscriber };
     const system = request.body.messages[0].content;
     const asked = /Create exactly (\d+)/.exec(system);
     if (asked) return chatReply(JSON.stringify({ questions: Array.from({ length: Number(asked[1]) }, () => { const k = written++; return { prompt: `Which of alpha${k} beta${k} gamma${k} delta${k} epsilon${k} holds?`, options: [`A${k}`, `B${k}`, `C${k}`, `D${k}`], answerIndex: 0, concept: `c${k}`, explanation: `Because ${k}.` }; }) }));
     if (system.includes('You check the answer key')) return chatReply(JSON.stringify({ checks: [] }));
     return chatReply(JSON.stringify(coachReply));
   });
-  const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url, PREMIUM_LIMITS: 'on', REVENUECAT_WEBHOOK_AUTH: HOOK });
+  const { base, signToken } = await startServer(t, ai.port, { DATABASE_URL: database.url, PREMIUM_LIMITS: 'on', REVENUECAT_WEBHOOK_AUTH: HOOK, REVENUECAT_SECRET_KEY: 'sk_test_rc', REVENUECAT_API_BASE: `http://127.0.0.1:${ai.port}` });
   await database.db.query('insert into study_states (id, owner_id, state) values ($1, $2, $3)', ['state-user_exam', 'user_exam', JSON.stringify({ aiConsent: true, courses: [{ id: 'aws', name: 'AWS SAA', kind: 'exam' }], materials: [] })]);
   const call = async (method, path, body) => {
     const res = await fetch(`${base}/api${path}`, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${signToken('user_exam')}` }, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -245,14 +247,30 @@ test('premium: an exam gets 50 free questions, then the exam pass for 60 days', 
   assert.equal(chat.body.code, 'exam_free_used');
   assert.match(chat.body.error, /50 free questions/);
 
-  // The exam pass arrives (non-renewing, no expiry from RevenueCat): 60 days of Premium.
+  // D-156: the exam pass (non-renewing) arrives: it unlocks this one exam for 60 days, not the account.
   const at = Date.now();
-  const hooked = await fetch(`${base}/api/premium/revenuecat`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: HOOK }, body: JSON.stringify({ api_version: '1.0', event: { type: 'NON_RENEWING_PURCHASE', app_user_id: 'user_exam', event_timestamp_ms: at, purchased_at_ms: at, expiration_at_ms: null, product_id: 'rapidrecall.exampass.60d' } }) });
+  const hooked = await fetch(`${base}/api/premium/revenuecat`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: HOOK }, body: JSON.stringify({ api_version: '1.0', event: { type: 'NON_RENEWING_PURCHASE', app_user_id: 'user_exam', transaction_id: 'tx-aws', event_timestamp_ms: at, purchased_at_ms: at, expiration_at_ms: null, product_id: 'rapidrecall.exampass.60d' } }) });
   assert.equal(hooked.status, 200);
-  const status = (await call('GET', '/premium')).body;
-  assert.equal(status.plan, 'premium');
-  const days = (Date.parse(status.expiresAt) - at) / 86_400_000;
+  let status = (await call('GET', '/premium')).body;
+  assert.equal(status.plan, 'free', 'the account stays free');
+  assert.equal(status.examPasses.length, 1);
+  assert.equal(status.examPasses[0].courseId, 'aws', 'the only exam: bound at once');
+  const days = (Date.parse(status.examPasses[0].expiresAt) - at) / 86_400_000;
   assert.ok(Math.abs(days - 60) < 0.01, `60 days, got ${days}`);
   chat = await call('POST', '/study/chat', { content: 'more', version, courseId: 'aws' });
   assert.equal(chat.status, 200, JSON.stringify(chat.body));
+  version = chat.body.version;
+
+  // A second exam: its free 50 apply as before; a pass bought from its paywall unlocks it (the app names it).
+  await database.db.query("update study_states set state = jsonb_set(state::jsonb, '{courses}', (state::jsonb->'courses') || '[{\"id\":\"gcp\",\"name\":\"GCP ACE\",\"kind\":\"exam\"}]'::jsonb) where owner_id = $1", ['user_exam']);
+  await database.db.query("insert into study_sessions (id, owner_id, course_id, topic, session) select 'filler-' || g, 'user_exam', 'gcp', 'All topics', jsonb_build_object('attempts', jsonb_build_array(jsonb_build_object('questions', (select jsonb_agg(x) from generate_series(1, 10) x)))) from generate_series(1, 5) g");
+  let gcp = await call('POST', '/study/chat', { content: 'quiz me', version: 0, courseId: 'gcp' });
+  assert.equal(gcp.status, 402, 'the aws pass does not unlock gcp');
+  assert.equal(gcp.body.code, 'course_read_only', 'the free plan keeps one course active');
+  subscriber = { subscriber: { entitlements: {}, non_subscriptions: { 'rapidrecall.exampass.60d': [{ id: 'tx-aws', purchase_date: new Date(at).toISOString() }, { id: 'tx-gcp', purchase_date: new Date().toISOString() }] } } };
+  status = (await call('POST', '/premium/refresh', { courseId: 'gcp' })).body;
+  assert.deepEqual(status.examPasses.map((p) => p.courseId).sort(), ['aws', 'gcp']);
+  coachReply = { ...coachReply, actions: [{ ...coachReply.actions[0], name: 'gcp' }] };
+  gcp = await call('POST', '/study/chat', { content: 'quiz me', version: 0, courseId: 'gcp' });
+  assert.equal(gcp.status, 200, JSON.stringify(gcp.body));
 });

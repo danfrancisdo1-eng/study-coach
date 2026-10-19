@@ -15,4 +15,5 @@ export type PremiumStatusSource = typeof PremiumStatusSource[keyof typeof Premiu
 export const PremiumStatusSource = {
   owner: 'owner',
   revenuecat: 'revenuecat',
+  exam_pass: 'exam_pass',
 } as const;

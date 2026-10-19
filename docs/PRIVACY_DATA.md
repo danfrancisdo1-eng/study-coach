@@ -21,6 +21,7 @@ for the App Store "App Privacy" answers. Keep all three in step. Last reviewed 2
 | Coach conversation (one thread per course + general) | `home_chats` | the coaching itself; reports on replies | yes (last 20 turns) | account deletion |
 | Plan status (free/premium, expiry, product id) and daily AI use counts | `entitlements`, `ai_usage` (D-090) | Premium and the daily limits | no | account deletion |
 | Question bank: questions the AI wrote from the course's material, when each was served and whether the last answer was right | `question_bank` (D-145) | Sets of the right size without repeats, misses first | no (written by the AI provider already listed) | course or account deletion |
+| Exam passes: purchase id, dates, the exam it unlocks | `exam_passes` (D-156) | One exam unlocked for 60 days | no | account deletion |
 | AI usage per day and task: calls, tokens, estimated cost | `ai_cost` (D-145) | Knowing whether the price covers the AI cost | no | account deletion |
 | Lecture metadata and transcript segments | `lectures` | lecture-based study | yes (transcript when reviewed) | delete lecture / delete course / account deletion |
 | Request logs (route, status, timing, account id, errors; reported reply text) | Render logs | keep the service working; review reported replies | no | log retention (Render default) |
