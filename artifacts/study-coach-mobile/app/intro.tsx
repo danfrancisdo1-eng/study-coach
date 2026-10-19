@@ -2,11 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEvent } from 'expo';
 import { Feather } from '@expo/vector-icons';
-import { afterIntro, INTRO_SEEN_KEY } from '@/lib/intro';
+import { afterIntro } from '@/lib/intro';
 
 /**
  * Dan's intro video (D-134, D-150): full screen, once, the first time the app ever opens, before
@@ -26,11 +25,10 @@ export default function IntroScreen() {
   const { status } = useEvent(player, 'statusChange', { status: player.status });
 
   const leave = async () => {
-    // Saved before moving on: the tour checks it and would send the student back here (D-151).
-    await AsyncStorage.setItem(INTRO_SEEN_KEY, '1').catch(() => {});
     player.pause();
-    if (afterIntro(replay === '1') === 'back' && router.canGoBack()) router.back();
-    else router.replace('/onboarding');
+    const next = afterIntro(replay === '1');
+    if (next === 'back' && router.canGoBack()) router.back();
+    else router.replace(next === 'back' ? '/account' : next);
   };
 
   useEffect(() => {
