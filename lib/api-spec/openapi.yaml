@@ -166,6 +166,11 @@ paths:
       operationId: refreshPremium
       tags: [study]
       summary: Re-check the purchase with RevenueCat (after a purchase or Restore Purchases)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PremiumRefreshInput" }
       responses:
         "200":
           description: Plan status after the check
@@ -709,6 +714,10 @@ components:
               contrasts: { type: array, items: { type: object, required: [pair, trick], properties: { pair: { type: string }, trick: { type: string } } } }
               triggers: { type: array, items: { type: object, required: [whenYouSee, think], properties: { whenYouSee: { type: string }, think: { type: string } } } }
               misses: { type: array, items: { type: object, required: [question, answer, giveaway], properties: { question: { type: string }, answer: { type: string }, giveaway: { type: string } } } }
+    PremiumRefreshInput:
+      type: object
+      properties:
+        courseId: { type: string, maxLength: 200, description: "D-156: the exam an exam pass was bought from; its unbound passes unlock that exam" }
     PremiumStatus:
       type: object
       description: "D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit, course_read_only, exam_free_used (D-153) or trial_required (D-155)."
@@ -716,7 +725,7 @@ components:
       properties:
         enforced: { type: boolean, description: "False until PREMIUM_LIMITS=on on the server; then limits apply" }
         plan: { type: string, enum: [free, trial, premium], description: "trial: Apple's free week (D-155): one course, the full daily limits" }
-        source: { type: ["string", "null"], enum: [owner, revenuecat, null] }
+        source: { type: ["string", "null"], enum: [owner, revenuecat, exam_pass, null] }
         expiresAt: { type: ["string", "null"] }
         productId: { type: ["string", "null"] }
         limits:
@@ -735,6 +744,15 @@ components:
             resetAt: { type: ["string", "null"] }
         activeCourseIds: { type: array, items: { type: string } }
         readOnlyCourseIds: { type: array, items: { type: string } }
+        examPasses:
+          type: array
+          description: "D-156: active exam passes; each unlocks one exam (courseId null until the app names it)"
+          items:
+            type: object
+            required: [courseId, expiresAt]
+            properties:
+              courseId: { type: ["string", "null"] }
+              expiresAt: { type: string }
     StudyState:
       type: object
       description: "Account-owned JSON study state. AI actions require aiConsent true persisted here. Dates should be explicitly confirmed by the student (confirmed: true)."

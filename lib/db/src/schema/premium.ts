@@ -1,4 +1,4 @@
-import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 // D-090: who has Premium and until when. No row = free. Updated from RevenueCat's
 // notifications (newest event wins) and by the on-demand refresh; owner accounts come
@@ -21,3 +21,15 @@ export const aiUsageTable = pgTable("ai_usage", {
   messages: integer("messages").notNull().default(0),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// D-156: each exam pass (a one-time Apple purchase, 60 days) and the one exam it unlocks. id is the
+// store transaction id; course_id stays null until the app says which exam it was bought for.
+export const examPassesTable = pgTable("exam_passes", {
+  id: text("id").primaryKey(),
+  ownerId: text("owner_id").notNull(),
+  courseId: text("course_id"),
+  productId: text("product_id").notNull(),
+  purchasedAt: timestamp("purchased_at", { withTimezone: true }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("exam_passes_owner").on(t.ownerId)]);

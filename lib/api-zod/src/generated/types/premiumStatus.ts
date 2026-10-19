@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { PremiumStatusExamPassesItem } from './premiumStatusExamPassesItem';
 import type { PremiumStatusLimits } from './premiumStatusLimits';
 import type { PremiumStatusPlan } from './premiumStatusPlan';
 import type { PremiumStatusSource } from './premiumStatusSource';
@@ -28,4 +29,6 @@ export interface PremiumStatus {
   usage: PremiumStatusUsage;
   activeCourseIds: string[];
   readOnlyCourseIds: string[];
+  /** D-156: active exam passes; each unlocks one exam (courseId null until the app names it) */
+  examPasses?: PremiumStatusExamPassesItem[];
 }

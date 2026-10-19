@@ -15,9 +15,9 @@ The app and server are ready for these products. Nothing charges anyone until `P
 
 ## B. RevenueCat (app.revenuecat.com) → the RapidRecall project
 1. **Product catalog → Products → +**: add **rapidrecall.exampass.60d** (App Store).
-2. **Entitlements → premium** → attach the exam pass too (monthly and yearly are already attached).
+2. **Entitlements → +** a new entitlement **exam_pass** with the exam pass attached. Do **not** attach the pass to **premium**: a pass unlocks one exam, not the account (D-156).
 3. **Offerings → +** new offering, identifier **exam** (exactly), one package (type **Custom** or **Lifetime**) with **rapidrecall.exampass.60d**. Leave the student offering (monthly + annual) as the **current** one.
-4. Nothing to change for the webhook: the server already knows a non-renewing exam pass lasts 60 days.
+4. Nothing to change for the webhook: the server records each pass for the exam it was bought from, for 60 days.
 
 ## C. Render (study-coach-api → Environment)
 - Optional: `EXAM_PASS_PRODUCT_ID` = **rapidrecall.exampass.60d** (the server also recognizes any product id with "exampass" in it).

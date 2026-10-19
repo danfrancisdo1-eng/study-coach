@@ -1,0 +1,38 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Right and wrong colors</title>
+<style>
+body{font-family:-apple-system,system-ui,sans-serif;background:#f6f7fa;margin:0;padding:16px;color:#15192a}
+h2{font-size:18px;margin:20px 0 8px}
+.card{background:#fff;border:1px solid #d9dee7;border-radius:14px;padding:14px}
+.lbl{font-weight:700;font-size:17px}
+.opt{margin:8px 0;padding:10px 12px;border-radius:10px;font-size:16px}
+.note{font-size:14px;color:#5b6475;margin:8px 0 0}
+</style></head><body>
+<h2>Now (too light)</h2>
+<div class="card">
+<div class="lbl" style="color:#2f9e5b">Correct</div>
+<div class="opt" style="background:rgba(47,158,91,.12);color:#2f9e5b">Synchronous replication to a standby</div>
+<div class="lbl" style="color:#d6453a">Not quite</div>
+<div class="opt" style="background:rgba(214,69,58,.12);color:#d6453a">Read replicas in another region</div>
+</div>
+<p class="note">Green 3.4 : 1 and red 4.4 : 1. The minimum for readable text is 4.5 : 1.</p>
+
+<h2>Option A: a step deeper</h2>
+<div class="card">
+<div class="lbl" style="color:#1e7d45">Correct</div>
+<div class="opt" style="background:rgba(30,125,69,.12);color:#1e7d45">Synchronous replication to a standby</div>
+<div class="lbl" style="color:#b8352b">Not quite</div>
+<div class="opt" style="background:rgba(184,53,43,.12);color:#b8352b">Read replicas in another region</div>
+</div>
+<p class="note">Green 5.2 : 1, red 5.9 : 1. Passes.</p>
+
+<h2>Option B: deeper still</h2>
+<div class="card">
+<div class="lbl" style="color:#17693a">Correct</div>
+<div class="opt" style="background:rgba(23,105,58,.12);color:#17693a">Synchronous replication to a standby</div>
+<div class="lbl" style="color:#9f2a22">Not quite</div>
+<div class="opt" style="background:rgba(159,42,34,.12);color:#9f2a22">Read replicas in another region</div>
+</div>
+<p class="note">Green 6.7 : 1, red 7.4 : 1. Passes easily.</p>
+<p class="note">Light mode only. Dark mode's bright green and red already pass and stay as they are.</p>
+</body></html>

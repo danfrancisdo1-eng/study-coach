@@ -43,6 +43,7 @@ import type {
   ListStudySessions200,
   PlanInput,
   PlanResult,
+  PremiumRefreshInput,
   PremiumStatus,
   QuizInput,
   QuizResult,
@@ -849,14 +850,28 @@ export const getRefreshPremiumUrl = () => {
 /**
  * @summary Re-check the purchase with RevenueCat (after a purchase or Restore Purchases)
  */
-export const refreshPremium = async ( options?: Parameters<typeof customFetch>[1]): Promise<PremiumStatus> => {
+export const refreshPremium = async (premiumRefreshInput?: PremiumRefreshInput, options?: Parameters<typeof customFetch>[1]): Promise<PremiumStatus> => {
 
-  return customFetch<PremiumStatus>(getRefreshPremiumUrl(),
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PremiumStatus>(getRefreshPremiumUrl(),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(premiumRefreshInput)
   }
 );}
 
@@ -867,8 +882,8 @@ export const refreshPremium = async ( options?: Parameters<typeof customFetch>[1
 export const getRefreshPremiumMutationKey = () => ['refreshPremium'] as const;
 
 export const getRefreshPremiumMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshPremium>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof refreshPremium>>, TError,void, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshPremium>>, TError,RefreshPremiumMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refreshPremium>>, TError,RefreshPremiumMutationVariables, TContext> => {
 
 const mutationKey = getRefreshPremiumMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -880,10 +895,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refreshPremium>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refreshPremium>>, RefreshPremiumMutationVariables> = (props) => {
+          const {data} = props ?? {};
 
-
-          return  refreshPremium(requestOptions)
+          return  refreshPremium(data,requestOptions)
         }
 
 
@@ -894,19 +909,19 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type RefreshPremiumMutationResult = NonNullable<Awaited<ReturnType<typeof refreshPremium>>>
-
+    export type RefreshPremiumMutationBody = BodyType<PremiumRefreshInput> | undefined
     export type RefreshPremiumMutationError = ErrorType<void>
-
+    export type RefreshPremiumMutationVariables = {data?: BodyType<PremiumRefreshInput>}
 
     /**
  * @summary Re-check the purchase with RevenueCat (after a purchase or Restore Purchases)
  */
 export const useRefreshPremium = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshPremium>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshPremium>>, TError,RefreshPremiumMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof refreshPremium>>,
         TError,
-        void,
+        RefreshPremiumMutationVariables,
         TContext
       > => {
       return useMutation(getRefreshPremiumMutationOptions(options));

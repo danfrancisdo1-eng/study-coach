@@ -55,7 +55,7 @@ export default function ReviewSheetScreen() {
       if (__DEV__) { const p = problem as { status?: number; data?: unknown; message?: string }; console.warn('Review sheet failed', p?.status, JSON.stringify(p?.data ?? null).slice(0, 300), String(p?.message ?? problem).slice(0, 300)); }
       setError(friendlyError(problem));
       const code = premiumCode(problem);
-      if (code) router.push({ pathname: '/premium', params: { reason: code } });
+      if (code) router.push({ pathname: '/premium', params: { reason: code, courseId: courseId! } });
     }
   };
   useEffect(() => { if (isSignedIn && courseId) void build(); }, [isSignedIn, courseId]);

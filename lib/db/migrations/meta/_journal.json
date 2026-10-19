@@ -43,6 +43,13 @@
       "when": 1792339200000,
       "tag": "0005_question_bank",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792425600000,
+      "tag": "0006_exam_passes",
+      "breakpoints": true
     }
   ]
 }
