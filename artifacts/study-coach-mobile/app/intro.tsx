@@ -25,19 +25,20 @@ export default function IntroScreen() {
   });
   const { status } = useEvent(player, 'statusChange', { status: player.status });
 
-  const leave = () => {
-    AsyncStorage.setItem(INTRO_SEEN_KEY, '1').catch(() => {});
+  const leave = async () => {
+    // Saved before moving on: the tour checks it and would send the student back here (D-151).
+    await AsyncStorage.setItem(INTRO_SEEN_KEY, '1').catch(() => {});
     player.pause();
     if (afterIntro(replay === '1') === 'back' && router.canGoBack()) router.back();
     else router.replace('/onboarding');
   };
 
   useEffect(() => {
-    const sub = player.addListener('playToEnd', leave);
+    const sub = player.addListener('playToEnd', () => void leave());
     return () => sub.remove();
   }, [player]);
   // A video that cannot play never blocks the way in.
-  useEffect(() => { if (status === 'error') leave(); }, [status]);
+  useEffect(() => { if (status === 'error') void leave(); }, [status]);
 
   const toggleSound = () => { const next = !muted; player.muted = next; setMuted(next); };
 
@@ -50,7 +51,7 @@ export default function IntroScreen() {
           <Feather name={muted ? 'volume-x' : 'volume-2'} size={18} color="#fff" />
           {muted ? <Text style={styles.pillText}>Tap for sound</Text> : null}
         </Pressable>
-        <Pressable onPress={leave} style={styles.pill} accessibilityRole="button" testID="button-intro-skip">
+        <Pressable onPress={() => void leave()} style={styles.pill} accessibilityRole="button" testID="button-intro-skip">
           <Text style={styles.pillText}>Skip</Text>
           <Feather name="chevron-right" size={18} color="#fff" />
         </Pressable>

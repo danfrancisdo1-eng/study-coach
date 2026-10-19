@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import Animated, { FadeIn, FadeInUp, FadeOut, ZoomIn } from 'react-native-reanim
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { ONBOARDING_PAGES, ONBOARDING_SEEN_KEY } from '@/lib/onboarding';
+import { INTRO_SEEN_KEY, shouldPlayIntro } from '@/lib/intro';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { QuestionHero } from '@/components/onboarding/QuestionHero';
 import { MemoryHero } from '@/components/onboarding/MemoryHero';
@@ -27,6 +28,12 @@ export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const { replay } = useLocalSearchParams<{ replay?: string }>();
   const [page, setPage] = useState(0);
+  // D-151: the intro video comes first the first time anyone reaches the tour on this phone
+  // (a new download, a sign-out, a deleted account), not only when the app opens signed out.
+  useEffect(() => {
+    if (replay === '1') return;
+    AsyncStorage.getItem(INTRO_SEEN_KEY).then((seen) => { if (shouldPlayIntro(seen)) router.replace('/intro'); }, () => {});
+  }, [replay]);
   const current = ONBOARDING_PAGES[page]!;
   const last = page === ONBOARDING_PAGES.length - 1;
 
