@@ -177,12 +177,12 @@ export default function CourseListScreen() {
           {/* Dan (2026-10-12): a plain way to the coach right after the courses, not only the header icon. */}
           <View style={styles.coachButton}><ActionButton label="Talk to the coach" icon="message-circle" onPress={toCoach} testID="button-talk-to-coach" /></View>
           {/* Sign out stays in view (Dan: "There is no logout button anywhere" once Account was folded, D-079); the rest folds. */}
-          <Pressable accessibilityRole="button" onPress={() => void signOut()} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, styles.signOutRow, pressed && styles.pressed]} testID="button-sign-out">
+          <Pressable accessibilityRole="button" hitSlop={{ top: 5, bottom: 5 }} onPress={() => void signOut()} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, styles.signOutRow, pressed && styles.pressed]} testID="button-sign-out">
             <Feather name="log-out" size={14} color={colors.mutedForeground} />
             <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Sign out</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>The next sign-in starts with the tour</Text></View>
           </Pressable>
           {/* The Account page (D-080): privacy, welcome and tour again, sign out, delete my account. */}
-          <Pressable accessibilityRole="button" onPress={() => router.push('/account')} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-account">
+          <Pressable accessibilityRole="button" hitSlop={{ top: 5, bottom: 5 }} onPress={() => router.push('/account')} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-account">
             <Feather name="user" size={14} color={colors.mutedForeground} />
             <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Account</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>Privacy, the tour again, delete my account · build {BUILD}</Text></View>
             <Feather name="chevron-right" size={14} color={colors.mutedForeground} />

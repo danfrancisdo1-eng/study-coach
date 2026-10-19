@@ -398,7 +398,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   verdict: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   verdictText: { ...TYPE.bodySemi, fontSize: 17 },
   miss: { gap: 10, padding: 14, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background },
-  missKicker: { ...TYPE.kicker, fontSize: 13, color: colors.hookText },
+  missKicker: { ...TYPE.kicker, fontSize: 13, color: colors.primaryText }, // D-154: hookText on the light miss box was 1.45:1
   missPrompt: { ...TYPE.bodySemi, fontSize: 17, lineHeight: 24, color: colors.foreground },
   answerLine: { gap: 2 },
   answerLabel: { ...TYPE.smallSemi },

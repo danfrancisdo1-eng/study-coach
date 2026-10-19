@@ -138,7 +138,7 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
           const correct = feedback ? feedback.correctOptionId === option.id : false;
           const mark = correct ? 'correct' : chosen ? 'wrong' : null;
           return (
-            <Pressable key={option.id} accessibilityRole="button" accessibilityState={{ selected: chosen, disabled: !answerable }} disabled={!answerable || busy}
+            <Pressable key={option.id} accessibilityRole="button" accessibilityLabel={`${'ABCDE'[i]}. ${option.text}${mark === 'correct' ? ', correct answer' : mark === 'wrong' ? ', your answer, wrong' : ''}`} accessibilityState={{ selected: chosen, disabled: !answerable }} disabled={!answerable || busy}
               onPress={() => void choose(question, option.id)}
               style={({ pressed }) => [styles.option, mark === 'correct' && styles.optionCorrect, mark === 'wrong' && styles.optionWrong, pressed && answerable && styles.pressed, busy && answerable && styles.disabled]}
               testID={`button-live-option-${i}`}>
