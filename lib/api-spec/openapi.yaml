@@ -711,11 +711,11 @@ components:
               misses: { type: array, items: { type: object, required: [question, answer, giveaway], properties: { question: { type: string }, answer: { type: string }, giveaway: { type: string } } } }
     PremiumStatus:
       type: object
-      description: "D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit or course_read_only."
+      description: "D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit, course_read_only, exam_free_used (D-153) or trial_required (D-155)."
       required: [enforced, plan, source, expiresAt, productId, limits, usage, activeCourseIds, readOnlyCourseIds]
       properties:
         enforced: { type: boolean, description: "False until PREMIUM_LIMITS=on on the server; then limits apply" }
-        plan: { type: string, enum: [free, premium] }
+        plan: { type: string, enum: [free, trial, premium], description: "trial: Apple's free week (D-155): one course, the full daily limits" }
         source: { type: ["string", "null"], enum: [owner, revenuecat, null] }
         expiresAt: { type: ["string", "null"] }
         productId: { type: ["string", "null"] }

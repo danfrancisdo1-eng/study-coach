@@ -199,7 +199,7 @@ export const DeleteAccountResponse = zod.object({
  */
 export const GetPremiumStatusResponse = zod.object({
   "enforced": zod.boolean().describe('False until PREMIUM_LIMITS=on on the server; then limits apply'),
-  "plan": zod.enum(['free', 'premium']),
+  "plan": zod.enum(['free', 'trial', 'premium']).describe('trial: Apple\'s free week (D-155): one course, the full daily limits'),
   "source": zod.union([zod.literal('owner'),zod.literal('revenuecat'),zod.literal(null)]).nullable(),
   "expiresAt": zod.string().nullable(),
   "productId": zod.string().nullable(),
@@ -215,7 +215,7 @@ export const GetPremiumStatusResponse = zod.object({
 }),
   "activeCourseIds": zod.array(zod.string()),
   "readOnlyCourseIds": zod.array(zod.string())
-}).describe('D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit or course_read_only.')
+}).describe('D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit, course_read_only, exam_free_used (D-153) or trial_required (D-155).')
 
 
 /**
@@ -223,7 +223,7 @@ export const GetPremiumStatusResponse = zod.object({
  */
 export const RefreshPremiumResponse = zod.object({
   "enforced": zod.boolean().describe('False until PREMIUM_LIMITS=on on the server; then limits apply'),
-  "plan": zod.enum(['free', 'premium']),
+  "plan": zod.enum(['free', 'trial', 'premium']).describe('trial: Apple\'s free week (D-155): one course, the full daily limits'),
   "source": zod.union([zod.literal('owner'),zod.literal('revenuecat'),zod.literal(null)]).nullable(),
   "expiresAt": zod.string().nullable(),
   "productId": zod.string().nullable(),
@@ -239,7 +239,7 @@ export const RefreshPremiumResponse = zod.object({
 }),
   "activeCourseIds": zod.array(zod.string()),
   "readOnlyCourseIds": zod.array(zod.string())
-}).describe('D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit or course_read_only.')
+}).describe('D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit, course_read_only, exam_free_used (D-153) or trial_required (D-155).')
 
 
 /**

@@ -88,11 +88,15 @@ export interface ReviewSheet {
   sections: ReviewSheetSectionsItem[];
 }
 
+/**
+ * trial: Apple's free week (D-155): one course, the full daily limits
+ */
 export type PremiumStatusPlan = typeof PremiumStatusPlan[keyof typeof PremiumStatusPlan];
 
 
 export const PremiumStatusPlan = {
   free: 'free',
+  trial: 'trial',
   premium: 'premium',
 } as const;
 
@@ -125,11 +129,12 @@ export type PremiumStatusUsage = {
 };
 
 /**
- * D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit or course_read_only.
+ * D-090. 402 responses from AI routes carry { error, code } with code premium_required, daily_limit, course_read_only, exam_free_used (D-153) or trial_required (D-155).
  */
 export interface PremiumStatus {
   /** False until PREMIUM_LIMITS=on on the server; then limits apply */
   enforced: boolean;
+  /** trial: Apple's free week (D-155): one course, the full daily limits */
   plan: PremiumStatusPlan;
   /** @nullable */
   source: PremiumStatusSource;

@@ -100,6 +100,8 @@ export type Session = {
   /** Chat-first flashcard deck, when this session holds one. */
   flashcards?: Deck | null;
   attempts: Quiz[];
+  /** D-155: a set from the daily-reps plan ("Next 10"); only these show the day's count. */
+  daily?: boolean;
   scores: { diagnostic: Record<string, unknown> | null; targeted: Record<string, unknown> | null };
   reviewSchedule: Array<Record<string, unknown>>;
   _version?: number;

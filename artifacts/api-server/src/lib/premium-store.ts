@@ -3,7 +3,7 @@
 // purchase flow ships; then Render's env is switched on.
 import { and, eq, sql } from "drizzle-orm";
 import { aiUsageTable, db, entitlementsTable, studySessionsTable } from "@workspace/db";
-import { EXAM_PASS_DAYS, LIMITS, activeCourseIds, applyEvent, isExamPass, isPremium, ownerAccounts, type Entitlement, type Plan, type PlanLimits, type RevenueCatEvent } from "./premium";
+import { EXAM_PASS_DAYS, LIMITS, activeCourseIds, applyEvent, isActivePlan, isExamPass, ownerAccounts, type Entitlement, type Plan, type PlanLimits, type RevenueCatEvent } from "./premium";
 
 export const enforced = (): boolean => process.env["PREMIUM_LIMITS"] === "on";
 
@@ -20,13 +20,14 @@ export async function planFor(ownerId: string, now: Date = new Date()): Promise<
     return { plan: "premium", source: "owner", expiresAt: null, productId: null, limits: LIMITS.premium };
   }
   const row = (await db.select().from(entitlementsTable).where(eq(entitlementsTable.ownerId, ownerId)).limit(1))[0];
-  const premium = isPremium(row ? { plan: row.plan, expiresAt: row.expiresAt } : null, now);
+  // D-155: the free week (trial) or Premium while it lasts; otherwise free.
+  const plan: Plan = row && isActivePlan({ plan: row.plan, expiresAt: row.expiresAt }, now) ? row.plan : "free";
   return {
-    plan: premium ? "premium" : "free",
+    plan,
     source: row ? "revenuecat" : null,
     expiresAt: row?.expiresAt ?? null,
     productId: row?.productId ?? null,
-    limits: LIMITS[premium ? "premium" : "free"],
+    limits: LIMITS[plan],
   };
 }
 
@@ -98,7 +99,7 @@ export async function refreshFromRevenueCat(ownerId: string): Promise<void> {
   const base = process.env["REVENUECAT_API_BASE"] ?? "https://api.revenuecat.com";
   const response = await fetch(`${base}/v1/subscribers/${encodeURIComponent(ownerId)}`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(10_000) });
   if (!response.ok) throw new Error(`RevenueCat responded ${response.status}`);
-  const body = await response.json() as { subscriber?: { entitlements?: Record<string, { expires_date?: string | null; product_identifier?: string; purchase_date?: string }> } };
+  const body = await response.json() as { subscriber?: { entitlements?: Record<string, { expires_date?: string | null; product_identifier?: string; purchase_date?: string }>; subscriptions?: Record<string, { period_type?: string }> } };
   const premium = body.subscriber?.entitlements?.["premium"];
   // D-153: the exam pass (non-renewing) has no expiry at RevenueCat: it lasts EXAM_PASS_DAYS from the purchase.
   const passEnds = premium && !premium.expires_date && isExamPass(premium.product_identifier) && premium.purchase_date
@@ -107,7 +108,8 @@ export async function refreshFromRevenueCat(ownerId: string): Promise<void> {
   const active = !!premium && (expiresAt === null || expiresAt.getTime() > Date.now());
   const current = await currentEntitlement(ownerId);
   await save(ownerId, {
-    plan: active ? "premium" : "free",
+    // D-155: during Apple's free week RevenueCat marks the subscription's period as a trial.
+    plan: active ? (premium?.product_identifier && body.subscriber?.subscriptions?.[premium.product_identifier]?.period_type?.toLowerCase() === "trial" ? "trial" : "premium") : "free",
     expiresAt: premium ? expiresAt : current?.expiresAt ?? null,
     productId: premium?.product_identifier ?? current?.productId ?? null,
     // A refresh is the latest truth; later webhooks still apply on top of it.

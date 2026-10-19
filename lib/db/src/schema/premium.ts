@@ -5,7 +5,7 @@ import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 // from server config, not from this table.
 export const entitlementsTable = pgTable("entitlements", {
   ownerId: text("owner_id").primaryKey(),
-  plan: text("plan").$type<"free" | "premium">().notNull().default("free"),
+  plan: text("plan").$type<"free" | "trial" | "premium">().notNull().default("free"), // trial: the free week (D-155); text, no migration
   expiresAt: timestamp("expires_at", { withTimezone: true }),
   productId: text("product_id"),
   source: text("source").notNull().default("revenuecat"),

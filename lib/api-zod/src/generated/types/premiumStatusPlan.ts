@@ -6,10 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * trial: Apple's free week (D-155): one course, the full daily limits
+ */
 export type PremiumStatusPlan = typeof PremiumStatusPlan[keyof typeof PremiumStatusPlan];
 
 
 export const PremiumStatusPlan = {
   free: 'free',
+  trial: 'trial',
   premium: 'premium',
 } as const;

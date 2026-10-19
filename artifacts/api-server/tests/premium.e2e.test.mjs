@@ -104,15 +104,38 @@ test('premium: free plan limits, webhook, lapse, owners, refresh, deletion', asy
   assert.equal(chat.status, 200, JSON.stringify(chat.body));
   assert.deepEqual(await usage('user_free'), { sets: 0, messages: 1 });
 
-  // Daily set cap: a 4th set is refused; no session is created and the message is given back.
-  await database.db.query('update ai_usage set sets = 3 where owner_id = $1', ['user_free']);
+  // D-155: a student course on the free plan studies with sets only after starting the free week; no
+  // session is created and the message is given back.
   nextReply = () => coach('Here is a set.', [{ type: 'start_quiz', name: 'Biology', topic: 'Cells', kind: 'practice', count: 3 }]);
   refused = await f('POST', '/study/chat', { content: 'quiz me', version: chat.body.version, courseId: 'c1' });
   assert.equal(refused.status, 402);
-  assert.equal(refused.body.code, 'daily_limit');
-  assert.match(refused.body.error, /3 sets/);
+  assert.equal(refused.body.code, 'trial_required');
+  assert.match(refused.body.error, /free week/);
   assert.equal(Number((await database.db.query('select count(*)::int as n from study_sessions where owner_id = $1', ['user_free'])).rows[0].n), 0);
-  assert.deepEqual(await usage('user_free'), { sets: 3, messages: 1 });
+  assert.deepEqual(await usage('user_free'), { sets: 0, messages: 1 });
+
+  // The free week (a trial from RevenueCat): sets work, still one course.
+  const weekStart = Date.now() - 60_000;
+  assert.equal((await hook({ type: 'INITIAL_PURCHASE', period_type: 'TRIAL', app_user_id: 'user_free', product_id: 'studycoach.premium.yearly', event_timestamp_ms: weekStart, expiration_at_ms: weekStart + 7 * 86400000 })).status, 200);
+  status = await f('GET', '/premium');
+  assert.equal(status.body.plan, 'trial');
+  assert.deepEqual(status.body.limits, { courses: 1, sets: 20, messages: 300 });
+  nextReply = (request) => {
+    const asked = /Create exactly (\d+)/.exec(request.body.messages[0].content);
+    if (asked) return chatReply(JSON.stringify({ questions: Array.from({ length: Number(asked[1]) }, (_, k) => ({ prompt: `Trial alpha${k} beta${k} gamma${k} delta${k}?`, options: [`A${k}`, `B${k}`, `C${k}`, `D${k}`], answerIndex: 0, concept: `t${k}`, explanation: `Because ${k}.` })) }));
+    if (request.body.messages[0].content.includes('You check the answer key')) return chatReply(JSON.stringify({ checks: [] }));
+    return coach('Here is a set.', [{ type: 'start_quiz', name: 'Biology', topic: 'Cells', kind: 'practice', count: 3 }]);
+  };
+  let trialSet = await f('POST', '/study/chat', { content: 'quiz me', version: chat.body.version, courseId: 'c1' });
+  assert.equal(trialSet.status, 200, JSON.stringify(trialSet.body));
+  chat = trialSet;
+  state = await f('GET', '/study/state');
+  refused = await f('PUT', '/study/state', { version: state.body.version, state: { ...consent, courses: [c1, c2] } });
+  assert.equal(refused.body.code, 'premium_required', 'the free week has one course');
+  nextReply = () => coach('Here is a set.', [{ type: 'start_quiz', name: 'Biology', topic: 'Cells', kind: 'practice', count: 3 }]);
+  await database.db.query("delete from entitlements where owner_id = $1", ['user_free']);
+  await database.db.query("delete from study_sessions where owner_id = $1", ['user_free']);
+  await database.db.query('update ai_usage set sets = 3 where owner_id = $1', ['user_free']);
 
   // The webhook needs RevenueCat's authorization header.
   const now = Date.now();

@@ -280,7 +280,8 @@ export default function CourseScreen() {
               <ActionButton label="Memory tricks" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
               <ActionButton label="Outline" icon="list" secondary onPress={() => startWithCoach('outline', null)} testID="button-action-outline" />
               <ActionButton label="Review sheet (PDF)" icon="file-text" secondary onPress={() => router.push({ pathname: '/review/[courseId]', params: { courseId: courseId! } })} testID="button-action-review-sheet" />
-              <ActionButton label="Questions without material" icon="help-circle" secondary onPress={() => void questionsWithoutMaterial()} testID="button-action-no-material" />
+              {/* D-155 (Dan): only while the course has no material; once something is uploaded the other actions use it. */}
+              {materials.length === 0 && lectures.length === 0 ? <ActionButton label="Questions without material" icon="help-circle" secondary onPress={() => void questionsWithoutMaterial()} testID="button-action-no-material" /> : null}
             </View>
             {noMaterialNote ? (
               <View style={styles.noteRow} testID="note-no-material">
@@ -426,7 +427,7 @@ export default function CourseScreen() {
       <Modal visible={picker !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setPicker(null)}>
         <View style={[styles.screen, { paddingTop: 20 }]}>
           <View style={styles.header}>
-            <View style={styles.headerCopy}><Text style={styles.title}>{picker === 'hooks' ? 'Memory tricks on which topics?' : 'Flashcards on which topics?'}</Text><Text style={styles.caption}>Pick one, or all of them</Text></View>
+            <View style={styles.headerCopy}><Text style={styles.title}>{picker === 'hooks' ? 'Memory tricks on which topics?' : 'Flashcards on which topics?'}</Text></View>
             <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setPicker(null)} style={styles.iconButton} testID="button-close-picker"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
           </View>
           <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>

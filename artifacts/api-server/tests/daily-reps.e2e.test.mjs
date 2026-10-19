@@ -51,7 +51,7 @@ test('daily reps: the day count after a set, and the next day\'s 10 on yesterday
   // The coach's line about the result gets the day's count from the app.
   coach = { reply: '2 of 4 right.', suggestions: [], actions: [] };
   chat = await call('POST', '/study/chat', { content: 'I finished the set.', version: 1, courseId: 'bio', utcOffsetMinutes: 0 });
-  assert.equal(chat.body.messages.at(-1).content, "2 of 4 right. That's 4 of today's 100.");
+  assert.equal(chat.body.messages.at(-1).content, '2 of 4 right.', "an ordinary set: no day count (D-155: the student never asked for the plan)");
   assert.match(coachSystem(), /Daily reps \(today is \d{4}-\d{2}-\d{2} for the student\): 4 of 100 questions done today, 2 right; today's sets of 10 cover all topics/);
 
   // Move that set to yesterday: today's 10 are on its misses.
@@ -74,4 +74,13 @@ test('daily reps: the day count after a set, and the next day\'s 10 on yesterday
   const writer = ai.requests.filter((r) => r.body.messages[0].content.includes('Create exactly')).at(-1).body.messages[0].content;
   assert.match(writer, /concept-0/);
   assert.match(writer, /concept-2/);
+
+  // A set from the plan (Next 10), finished: the day's count follows the coach's line.
+  let daily = (await call('GET', `/study/sessions/${next.sessionId}`)).body;
+  for (let i = 0; i < 200 && daily.quiz.status !== 'ready'; i += 1) { await new Promise((r) => setTimeout(r, 50)); daily = (await call('GET', `/study/sessions/${next.sessionId}`)).body; }
+  for (const q of daily.quiz.questions) await call('PUT', `/study/sessions/${next.sessionId}/answers`, { questionId: q.id, optionId: q.options[0].id, assisted: false });
+  assert.equal((await call('POST', `/study/sessions/${next.sessionId}/grade`)).status, 200);
+  coach = { reply: 'Nice round.', suggestions: [], actions: [] };
+  chat = await call('POST', '/study/chat', { content: 'I finished the set.', version: chat.body.version, courseId: 'bio', utcOffsetMinutes: 0 });
+  assert.match(chat.body.messages.at(-1).content, /^Nice round\. That's \d+ of today's 100\.$/);
 });

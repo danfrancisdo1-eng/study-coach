@@ -85,7 +85,6 @@ export default function SignInScreen() {
       <Image source={require('@/assets/images/app-icon.png')} style={styles.brandMark} accessibilityLabel="RapidRecall AI logo" />
       <Text style={[styles.eyebrow, { color: colors.primaryText }]}>RapidRecall AI</Text>
       <Text style={[styles.title, { color: colors.foreground }]}>{signInTitle(signedInBefore)}</Text>
-      <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Sign in to continue your saved study sessions.</Text>
       {needsEmailCode ? (
         <>
           <Text style={[styles.label, { color: colors.foreground }]}>Email verification code</Text>
