@@ -41,8 +41,8 @@ const light = {
 
   destructive: '#c0392b',
   destructiveForeground: '#ffffff',
-  correct: '#2f9e5b',
-  wrong: '#d6453a',
+  correct: '#17693a', // D-157 (Dan: Option B): 6.7:1 on white; was #2f9e5b (3.4:1)
+  wrong: '#9f2a22', // D-157 (Dan: Option B): 7.4:1 on white; was #d6453a (4.4:1)
   // The exam clock at 5 minutes left (D-115); 4.5:1 on the card in each mode. Red at 1 minute uses wrong.
   timerAmber: '#a35c00',
 

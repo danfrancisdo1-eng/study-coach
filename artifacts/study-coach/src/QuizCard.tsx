@@ -73,7 +73,7 @@ export default function QuizCard({ sessionId, passMark, onGraded, onError }: {
   const writing = quiz.status === 'writing';
   const total = writing ? Math.max(quiz.expectedCount, questions.length) : questions.length;
   const tone = left === null ? 'normal' : clockTone(left);
-  const toneColor = tone === 'red' ? '#d6453a' : tone === 'amber' ? '#a35c00' : undefined;
+  const toneColor = tone === 'red' ? '#9f2a22' : tone === 'amber' ? '#a35c00' : undefined;
   const clock = left === null ? null : (
     <p role="timer" aria-label={`${clockText(left)} left`} data-testid="text-exam-clock" style={{ display: 'inline-flex', gap: 10, alignItems: 'baseline', padding: '4px 12px', borderRadius: 12, border: `2px solid ${toneColor ?? 'currentColor'}`, margin: '0 0 8px' }}>
       <strong style={{ fontSize: '1.25rem', fontVariantNumeric: 'tabular-nums', color: toneColor }}>{clockText(left)}</strong>

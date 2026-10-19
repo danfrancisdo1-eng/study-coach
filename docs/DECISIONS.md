@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-19 — D-157: Right and wrong colors deeper in light mode (Option B)
+- Dan chose Option B from three samples: light-mode right #17693a (6.7:1 on white, was #2f9e5b at 3.4:1) and wrong #9f2a22 (7.4:1, was #d6453a at 4.4:1); white on the right/wrong fills now passes too. Dark mode unchanged (its bright green and red already pass). The web's exam-clock red follows.
+- **Decided by:** Dan ("Option B").
+
 ## 2026-10-19 — D-155: Students must start the free week; the day count only on the plan; Dan's screenshot fixes
 - Dan: "It's a free week with one course so must start free week." A student course on the free plan gets no sets or flashcards (402 trial_required, "Start your free week to study with the coach: 7 days free, then cancel any time in Settings."); the coach chat still works at the free daily limit, so a student can set up the course. The free week is a new plan value "trial" (RevenueCat period_type TRIAL, on the webhook and the refresh): one course, the full daily limits; the first paid period is Premium. Stored in the existing text column; no migration. The phone shows "Free week · ends <date>" and opens the student paywall on trial_required.
 - Dan: "it said I did 10 out of 100. But I never asked for a study plan." The day's count follows only a set from the plan ("Next 10"; sessions marked daily).
