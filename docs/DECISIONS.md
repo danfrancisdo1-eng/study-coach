@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-151: The intro plays the first time anyone reaches the tour on the phone
+- Dan deleted his account, made a new one, and never saw the intro: it was only checked when the app opened signed out, but a reinstall keeps the sign-in, and signing out or deleting an account goes straight to the tour.
+- The tour now sends the student to the intro first when the phone has not seen it (a new download, a sign-out, a deleted account); still once per install. The intro saves "seen" before handing back to the tour, so the two never bounce.
+- **Decided by:** Dan ("deleted my one account then made a new one and the intro video didn't play anywhere").
+
 ## 2026-10-18 — D-150: Intro video at first launch, replay from Account (expo-video)
 - Dan's 23 s intro (RRAI_Intro_linked.mp4, kept as is: cartoon hands, his name). The credential's QR code (pixelated) and credential ID (soft blur) are blurred for 19.15–20.98 s, the card's on-screen frames only; compressed to 720×1280 H.264, 1.4 Mb/s, 4.3 MB (AVFoundation script on the Mac; the original is not in the repo).
 - Phone: plays full screen the first time the app ever opens (signed out, before the tour), once per install (AsyncStorage rapidrecall-intro-seen). Skip always on screen; sound off until the video or "Tap for sound" is tapped; at the end it hands over to the tour; a video that cannot play goes straight to the tour. Account → "Watch the intro" replays it and comes back. New dependency expo-video ~57.0.5 (approved in D-134); needs a new development build.
