@@ -1,11 +1,10 @@
 /**
- * Intro video (D-134, D-150): Dan's 23-second intro plays full screen once, the first time the app
- * ever opens on this phone (before the tour), with Skip always on screen and sound off until tapped.
- * Account replays it. The seen flag lives on the phone, so a reinstall shows it again.
+ * Intro video (D-134, D-150, D-152): Dan's 23-second intro plays full screen before the welcome tour
+ * every time someone has to sign in (a new download, a sign-out, a deleted account; Dan: "make it play
+ * if they sign out and need to sign back in"), with Skip always on screen and sound off until tapped.
+ * Account replays it.
  */
-export const INTRO_SEEN_KEY = 'rapidrecall-intro-seen';
+export const introBeforeTour = (params: { replay?: string; fromIntro?: string }): boolean => params.replay !== '1' && params.fromIntro !== '1';
 
-export const shouldPlayIntro = (seen: string | null | undefined): boolean => seen !== '1';
-
-/** Where the intro hands over: the tour on first launch, or back where the replay came from. */
-export const afterIntro = (replay: boolean): '/onboarding' | 'back' => (replay ? 'back' : '/onboarding');
+/** Where the intro hands over: the tour (marked so it does not send the student back), or back where the replay came from. */
+export const afterIntro = (replay: boolean): '/onboarding?fromIntro=1' | 'back' => (replay ? 'back' : '/onboarding?fromIntro=1');

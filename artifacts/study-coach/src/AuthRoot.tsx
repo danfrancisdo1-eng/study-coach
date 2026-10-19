@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { resetIntro } from './IntroVideo';
 import { ClerkProvider, Show, SignIn, SignUp, useClerk, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
@@ -92,7 +93,7 @@ function Desk() {
   const { signOut } = useClerk();
   const [, setLocation] = useLocation();
   if (!user) return null;
-  return <AccountPage key={user.id} onClassic={() => setLocation('/classic/courses')} onSignOut={() => void signOut({ redirectUrl: basePath || '/' })} />;
+  return <AccountPage key={user.id} onClassic={() => setLocation('/classic/courses')} onSignOut={() => { resetIntro(); void signOut({ redirectUrl: basePath || '/' }); }} />;
 }
 
 function Classic() {

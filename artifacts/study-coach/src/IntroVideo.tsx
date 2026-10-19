@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 
-// D-150: Dan's intro video on the web: full screen, once, the first time this browser opens the app;
-// Skip always on screen; sound off until tapped. Settings → "Watch the intro" replays it.
+// D-150, D-152: Dan's intro video on the web: full screen on the first visit and again after every
+// sign-out (signing in again); Skip always on screen; sound off until tapped. The account page replays it.
 export const INTRO_SEEN_KEY = 'rapidrecall-intro-seen';
 const REPLAY_EVENT = 'rapidrecall-replay-intro';
 
 const seen = () => { try { return localStorage.getItem(INTRO_SEEN_KEY) === '1'; } catch { return true; } };
 export const replayIntro = () => window.dispatchEvent(new Event(REPLAY_EVENT));
+/** D-152: signing out means the next sign-in starts with the intro again. */
+export const resetIntro = () => { try { localStorage.removeItem(INTRO_SEEN_KEY); } catch { /* nothing saved */ } };
 
 export function IntroVideo() {
   const [open, setOpen] = useState(() => !seen());

@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-18 — D-152: The intro plays before login every time (replaces D-151's once per phone)
+- Dan: "Just make it play if they sign out and need to sign back in", "Put a skip button though", "It should be before login."
+- Phone: whenever the app needs a sign-in (a new download, a sign-out, a deleted account): intro video → welcome tour → sign-in. Skip (top right) is always on screen; sound off until tapped. Account → "Watch the intro" replays it. The once-per-phone flag is gone.
+- Web: the intro on the first visit and again after signing out.
+- **Decided by:** Dan.
+
 ## 2026-10-18 — D-151: The intro plays the first time anyone reaches the tour on the phone
 - Dan deleted his account, made a new one, and never saw the intro: it was only checked when the app opened signed out, but a reinstall keeps the sign-in, and signing out or deleting an account goes straight to the tour.
 - The tour now sends the student to the intro first when the phone has not seen it (a new download, a sign-out, a deleted account); still once per install. The intro saves "seen" before handing back to the tour, so the two never bounce.
