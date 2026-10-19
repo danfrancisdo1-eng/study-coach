@@ -16,12 +16,17 @@
 - **D-141** (coach.v28): run 5 of the students: all 15 at 6–8, 2 high. The plan's places fit the course type (certification exam: lunch break, between meetings, commute; course: line, between classes, bus; the toilet for everyone).
 - **D-142** (coach.v29): the review sheet opens as the real PDF in iPhone's preview, with a fill bar while it is written; nothing of it in the chat. Dan confirmed on the iPhone: the day count works; the PDF itself was good.
 
+- **D-143–D-152 (2026-10-18, evening):** RapidRecall Dev has its own app ID next to TestFlight (installs over USB with devicectl when the link fails); pricing spec signed (SPEC §9: students $12.99/mo or $79.99/yr after Apple's free week; cert exams 50 free questions then $29.99 for 60 days); question bank per course with a per-account AI cost log (migration 0005 applied on Render); misses-only sets from the bank; short sets top up with new angles or "Beyond your notes" (session-quiz.v10, quiz-check.v7); "10 more: that's 25 of today's 100" (coach.v30); the review sheet shows the real PDF in the app with Print and Save or share (react-native-webview); Dan's intro video (QR code and credential ID blurred) plays before login every time someone has to sign in, Skip always on screen, replay from Account (expo-video). Dan confirmed on the iPhone: day count, PDF viewer, intro. Stamp #57 · D-152.
+- Cost per simulated student's first session: $0.47–$0.90, mostly setup (upload notes, coach turns, bank fill); each account's real AI cost per day is now in ai_cost.
+
 ### Needs real-iPhone check
 - The review sheet opens by itself as the PDF preview once written; the fill bar moves while it is written; the shared file is named after the sheet.
 - "Review sheet (PDF)" chip in a course chat opens the review screen.
 - The day count rolls over at local midnight (not UTC).
 
 ### Next (open findings, for Dan to choose)
+- Pricing build (SPEC §9): paywall with the two prices (student subscription with Apple's free week; cert exam pass), 50 free cert questions from the bank, Restore, legal links. Then the accessibility and clutter pass, then a TestFlight build.
+- Sign in with Apple in RapidRecall Dev needs Clerk to know com.danfrancis.studycoach.dev (Clerk settings are Dan's call); Google works.
 - A 50 still came out 46 in run 5 (late repeats); a fifth top-up round or asking for more extras if it matters.
 - Later (Dan): vignette / item sets (several questions on one shared case, CFA style).
 - The web app does not build on this Mac (rollup's native module is missing from node_modules); typecheck passes. A reinstall fixes it; not done while the preview runs.
