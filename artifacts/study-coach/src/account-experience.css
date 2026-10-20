@@ -127,3 +127,8 @@
 .sc-sheet { display: grid; gap: 8px; margin-top: 6px; }
 .sc-sheet-row { display: grid; gap: 4px; padding-top: 8px; border-top: 1px solid var(--ae-line); justify-items: start; }
 .sc-trick { background: var(--ae-paper); border: 1px solid var(--ae-line); border-radius: 14px; padding: 10px 12px; margin: 8px 0 !important; }
+
+/* D-158: the course/exam choice has no default; its outline pulses slowly until one is picked. */
+.ae-pulse { animation: ae-pulse 1.4s ease-in-out infinite alternate; border-width: 2px; }
+@keyframes ae-pulse { from { border-color: var(--border, #d9dee7); } to { border-color: #9a6a00; } }
+@media (prefers-reduced-motion: reduce) { .ae-pulse { animation: none; border-color: #9a6a00; } }

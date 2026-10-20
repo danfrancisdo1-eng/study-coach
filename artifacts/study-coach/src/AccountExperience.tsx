@@ -121,7 +121,7 @@ export function AccountExperience(props: AccountExperienceProps) {
     onRetry,
   } = props;
   const [newCourse, setNewCourse] = useState('');
-  const [newKind, setNewKind] = useState<'course' | 'exam'>('course');
+  const [newKind, setNewKind] = useState<'course' | 'exam' | ''>(''); // D-158: no default; the student picks
   const [newExamDate, setNewExamDate] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -145,8 +145,9 @@ export function AccountExperience(props: AccountExperienceProps) {
     event.preventDefault();
     const name = newCourse.trim();
     if (!name || busy) return;
+    if (!newKind) return;
     onCreateCourse(name, newKind, newKind === 'exam' && newExamDate ? newExamDate : undefined);
-    setNewCourse(''); setNewExamDate(''); setNewKind('course');
+    setNewCourse(''); setNewExamDate(''); setNewKind('');
   }
   function saveCourse(event: FormEvent<HTMLFormElement>, id: string) {
     event.preventDefault();
@@ -261,18 +262,19 @@ export function AccountExperience(props: AccountExperienceProps) {
             </div> : <p className="ae-muted" data-testid="text-no-courses">No courses yet. Add the class you want to study first.</p>}
             {!sessionStarted && <form className="ae-row" onSubmit={createCourse}>
               <label className="ae-field" style={{ minWidth: 150 }}>Type
-                <select className="ae-input" value={newKind} onChange={event => setNewKind(event.target.value as 'course' | 'exam')} data-testid="select-new-kind">
-                  <option value="course">College course</option>
+                <select className={`ae-input${newKind ? '' : ' ae-pulse'}`} value={newKind} onChange={event => setNewKind(event.target.value as 'course' | 'exam')} required data-testid="select-new-kind">
+                  <option value="" disabled>Course or exam?</option>
+                  <option value="course">Course</option>
                   <option value="exam">Certification exam</option>
                 </select>
               </label>
               <label className="ae-field" style={{ flex: 1, minWidth: 180 }}>{newKind === 'exam' ? 'Add an exam' : 'Add a course'}
-                <input className="ae-input" value={newCourse} onChange={event => setNewCourse(event.target.value)} placeholder={newKind === 'exam' ? 'e.g. AWS Solutions Architect Associate' : 'Course name'} maxLength={120} required data-testid="input-new-course" />
+                <input className="ae-input" value={newCourse} onChange={event => setNewCourse(event.target.value)} placeholder={newKind === 'exam' ? 'e.g. AWS Solutions Architect Associate' : newKind === 'course' ? 'Course name' : 'Pick the type first'} disabled={!newKind} maxLength={120} required data-testid="input-new-course" />
               </label>
               {newKind === 'exam' && <label className="ae-field" style={{ minWidth: 150 }}>Exam date
                 <input className="ae-input" type="date" value={newExamDate} onChange={event => setNewExamDate(event.target.value)} data-testid="input-new-exam-date" />
               </label>}
-              <button type="submit" className="ae-button ae-button--outline" disabled={busy || !newCourse.trim()} data-testid="button-add-course"><Plus size={16} /> {newKind === 'exam' ? 'Add exam' : 'Add course'}</button>
+              <button type="submit" className="ae-button ae-button--outline" disabled={busy || !newCourse.trim() || !newKind} data-testid="button-add-course"><Plus size={16} /> {newKind === 'exam' ? 'Add exam' : newKind === 'course' ? 'Add course' : 'Add'}</button>
             </form>}
           </div>
 
