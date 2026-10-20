@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-20 — D-158: Course or exam has no default; the two choices pulse until one is picked
+- Dan: someone adding an exam "will mistakenly just click in to name the course/exam without switching to exam"; "highlight the outline of the button and have them flash alternately".
+- Phone (Add on the course list): "Is this a course or a certification exam?" with two buttons, Course and Certification exam, nothing selected; their outlines take turns glowing (1.4 s each way, well under three flashes a second); with Reduce Motion both show a steady strong outline. The name field and Add wait until one is picked. Web: the type menu starts on "Course or exam?" with a pulsing outline (steady with reduced motion); the name and Add wait for it.
+- **Decided by:** Dan.
+
 ## 2026-10-19 — D-157: Right and wrong colors deeper in light mode (Option B)
 - Dan chose Option B from three samples: light-mode right #17693a (6.7:1 on white, was #2f9e5b at 3.4:1) and wrong #9f2a22 (7.4:1, was #d6453a at 4.4:1); white on the right/wrong fills now passes too. Dark mode unchanged (its bright green and red already pass). The web's exam-clock red follows.
 - **Decided by:** Dan ("Option B").

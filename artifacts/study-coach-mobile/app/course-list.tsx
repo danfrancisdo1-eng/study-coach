@@ -18,6 +18,7 @@ import { ActionButton } from '@/components/ActionButton';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
 import { BUILD } from '@/constants/build';
 import { CourseListSkeleton } from '@/components/Skeleton';
+import { KindChoice } from '@/components/KindChoice';
 
 /**
  * Courses & exams on their own page (D-036): the home screen keeps only the "Coach · <course>"
@@ -69,7 +70,7 @@ export default function CourseListScreen() {
   const [addOpen, setAddOpen] = useState(add === '1');
   // After a save the sheet turns into "what next?" (D-057): Add material, Add another course, Return to the list.
   const [justAdded, setJustAdded] = useState<{ id: string; name: string } | null>(null);
-  const [addKind, setAddKind] = useState<'course' | 'exam'>('course');
+  const [addKind, setAddKind] = useState<'course' | 'exam' | null>(null); // D-158: no default; the student picks
   const [addName, setAddName] = useState('');
   const [addDate, setAddDate] = useState('');
   const [error, setError] = useState('');
@@ -116,11 +117,12 @@ export default function CourseListScreen() {
     try {
       const previous = stateQuery.data;
       const state = record(previous?.state);
+      if (!addKind) return;
       const course = { id: newId(), name, kind: addKind, ...(addIso ? { examDate: addIso } : {}) };
       // Adding a course never grants AI consent by itself (D-047): the consent card stays the one place that does.
       const result = await putState.mutateAsync({ data: { state: { aiConsent: false, materials: [], ...state, courses: [...(Array.isArray(state.courses) ? state.courses : []), course] }, version: previous?.version ?? 0 } });
       queryClient.setQueryData(stateKey, result);
-      setAddName(''); setAddDate(''); setAddKind('course');
+      setAddName(''); setAddDate(''); setAddKind(null);
       setJustAdded({ id: course.id, name: course.name });
       setFocusId(course.id);
       if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, course.id).catch(() => {});
@@ -217,19 +219,14 @@ export default function CourseListScreen() {
             </View>
           ) : (
           <View style={styles.sheetContent}>
-            <View style={styles.segment}>
-              {(['course', 'exam'] as const).map((kind) => (
-                <Pressable key={kind} accessibilityRole="button" accessibilityState={{ selected: addKind === kind }} onPress={() => setAddKind(kind)} style={[styles.segmentItem, addKind === kind && styles.segmentSelected]} testID={`button-kind-${kind}`}>
-                  <Text style={[styles.segmentText, addKind === kind && styles.segmentTextSelected]}>{kind === 'course' ? 'College course' : 'Certification exam'}</Text>
-                </Pressable>
-              ))}
-            </View>
-            <TextInput value={addName} onChangeText={setAddName} maxLength={120} placeholder={addKind === 'exam' ? 'e.g. AWS Solutions Architect Associate' : 'e.g. BIOL 114'} placeholderTextColor={colors.mutedForeground} style={styles.input} accessibilityLabel="Name" testID="input-add-name" autoFocus />
+            <Text style={styles.caption}>Is this a course or a certification exam?</Text>
+            <KindChoice value={addKind} onChange={setAddKind} />
+            <TextInput value={addName} onChangeText={setAddName} maxLength={120} placeholder={addKind === 'exam' ? 'e.g. AWS Solutions Architect Associate' : addKind === 'course' ? 'e.g. BIOL 114' : 'Pick one above first'} placeholderTextColor={colors.mutedForeground} editable={addKind !== null} style={[styles.input, addKind === null && styles.disabled]} accessibilityLabel="Name" testID="input-add-name" autoFocus={addKind !== null} />
             {addKind === 'exam' ? <TextInput value={addDate} onChangeText={setAddDate} placeholder="Exam date, e.g. Nov 14 (optional)" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-add-date" /> : null}
             {addKind === 'exam' && addDate.trim() ? <Text style={styles.caption} testID="text-add-date-hint">{examDateHint(addDate)}</Text> : null}
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
-            <Pressable accessibilityRole="button" disabled={busy || !addName.trim()} onPress={() => void addCourse()} style={[styles.primaryButton, (busy || !addName.trim()) && styles.disabled]} testID="button-save-add">
-              <Text style={styles.primaryButtonText}>{addKind === 'exam' ? 'Add exam' : 'Add course'}</Text>
+            <Pressable accessibilityRole="button" disabled={busy || !addName.trim() || !addKind} onPress={() => void addCourse()} style={[styles.primaryButton, (busy || !addName.trim() || !addKind) && styles.disabled]} testID="button-save-add">
+              <Text style={styles.primaryButtonText}>{addKind === 'exam' ? 'Add exam' : addKind === 'course' ? 'Add course' : 'Add'}</Text>
             </Pressable>
           </View>
           )}
@@ -266,11 +263,6 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   compactCaption: { color: colors.mutedForeground, fontSize: 10.5 },
   errorText: { color: colors.destructive, fontSize: 13 },
   sheetContent: { paddingHorizontal: 18, paddingTop: 10, gap: 15 },
-  segment: { flexDirection: 'row', borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
-  segmentItem: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
-  segmentSelected: { backgroundColor: colors.primary },
-  segmentText: { color: colors.foreground, fontSize: 14, fontWeight: '600' },
-  segmentTextSelected: { color: colors.primaryForeground },
   input: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.card, color: colors.foreground, fontSize: 15, paddingHorizontal: 13 },
   primaryButton: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary, paddingHorizontal: 16 },
   primaryButtonText: { color: colors.primaryForeground, fontSize: 17, fontWeight: '700' },
