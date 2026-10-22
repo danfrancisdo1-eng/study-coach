@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-22 — D-162: App Store screenshots
+- Six 1320 × 2868 screenshots (Apple's 6.9" size covers every iPhone; the app is iPhone-only) from the simulator, demo account, "Intro to Biology" with a photo of notes: the 100-a-day plan, photo to notes, a question from the notes, the explanation and memory trick, the score by topic, the after-set choices. Navy background, the app's yellow headline, white subline. Raw shots kept outside git.
+- **Decided by:** Dan ("yes start the listing and screenshots").
+
 ## 2026-10-22 — D-161: The paywall no longer crashes when the store returns no products
 - Found in the simulator log while making store screenshots: when RevenueCat could not fetch the products, the error was set, the product list was empty, and the screen still drew the purchase cards from the first product ("Cannot read property 'product' of undefined"). Apple's reviewer could hit this if the products don't load. Now the purchase area shows nothing and the error line explains (`paywallState` in lib/premium-ui.ts, tested).
 - Mobile only: the web app has no purchases. Build #65.

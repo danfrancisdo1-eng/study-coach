@@ -125,21 +125,21 @@ On the version page, under **In-App Purchases and Subscriptions**, add all three
 
 ## Screenshots
 
-iPhone only (the app is iPhone-only, so no iPad screenshots). One set at **6.9"** (1320 × 2868) covers every iPhone size. Plan (3 to 6):
+Done (D-162): `docs/store/screenshots/1-plan.png` to `6-next.png`, 1320 × 2868 (6.9"), the iPhone set; upload in this order. Each is a real screen from the demo account (Intro to Biology, a photo of notes), with a caption on top:
 
-1. The coach chat after an upload: "Your notes are in. Want 10 questions?" Caption: *Your notes become questions*
-2. A question card mid-set ("Question 4 of 10"). Caption: *10 at a time, in spare minutes*
-3. A graded set with the reasons. Caption: *Know why, not just what*
-4. The daily line ("40 of today's 100"). Caption: *100 a day until you get 100/100*
-5. The review PDF. Caption: *A review sheet the day before your exam*
-6. A certification exam by section. Caption: *Certification exams, by section*
+1. 100 a day, 10 at a time
+2. Snap your notes
+3. Questions from your class
+4. Know why, not just what
+5. See what to drill
+6. Misses come back first
 
-Plus: one paywall screenshot for each purchase's review screenshot.
+Purchase review screenshots: take them on the iPhone in the TestFlight app (the simulator can't load App Store prices): Account → See Premium (one for the subscriptions), then "See the exam pass" (one for the pass).
 
 ## Still needed before you submit (you)
 
 1. **Demo account** with a course ("Intro to Biology") and some notes. Put its email and password in App Review Information yourself.
 2. Attach the three purchases to the version (above).
-3. Screenshots (in progress).
+3. Upload the six screenshots and the two purchase screenshots.
 
 Done: contact email on the privacy policy and the /support page (D-160); the exam pass is reachable from the student price screen.
