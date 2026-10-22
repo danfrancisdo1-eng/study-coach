@@ -16,6 +16,7 @@ import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { blocksOf, type Span } from '@/lib/coach-text';
 import { topicParts } from '@/lib/topic-label';
+import { chipParts, hasValues } from '@/lib/chip-label';
 import { premiumCode } from '@/lib/premium-ui';
 import { ActionButton } from '@/components/ActionButton';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
@@ -405,18 +406,29 @@ export default function CoachHome() {
     <Pressable onLongPress={item.role === 'assistant' ? () => reportMessage(item) : undefined} delayLongPress={450} accessibilityHint={item.role === 'assistant' ? 'Press and hold to report this reply' : undefined} style={[styles.turn, item.role === 'user' ? styles.userTurn : styles.coachTurn]} testID={`chat-turn-${item.role}`}>
       {item.role === 'assistant' ? renderCoachText(item.content) : <Text style={styles.body}>{item.content}</Text>}
       {item.reported ? <View style={styles.reportedRow} testID="chat-reported"><Feather name="flag" size={12} color={colors.mutedForeground} /><Text style={styles.caption}>Reported for review</Text></View> : null}
-      {item.id === lastMessage?.id && chips.length ? (
-        <View style={styles.chipRow}>
-          {chips.map((chip) => (
-            <Pressable key={chip} accessibilityRole="button" disabled={busy}
-              onPress={() => (chip === SIM_EXAM_CHIP && focusCourse ? router.push({ pathname: '/course/[courseId]', params: { courseId: focusCourse.id, timed: '1' } })
-                : chip === REVIEW_CHIP && focusCourse ? router.push({ pathname: '/review/[courseId]', params: { courseId: focusCourse.id } }) : void sendText(chip))}
-              style={[styles.suggestion, busy && styles.disabled]} testID={chip === SIM_EXAM_CHIP ? 'button-suggestion-simulated' : chip === REVIEW_CHIP ? 'button-suggestion-review' : 'button-suggestion'}>
-              <Text style={styles.suggestionText}>{chip}</Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
+      {item.id === lastMessage?.id && chips.length ? (() => {
+        // D-166: section chips ("<name> · 27.5%") draw as full-width rows, one line each, the weight in its own
+        // right-hand column so the numbers line up; plain chips stay pills. The tap sends the chip's original text.
+        const parts = chipParts(chips);
+        const column = hasValues(parts);
+        return (
+          <View style={column ? styles.choiceColumn : styles.chipRow}>
+            {parts.map(({ text: chip, label, value }) => (
+              <Pressable key={chip} accessibilityRole="button" accessibilityLabel={value !== null ? `${label}, ${value}` : undefined} disabled={busy}
+                onPress={() => (chip === SIM_EXAM_CHIP && focusCourse ? router.push({ pathname: '/course/[courseId]', params: { courseId: focusCourse.id, timed: '1' } })
+                  : chip === REVIEW_CHIP && focusCourse ? router.push({ pathname: '/review/[courseId]', params: { courseId: focusCourse.id } }) : void sendText(chip))}
+                style={[value !== null ? styles.choiceRow : styles.suggestion, column && value === null && styles.choicePill, busy && styles.disabled]} testID={chip === SIM_EXAM_CHIP ? 'button-suggestion-simulated' : chip === REVIEW_CHIP ? 'button-suggestion-review' : value !== null ? 'button-choice' : 'button-suggestion'}>
+                {value !== null ? (
+                  <>
+                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={[styles.suggestionText, styles.choiceLabel]}>{label}</Text>
+                    <Text numberOfLines={1} style={[styles.suggestionText, styles.choiceValue]}>{value}</Text>
+                  </>
+                ) : <Text numberOfLines={1} style={styles.suggestionText}>{label}</Text>}
+              </Pressable>
+            ))}
+          </View>
+        );
+      })() : null}
       {item.actions?.map((action) => action.type === 'update_memory_sheet' ? (
         <View key={`sheet-${action.courseId}-${action.rows?.[0]?.id ?? ''}`} style={styles.actionChip} testID="card-memory-sheet">
           <Feather name="bookmark" size={14} color={colors.primaryText} />
@@ -739,6 +751,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
   suggestion: { minHeight: 44, maxWidth: '100%', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.chipBorder, backgroundColor: colors.chipBg, alignItems: 'center', justifyContent: 'center' },
   suggestionText: { color: colors.primaryText, fontSize: 13.5, lineHeight: 18, fontWeight: '600' },
+  choiceColumn: { gap: 8, marginTop: 6 },
+  choiceRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.chipBorder, backgroundColor: colors.chipBg },
+  choiceLabel: { flex: 1, fontSize: 15, lineHeight: 20 },
+  // A fixed column, right-aligned, tabular digits: every weight sits under the one above it.
+  choiceValue: { width: 58, textAlign: 'right', fontSize: 15, lineHeight: 20, fontVariant: ['tabular-nums'] },
+  choicePill: { alignSelf: 'flex-start' },
   composer: { paddingHorizontal: 14, paddingTop: 8, paddingBottom: 10, gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
   composerDimmed: { opacity: 0.35, pointerEvents: 'none' },
   composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
