@@ -2,6 +2,36 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-22 — D-168: Course page actions as an even two-column grid
+- Dan: "all the bubbles that are buttons ... It needs to look uniform." The two wrapped clouds of pills on the course page (Actions; Study with the coach) are two grids of equal-width buttons, two per row, one-line labels that shrink a little before they truncate (`ActionButton fill`). "Return to course list" is gone: the back chevron and the Courses tab do that.
+- Build #67.
+- **Decided by:** Dan ("do the rest").
+
+## 2026-10-22 — D-167: One line per topic row, the numbers in a fixed column
+- Dan: "I only want it one line ... at the very least, if it's got to go to the second line, I want all the percentages to line up in the middle. You can't have it all zigzag, because then you can't compare."
+- New `components/StatRow.tsx`: label on one line (shrinks to 85%, then "…"), the number in a fixed 64-pt right-hand column, right-aligned, tabular digits; the bar under both. Used for "Topics tested" on the course page (now `2/10` under a "missed / asked" heading; the bar is still the missed share in the wrong colour, D-076), "By section" after a practice set (`8/10` under "right / asked"; was two lines with the count floating), and the Progress list's percentages on the course page get the same column.
+- **Decided by:** Dan.
+
+## 2026-10-22 — D-166: Section chips on one line, weights in a column, shared words dropped
+- Dan's AI-103 screenshot: five section chips, each wrapping to two lines with the weight at the end of the second, and "the word implement doesn't even need to be there in those four choices ... shorten them when they can still completely make sense."
+- A coach chip written as "<name> · 27.5%" (coach prompt since v10) now draws as a full-width row: the name on one line (shrinks to 85%, then "…"), the weight in a fixed right-hand column with tabular digits. Plain chips (after-set choices, "All topics") stay pills; "All topics" sits under the rows.
+- `lib/chip-label.ts` (tested): a leading verb carried by at least two chips in the row (Implement, Describe, Understand, Explain, Apply, Perform, Demonstrate, Use, Identify) and a trailing filler they share (solutions, solution, concepts, topics) are dropped when the label keeps two or more words; the first letter is capitalised. Dan's five become "Plan and manage an Azure AI solution · 27.5%", "Generative AI and agentic · 32.5%", "Computer vision · 12.5%", "Text analysis · 12.5%", "Information extraction · 12.5%". The tap still sends the chip's original text, so the coach matches the guide's section names as before. No prompt change.
+- Not done: asking the coach itself to write shorter section names (a prompt bump with evals). The client rule covers the exam guides' verb-first sections; if other guides read badly, that is the next step.
+- **Decided by:** Dan.
+
+## 2026-10-22 — D-165: One header on every screen and sheet
+- Dan: "standardize navigation across pages. Make it concrete to the user which page they're on."
+- New `components/ScreenHeader.tsx`, used by every screen and sheet: back chevron on a pushed screen, X on a sheet, chevron-down on the set sheet over the chat, nothing on a tab; a small gray kicker naming the kind of page ("Course", "Certification exam · Nov 14", "<course> · Lecture", "Flashcards"/"Practice"/"Exam" over the set); the title on one line; one action on the right (edit pencil, Add, Close). Same 58-pt height, 20-pt title and 24-pt icon everywhere (the lecture screens had a smaller arrow, the paywall a shorter strip). Hand-built headers removed from eight screens and six sheets.
+- **Decided by:** Dan.
+
+## 2026-10-22 — D-164: A tab bar: Coach, Courses, Account
+- Dan: "The app just feels disorganized. I don't even really know how many main pages we have and the navigation to get to them." Option A from the brainstorm: a real tab bar, chosen over a breadcrumb line.
+- Three tabs always on screen (expo-router `Tabs`, Feather icons, theme colours; the native iOS 26 tab bar is a later swap once it can be checked on a phone): Coach (the chat), Courses (the list, the home for a returning account, D-056), Account. A course, its lectures, a lecture, the review sheet and the paywall push on top with a back chevron; the set sheet and the material sheet open over the Coach tab as before. `course-list` and `account` moved into `app/(tabs)/` (their routes `/course-list` and `/account` are unchanged, so every link and the home route still work).
+- Gone because the tab bar does it: the list icon on the coach header, the back/coach icon on the course list, the list's "Talk to the coach" button, and the list's Sign out and Account rows (D-079, D-080): Sign out lives on the Account tab, one tap away. D-036 ("no tab bar") held while the coach was the only page.
+- App Review notes and PRIVACY_DATA now say "Account tab → See Premium" and "Account tab → Delete my account".
+- Verified here: typecheck; mobile tests 96/96; the iOS bundle exports. Needs real-iPhone check: the tab bar with the keyboard open on the Coach tab (the composer should sit on the keyboard), the bar under Dark Mode, and VoiceOver reading the tabs.
+- **Decided by:** Dan ("Let's try A. And do the rest.").
+
 ## 2026-10-22 — D-163: Paywall table and exam pass choice (Dan's TestFlight screenshots)
 - Dan: the table's labels were "too close and jumbled"; the exam pass link "way too small. It should be as big as the other choices."
 - Table: short one-line labels (Courses, Practice sets, Coach messages), a header row on both tables, divider lines, text shrinks to fit at large text sizes. The free column now says what the free plan allows: a student has no practice sets until the free week (D-155), so "3 sets a day" and "Every feature: Yes" were wrong (`paywallRows`, tested).

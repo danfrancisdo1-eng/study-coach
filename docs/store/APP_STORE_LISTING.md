@@ -108,13 +108,13 @@ RapidRecall AI is a study coach for students 13+. Sign in with the demo account 
 The demo account already has one course ("Intro to Biology") with notes uploaded, so you can try a practice set right away: open the course chat and tap "Next 10".
 
 Purchases:
-• Student subscription (monthly or yearly, 1-week free trial): Courses & exams → Account → See Premium.
+• Student subscription (monthly or yearly, 1-week free trial): Account tab → See Premium.
 • Exam Pass ($29.99, 60 days, non-renewing): on that same screen, tap "Certification exam? Exam pass".
 • Restore Purchases is on the Account screen and on each purchase screen.
 
 AI: content is sent to Anthropic (Claude) after the user consents on the first screen; lecture transcription uses OpenAI. Press and hold any coach reply to report it.
 
-Account deletion: Courses & exams → Account → Delete my account (removes all server data).
+Account deletion: Account tab → Delete my account (removes all server data).
 ```
 
 - **Contact:** your name, phone and email.

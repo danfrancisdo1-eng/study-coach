@@ -49,7 +49,7 @@ Study Coach has no sharing feature (the session-report share was removed in D-08
 - **Report a reply**: press and hold a coach reply → wrong / harmful / other; stored on the message and logged for review.
 - **"Looks wrong?"** on any question: a second model re-checks the answer key.
 - **Delete a course**: removes that course's materials, sessions, lectures and review items.
-- **Delete my account** (Courses & exams → Account): one request removes all four tables' rows for the account and the Clerk user. Not reversible.
+- **Delete my account** (Account tab): one request removes all four tables' rows for the account and the Clerk user. Not reversible.
 
 ## App Privacy label (draft answers for App Store Connect)
 

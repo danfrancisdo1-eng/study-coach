@@ -1,5 +1,39 @@
 # Progress
 
+## Session 15 — 2026-10-22 (Dan on the phone; Claude Code in the cloud)
+
+### Done
+- **Tab bar (D-164):** Coach, Courses, Account always on screen; the lit tab says where you are. Course list and Account moved into the tab group (routes unchanged). The coach header's list icon, the list's back/coach icon, "Talk to the coach" button and its Sign out and Account rows are gone (one tab away now).
+- **One header everywhere (D-165):** `ScreenHeader` on every screen and sheet: same back chevron / X, a kicker naming the kind of page, a one-line title, one action on the right.
+- **Section chips on one line (D-166):** "<name> · 27.5%" chips draw as full-width rows with the weight in a fixed column; shared verbs and fillers ("Implement", "solutions") dropped from the label; the tap sends the original text. `lib/chip-label.ts`, 4 tests.
+- **Topic rows on one line (D-167):** `StatRow` for "Topics tested", "By section" and the Progress list: label on one line, number in a fixed column, bar under both.
+- **Course page grid (D-168):** two even two-column grids instead of pill clouds; "Return to course list" dropped.
+- App Review notes and PRIVACY_DATA paths updated to "Account tab → …".
+- Build stamp #67.
+- Verified here: `pnpm run typecheck` passes; `pnpm run test` 253 pass, 1 fail (api-server ai-study-requests: it runs `git show a9994c0:…`, a commit this shallow cloud checkout doesn't have; it failed the same way before any change here); mobile tests 96/96; `pnpm exec expo export --platform ios` builds the bundle (8.3 MB hbc).
+- Not changed: the App Review notes line about the exam pass already read `tap "Certification exam? Exam pass"`.
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only, no simulator on this machine
+1. Tap targets ≥ 44 pt: PASS (tab items are the native 49-pt bar; header buttons 44; choice rows 48; grid buttons 45). Primary action in the thumb zone: PASS (unchanged; the composer and set buttons stay at the bottom).
+2. One primary action; ≤ 5 tabs; choices grouped: PASS (3 tabs; the course page keeps one gold button per group; chips grouped in one column).
+3. Content chunked: PASS (kicker + title + one action per header; grids of 2 per row).
+4. Native iOS patterns: PASS (a bottom tab bar, back chevron on pushed screens, X on sheets).
+5. Progress shown: PASS (StatRow keeps the bars; the tab bar adds none).
+6. One accent, not colour-only: PASS (the lit tab is the accent plus its label and icon; the row's number is text, not colour).
+7. Theme tokens; Dark Mode; Dynamic Type: PASS on tokens (tab bar, header, rows and chips use useColors()); Dark Mode follows the tokens; Dynamic Type: labels shrink to fit at 85% then truncate (the set card keeps its 1× cap); needs a real-iPhone check at the largest size.
+8. Contrast, labels, Reduce Motion: PASS (tab items and header buttons have labels; choice rows read "<name>, <weight>"; StatRow keeps its "missed 2 of 10" label; no new motion).
+9. Paywall: N/A (header only; the close is the same X at 44 pt).
+
+### Needs real-iPhone check
+- The tab bar with the keyboard open on the Coach tab (composer on the keyboard, nothing hidden), in Dark Mode, and with VoiceOver.
+- The AI-103 section chips: every row on one line at the default text size; the weights in one column.
+- "Topics tested" and "By section" rows with long names: one line, "…" at the end, numbers aligned.
+- The course page grid at large text sizes (labels shrink before they cut).
+
+### Next
+- Dan: review this branch in the simulator or TestFlight before it goes into a store build; build 10 (D-163) is separate from it.
+- Later: swap the JS tab bar for the native iOS 26 one once it can be checked on a phone; ask the coach to write shorter section names if other exam guides still read long; a pass on corner radii (12/14/16/20/22 today).
+
 ## Session 14 — 2026-10-22 (Dan at the Mac; Claude Code at the Mac)
 
 ### Done
