@@ -1059,7 +1059,7 @@ function StudyCoach() {
                 )}
                 <View style={styles.consentCard} testID="panel-ai-consent">
                   <View style={styles.consentHeading}><Feather name="shield" size={19} color={colors.accentForeground} /><Text style={styles.cardTitle}>Your choice before AI</Text></View>
-                  <Text style={styles.body}>RapidRecall AI sends the topic, your messages, selected course materials, and your quiz answers to AI to teach, generate practice, and explain results. AI may make mistakes; review explanations. You can change this choice at any time.</Text>
+                  <Text style={styles.body}>RapidRecall AI sends the topic, your messages, selected course materials and your quiz answers to Anthropic Claude to teach, write practice and explain results; lecture recordings are transcribed by OpenAI. AI can make mistakes; check explanations. To withdraw, delete your account in Account.</Text>
                   <Pressable
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: savedState.aiConsent === true }}

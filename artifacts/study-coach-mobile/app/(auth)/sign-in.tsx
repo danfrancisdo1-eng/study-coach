@@ -118,7 +118,7 @@ export default function SignInScreen() {
             <Link href="/(auth)/sign-up" testID="link-sign-up"><Text style={[styles.link, { color: colors.primaryText }]}>Create account</Text></Link>
           </View>
           <Link href="/onboarding?replay=1" style={styles.textButton} testID="link-tour"><Text style={[styles.link, { color: colors.primaryText }]}>See the tour</Text></Link>
-          <Text style={[styles.build, { color: colors.mutedForeground }]} testID="text-build">Build {BUILD}</Text>
+          {__DEV__ ? <Text style={[styles.build, { color: colors.mutedForeground }]} testID="text-build">Build {BUILD}</Text> : null}
         </>
       )}
       {error ? <Text accessibilityRole="alert" testID="status-auth-error" style={[styles.error, { color: colors.destructive }]}>{error}</Text> : null}

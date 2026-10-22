@@ -10,7 +10,7 @@ import { getGetPremiumStatusQueryKey, useRefreshPremium } from '@workspace/api-c
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
-import { orderPackages, packageLabel, paywallMode, paywallReason, savingLabel, trialTerms } from '@/lib/premium-ui';
+import { orderPackages, packageLabel, paywallMode, paywallReason, savingLabel, trialLength, trialTerms } from '@/lib/premium-ui';
 import { TERMS_URL, buy, premiumPackages, purchasesAvailable, restore } from '@/lib/purchases';
 
 /**
@@ -103,7 +103,7 @@ export default function PremiumScreen() {
         )}
 
         {!available ? (
-          <Text style={styles.note} testID="text-purchases-unavailable">Purchases aren't available in this preview build. They work in the RapidRecall AI app from TestFlight or the App Store.</Text>
+          <Text style={styles.note} testID="text-purchases-unavailable">Purchases aren't available right now. Try again in a moment.</Text>
         ) : packages === null ? <ActivityIndicator color={colors.primaryText} /> : packages.length === 0 && !error ? (
           <Text style={styles.note}>{mode === 'exam' ? "The exam pass isn't available right now. Try again later." : "Premium isn't available right now. Try again later."}</Text>
         ) : mode === 'exam' ? (() => {
@@ -122,7 +122,8 @@ export default function PremiumScreen() {
           const yearly = packages.find((p) => p.packageType === 'ANNUAL');
           const badge = monthly && yearly ? savingLabel(monthly.product.price, yearly.product.price) : null;
           const chosen = packages.find((p) => p.identifier === selected) ?? packages[0]!;
-          const freeWeek = chosen.product.introPrice?.price === 0;
+          const trial = trialLength(chosen.product.introPrice);
+          const freeWeek = trial !== null;
           return <>
             {packages.map((pkg) => {
               const on = pkg.identifier === chosen.identifier;
@@ -140,7 +141,7 @@ export default function PremiumScreen() {
             <Pressable accessibilityRole="button" disabled={!!busy} onPress={() => void subscribe(chosen)} style={({ pressed }) => [styles.buy, pressed && styles.pressed, !!busy && styles.disabled]} testID="button-buy">
               {busy === chosen.identifier ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={styles.buyTitle}>{freeWeek ? 'Start your free week' : 'Subscribe'}</Text>}
             </Pressable>
-            <Text style={styles.trial} testID="text-trial-terms">{trialTerms(chosen.product.priceString, chosen.packageType === 'ANNUAL' ? 'year' : 'month', freeWeek)}</Text>
+            <Text style={styles.trial} testID="text-trial-terms">{trialTerms(chosen.product.priceString, chosen.packageType === 'ANNUAL' ? 'year' : 'month', trial)}</Text>
           </>;
         })()}
 

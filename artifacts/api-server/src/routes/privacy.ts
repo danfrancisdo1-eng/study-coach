@@ -51,7 +51,7 @@ const html = `<!doctype html>
 
 <h2>Your choices</h2>
 <ul>
-  <li><strong>Delete your account</strong> from inside the app (Courses &amp; exams → Delete my account). This removes your courses, materials, sets, flashcards, memory sheet, conversations and transcripts from our servers, and your sign-in identity, within minutes.</li>
+  <li><strong>Delete your account</strong> from inside the app (Courses &amp; exams → Account → Delete my account). This removes your courses, materials, sets, flashcards, memory sheet, conversations and transcripts from our servers, and your sign-in identity, within minutes.</li>
   <li><strong>Withdraw AI consent</strong> at any time by deleting your account, or by contacting us; the app cannot coach you without AI, so the consent screen returns.</li>
   <li><strong>Lecture audio</strong> is deleted by deleting the recording in the app or removing the app.</li>
 </ul>

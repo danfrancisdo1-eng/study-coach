@@ -48,8 +48,14 @@ test('the yearly saving is the real one, against twelve months', async () => {
 
 test('what happens after the free week is said on the paywall', async () => {
   const { trialTerms } = await import('./premium-ui.ts');
-  assert.equal(trialTerms('$79.99', 'year', true), 'Free for 7 days, then $79.99 a year. Cancel in Settings before day 8 and you pay nothing.');
-  assert.equal(trialTerms('$12.99', 'month', false), '$12.99 a month. Renews automatically; cancel any time in Settings.');
+  // D-159: the trial length comes from the store; Apple's rule is cancel 24 hours before the trial ends.
+  assert.equal(trialTerms('$79.99', 'year', '1 week'), 'Free for 1 week, then $79.99 a year. Cancel in Settings at least 24 hours before the free 1 week ends and you pay nothing.');
+  assert.equal(trialTerms('$12.99', 'month', null), '$12.99 a month. Renews automatically; cancel any time in Settings.');
+  const { trialLength } = await import('./premium-ui.ts');
+  assert.equal(trialLength({ price: 0, periodNumberOfUnits: 1, periodUnit: 'WEEK' }), '1 week');
+  assert.equal(trialLength({ price: 0, periodNumberOfUnits: 7, periodUnit: 'DAY' }), '7 days');
+  assert.equal(trialLength({ price: 0.99, periodNumberOfUnits: 1, periodUnit: 'MONTH' }), null, 'a paid intro price is not a free trial');
+  assert.equal(trialLength(null), null);
 });
 
 test('the plan line for an exam pass', () => {

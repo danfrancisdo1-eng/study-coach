@@ -94,7 +94,7 @@ export default function AccountScreen() {
             <Text style={styles.planLink} accessibilityRole="button" onPress={() => void restorePurchases()} testID="button-restore-purchases">{restoring ? 'Restoring…' : 'Restore Purchases'}</Text>
             {status?.plan === 'premium' && status.source === 'revenuecat' ? <Text style={styles.planLink} accessibilityRole="link" onPress={() => void Linking.openURL(MANAGE_SUBSCRIPTIONS_URL)} testID="link-manage-subscription">Manage subscription</Text> : null}
           </View>
-          {!purchasesAvailable() ? <Text style={styles.caption}>Purchases work in the TestFlight and App Store builds.</Text> : null}
+          {!purchasesAvailable() ? <Text style={styles.caption}>Purchases aren't available right now.</Text> : null}
           {planNote ? <Text style={styles.caption} accessibilityRole="alert">{planNote}</Text> : null}
         </View>
         {PRIVACY_URL ? row('shield', 'Privacy policy', 'What is collected, where it goes, how to delete it', openPrivacy, 'link-privacy') : null}
@@ -111,7 +111,7 @@ export default function AccountScreen() {
         {row('trash-2', 'Delete my account', 'Removes your courses, sets, chats and sign-in. Cannot be undone.', () => { setError(''); setDeleteWord(''); setDeleteOpen(true); }, 'button-delete-account', true)}
         {/* The account's id (D-095): Dan pastes it into OWNER_ACCOUNT_IDS on Render; press and hold to copy. Not a secret. */}
         {userId ? <Text selectable maxFontSizeMultiplier={1} style={styles.build} testID="text-account-id">Account ID: {userId}</Text> : null}
-        <Text maxFontSizeMultiplier={1} style={styles.build}>Build {BUILD}</Text>
+        {__DEV__ ? <Text maxFontSizeMultiplier={1} style={styles.build}>Build {BUILD}</Text> : null}
       </ScrollView>
 
       <Modal visible={deleteOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setDeleteOpen(false)}>

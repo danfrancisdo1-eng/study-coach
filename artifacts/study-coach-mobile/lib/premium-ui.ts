@@ -68,8 +68,17 @@ export function savingLabel(monthly: number, yearly: number): string | null {
 }
 
 /** What the student is agreeing to, on the paywall itself (Apple and the paywall rules). */
-export function trialTerms(price: string, period: 'month' | 'year', freeWeek: boolean): string {
-  return freeWeek
-    ? `Free for 7 days, then ${price} a ${period}. Cancel in Settings before day 8 and you pay nothing.`
+export function trialTerms(price: string, period: 'month' | 'year', trial: string | null): string {
+  // D-159 (store preflight): the trial length comes from the store, and the cancel rule is Apple's (24 hours before it ends).
+  return trial
+    ? `Free for ${trial}, then ${price} a ${period}. Cancel in Settings at least 24 hours before the free ${trial} ends and you pay nothing.`
     : `${price} a ${period}. Renews automatically; cancel any time in Settings.`;
+}
+
+/** The free trial's length as the store reports it ("7 days", "1 week", "1 month"), or null without a free trial. */
+export function trialLength(intro: { price: number; periodNumberOfUnits: number; periodUnit: string } | null | undefined): string | null {
+  if (!intro || intro.price !== 0 || !(intro.periodNumberOfUnits > 0)) return null;
+  const unit = intro.periodUnit.toLowerCase();
+  const word = unit.startsWith('day') ? 'day' : unit.startsWith('week') ? 'week' : unit.startsWith('month') ? 'month' : unit.startsWith('year') ? 'year' : 'day';
+  return `${intro.periodNumberOfUnits} ${word}${intro.periodNumberOfUnits === 1 ? '' : 's'}`;
 }
