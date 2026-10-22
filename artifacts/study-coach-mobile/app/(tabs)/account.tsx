@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { Redirect, router } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import { getGetPremiumStatusQueryKey, useDeleteAccount, useGetPremiumStatus, useRefreshPremium } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { useAnswerSounds } from '@/hooks/useAnswerSounds';
 import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { BUILD } from '@/constants/build';
@@ -32,6 +33,7 @@ export default function AccountScreen() {
   const deleteAccount = useDeleteAccount();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false); // D-171: the header's hairline once the page moves under it
+  const answerSounds = useAnswerSounds(); // D-172
   const [deleteWord, setDeleteWord] = useState('');
   const [error, setError] = useState('');
   // Premium (D-090): the plan line, Restore Purchases and Manage subscription.
@@ -94,6 +96,15 @@ export default function AccountScreen() {
           </View>
           {!purchasesAvailable() ? <Text style={styles.caption}>Purchases aren't available right now.</Text> : null}
           {planNote ? <Text style={styles.caption} accessibilityRole="alert">{planNote}</Text> : null}
+        </View>
+        {/* D-172: the chime and buzz after an answer. Haptics stay on either way; the phone's silent switch wins over this. */}
+        <View style={styles.row} accessible accessibilityRole="switch" accessibilityLabel="Answer sounds" accessibilityHint="A short chime for a right answer and a buzz for a wrong one" accessibilityState={{ checked: answerSounds.enabled }} testID="row-answer-sounds">
+          <Feather name="volume-2" size={18} color={colors.mutedForeground} />
+          <View style={styles.rowCopy}>
+            <Text style={styles.rowName}>Answer sounds</Text>
+            <Text style={styles.caption}>A chime when you're right, a buzz when you're not. Silent mode wins.</Text>
+          </View>
+          <Switch value={answerSounds.enabled} onValueChange={answerSounds.setEnabled} trackColor={{ true: colors.primary }} testID="switch-answer-sounds" />
         </View>
         {PRIVACY_URL ? row('shield', 'Privacy policy', 'What is collected, where it goes, how to delete it', openPrivacy, 'link-privacy') : null}
         {row('compass', 'See the welcome again', 'The three steps: course, material, coach', () => {

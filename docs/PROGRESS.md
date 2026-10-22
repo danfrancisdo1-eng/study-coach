@@ -21,8 +21,15 @@
 - A missed answer on the set card: the "Remember it" box is amber-tinted, readable in both modes; the Pop Quiz card in the chat is still navy.
 - Review list: plain ✓ / ✗; send button grey until something is typed; Account header hairline appears when the page scrolls.
 
+- **Answer feedback (D-172), Dan: "go":** a ✓ / ✗ that rises from the end of the answer and fades (`AnswerMark`), a chime or buzz made for the app (`assets/sounds`), success / error haptics; "Answer sounds" switch on Account; silent during timed exams and when the phone is muted. Build #71. Verified here: typecheck; mobile tests 102/102; iOS bundle exports with both clips. **Needs a new EAS build** (new asset files).
+
+### Needs real-iPhone check (D-172)
+- Answer a practice question right and wrong: the mark rises from the last letter and fades; the chime / buzz plays; the haptic fires. Silent switch on: haptic only. Account → Answer sounds off: no sound. A timed exam: nothing. Reduce Motion: the mark fades in place.
+- The two clips are attached in the chat for a listen before the build; the volumes (0.8 / 0.7) and the tones are easy to change.
+
 ### Next (Dan's call)
-- Right/wrong feedback animation with sound (Dan's ask, plan sent in chat): a ✓ that rises from the last letter and fades, a short chime, haptic; an ✗ with a short buzz. No new dependency (expo-audio, expo-haptics, Reanimated are in the app). Waits for his OK.
+- A new EAS development build to hear and feel D-172; then the same screens in TestFlight.
+- If the chime should feel different (warmer, shorter, two notes vs three), say so and I'll re-tune the clip.
 
 ## Session 15 — 2026-10-22 (Dan on the phone; Claude Code in the cloud)
 

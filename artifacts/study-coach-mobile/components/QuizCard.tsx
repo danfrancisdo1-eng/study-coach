@@ -8,6 +8,10 @@ import {
   type StudyQuestionFlagInputKind, type StudySession, type StudyQuizQuestionsItem,
 } from '@workspace/api-client-react';
 import { Confetti } from '@/components/Confetti';
+import { AnswerMark } from '@/components/AnswerMark';
+import { useAnswerSounds } from '@/hooks/useAnswerSounds';
+import { answerKind, shouldPlayAnswerSound, shouldShowAnswerMark } from '@/lib/answer-feedback';
+import { feedbackHaptic, playFeedbackSound, prepareFeedbackSounds } from '@/lib/feedback-sounds';
 import { ProgressBar } from '@/components/ProgressBar';
 import { writtenProgress } from '@/lib/progress';
 import { isPerfect } from '@/lib/perfect-score';
@@ -49,6 +53,9 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
   const grade = useGradeStudyQuiz();
   const flag = useFlagStudyQuestion();
   const [reviewingId, setReviewingId] = useState<string | null>(null); // practice: the question whose feedback is on screen
+  const [justAnsweredId, setJustAnsweredId] = useState<string | null>(null); // D-172: the verdict whose mark is rising
+  const answerSounds = useAnswerSounds();
+  useEffect(() => { void prepareFeedbackSounds(); }, []); // D-172
   const [reportingId, setReportingId] = useState<string | null>(null); // the question whose re-check is running
   const [currentId, setCurrentId] = useState<string | null>(null); // exam: the question on screen (null = first unanswered)
   const [marks, setMarks] = useState<Set<string>>(new Set()); // exam: questions marked for review (kept per set on this phone)
@@ -229,7 +236,10 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
           <CardText style={styles.missPrompt}>{reviewing.prompt}</CardText>
           <View style={styles.verdict}>
             <Feather name={correct ? 'check-circle' : 'x-circle'} size={18} color={correct ? colors.correct : colors.wrong} />
-            <CardText style={[styles.verdictText, { color: correct ? colors.correct : colors.wrong }]}>{correct ? 'Correct' : 'Not quite'}</CardText>
+            <CardText style={[styles.verdictText, { color: correct ? colors.correct : colors.wrong }]}>
+              {correct ? 'Correct' : 'Not quite'}
+              {justAnsweredId === reviewing.id ? <AnswerMark kind={correct ? 'correct' : 'wrong'} lineHeight={TYPE.bodySemi.lineHeight} /> : null}
+            </CardText>
           </View>
           {!correct ? <View style={styles.answerLine}><CardText style={[styles.answerLabel, { color: colors.wrong }]}>Your answer</CardText><CardText style={styles.answerText}>{reviewing.feedback.selectedOptionText}</CardText></View> : null}
           <View style={styles.answerLine}><CardText style={[styles.answerLabel, { color: colors.correct }]}>Best answer</CardText><CardText style={styles.answerText}>{reviewing.feedback.correctOptionText}</CardText></View>
@@ -238,7 +248,7 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
           {reportNote(reviewing)}
         </View>
         {progress}
-        <Pressable accessibilityRole="button" onPress={() => setReviewingId(null)} style={styles.primaryButton} testID="button-quiz-next">
+        <Pressable accessibilityRole="button" onPress={() => { setJustAnsweredId(null); setReviewingId(null); }} style={styles.primaryButton} testID="button-quiz-next">
           <CardText style={styles.primaryText}>{answered.length >= questions.length && !writing ? 'See the score' : 'Next question'}</CardText>
         </Pressable>
       </View>
@@ -312,7 +322,18 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
     try {
       const updated = await saveAnswer.mutateAsync({ id: sessionId, data: { questionId: current.id, optionId, assisted: false } });
       queryClient.setQueryData(key, updated);
-      if (quiz.kind === 'practice') { setReviewingId(current.id); return; }
+      if (quiz.kind === 'practice') {
+        setReviewingId(current.id);
+        // D-172: the verdict lands with a mark, a haptic and (untimed, switched on) a sound. Exams judge nothing until the end.
+        const kind = answerKind(updated.quiz?.questions.find((q) => q.id === current.id)?.feedback);
+        const timed = !!updated.quiz?.timer;
+        if (kind && shouldShowAnswerMark({ timed })) {
+          setJustAnsweredId(current.id);
+          feedbackHaptic(kind);
+          if (shouldPlayAnswerSound({ enabled: answerSounds.enabled, timed })) void playFeedbackSound(kind);
+        }
+        return;
+      }
       // Exam: move on to the next unanswered question after this one (wrapping), else the "all answered" panel.
       const list = (updated.quiz?.questions ?? []).filter(counts);
       const at = list.findIndex((q) => q.id === current.id);

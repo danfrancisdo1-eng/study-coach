@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeIn, FadeInUp, LinearTransition } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
@@ -8,6 +8,10 @@ import {
   type StudyQuestionFlagInputKind, type StudySession, type StudyQuizQuestionsItem,
 } from '@workspace/api-client-react';
 import { Confetti } from '@/components/Confetti';
+import { AnswerMark } from '@/components/AnswerMark';
+import { useAnswerSounds } from '@/hooks/useAnswerSounds';
+import { answerKind, shouldPlayAnswerSound, shouldShowAnswerMark } from '@/lib/answer-feedback';
+import { feedbackHaptic, playFeedbackSound, prepareFeedbackSounds } from '@/lib/feedback-sounds';
 import { isPerfect } from '@/lib/perfect-score';
 import { useColors } from '@/hooks/useColors';
 import { Bone, SkeletonGroup } from '@/components/Skeleton';
@@ -52,7 +56,10 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
   const [reviewingId, setReviewingId] = useState<string | null>(null); // the question whose feedback is live
   const [expandedId, setExpandedId] = useState<string | null>(null); // a collapsed row opened again
   const [reportingId, setReportingId] = useState<string | null>(null);
+  const [justAnsweredId, setJustAnsweredId] = useState<string | null>(null); // D-172: the answer whose mark is rising
   const reportedStep = useRef<string | null>(null);
+  const answerSounds = useAnswerSounds();
+  useEffect(() => { void prepareFeedbackSounds(); }, []); // D-172: both clips ready before the first answer
 
   const session = sessionQuery.data;
   const quiz = session?.quiz ?? null;
@@ -149,7 +156,11 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
               ) : (
                 <CardText style={styles.optionLetter}>{'ABCDE'[i]}</CardText>
               )}
-              <CardText style={[styles.optionText, mark && styles.optionTextMarked, mark === 'correct' && { color: colors.correct }, mark === 'wrong' && { color: colors.wrong }]}>{option.text}</CardText>
+              <CardText style={[styles.optionText, mark && styles.optionTextMarked, mark === 'correct' && { color: colors.correct }, mark === 'wrong' && { color: colors.wrong }]}>
+                {option.text}
+                {/* D-172: the rising mark after the last letter of the answer just tapped. */}
+                {chosen && mark && justAnsweredId === question.id ? <AnswerMark kind={mark} lineHeight={TYPE.option.lineHeight} /> : null}
+              </CardText>
             </Pressable>
           );
         })}
@@ -186,6 +197,14 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
       const updated = await saveAnswer.mutateAsync({ id: sessionId, data: { questionId: question.id, optionId, assisted: false } });
       queryClient.setQueryData(key, updated);
       setReviewingId(question.id);
+      // D-172: the verdict lands with a mark, a haptic and (untimed, switched on) a sound.
+      const kind = answerKind(updated.quiz?.questions.find((q) => q.id === question.id)?.feedback);
+      const timed = !!updated.quiz?.timer;
+      if (kind && shouldShowAnswerMark({ timed })) {
+        setJustAnsweredId(question.id);
+        feedbackHaptic(kind);
+        if (shouldPlayAnswerSound({ enabled: answerSounds.enabled, timed })) void playFeedbackSound(kind);
+      }
     } catch (problem) { onError(problem); }
   };
 
@@ -255,7 +274,7 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
       <View style={styles.live} onLayout={liveLayout(step)} testID="panel-live-feedback">
         {questionBlock(reviewing, position, false)}
         <Animated.View entering={FadeInUp.duration(280)}>{feedbackBlock(reviewing)}</Animated.View>
-        <Pressable accessibilityRole="button" disabled={busy} onPress={() => { if (last) void gradeSet(); else setReviewingId(null); }} style={[last ? styles.primaryButton : styles.nextButton, busy && styles.disabled]} testID="button-live-next">
+        <Pressable accessibilityRole="button" disabled={busy} onPress={() => { setJustAnsweredId(null); if (last) void gradeSet(); else setReviewingId(null); }} style={[last ? styles.primaryButton : styles.nextButton, busy && styles.disabled]} testID="button-live-next">
           {busy ? <ActivityIndicator color={last ? colors.primaryForeground : colors.background} /> : <><CardText style={last ? styles.primaryText : styles.nextText}>{last ? 'See the score' : 'Next question'}</CardText><Feather name="arrow-right" size={18} color={last ? colors.primaryForeground : colors.background} /></>}
         </Pressable>
       </View>
