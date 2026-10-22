@@ -40,7 +40,7 @@ export default function PremiumScreen() {
 
   useEffect(() => {
     if (!userId || !available) { setPackages([]); return; }
-    premiumPackages(userId, mode).then((list) => { const ordered = orderPackages(list); setPackages(ordered); setSelected(ordered[0]?.identifier ?? null); }).catch((problem) => { setPackages([]); setError(friendlyError(problem)); });
+    premiumPackages(userId, mode).then((list) => { const ordered = orderPackages(list); setPackages(ordered); setSelected(ordered[0]?.identifier ?? null); }).catch(() => { setPackages([]); setError("Prices couldn't load. Check your connection and try again."); });
   }, [userId, available, mode]);
 
   if (isLoaded && !isSignedIn) return <Redirect href="/" />;
@@ -76,7 +76,7 @@ export default function PremiumScreen() {
       <ScreenHeader leading="close" onLeading={close} leadingTestID="button-close-premium" />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
         <Text style={styles.kicker}>{paywallReason(reason)}</Text>
-        <Text style={styles.title}>{mode === 'exam' ? 'Exam pass' : 'RapidRecall AI Premium'}</Text>
+        <Text style={styles.title}>{mode === 'exam' ? 'Exam Pass' : 'RapidRecall AI Premium'}</Text>
         <View style={styles.compare} accessible accessibilityLabel={table.rows.map(([label, free, paid]) => `${label}: ${table.head[0]} ${free}, ${table.head[1]} ${paid}`).join('. ')} testID="paywall-table">
           <View style={[styles.compareRow, styles.compareDivider]}>
             <Text style={styles.compareLabel} />
@@ -137,11 +137,11 @@ export default function PremiumScreen() {
 
         {/* D-163 (Dan: "as big as the other choices"): the exam pass is a full-size choice, not a small link. */}
         {mode === 'student' ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Studying for a certification exam? See the exam pass" onPress={() => router.setParams({ kind: 'exam' })} style={({ pressed }) => [styles.card, pressed && styles.pressed]} testID="link-exam-pass">
+          <Pressable accessibilityRole="button" accessibilityLabel="Exam Pass, for a certification exam" onPress={() => router.setParams({ kind: 'exam' })} style={({ pressed }) => [styles.card, pressed && styles.pressed]} testID="link-exam-pass">
             <View style={styles.cardHead}>
-              <Text style={styles.cardTitle}>Certification exam? Exam pass</Text>
+              <Text style={styles.cardTitle}>Exam Pass</Text>
             </View>
-            <Text style={styles.cardCaption}>One payment for 60 days. It does not renew.</Text>
+            <Text style={styles.cardCaption}>For a certification exam: one payment for 60 days. It does not renew.</Text>
             <Feather name="chevron-right" size={22} color={colors.mutedForeground} style={styles.cardCheck} />
           </Pressable>
         ) : null}

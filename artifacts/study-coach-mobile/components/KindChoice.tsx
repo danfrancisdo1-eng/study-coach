@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming, interpolateColor } from 'react-native-reanimated';
 import { useColors } from '@/hooks/useColors';
 
@@ -22,15 +22,15 @@ export function KindChoice({ value, onChange }: { value: CourseKindChoice | null
   }, [waiting, reduceMotion]);
 
   // The two outlines take turns: course glows as exam fades, then the other way round.
-  const courseGlow = useAnimatedStyle(() => ({ borderColor: interpolateColor(1 - phase.value, [0, 1], [colors.border, colors.primaryText]) }));
-  const examGlow = useAnimatedStyle(() => ({ borderColor: interpolateColor(phase.value, [0, 1], [colors.border, colors.primaryText]) }));
+  const courseGlow = useAnimatedStyle<ViewStyle>(() => ({ borderColor: interpolateColor(1 - phase.value, [0, 1], [colors.border, colors.primaryText]) }));
+  const examGlow = useAnimatedStyle<ViewStyle>(() => ({ borderColor: interpolateColor(phase.value, [0, 1], [colors.border, colors.primaryText]) }));
 
-  const item = (kind: CourseKindChoice, label: string, animated: ReturnType<typeof useAnimatedStyle>) => {
+  const item = (kind: CourseKindChoice, label: string, animated: typeof courseGlow) => {
     const selected = value === kind;
     return (
       <Animated.View style={[styles.item, { backgroundColor: selected ? colors.primary : colors.card, borderColor: selected ? colors.primary : waiting && reduceMotion ? colors.primaryText : colors.border }, waiting && !reduceMotion ? animated : null]}>
         <Pressable accessibilityRole="radio" accessibilityState={{ selected }} accessibilityLabel={label} onPress={() => onChange(kind)} style={styles.press} testID={`button-kind-${kind}`}>
-          <Text style={[styles.text, { color: selected ? colors.primaryForeground : colors.foreground }]}>{label}</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.text, { color: selected ? colors.primaryForeground : colors.foreground }]}>{label}</Text>
         </Pressable>
       </Animated.View>
     );
@@ -39,7 +39,7 @@ export function KindChoice({ value, onChange }: { value: CourseKindChoice | null
   return (
     <View style={styles.wrap} accessibilityRole="radiogroup" accessibilityLabel="Course or certification exam">
       {item('course', 'Course', courseGlow)}
-      {item('exam', 'Certification exam', examGlow)}
+      {item('exam', 'Certification Exam', examGlow)}
     </View>
   );
 }

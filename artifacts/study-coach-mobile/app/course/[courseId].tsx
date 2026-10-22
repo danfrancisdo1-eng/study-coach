@@ -347,7 +347,11 @@ export default function CourseScreen() {
                 <Text style={styles.kicker}>Progress · {graded.length} {graded.length === 1 ? 'set' : 'sets'}</Text>
                 {graded.slice(0, 5).map((s) => (
                   <View key={s.id} style={styles.rowBetween}>
-                    <Text style={styles.body} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{whenLabel(s.createdAt)} · {s.topic}</Text>
+                    {/* D-169 (Dan: "Text too small ... unacceptable"): no shrinking; the date on its own line, the topic full size on one line, cut with "…". */}
+                    <View style={styles.progressText}>
+                      <Text style={styles.caption}>{whenLabel(s.createdAt)}</Text>
+                      <Text style={styles.progressTopic} numberOfLines={1}>{s.topic}</Text>
+                    </View>
                     {/* D-167: the score in the same fixed column as the topic rows, so the percentages line up. */}
                     <Text style={styles.scoreColumn}>{Math.round((s.targetedScore ?? s.diagnosticScore) as number)}%</Text>
                   </View>
@@ -495,6 +499,8 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, gap: 12 },
   kicker: { color: colors.mutedForeground, fontSize: 12.5, lineHeight: 17, fontWeight: '600' },
   body: { flex: 1, color: colors.foreground, fontSize: 15, lineHeight: 22 },
+  progressText: { flex: 1, minWidth: 0 },
+  progressTopic: { color: colors.foreground, fontSize: 15, lineHeight: 22 },
   input: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.background, color: colors.foreground, fontSize: 15, paddingHorizontal: 13 },
   row: { flexDirection: 'row', gap: 10 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },

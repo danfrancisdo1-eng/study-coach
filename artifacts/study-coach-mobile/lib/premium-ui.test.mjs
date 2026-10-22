@@ -87,7 +87,7 @@ test('the paywall table matches the plans: a free student gets no practice sets 
   assert.deepEqual(student.rows.find((r) => r[0] === 'Courses'), ['Courses', '1', 'Unlimited']);
   assert.ok(!student.rows.some((r) => /every feature/i.test(r[0])));
   const exam = paywallRows('exam');
-  assert.deepEqual(exam.head, ['Free', 'Exam pass']);
+  assert.deepEqual(exam.head, ['Free', 'Exam Pass']);
   assert.deepEqual(exam.rows[0], ['Questions', '50', 'Unlimited']);
   // Short labels so the table stays one line per row at large text sizes.
   for (const [label] of [...student.rows, ...exam.rows]) assert.ok(label.length <= 16, label);

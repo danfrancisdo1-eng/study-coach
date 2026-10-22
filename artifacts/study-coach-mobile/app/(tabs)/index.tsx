@@ -420,7 +420,7 @@ export default function CoachHome() {
                 style={[value !== null ? styles.choiceRow : styles.suggestion, column && value === null && styles.choicePill, busy && styles.disabled]} testID={chip === SIM_EXAM_CHIP ? 'button-suggestion-simulated' : chip === REVIEW_CHIP ? 'button-suggestion-review' : value !== null ? 'button-choice' : 'button-suggestion'}>
                 {value !== null ? (
                   <>
-                    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={[styles.suggestionText, styles.choiceLabel]}>{label}</Text>
+                    <Text numberOfLines={1} style={[styles.suggestionText, styles.choiceLabel]}>{label}</Text>
                     <Text numberOfLines={1} style={[styles.suggestionText, styles.choiceValue]}>{value}</Text>
                   </>
                 ) : <Text numberOfLines={1} style={styles.suggestionText}>{label}</Text>}

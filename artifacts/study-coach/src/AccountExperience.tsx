@@ -265,7 +265,7 @@ export function AccountExperience(props: AccountExperienceProps) {
                 <select className={`ae-input${newKind ? '' : ' ae-pulse'}`} value={newKind} onChange={event => setNewKind(event.target.value as 'course' | 'exam')} required data-testid="select-new-kind">
                   <option value="" disabled>Course or exam?</option>
                   <option value="course">Course</option>
-                  <option value="exam">Certification exam</option>
+                  <option value="exam">Certification Exam</option>
                 </select>
               </label>
               <label className="ae-field" style={{ flex: 1, minWidth: 180 }}>{newKind === 'exam' ? 'Add an exam' : 'Add a course'}

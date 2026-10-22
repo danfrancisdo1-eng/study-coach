@@ -2,6 +2,16 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-22 — D-169: Dan's phone review of the navigation branch
+- "Text too small ... this is unacceptable": no more shrink-to-fit on long text. The Progress rows put the date on its own line and the topic full size on one line, cut with "…"; topic rows (StatRow) and section chips truncate instead of shrinking. Shrink stays only on short labels (paywall cells, grid buttons, the course/exam choice).
+- "Please stop the brain from bouncing": the welcome poster fades in instead of a spring zoom.
+- The exam pass card and paywall say "Exam Pass"; the card's caption names the certification exam.
+- "Certification Exam" on one line in the course/exam choice (web option label matches).
+- The price screen says "Prices couldn't load. Check your connection and try again." instead of "Something went wrong" (the Dev app never loads prices: its app ID has no products).
+- KindChoice typed for the stricter reanimated style types (typecheck failed on main and here).
+- Build #68.
+- **Decided by:** Dan.
+
 ## 2026-10-22 — D-168: Course page actions as an even two-column grid
 - Dan: "all the bubbles that are buttons ... It needs to look uniform." The two wrapped clouds of pills on the course page (Actions; Study with the coach) are two grids of equal-width buttons, two per row, one-line labels that shrink a little before they truncate (`ActionButton fill`). "Return to course list" is gone: the back chevron and the Courses tab do that.
 - Build #67.

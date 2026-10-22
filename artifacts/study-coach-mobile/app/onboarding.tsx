@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn, FadeInUp, FadeOut, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp, FadeOut } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { ONBOARDING_PAGES, ONBOARDING_SEEN_KEY } from '@/lib/onboarding';
@@ -45,7 +45,7 @@ export default function OnboardingScreen() {
   const next = () => { if (last) finish(); else setPage(page + 1); };
 
   const hero = current.key === 'intro' ? (
-    <Animated.View entering={ZoomIn.delay(120).springify().damping(15)} style={styles.brandWrap} testID="hero-intro">
+    <Animated.View entering={FadeIn.duration(300)} style={styles.brandWrap} testID="hero-intro">
       {/* Dan's RapidRecall AI artwork (D-113): the brain poster on the first page of the tour. */}
       <Image source={require('@/assets/images/splash-brain.png')} style={styles.brandPoster} resizeMode="cover" accessibilityLabel="RapidRecall AI" testID="image-brand-poster" />
     </Animated.View>

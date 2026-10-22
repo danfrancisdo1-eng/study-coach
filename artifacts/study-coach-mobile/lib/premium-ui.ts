@@ -101,7 +101,7 @@ export function paywallState(available: boolean, packages: readonly unknown[] | 
  */
 export function paywallRows(mode: 'exam' | 'student'): { head: [string, string]; rows: [string, string, string][] } {
   if (mode === 'exam') {
-    return { head: ['Free', 'Exam pass'], rows: [['Questions', '50', 'Unlimited'], ['Review PDF', 'Yes', 'Yes'], ['How long', 'Once', '60 days']] };
+    return { head: ['Free', 'Exam Pass'], rows: [['Questions', '50', 'Unlimited'], ['Review PDF', 'Yes', 'Yes'], ['How long', 'Once', '60 days']] };
   }
   return { head: ['Free', 'Premium'], rows: [['Courses', '1', 'Unlimited'], ['Practice sets', 'None', '20 a day'], ['Coach messages', '40 a day', '300 a day']] };
 }
