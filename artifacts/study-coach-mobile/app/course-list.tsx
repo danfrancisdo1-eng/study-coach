@@ -186,7 +186,7 @@ export default function CourseListScreen() {
           {/* The Account page (D-080): privacy, welcome and tour again, sign out, delete my account. */}
           <Pressable accessibilityRole="button" hitSlop={{ top: 5, bottom: 5 }} onPress={() => router.push('/account')} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-account">
             <Feather name="user" size={14} color={colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Account</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>Privacy, the tour again, delete my account · build {BUILD}</Text></View>
+            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Account</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>Privacy, the tour again, delete my account{__DEV__ ? ` · build ${BUILD}` : ''}</Text></View>
             <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
           </Pressable>
         </ScrollView>

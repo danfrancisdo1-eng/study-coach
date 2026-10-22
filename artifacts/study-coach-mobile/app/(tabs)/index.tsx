@@ -50,7 +50,7 @@ const REVIEW_CHIP = 'Review sheet (PDF)'; // D-139: opens the course's review sh
 const AI_NOTICE: { icon: React.ComponentProps<typeof Feather>['name']; text: string }[] = [
   { icon: 'send', text: 'Your messages, course names, chosen course material and quiz answers go to Anthropic Claude to coach you. Lecture recordings are transcribed by OpenAI.' },
   { icon: 'alert-circle', text: 'AI can make mistakes. Press and hold any coach reply to report it.' },
-  { icon: 'refresh-cw', text: 'You can change this choice at any time.' },
+  { icon: 'refresh-cw', text: 'To withdraw, delete your account in Account (the coach needs AI to work).' },
 ];
 
 // Plain sentences only, never a stack trace (D-065, usability review finding 2). A 409 already refetched the chat, so it says so.

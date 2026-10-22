@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-22 — D-159: App Store pre-submission fixes
+- From the store preflight (two code reviews against Apple's rules: accounts, AI disclosure, privacy, purchases, permissions, links). No blockers. Fixed: the paywall's trial line now takes the trial length from the store and says Apple's rule (cancel at least 24 hours before the free trial ends); "preview build / TestFlight" wording on the paywall and Account replaced by "Purchases aren't available right now"; the second AI consent card (session screen) now names Anthropic Claude and OpenAI for transcription; "You can change this choice at any time" replaced by how to withdraw (delete the account in Account); the privacy page's deletion path corrected (Courses & exams → Account → Delete my account); the build stamp shows only in development builds.
+- For Dan: confirm Render has AI_PROVIDER=anthropic (the code falls back to OpenAI); the privacy page is marked a draft for review; give App Review a demo account (email and password) in the review notes; Clerk production instance before release; PREMIUM_LIMITS=on at launch.
+- Tests 255/255; iOS bundle exports.
+- **Decided by:** Dan ("yes pre-submission check").
+
 ## 2026-10-20 — D-158: Course or exam has no default; the two choices pulse until one is picked
 - Dan: someone adding an exam "will mistakenly just click in to name the course/exam without switching to exam"; "highlight the outline of the button and have them flash alternately".
 - Phone (Add on the course list): "Is this a course or a certification exam?" with two buttons, Course and Certification exam, nothing selected; their outlines take turns glowing (1.4 s each way, well under three flashes a second); with Reduce Motion both show a steady strong outline. The name field and Add wait until one is picked. Web: the type menu starts on "Course or exam?" with a pulsing outline (steady with reduced motion); the name and Add wait for it.
