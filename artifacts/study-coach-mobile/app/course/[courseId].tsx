@@ -213,7 +213,6 @@ export default function CourseScreen() {
     if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, courseId!).catch(() => {});
     router.replace('/(tabs)');
   };
-  const toList = () => { if (router.canGoBack()) router.back(); else router.replace('/course-list'); };
   // Questions without material (D-060): the first tap on this phone shows a small red note and a Proceed; later taps go straight to the coach.
   const questionsWithoutMaterial = async () => {
     if (noMaterialNote) { setNoMaterialNote(false); startWithCoach('practiceNoMaterial', null); return; }
@@ -262,23 +261,23 @@ export default function CourseScreen() {
                 <ActionButton label="See Premium" icon="star" onPress={() => router.push({ pathname: '/premium', params: { reason: 'course_read_only' } })} testID="button-read-only-premium" />
               </View>
             ) : null}
+            {/* D-168: an even two-column grid instead of a cloud of pills; "Return to course list" is the back chevron and the Courses tab now. */}
             <Text style={styles.kicker}>Actions</Text>
-            <View style={styles.actions}>
-              <ActionButton label="Add material" icon="plus-circle" onPress={() => scrollTo(intakeY.current)} testID="button-action-material" />
-              <ActionButton label="Add another course" icon="plus" secondary onPress={() => router.push({ pathname: '/course-list', params: { add: '1' } })} testID="button-action-add-course" />
-              <ActionButton label="Return to course list" icon="list" secondary onPress={toList} testID="button-action-list" />
+            <View style={styles.grid}>
+              <ActionButton fill label="Add material" icon="plus-circle" onPress={() => scrollTo(intakeY.current)} testID="button-action-material" />
+              <ActionButton fill label="Add another course" icon="plus" secondary onPress={() => router.push({ pathname: '/course-list', params: { add: '1' } })} testID="button-action-add-course" />
             </View>
             <Text style={styles.kicker}>Study with the coach</Text>
-            <View style={styles.actions}>
-              <ActionButton label="Practice questions" icon="edit-3" onPress={() => startWithCoach('practice', null)} testID="button-action-practice" />
-              <ActionButton label="Talk to the coach" icon="message-circle" secondary onPress={talkToCoach} testID="button-action-chat" />
-              <ActionButton label="Simulated exam" icon="clock" secondary onPress={() => (isExam ? setTimedPicker(true) : startWithCoach('exam', null))} testID="button-action-exam" />
-              <ActionButton label="Flashcards" icon="layers" secondary onPress={() => setPicker('flashcards')} testID="button-action-flashcards" />
-              <ActionButton label="Memory tricks" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
-              <ActionButton label="Outline" icon="list" secondary onPress={() => startWithCoach('outline', null)} testID="button-action-outline" />
-              <ActionButton label="Review sheet (PDF)" icon="file-text" secondary onPress={() => router.push({ pathname: '/review/[courseId]', params: { courseId: courseId! } })} testID="button-action-review-sheet" />
+            <View style={styles.grid}>
+              <ActionButton fill label="Practice questions" icon="edit-3" onPress={() => startWithCoach('practice', null)} testID="button-action-practice" />
+              <ActionButton fill label="Talk to the coach" icon="message-circle" secondary onPress={talkToCoach} testID="button-action-chat" />
+              <ActionButton fill label="Simulated exam" icon="clock" secondary onPress={() => (isExam ? setTimedPicker(true) : startWithCoach('exam', null))} testID="button-action-exam" />
+              <ActionButton fill label="Flashcards" icon="layers" secondary onPress={() => setPicker('flashcards')} testID="button-action-flashcards" />
+              <ActionButton fill label="Memory tricks" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
+              <ActionButton fill label="Outline" icon="list" secondary onPress={() => startWithCoach('outline', null)} testID="button-action-outline" />
+              <ActionButton fill label="Review sheet (PDF)" icon="file-text" secondary onPress={() => router.push({ pathname: '/review/[courseId]', params: { courseId: courseId! } })} testID="button-action-review-sheet" />
               {/* D-155 (Dan): only while the course has no material; once something is uploaded the other actions use it. */}
-              {materials.length === 0 && lectures.length === 0 ? <ActionButton label="Questions without material" icon="help-circle" secondary onPress={() => void questionsWithoutMaterial()} testID="button-action-no-material" /> : null}
+              {materials.length === 0 && lectures.length === 0 ? <ActionButton fill label="Questions without material" icon="help-circle" secondary onPress={() => void questionsWithoutMaterial()} testID="button-action-no-material" /> : null}
             </View>
             {noMaterialNote ? (
               <View style={styles.noteRow} testID="note-no-material">
@@ -503,6 +502,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   lectureRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10 },
   errorText: { color: colors.destructive, fontSize: 13 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   noteRow: { gap: 8 },
   noteText: { color: colors.destructive, fontSize: 12.5, lineHeight: 17 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
