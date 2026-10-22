@@ -56,11 +56,15 @@ Study Coach has no sharing feature (the session-report share was removed in D-08
 - Contact info: email address — linked to the user — app functionality (sign-in). Not used for tracking.
 - User content: other user content (study material, messages, recordings' transcripts) — linked to the user — app functionality.
 - Identifiers: user id — linked — app functionality.
-- Diagnostics: crash/performance data — not collected today (no crash SDK). Revisit if one is added.
+- Photos or Videos and Audio Data — linked — app functionality (a picked photo goes to Anthropic to be read; a recording the student transcribes goes to OpenAI).
+- Purchases: purchase history — linked — app functionality (RevenueCat).
+- Usage data: product interaction (daily use counts, AI use) — linked — app functionality, analytics.
+- Diagnostics: other diagnostic data (server error logs tied to the account) — linked — app functionality. No crash SDK.
+- Full answers, ready to paste: docs/store/APP_STORE_LISTING.md (D-160).
 - Tracking: none. Ads: none.
 
 ## Open items before submission
 
-- Contact email on the policy page (`[contact email to be added before publication]`).
+- ~~Contact email on the policy page~~ done (D-160): drfrancis@clinicalforesight.ai, also on /support.
 - Decide log retention for reported replies (Render default today).
 - Legal review of the policy wording (Dan).
