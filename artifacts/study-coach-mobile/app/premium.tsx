@@ -10,7 +10,7 @@ import { getGetPremiumStatusQueryKey, useRefreshPremium } from '@workspace/api-c
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
-import { orderPackages, packageLabel, paywallMode, paywallReason, paywallState, savingLabel, trialLength, trialTerms } from '@/lib/premium-ui';
+import { orderPackages, packageLabel, paywallMode, paywallReason, paywallRows, paywallState, savingLabel, trialLength, trialTerms } from '@/lib/premium-ui';
 import { TERMS_URL, buy, premiumPackages, purchasesAvailable, restore } from '@/lib/purchases';
 
 /**
@@ -67,13 +67,8 @@ export default function PremiumScreen() {
     } catch (problem) { setError(friendlyError(problem)); } finally { setBusy(null); }
   };
 
-  const row = (label: string, free: string, premium: string) => (
-    <View style={styles.compareRow} key={label}>
-      <Text style={styles.compareLabel}>{label}</Text>
-      <Text style={styles.compareFree}>{free}</Text>
-      <Text style={styles.comparePremium}>{premium}</Text>
-    </View>
-  );
+  const table = paywallRows(mode);
+  const cell = { numberOfLines: 1, adjustsFontSizeToFit: true, minimumFontScale: 0.75 } as const;
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="screen-premium">
@@ -83,25 +78,20 @@ export default function PremiumScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
         <Text style={styles.kicker}>{paywallReason(reason)}</Text>
         <Text style={styles.title}>{mode === 'exam' ? 'Exam pass' : 'RapidRecall AI Premium'}</Text>
-        {mode === 'exam' ? (
-          <View style={styles.compare} accessible accessibilityLabel="Free: your first 50 questions. Exam pass: everything for 60 days, one payment, no renewal.">
-            {row('Questions', '50', 'Unlimited')}
-            {row('Simulated exams, review PDF', 'Yes', 'Yes')}
-            {row('How long', 'Once', '60 days')}
+        <View style={styles.compare} accessible accessibilityLabel={table.rows.map(([label, free, paid]) => `${label}: ${table.head[0]} ${free}, ${table.head[1]} ${paid}`).join('. ')} testID="paywall-table">
+          <View style={[styles.compareRow, styles.compareDivider]}>
+            <Text style={styles.compareLabel} />
+            <Text {...cell} style={[styles.compareFree, styles.compareHead]}>{table.head[0]}</Text>
+            <Text {...cell} style={[styles.comparePremium, styles.compareHead]}>{table.head[1]}</Text>
           </View>
-        ) : (
-          <View style={styles.compare} accessible accessibilityLabel="Free: 1 course, 3 sets and 40 coach messages a day. Premium: every course, 20 sets and 300 coach messages a day.">
-            <View style={styles.compareRow}>
-              <Text style={styles.compareLabel} />
-              <Text style={[styles.compareFree, styles.compareHead]}>Free</Text>
-              <Text style={[styles.comparePremium, styles.compareHead]}>Premium</Text>
+          {table.rows.map(([label, free, paid], i) => (
+            <View style={[styles.compareRow, i < table.rows.length - 1 && styles.compareDivider]} key={label}>
+              <Text {...cell} style={styles.compareLabel}>{label}</Text>
+              <Text {...cell} style={styles.compareFree}>{free}</Text>
+              <Text {...cell} style={styles.comparePremium}>{paid}</Text>
             </View>
-            {row('Courses and exams', '1', 'Unlimited')}
-            {row('Question sets a day', '3', '20')}
-            {row('Coach messages a day', '40', '300')}
-            {row('Every feature', 'Yes', 'Yes')}
-          </View>
-        )}
+          ))}
+        </View>
 
         {state === 'unavailable' ? (
           <Text style={styles.note} testID="text-purchases-unavailable">Purchases aren't available right now. Try again in a moment.</Text>
@@ -146,6 +136,17 @@ export default function PremiumScreen() {
           </>;
         })()}
 
+        {/* D-163 (Dan: "as big as the other choices"): the exam pass is a full-size choice, not a small link. */}
+        {mode === 'student' ? (
+          <Pressable accessibilityRole="button" accessibilityLabel="Studying for a certification exam? See the exam pass" onPress={() => router.setParams({ kind: 'exam' })} style={({ pressed }) => [styles.card, pressed && styles.pressed]} testID="link-exam-pass">
+            <View style={styles.cardHead}>
+              <Text style={styles.cardTitle}>Certification exam? Exam pass</Text>
+            </View>
+            <Text style={styles.cardCaption}>One payment for 60 days. It does not renew.</Text>
+            <Feather name="chevron-right" size={22} color={colors.mutedForeground} style={styles.cardCheck} />
+          </Pressable>
+        ) : null}
+
         {message ? <Text style={styles.success} accessibilityRole="alert" testID="status-premium-message">{message}</Text> : null}
         {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
 
@@ -155,7 +156,6 @@ export default function PremiumScreen() {
         <Text style={styles.terms}>{mode === 'exam'
           ? 'Payment is charged to your Apple ID. The exam pass is a one-time purchase for 60 days and does not renew.'
           : 'Payment is charged to your Apple ID. A subscription renews automatically unless you cancel at least 24 hours before the end of the current period; manage or cancel it in Settings › Apple ID › Subscriptions.'}</Text>
-        {mode === 'student' ? <Text style={styles.link} accessibilityRole="link" onPress={() => router.setParams({ kind: 'exam' })} testID="link-exam-pass">Studying for a certification exam? See the exam pass</Text> : null}
         <View style={styles.links}>
           <Text style={styles.link} accessibilityRole="link" onPress={() => void Linking.openURL(TERMS_URL)}>Terms of Use</Text>
           {PRIVACY_URL ? <Text style={styles.link} accessibilityRole="link" onPress={openPrivacy}>Privacy Policy</Text> : null}
@@ -172,10 +172,11 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   content: { paddingHorizontal: 20, gap: 14 },
   kicker: { color: colors.mutedForeground, fontSize: 15, lineHeight: 21 },
   title: { color: colors.foreground, fontSize: 28, lineHeight: 34, fontWeight: '700' },
-  compare: { borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, paddingVertical: 6 },
-  compareRow: { flexDirection: 'row', alignItems: 'center', minHeight: 40, paddingHorizontal: 14 },
+  compare: { borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
+  compareRow: { flexDirection: 'row', alignItems: 'center', minHeight: 44, paddingHorizontal: 14, gap: 8 },
+  compareDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   compareHead: { fontWeight: '700', color: colors.foreground },
-  compareLabel: { flex: 1.6, color: colors.foreground, fontSize: 14 },
+  compareLabel: { flex: 1.5, color: colors.foreground, fontSize: 14 },
   compareFree: { flex: 1, color: colors.mutedForeground, fontSize: 14, textAlign: 'center' },
   comparePremium: { flex: 1, color: colors.primaryText, fontSize: 14, fontWeight: '600', textAlign: 'center' },
   buy: { minHeight: 64, justifyContent: 'center', alignItems: 'center', borderRadius: 14, backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10, gap: 2 },

@@ -109,7 +109,7 @@ The demo account already has one course ("Intro to Biology") with notes uploaded
 
 Purchases:
 • Student subscription (monthly or yearly, 1-week free trial): Courses & exams → Account → See Premium.
-• Exam Pass ($29.99, 60 days, non-renewing): on that same screen, tap "Studying for a certification exam? See the exam pass".
+• Exam Pass ($29.99, 60 days, non-renewing): on that same screen, tap "Certification exam? Exam pass".
 • Restore Purchases is on the Account screen and on each purchase screen.
 
 AI: content is sent to Anthropic (Claude) after the user consents on the first screen; lecture transcription uses OpenAI. Press and hold any coach reply to report it.

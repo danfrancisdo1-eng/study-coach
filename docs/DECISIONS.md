@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-22 — D-163: Paywall table and exam pass choice (Dan's TestFlight screenshots)
+- Dan: the table's labels were "too close and jumbled"; the exam pass link "way too small. It should be as big as the other choices."
+- Table: short one-line labels (Courses, Practice sets, Coach messages), a header row on both tables, divider lines, text shrinks to fit at large text sizes. The free column now says what the free plan allows: a student has no practice sets until the free week (D-155), so "3 sets a day" and "Every feature: Yes" were wrong (`paywallRows`, tested).
+- The exam pass is a full-size card under the subscription choices ("Certification exam? Exam pass").
+- Found in the same screenshots: the Yearly subscription shows no free week (Monthly does), so the introductory offer is missing on Yearly in App Store Connect (Dan to add).
+- Build #66.
+- **Decided by:** Dan.
+
 ## 2026-10-22 — D-162: App Store screenshots
 - Six 1320 × 2868 screenshots (Apple's 6.9" size covers every iPhone; the app is iPhone-only) from the simulator, demo account, "Intro to Biology" with a photo of notes: the 100-a-day plan, photo to notes, a question from the notes, the explanation and memory trick, the score by topic, the after-set choices. Navy background, the app's yellow headline, white subline. Raw shots kept outside git.
 - **Decided by:** Dan ("yes start the listing and screenshots").
