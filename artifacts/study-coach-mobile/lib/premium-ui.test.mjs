@@ -68,3 +68,13 @@ test('trial_required opens the student paywall; the free week line', () => {
   assert.match(paywallReason('trial_required'), /free week/);
   assert.equal(planLine({ plan: 'trial', source: 'revenuecat', expiresAt: new Date(2026, 9, 26, 12).toISOString() }), 'Free week · ends Oct 26, 2026');
 });
+
+test('the paywall never shows purchase cards without a product (store fetch failed)', async () => {
+  const { paywallState } = await import('./premium-ui.ts');
+  assert.equal(paywallState(false, null, ''), 'unavailable');
+  assert.equal(paywallState(true, null, ''), 'loading');
+  assert.equal(paywallState(true, [], ''), 'empty');
+  assert.equal(paywallState(true, [], 'Something went wrong'), 'error');
+  assert.equal(paywallState(true, [{}], ''), 'ready');
+  assert.equal(paywallState(true, [{}], 'Payment cancelled'), 'ready');
+});
