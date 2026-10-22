@@ -82,3 +82,14 @@ export function trialLength(intro: { price: number; periodNumberOfUnits: number;
   const word = unit.startsWith('day') ? 'day' : unit.startsWith('week') ? 'week' : unit.startsWith('month') ? 'month' : unit.startsWith('year') ? 'year' : 'day';
   return `${intro.periodNumberOfUnits} ${word}${intro.periodNumberOfUnits === 1 ? '' : 's'}`;
 }
+
+/**
+ * What the paywall's purchase area shows (D-161). A failed store fetch leaves no products, so the
+ * cards must not render: the error line says what happened instead of the screen crashing.
+ */
+export function paywallState(available: boolean, packages: readonly unknown[] | null, error: string): 'unavailable' | 'loading' | 'empty' | 'error' | 'ready' {
+  if (!available) return 'unavailable';
+  if (packages === null) return 'loading';
+  if (packages.length > 0) return 'ready';
+  return error ? 'error' : 'empty';
+}

@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-22 — D-161: The paywall no longer crashes when the store returns no products
+- Found in the simulator log while making store screenshots: when RevenueCat could not fetch the products, the error was set, the product list was empty, and the screen still drew the purchase cards from the first product ("Cannot read property 'product' of undefined"). Apple's reviewer could hit this if the products don't load. Now the purchase area shows nothing and the error line explains (`paywallState` in lib/premium-ui.ts, tested).
+- Mobile only: the web app has no purchases. Build #65.
+- **Decided by:** Claude (bug fix; within Dan's "whatever else you can do" for launch).
+
 ## 2026-10-22 — D-160: Contact email, a support page, and the App Store listing
 - Contact email drfrancis@clinicalforesight.ai (Dan) on the privacy policy and a new public page at /support (restore, cancel, report, delete; the Support URL App Store Connect asks for). The policy is no longer marked a draft; it now names exam passes, daily AI use, and photos going to Anthropic to be read.
 - docs/store/APP_STORE_LISTING.md: name, subtitle, promo text, keywords, description, age rating answers, App Privacy label answers, App Review notes, screenshot plan.

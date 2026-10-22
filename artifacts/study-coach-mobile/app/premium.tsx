@@ -10,7 +10,7 @@ import { getGetPremiumStatusQueryKey, useRefreshPremium } from '@workspace/api-c
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
-import { orderPackages, packageLabel, paywallMode, paywallReason, savingLabel, trialLength, trialTerms } from '@/lib/premium-ui';
+import { orderPackages, packageLabel, paywallMode, paywallReason, paywallState, savingLabel, trialLength, trialTerms } from '@/lib/premium-ui';
 import { TERMS_URL, buy, premiumPackages, purchasesAvailable, restore } from '@/lib/purchases';
 
 /**
@@ -35,6 +35,7 @@ export default function PremiumScreen() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const available = purchasesAvailable();
+  const state = paywallState(available, packages, error);
 
   useEffect(() => {
     if (!userId || !available) { setPackages([]); return; }
@@ -102,11 +103,11 @@ export default function PremiumScreen() {
           </View>
         )}
 
-        {!available ? (
+        {state === 'unavailable' ? (
           <Text style={styles.note} testID="text-purchases-unavailable">Purchases aren't available right now. Try again in a moment.</Text>
-        ) : packages === null ? <ActivityIndicator color={colors.primaryText} /> : packages.length === 0 && !error ? (
+        ) : state === 'loading' || !packages ? <ActivityIndicator color={colors.primaryText} /> : state === 'empty' ? (
           <Text style={styles.note}>{mode === 'exam' ? "The exam pass isn't available right now. Try again later." : "Premium isn't available right now. Try again later."}</Text>
-        ) : mode === 'exam' ? (() => {
+        ) : state === 'error' ? null : mode === 'exam' ? (() => {
           const pass = packages[0]!;
           return <>
             <View style={[styles.card, styles.cardOn]} testID="card-exam-pass">
