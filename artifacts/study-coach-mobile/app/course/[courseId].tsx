@@ -13,6 +13,7 @@ import {
 import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
 import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
+import { STAT_VALUE_WIDTH, StatRow } from '@/components/StatRow';
 import { friendlyError } from '@/lib/friendly-error';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
 import { courseExamFacts, factPicks, factsFromInputs, needsFactsLookup, realExamLine, timedChoices, type TimedSize } from '@/lib/exam-facts';
@@ -289,17 +290,14 @@ export default function CourseScreen() {
           </View>
 
           <View style={styles.card} testID="panel-topic-history">
-            <Text style={styles.kicker}>Topics tested · {results?.topics.length ?? 0}</Text>
+            <View style={styles.rowBetween}>
+              <Text style={styles.kicker}>Topics tested · {results?.topics.length ?? 0}</Text>
+              {results?.topics.length ? <Text style={styles.kicker}>missed / asked</Text> : null}
+            </View>
             {resultsQuery.isLoading ? <ActivityIndicator color={colors.primaryText} /> : null}
+            {/* D-167: one line per topic, the count in a fixed column. Review finding 18 (D-076): the bar is the missed share, in the wrong colour, so it reads the same as the number. */}
             {(results?.topics ?? []).map((t) => (
-              <View key={t.topic} style={styles.topicRow} accessible accessibilityLabel={`${t.topic}: missed ${t.missed} of ${t.total}`}>
-                <View style={styles.rowBetween}>
-                  <Text style={styles.body} numberOfLines={1}>{t.topic}</Text>
-                  <Text style={styles.scoreText}>missed {t.missed} of {t.total}</Text>
-                </View>
-                {/* Review finding 18 (D-076): the bar is the missed share, in the wrong colour, so it reads the same as the words. */}
-                <View style={styles.track}><View style={[styles.fill, { backgroundColor: colors.wrong, width: `${t.total ? Math.round((t.missed / t.total) * 100) : 0}%` }]} /></View>
-              </View>
+              <StatRow key={t.topic} label={t.topic} value={`${t.missed}/${t.total}`} fraction={t.total ? t.missed / t.total : 0} fillColor={colors.wrong} accessibilityLabel={`${t.topic}: missed ${t.missed} of ${t.total}`} testID="row-topic-tested" />
             ))}
             {results && !results.topics.length ? <Text style={styles.caption}>Nothing graded yet. Practice questions or a simulated exam will fill this in.</Text> : null}
           </View>
@@ -350,8 +348,9 @@ export default function CourseScreen() {
                 <Text style={styles.kicker}>Progress · {graded.length} {graded.length === 1 ? 'set' : 'sets'}</Text>
                 {graded.slice(0, 5).map((s) => (
                   <View key={s.id} style={styles.rowBetween}>
-                    <Text style={styles.body} numberOfLines={1}>{whenLabel(s.createdAt)} · {s.topic}</Text>
-                    <Text style={styles.scoreText}>{Math.round((s.targetedScore ?? s.diagnosticScore) as number)}%</Text>
+                    <Text style={styles.body} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{whenLabel(s.createdAt)} · {s.topic}</Text>
+                    {/* D-167: the score in the same fixed column as the topic rows, so the percentages line up. */}
+                    <Text style={styles.scoreColumn}>{Math.round((s.targetedScore ?? s.diagnosticScore) as number)}%</Text>
                   </View>
                 ))}
                 {latest?.missedConcepts?.length ? <Text style={styles.caption}>Missed last time: {latest.missedConcepts.slice(0, 6).join(', ')}</Text>
@@ -499,16 +498,13 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   body: { flex: 1, color: colors.foreground, fontSize: 15, lineHeight: 22 },
   input: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.background, color: colors.foreground, fontSize: 15, paddingHorizontal: 13 },
   row: { flexDirection: 'row', gap: 10 },
-  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  scoreColumn: { width: STAT_VALUE_WIDTH, textAlign: 'right', color: colors.foreground, fontSize: 15, lineHeight: 20, fontWeight: '700', fontVariant: ['tabular-nums'] },
   lectureRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10 },
   errorText: { color: colors.destructive, fontSize: 13 },
-  scoreText: { color: colors.foreground, fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   noteRow: { gap: 8 },
   noteText: { color: colors.destructive, fontSize: 12.5, lineHeight: 17 },
-  topicRow: { gap: 6 },
-  track: { height: 5, borderRadius: 3, backgroundColor: colors.secondary, overflow: 'hidden' },
-  fill: { height: 5, backgroundColor: colors.primary },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { minHeight: 44, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.chipBorder, backgroundColor: colors.chipBg, alignItems: 'center', justifyContent: 'center' },
   chipText: { color: colors.primaryText, fontSize: 13.5, fontWeight: '600' },

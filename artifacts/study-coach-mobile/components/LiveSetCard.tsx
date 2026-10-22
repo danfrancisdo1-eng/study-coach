@@ -12,6 +12,7 @@ import { isPerfect } from '@/lib/perfect-score';
 import { useColors } from '@/hooks/useColors';
 import { Bone, SkeletonGroup } from '@/components/Skeleton';
 import { ProgressBar } from '@/components/ProgressBar';
+import { StatRow } from '@/components/StatRow';
 import { writtenProgress } from '@/lib/progress';
 import { FONT, TYPE } from '@/constants/type';
 import { topicParts } from '@/lib/topic-label';
@@ -233,12 +234,11 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
         {quiz.grade.unanswered ? <CardText style={styles.small}>{quiz.grade.unanswered} skipped.</CardText> : null}
         {tallies.length ? (
           <View style={styles.tallies} testID="panel-live-tallies">
-            <CardText style={styles.kicker}>By section</CardText>
+            <View style={styles.tallyHead}><CardText style={styles.kicker}>By section</CardText><CardText style={styles.kicker}>right / asked</CardText></View>
+            {/* D-167: one line per section, the count in a fixed column so the numbers line up. */}
             {tallies.map((t) => (
-              <View key={t.concept} style={styles.tally} accessible accessibilityLabel={`${t.concept}: ${t.correct} of ${t.total}`}>
-                <View style={styles.tallyHead}><CardText numberOfLines={2} style={styles.tallyName}>{t.concept}</CardText><CardText style={styles.tallyCount}>{t.correct}/{t.total}</CardText></View>
-                <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${Math.round((t.correct / t.total) * 100)}%` }, t.correct < t.total && styles.progressFillPartial]} /></View>
-              </View>
+              <StatRow key={t.concept} label={t.concept} value={`${t.correct}/${t.total}`} fraction={t.correct / t.total} fillColor={t.correct < t.total ? colors.primaryText : colors.primary}
+                labelStyle={styles.tallyName} valueStyle={styles.tallyCount} maxFontSizeMultiplier={1} accessibilityLabel={`${t.concept}: ${t.correct} of ${t.total}`} testID="row-section-tally" />
             ))}
           </View>
         ) : null}
@@ -375,10 +375,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   scoreBig: { ...TYPE.score, color: colors.foreground },
   scoreOf: { ...TYPE.scoreOf, color: colors.mutedForeground },
   tallies: { gap: 10, paddingTop: 4 },
-  tally: { gap: 6 },
   tallyHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  tallyName: { ...TYPE.small, flex: 1, color: colors.foreground },
-  tallyCount: { ...TYPE.small, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  tallyName: { ...TYPE.small, color: colors.foreground },
+  tallyCount: { ...TYPE.smallSemi, color: colors.mutedForeground },
   // Report link: small and away from the main button on purpose (UX_PRINCIPLES: destructive-ish actions are small and separated).
   reportLink: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', paddingRight: 12 },
   reportLinkText: { ...TYPE.smallSemi, color: colors.mutedForeground, textDecorationLine: 'underline' },
