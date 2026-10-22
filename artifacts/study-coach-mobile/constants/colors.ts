@@ -1,11 +1,18 @@
 /**
  * Theme tokens (D-043, direction A "Night desk", decided in D-028). Dark-first with a proper
- * light mode; useColors() picks the palette from the device appearance. One accent only, a
- * highlighter yellow, for the primary action, progress and the selected course. The review
- * card stays black in both modes (Dan, 2026-10-06) and the memory-hook chip stays navy.
+ * light mode; useColors() picks the palette from the device appearance.
  *
- * primary is a FILL (yellow with ink text on it); primaryText is the yellow/amber for text and
- * icons on surfaces, which needs a darker amber in light mode to keep 4.5:1 contrast.
+ * D-170 (Dan, 2026-10-22, "indigo with amber highlights"): the primary is now the indigo of the
+ * app icon, used for the one primary action on a screen, progress, the selected course and the
+ * active tab. The highlighter amber stays as a HIGHLIGHT: memory hooks, the coach's suggestion
+ * chips, the Resume chip and the premium screen. It no longer marks buttons. The review card
+ * stays black in both modes (Dan, 2026-10-06).
+ *
+ * primary is a FILL (indigo with a white label in light mode, a light indigo with an ink label in
+ * dark mode); primaryText is the indigo for text and icons on surfaces. highlight / highlightText
+ * are the amber pair with the same shape; chipBg / chipBorder are the soft amber surface. The
+ * memory-hook box (hookBg / hookText) keeps its navy for now. Every text pair here is at least
+ * 4.5:1 on the surface it is meant for (checked 2026-10-22).
  */
 
 const shared = {
@@ -21,16 +28,21 @@ const light = {
   ...shared,
   // Legacy aliases (kept for older screens)
   text: '#15192a',
-  tint: '#8a5a00',
+  tint: '#2548b8',
 
   background: '#f6f7fa',
   foreground: '#15192a',
   card: '#ffffff',
   cardForeground: '#15192a',
 
-  primary: '#f2b544',
-  primaryForeground: '#15192a',
-  primaryText: '#8a5a00',
+  // Indigo (D-170): 6.5:1 with the white label; primaryText 7.8:1 on white, 7.3:1 on the background.
+  primary: '#2b4fd8',
+  primaryForeground: '#ffffff',
+  primaryText: '#2548b8',
+  // The amber, demoted to a highlight (D-170): 9.6:1 with ink on the fill; highlightText 5.5:1 on chipBg.
+  highlight: '#f2b544',
+  highlightForeground: '#15192a',
+  highlightText: '#8a5a00',
 
   secondary: '#e9edf4',
   secondaryForeground: '#15192a',
@@ -43,8 +55,9 @@ const light = {
   destructiveForeground: '#ffffff',
   correct: '#17693a', // D-157 (Dan: Option B): 6.7:1 on white; was #2f9e5b (3.4:1)
   wrong: '#9f2a22', // D-157 (Dan: Option B): 7.4:1 on white; was #d6453a (4.4:1)
-  // The exam clock at 5 minutes left (D-115); 4.5:1 on the card in each mode. Red at 1 minute uses wrong.
-  timerAmber: '#a35c00',
+  // The exam clock at 5 minutes left (D-115): an orange, not the amber highlight, so a warning never
+  // looks like a brand colour (D-170); 5.2:1 on white. Red at 1 minute uses wrong.
+  timerAmber: '#c2410c',
 
   chipBg: '#fff6df',
   chipBorder: '#e9cf8a',
@@ -56,16 +69,20 @@ const light = {
 const dark: typeof light = {
   ...shared,
   text: '#e9eef6',
-  tint: '#f2b544',
+  tint: '#7c9bff',
 
   background: '#0f1726',
   foreground: '#e9eef6',
   card: '#182235',
   cardForeground: '#e9eef6',
 
-  primary: '#f2b544',
-  primaryForeground: '#15192a',
-  primaryText: '#f2b544',
+  // Light indigo on navy (D-170): 6.8:1 with the ink label; 6.1:1 as text on the card.
+  primary: '#7c9bff',
+  primaryForeground: '#0f1726',
+  primaryText: '#7c9bff',
+  highlight: '#f2b544',
+  highlightForeground: '#15192a',
+  highlightText: '#f2b544',
 
   secondary: '#243049',
   secondaryForeground: '#e9eef6',
@@ -78,7 +95,7 @@ const dark: typeof light = {
   destructiveForeground: '#15192a',
   correct: '#4cd964',
   wrong: '#ff6b61',
-  timerAmber: '#ffb340',
+  timerAmber: '#fb923c', // 7.0:1 on the card; an orange apart from the amber highlight (D-170)
 
   chipBg: '#1c2740',
   chipBorder: '#3a4a6a',

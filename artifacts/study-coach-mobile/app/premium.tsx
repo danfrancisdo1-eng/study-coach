@@ -35,13 +35,15 @@ export default function PremiumScreen() {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0); // D-170: "Try again" reloads the prices instead of leaving a dead end
   const available = purchasesAvailable();
   const state = paywallState(available, packages, error);
 
   useEffect(() => {
     if (!userId || !available) { setPackages([]); return; }
+    setPackages(null); setError('');
     premiumPackages(userId, mode).then((list) => { const ordered = orderPackages(list); setPackages(ordered); setSelected(ordered[0]?.identifier ?? null); }).catch(() => { setPackages([]); setError("Prices couldn't load. Check your connection and try again."); });
-  }, [userId, available, mode]);
+  }, [userId, available, mode, attempt]);
 
   if (isLoaded && !isSignedIn) return <Redirect href="/" />;
 
@@ -148,6 +150,11 @@ export default function PremiumScreen() {
 
         {message ? <Text style={styles.success} accessibilityRole="alert" testID="status-premium-message">{message}</Text> : null}
         {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
+        {state === 'error' ? (
+          <Pressable accessibilityRole="button" disabled={!!busy} onPress={() => setAttempt((n) => n + 1)} style={({ pressed }) => [styles.secondary, pressed && styles.pressed]} testID="button-retry-prices">
+            <Text style={styles.secondaryText}>Try again</Text>
+          </Pressable>
+        ) : null}
 
         <Pressable accessibilityRole="button" disabled={!!busy} onPress={() => void restorePurchases()} style={({ pressed }) => [styles.secondary, pressed && styles.pressed]} testID="button-restore-purchases">
           {busy === 'restore' ? <ActivityIndicator color={colors.foreground} /> : <Text style={styles.secondaryText}>Restore Purchases</Text>}

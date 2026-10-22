@@ -264,12 +264,13 @@ export default function CourseScreen() {
             {/* D-168: an even two-column grid instead of a cloud of pills; "Return to course list" is the back chevron and the Courses tab now. */}
             <Text style={styles.kicker}>Actions</Text>
             <View style={styles.grid}>
-              <ActionButton fill label="Add material" icon="plus-circle" onPress={() => scrollTo(intakeY.current)} testID="button-action-material" />
+              {/* D-170: one filled primary per screen. Adding material is the primary until the course has some; then practising is. */}
+              <ActionButton fill label="Add material" icon="plus-circle" secondary={materials.length > 0 || lectures.length > 0} onPress={() => scrollTo(intakeY.current)} testID="button-action-material" />
               <ActionButton fill label="Add another course" icon="plus" secondary onPress={() => router.push({ pathname: '/course-list', params: { add: '1' } })} testID="button-action-add-course" />
             </View>
             <Text style={styles.kicker}>Study with the coach</Text>
             <View style={styles.grid}>
-              <ActionButton fill label="Practice questions" icon="edit-3" onPress={() => startWithCoach('practice', null)} testID="button-action-practice" />
+              <ActionButton fill label="Practice questions" icon="edit-3" secondary={materials.length === 0 && lectures.length === 0} onPress={() => startWithCoach('practice', null)} testID="button-action-practice" />
               <ActionButton fill label="Talk to the coach" icon="message-circle" secondary onPress={talkToCoach} testID="button-action-chat" />
               <ActionButton fill label="Simulated exam" icon="clock" secondary onPress={() => (isExam ? setTimedPicker(true) : startWithCoach('exam', null))} testID="button-action-exam" />
               <ActionButton fill label="Flashcards" icon="layers" secondary onPress={() => setPicker('flashcards')} testID="button-action-flashcards" />
@@ -513,7 +514,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   noteText: { color: colors.destructive, fontSize: 12.5, lineHeight: 17 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { minHeight: 44, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.chipBorder, backgroundColor: colors.chipBg, alignItems: 'center', justifyContent: 'center' },
-  chipText: { color: colors.primaryText, fontSize: 13.5, fontWeight: '600' },
+  chipText: { color: colors.highlightText, fontSize: 13.5, fontWeight: '600' }, // D-170: amber text on the amber chip
   pick: { minWidth: 56, minHeight: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   pickOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   pickText: { color: colors.foreground, fontSize: 16, fontWeight: '600' },

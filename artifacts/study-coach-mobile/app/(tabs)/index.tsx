@@ -750,7 +750,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   hideScoreText: { color: colors.mutedForeground, fontSize: 13, fontWeight: '600' },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
   suggestion: { minHeight: 44, maxWidth: '100%', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.chipBorder, backgroundColor: colors.chipBg, alignItems: 'center', justifyContent: 'center' },
-  suggestionText: { color: colors.primaryText, fontSize: 13.5, lineHeight: 18, fontWeight: '600' },
+  suggestionText: { color: colors.highlightText, fontSize: 13.5, lineHeight: 18, fontWeight: '600' }, // D-170: amber text on the amber chip
   choiceColumn: { gap: 8, marginTop: 6 },
   choiceRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.chipBorder, backgroundColor: colors.chipBg },
   choiceLabel: { flex: 1, fontSize: 15, lineHeight: 20 },

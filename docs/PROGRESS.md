@@ -1,5 +1,27 @@
 # Progress
 
+## Session 16 — 2026-10-22 (Dan on the phone; Claude in the cloud) — branch `design/option-b`
+
+### Done
+- **Indigo primary, amber highlight (D-170):** `constants/colors.ts` only for the swap (every button, progress fill, selected course, active tab and glow ring follows); `highlight*` tokens added; coach and "Coach recommends" chips keep amber text; the exam clock warning is orange. Course page: one filled button (Add material until the course has material, then Practice questions). Paywall: "Try again" under the price error. Build #69.
+- RevenueCat toasts in the Dev app explained (D-170): the `.dev` app ID has no store products; nothing to fix in code; TestFlight unaffected.
+- Verified here: `pnpm run typecheck` passes; mobile tests 96/96; `pnpm exec expo export --platform ios` builds (8.3 MB hbc). Not pushed yet (Dan's OK).
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (no size change; the new Try again is the 50-pt secondary button). 2. One primary action: PASS, and now true on the course page. 3. Chunked: unchanged. 4. Native patterns: unchanged. 5. Progress shown: unchanged (bars are indigo). 6. One accent, not colour-only: PASS (one primary, amber only on chips and the Resume strip; right/wrong keep their ✓ ✗). 7. Theme tokens; Dark Mode: PASS (token-only change; both palettes edited together; every text pair ≥ 4.5:1, computed). 8. Contrast, labels, Reduce Motion: PASS (Try again has a role and label; no new motion). 9. Paywall: PASS (Restore, terms and close unchanged; Try again added).
+
+### Needs real-iPhone check
+- Light and Dark Mode: indigo buttons, progress bars, selected course, active tab; amber chips readable; the clock at 5:00 is orange.
+- Course page: a course with material shows Practice questions filled and Add material outlined; an empty course the reverse.
+- Paywall in TestFlight: prices load; in the Dev app, Try again shows the same error again (expected).
+
+### Next (Dan's call)
+- Mastery bars on the course page (right/asked, fill = right share; reverses D-076's "missed share in red").
+- "Remember it" box amber-tinted per mode instead of fixed navy; the Pop Quiz card in the chat would keep the navy.
+- Review-list ✗ marks: plain ✗ without the circle, or a grey numeral with ✗ only on mixed lists.
+- Chat send button: disabled state as the soft fill (today a faded primary that reads as broken).
+- Account tab: the large title doesn't collapse as the page scrolls (a native large-title header or a material strip).
+
 ## Session 15 — 2026-10-22 (Dan on the phone; Claude Code in the cloud)
 
 ### Done

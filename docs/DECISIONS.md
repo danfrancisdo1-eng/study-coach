@@ -2,6 +2,18 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-22 — D-170: Indigo primary, amber demoted to a highlight (Dan: "indigo with amber highlights")
+- Dan's design review (Claude in the cloud, with his Dev-app screenshots and the colour/font sheet): the app chrome was amber-only while the app icon is indigo with a yellow "AI", so the brand's main colour never appeared in the UI; the amber did five jobs (primary button, selected course, progress, chips, active tab) and the timer's warning amber looked like the brand colour. He chose option B from three (keep amber / indigo with amber highlights / teal).
+- Tokens (`constants/colors.ts`): `primary` is the icon's indigo, `#2b4fd8` with a white label in light mode (6.5:1), `#7c9bff` with an ink label in dark mode (6.8:1); `primaryText` `#2548b8` / `#7c9bff` (7.8:1 on white, 6.1:1 on the dark card). The amber lives on as `highlight` / `highlightForeground` / `highlightText` (same shape as the primary trio); `chipBg` / `chipBorder` unchanged. The exam clock's 5-minute warning is an orange (`#c2410c` / `#fb923c`, 5.2:1 and 7.0:1), not the amber, so a warning never reads as a brand colour. Every token that used `primary` (buttons, progress fills, the selected course, the active tab, the sign-in buttons, the glow ring) is indigo now with no per-screen edit.
+- The coach's suggestion chips and the "Coach recommends" chips keep amber text (`highlightText`) on their amber chip; with indigo text they would have clashed.
+- Course page: one filled button per screen. "Add material" is the primary only while the course has no material or lectures; once it has some, "Practice questions" is, and "Add material" is outlined.
+- Paywall: a "Try again" button under "Prices couldn't load" reloads the prices (the error line alone was a dead end; a reviewer on a bad connection would have been stuck).
+- Not changed, for Dan's OK (reverses D-076 / D-167 wording): the "Topics tested" bars still fill with the MISSED share in red; the proposal is right/asked with the bar filling as the student improves (indigo at 70% and up, grey below) so a nearly full bar means mastery, as it does on the score card. Also pending: "Remember it" box amber-tinted instead of fixed navy (the Pop Quiz card in the chat shares that navy); ✓ / ✗ glyphs already exist on the set card.
+- The RevenueCat toasts in the Dev app ("Error fetching offerings", "There is an issue with your configuration") are the Dev app ID `com.danfrancis.studycoach.dev`, which has no products in App Store Connect (D-169 noted it). Not a code or RevenueCat-dashboard problem; TestFlight (`com.danfrancis.studycoach`) is unaffected. Paid Apps Agreement is signed (Dan).
+- Build #69. Branch `design/option-b` on top of `claude/determined-keller-b6oie5`.
+- Verified here: typecheck; mobile tests 96/96; `expo export --platform ios` builds. Needs real-iPhone check: the indigo buttons and tab in both modes; the amber chips; the course page with and without material; the paywall's Try again in the Dev app (it will fail again there, by design).
+- **Decided by:** Dan ("-with-amber-highlights"; "go into the repo and update").
+
 ## 2026-10-22 — D-169: Dan's phone review of the navigation branch
 - "Text too small ... this is unacceptable": no more shrink-to-fit on long text. The Progress rows put the date on its own line and the topic full size on one line, cut with "…"; topic rows (StatRow) and section chips truncate instead of shrinking. Shrink stays only on short labels (paywall cells, grid buttons, the course/exam choice).
 - "Please stop the brain from bouncing": the welcome poster fades in instead of a spring zoom.
