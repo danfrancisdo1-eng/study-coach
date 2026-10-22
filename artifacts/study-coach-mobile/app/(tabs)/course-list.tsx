@@ -12,6 +12,7 @@ import {
   getGetStudyStateQueryKey, getListStudySessionsQueryKey, useGetStudyState, useListStudySessions, useLookupExamGuide, usePutStudyState, getListLecturesQueryKey, useListLectures,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { HeaderIconButton, HeaderTextButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { premiumCode } from '@/lib/premium-ui';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
@@ -141,12 +142,7 @@ export default function CourseListScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="screen-course-list">
       {/* A tab (D-164): no back and no coach icon; the tab bar is the way between the three pages. */}
-      <View style={[styles.header, styles.tabHeader]}>
-        <View style={styles.headerCopy}><Text style={styles.title}>Courses & exams</Text></View>
-        <Pressable accessibilityRole="button" onPress={() => setAddOpen(true)} style={styles.addButton} testID="button-add-course">
-          <Feather name="plus" size={16} color={colors.primaryText} /><Text style={styles.addText}>Add</Text>
-        </Pressable>
-      </View>
+      <ScreenHeader title="Courses & exams" right={<HeaderTextButton icon="plus" label="Add" onPress={() => setAddOpen(true)} testID="button-add-course" />} />
       {stateQuery.isLoading ? <CourseListSkeleton /> : (
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 30 }]}>
           {error && !addOpen ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
@@ -172,10 +168,7 @@ export default function CourseListScreen() {
 
       <Modal visible={addOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { setAddOpen(false); setJustAdded(null); }}>
         <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: 20 }]}>
-          <View style={styles.header}>
-            <View style={styles.headerCopy}><Text style={styles.title}>{justAdded ? `Added ${justAdded.name}` : 'Add a course or exam'}</Text></View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => { setAddOpen(false); setJustAdded(null); }} style={styles.iconButton} testID="button-close-add"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
-          </View>
+          <ScreenHeader title={justAdded ? `Added ${justAdded.name}` : 'Add a course or exam'} right={<HeaderIconButton icon="x" label="Close" onPress={() => { setAddOpen(false); setJustAdded(null); }} testID="button-close-add" />} />
           {justAdded ? (
             <View style={styles.sheetContent} testID="panel-added-next">
               <Text style={styles.nextTitle}>What next?</Text>
@@ -216,13 +209,7 @@ export default function CourseListScreen() {
 
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  header: { minHeight: 58, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, gap: 6 },
-  headerCopy: { flex: 1, minWidth: 0 },
-  title: { color: colors.foreground, fontSize: 20, fontWeight: '700' },
   caption: { color: colors.mutedForeground, fontSize: 12 },
-  iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
-  addButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12 },
-  addText: { color: colors.primaryText, fontSize: 15, fontWeight: '700' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   content: { paddingHorizontal: 16, paddingTop: 8, gap: 8 },
   row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
@@ -232,7 +219,6 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   rowCopy: { flex: 1, minWidth: 0 },
   rowName: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
   empty: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20, paddingVertical: 12 },
-  tabHeader: { paddingLeft: 18 },
   errorText: { color: colors.destructive, fontSize: 13 },
   sheetContent: { paddingHorizontal: 18, paddingTop: 10, gap: 15 },
   input: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.card, color: colors.foreground, fontSize: 15, paddingHorizontal: 13 },

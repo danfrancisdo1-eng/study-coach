@@ -12,6 +12,7 @@ import {
 } from '@workspace/api-client-react';
 import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
+import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
 import { courseExamFacts, factPicks, factsFromInputs, needsFactsLookup, realExamLine, timedChoices, type TimedSize } from '@/lib/exam-facts';
@@ -223,14 +224,9 @@ export default function CourseScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => goBack()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
-        <View style={styles.headerCopy}>
-          <Text numberOfLines={1} style={styles.title}>{typeof course?.name === 'string' ? course.name : 'Course'}</Text>
-          <Text style={styles.caption}>{isExam ? `Certification exam${typeof course?.examDate === 'string' ? ` · ${describeExamDate(course.examDate)}` : ''}` : 'Course'}</Text>
-        </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Edit name and date" onPress={openEditor} style={styles.iconButton} testID="button-edit-course"><Feather name="edit-2" size={20} color={colors.foreground} /></Pressable>
-      </View>
+      <ScreenHeader leading="back" onLeading={() => goBack()} kicker={isExam ? `Certification exam${typeof course?.examDate === 'string' ? ` · ${describeExamDate(course.examDate)}` : ''}` : 'Course'}
+        title={typeof course?.name === 'string' ? course.name : 'Course'}
+        right={<HeaderIconButton icon="edit-2" label="Edit name and date" onPress={openEditor} testID="button-edit-course" />} />
       {stateQuery.isLoading ? <CourseSkeleton /> : !course ? (
         <View style={styles.center}><Text style={styles.body}>This course isn’t in your account anymore.</Text></View>
       ) : (
@@ -426,10 +422,7 @@ export default function CourseScreen() {
       {/* "Which topics?" for flashcards and hooks (D-058): the exam guide's sections, the topics already tested, or all. */}
       <Modal visible={picker !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setPicker(null)}>
         <View style={[styles.screen, { paddingTop: 20 }]}>
-          <View style={styles.header}>
-            <View style={styles.headerCopy}><Text style={styles.title}>{picker === 'hooks' ? 'Memory tricks on which topics?' : 'Flashcards on which topics?'}</Text></View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setPicker(null)} style={styles.iconButton} testID="button-close-picker"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
-          </View>
+          <ScreenHeader kicker={picker === 'hooks' ? 'Memory tricks' : 'Flashcards'} title="On which topics?" right={<HeaderIconButton icon="x" label="Close" onPress={() => setPicker(null)} testID="button-close-picker" />} />
           <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
             {topics.map((topic) => (
               <Pressable key={topic} accessibilityRole="button" onPress={() => { if (picker) startWithCoach(picker, topic === ALL_TOPICS ? null : topic); }} style={({ pressed }) => [styles.topicChoice, topic === ALL_TOPICS && styles.topicChoiceAll, pressed && styles.pressed]} testID="button-topic-choice">
@@ -442,10 +435,7 @@ export default function CourseScreen() {
       </Modal>
       <Modal visible={timedPicker} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setTimedPicker(false)}>
         <View style={[styles.screen, { paddingTop: 20 }]}>
-          <View style={styles.header}>
-            <View style={styles.headerCopy}><Text style={styles.title}>Simulated exam</Text><Text style={styles.caption}>Timed like the real exam. The clock keeps running if you leave the app.</Text></View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setTimedPicker(false)} style={styles.iconButton} testID="button-close-timed"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
-          </View>
+          <ScreenHeader title="Simulated exam" subtitle="Timed like the real exam. The clock keeps running if you leave the app." right={<HeaderIconButton icon="x" label="Close" onPress={() => setTimedPicker(false)} testID="button-close-timed" />} />
           <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
             {!choices.length ? (
               // No question count or time limit (Microsoft publishes none, D-129): tap them, then Start. No typing.
@@ -497,15 +487,11 @@ export default function CourseScreen() {
 
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  header: { minHeight: 58, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, gap: 6 },
-  headerCopy: { flex: 1, minWidth: 0 },
-  title: { color: colors.foreground, fontSize: 20, fontWeight: '700' },
   caption: { color: colors.mutedForeground, fontSize: 12 },
   readOnly: { gap: 10, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, marginBottom: 6 },
   sheetRow: { gap: 3, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border },
   sheetTerm: { color: colors.foreground, fontSize: 14, fontWeight: '700' },
   sheetTrick: { color: colors.hookText, backgroundColor: colors.hookBg, borderRadius: 8, paddingVertical: 5, paddingHorizontal: 8, fontSize: 13, fontWeight: '600', alignSelf: 'flex-start' },
-  iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   content: { paddingHorizontal: 16, paddingTop: 8, gap: 14 },
   card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, gap: 12 },

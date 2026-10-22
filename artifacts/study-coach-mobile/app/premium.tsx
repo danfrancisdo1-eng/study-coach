@@ -8,6 +8,7 @@ import { Feather } from '@expo/vector-icons';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { getGetPremiumStatusQueryKey, useRefreshPremium } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { orderPackages, packageLabel, paywallMode, paywallReason, paywallRows, paywallState, savingLabel, trialLength, trialTerms } from '@/lib/premium-ui';
@@ -72,9 +73,7 @@ export default function PremiumScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="screen-premium">
-      <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={close} style={styles.iconButton} testID="button-close-premium"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
-      </View>
+      <ScreenHeader leading="close" onLeading={close} leadingTestID="button-close-premium" />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
         <Text style={styles.kicker}>{paywallReason(reason)}</Text>
         <Text style={styles.title}>{mode === 'exam' ? 'Exam pass' : 'RapidRecall AI Premium'}</Text>
@@ -167,8 +166,6 @@ export default function PremiumScreen() {
 
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  header: { minHeight: 52, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10 },
-  iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
   content: { paddingHorizontal: 20, gap: 14 },
   kicker: { color: colors.mutedForeground, fontSize: 15, lineHeight: 21 },
   title: { color: colors.foreground, fontSize: 28, lineHeight: 34, fontWeight: '700' },

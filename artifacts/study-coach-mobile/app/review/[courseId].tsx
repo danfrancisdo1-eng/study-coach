@@ -10,6 +10,7 @@ import { WebView } from 'react-native-webview';
 import { File, Paths } from 'expo-file-system';
 import { useCreateReviewSheet, type ReviewSheet } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { premiumCode } from '@/lib/premium-ui';
 import { reviewHtml } from '@/lib/review-html';
@@ -101,10 +102,7 @@ export default function ReviewSheetScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="screen-review-sheet">
-      <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => goBack()} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
-        <View style={styles.headerCopy}><Text style={styles.title} numberOfLines={1}>Review sheet</Text></View>
-      </View>
+      <ScreenHeader leading="back" onLeading={() => goBack()} title="Review sheet" />
       {pdfUri ? (
         <WebView source={{ uri: pdfUri }} originWhitelist={['*']} allowingReadAccessToURL={pdfUri.slice(0, pdfUri.lastIndexOf('/') + 1)} style={[styles.pdf, { marginBottom: insets.bottom + 76 }]} testID="view-review-pdf" />
       ) : (
@@ -140,10 +138,6 @@ export default function ReviewSheetScreen() {
 
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  header: { minHeight: 52, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, gap: 6 },
-  headerCopy: { flex: 1, minWidth: 0 },
-  title: { color: colors.foreground, fontSize: 20, fontWeight: '700' },
-  iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
   content: { paddingHorizontal: 18, gap: 10 },
   waiting: { gap: 12, paddingVertical: 30, alignItems: 'center' },
   errorText: { color: colors.destructive, fontSize: 14, textAlign: 'center' },

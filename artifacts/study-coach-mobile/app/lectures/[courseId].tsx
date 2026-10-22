@@ -13,6 +13,7 @@ import {
 import { createLecture, getListLecturesQueryKey, useListLectures, type LectureSummary } from '@workspace/api-client-react';
 import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import {
   formatDuration, normalizedTitle, recordedSeconds, recordingLimitState, spokenDuration, type PendingRecording,
 } from '@/lib/lecture-recording';
@@ -198,15 +199,7 @@ export default function CourseLecturesScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back to courses" onPress={() => goBack()} disabled={recording} style={styles.iconButton} testID="button-lectures-back">
-          <Feather name="arrow-left" size={20} color={recording ? colors.mutedForeground : colors.foreground} />
-        </Pressable>
-        <View style={styles.headerCopy}>
-          <Text style={styles.headerTitle} accessibilityRole="header">Lectures</Text>
-          {courseName ? <Text style={styles.caption} numberOfLines={1}>{courseName}</Text> : null}
-        </View>
-      </View>
+      <ScreenHeader leading="back" leadingLabel="Back to the course" onLeading={() => goBack()} leadingDisabled={recording} leadingTestID="button-lectures-back" kicker={courseName || undefined} title="Lectures" />
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 140 }]} keyboardShouldPersistTaps="handled">
         {message ? <View style={styles.notice} accessibilityRole="alert"><Feather name="info" size={16} color={colors.foreground} /><Text style={styles.body}>{message}</Text></View> : null}
@@ -320,10 +313,6 @@ export default function CourseLecturesScreen() {
 function createStyles(colors: ReturnType<typeof useColors>) {
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8 },
-    headerCopy: { flex: 1 },
-    headerTitle: { color: colors.foreground, fontSize: 22, fontWeight: '700' },
-    iconButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
     content: { paddingHorizontal: 18, gap: 18 },
     section: { gap: 10 },
     sectionTitle: { color: colors.foreground, fontSize: 17, fontWeight: '700' },

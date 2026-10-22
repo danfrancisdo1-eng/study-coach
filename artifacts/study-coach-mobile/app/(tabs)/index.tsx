@@ -12,6 +12,7 @@ import {
   type HomeChat, type HomeChatMessage,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { blocksOf, type Span } from '@/lib/coach-text';
 import { topicParts } from '@/lib/topic-label';
@@ -471,14 +472,8 @@ export default function CoachHome() {
 
   return (
     <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Image source={require('@/assets/images/app-icon.png')} style={styles.brandMark} accessibilityLabel="RapidRecall AI logo" />
-        <View style={styles.headerCopy}>
-          <Text style={styles.brand}>RapidRecall AI</Text>
-          <Text numberOfLines={1} style={styles.headerSub}>Your coach</Text>
-        </View>
-        {/* The list icon that was here is the Courses tab now (D-164). */}
-      </View>
+      {/* The list icon that was here is the Courses tab now (D-164). */}
+      <ScreenHeader mark={<Image source={require('@/assets/images/app-icon.png')} style={styles.brandMark} accessibilityLabel="RapidRecall AI logo" />} title="RapidRecall AI" subtitle="Your coach" style={styles.brandHeader} />
 
       {loading ? (
         <HomeSkeleton />
@@ -587,15 +582,8 @@ export default function CoachHome() {
         <View style={styles.overlay}>
           <Pressable accessibilityRole="button" accessibilityLabel="Back to chat" onPress={() => setStudyOpen(false)} style={[styles.overlayBackdrop, { height: insets.top + 28 }]} />
           <View style={[styles.overlaySheet, { paddingBottom: insets.bottom }]}>
-            <View style={styles.header}>
-              <Pressable accessibilityRole="button" accessibilityLabel="Back to chat" onPress={() => setStudyOpen(false)} style={styles.iconButton} testID="button-back-to-chat">
-                <Feather name="chevron-down" size={24} color={colors.foreground} />
-              </Pressable>
-              <View style={styles.headerCopy}>
-                <Text style={styles.brand}>{deckSessionId ? 'Flashcards' : quizIsPractice ? 'Practice' : 'Exam'}</Text>
-                <Text numberOfLines={1} style={styles.headerSub}>{topicParts((activeDeck ?? activeQuiz)?.topic ?? 'RapidRecall AI').title}</Text>
-              </View>
-            </View>
+            <ScreenHeader leading="down" leadingLabel="Back to chat" onLeading={() => setStudyOpen(false)} leadingTestID="button-back-to-chat"
+              kicker={deckSessionId ? 'Flashcards' : quizIsPractice ? 'Practice' : 'Exam'} title={topicParts((activeDeck ?? activeQuiz)?.topic ?? 'RapidRecall AI').title} />
             <ScrollView ref={quizScrollRef} style={styles.studySheet} contentContainerStyle={[styles.quizDockContent, { paddingBottom: 24 }]} keyboardShouldPersistTaps="handled" testID="dock-quiz">
               {deckSessionId ? (
                 <FlashcardDeck key={deckSessionId} sessionId={deckSessionId} userId={userId}
@@ -653,10 +641,7 @@ export default function CoachHome() {
       <Modal visible={intakeCourse !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { if (!intakeBusy) setIntakeCourseId(null); }}>
         {intakeCourse ? (
           <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: 20 }]}>
-            <View style={styles.header}>
-              <View style={styles.headerCopy}><Text style={styles.sheetTitle}>Add to {intakeCourse.name}</Text><Text style={styles.caption}>Photos, files, a website, or a lecture recording</Text></View>
-              <Pressable accessibilityRole="button" accessibilityLabel="Close" disabled={intakeBusy} onPress={() => setIntakeCourseId(null)} style={styles.iconButton} testID="button-close-intake"><Feather name="x" size={24} color={colors.foreground} /></Pressable>
-            </View>
+            <ScreenHeader kicker="Add material" title={`Add to ${intakeCourse.name}`} subtitle="Photos, files, a website, or a lecture recording" right={<HeaderIconButton icon="x" label="Close" disabled={intakeBusy} onPress={() => setIntakeCourseId(null)} testID="button-close-intake" />} />
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.sheetContent, { paddingBottom: insets.bottom + 30 }]}>
               {courses.length > 1 ? (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
@@ -696,12 +681,8 @@ export default function CoachHome() {
 
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingVertical: 10 },
+  brandHeader: { paddingLeft: 18, gap: 12 },
   brandMark: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  headerCopy: { flex: 1 },
-  brand: { color: colors.foreground, fontSize: 16, fontWeight: '700' },
-  headerSub: { color: colors.mutedForeground, fontSize: 12 },
-  iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingHorizontal: 18, paddingVertical: 12, gap: 12 },
   // Transcript look (D-043): the coach's turns sit flush left with no tint; yours are bubbles on the right.
@@ -780,7 +761,6 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   errorCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.destructive, padding: 15, borderRadius: 16, gap: 8, marginHorizontal: 18, marginTop: 13 },
   errorTitle: { color: colors.destructive, fontSize: 15, fontWeight: '700' },
   errorText: { color: colors.destructive, fontSize: 13 },
-  sheetTitle: { color: colors.foreground, fontSize: 20, fontWeight: '700' },
   kicker: { color: colors.mutedForeground, fontSize: 12.5, lineHeight: 17, fontWeight: '600' },
   courseBlock: { paddingHorizontal: 14, paddingBottom: 6, gap: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   courseHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 36 },

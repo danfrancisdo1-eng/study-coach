@@ -13,6 +13,7 @@ import { NotesView } from '@/components/NotesView';
 import { ProgressBar, useElapsed } from '@/components/ProgressBar';
 import { timeLeftText, transcribeWorkMs, uploadThenWork } from '@/lib/progress';
 import { useColors } from '@/hooks/useColors';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import {
   editedSegments, formatDuration, spokenDuration, transcriptHasText, transcriptionBlocker, type TranscriptSegment,
 } from '@/lib/lecture-recording';
@@ -169,15 +170,7 @@ export default function LectureScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back to lectures" onPress={() => goBack()} disabled={busy === 'transcribing'} style={styles.iconButton} testID="button-lecture-back">
-          <Feather name="arrow-left" size={20} color={colors.foreground} />
-        </Pressable>
-        <View style={styles.headerCopy}>
-          <Text style={styles.headerTitle} accessibilityRole="header" numberOfLines={2}>{lecture?.title ?? 'Lecture'}</Text>
-          {courseName ? <Text style={styles.caption} numberOfLines={1}>{courseName}</Text> : null}
-        </View>
-      </View>
+      <ScreenHeader leading="back" leadingLabel="Back to lectures" onLeading={() => goBack()} leadingDisabled={busy === 'transcribing'} leadingTestID="button-lecture-back" kicker={courseName ? `${courseName} · Lecture` : 'Lecture'} title={lecture?.title ?? 'Lecture'} titleLines={2} />
 
       {query.isLoading ? <ActivityIndicator style={styles.loading} color={colors.primaryText} /> : null}
       {query.error ? (
@@ -281,10 +274,6 @@ export default function LectureScreen() {
 function createStyles(colors: ReturnType<typeof useColors>) {
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8 },
-    headerCopy: { flex: 1 },
-    headerTitle: { color: colors.foreground, fontSize: 20, fontWeight: '700' },
-    iconButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
     loading: { marginTop: 40 },
     margin: { marginHorizontal: 18 },
     content: { paddingHorizontal: 18, gap: 16 },
