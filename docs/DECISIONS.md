@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-22 — D-162: App Store screenshots
+- Six 1320 × 2868 screenshots (Apple's 6.9" size covers every iPhone; the app is iPhone-only) from the simulator, demo account, "Intro to Biology" with a photo of notes: the 100-a-day plan, photo to notes, a question from the notes, the explanation and memory trick, the score by topic, the after-set choices. Navy background, the app's yellow headline, white subline. Raw shots kept outside git.
+- **Decided by:** Dan ("yes start the listing and screenshots").
+
 ## 2026-10-22 — D-160: Contact email, a support page, and the App Store listing
 - Contact email drfrancis@clinicalforesight.ai (Dan) on the privacy policy and a new public page at /support (restore, cancel, report, delete; the Support URL App Store Connect asks for). The policy is no longer marked a draft; it now names exam passes, daily AI use, and photos going to Anthropic to be read.
 - docs/store/APP_STORE_LISTING.md: name, subtitle, promo text, keywords, description, age rating answers, App Privacy label answers, App Review notes, screenshot plan.

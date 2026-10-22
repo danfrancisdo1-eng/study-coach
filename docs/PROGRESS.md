@@ -1,5 +1,24 @@
 # Progress
 
+## Session 14 — 2026-10-22 (Dan at the Mac; Claude Code at the Mac)
+
+### Done
+- **App Store pre-submission check (D-159)** and fixes, merged.
+- **Contact email and /support page (D-160):** drfrancis@clinicalforesight.ai on the privacy policy (no longer marked a draft) and at https://study-coach-api-pskt.onrender.com/support. Live.
+- **App Store listing (docs/store/APP_STORE_LISTING.md):** name, subtitle, promo text, keywords, description, age rating, privacy label, review notes.
+- **Store screenshots (D-162):** six captioned 6.9" shots from the simulator (new `development-simulator` EAS profile; demo account with "Intro to Biology").
+- **Paywall crash fixed (D-161):** when the store returns no products the screen showed cards for a missing product and crashed. Build #65.
+- AI_PROVIDER=anthropic confirmed on Render (Dan).
+- Tests 258/258; typecheck passes.
+
+### Next
+- New TestFlight build with D-158, D-159 and D-161 (Dan's OK).
+- Dan: paste the listing into App Store Connect; upload the screenshots; take the two purchase screenshots in TestFlight; attach the three purchases to the version; demo account email and password in App Review.
+- Turn on PREMIUM_LIMITS at launch; rotate the old OpenAI key; Clerk production keys.
+
+### Needs real-iPhone check
+- The paywall with real prices in TestFlight (Sandbox purchase of the free week and the exam pass).
+
 ## Session 13 — 2026-10-19 overnight (Dan asleep; Claude Code at the Mac)
 
 ### Done
