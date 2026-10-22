@@ -1,12 +1,13 @@
 // Public privacy policy page (D-046): the URL App Store Connect and TestFlight ask for, and
 // what the app links to from sign-up and the AI consent card. The data inventory behind it
-// is docs/PRIVACY_DATA.md; keep the two in step. Draft wording: Dan (or a lawyer) reviews
-// before submission.
+// is docs/PRIVACY_DATA.md; keep the two in step. /support is the Support URL App Store Connect
+// asks for (D-160).
 import { Router, type IRouter } from "express";
 
 const router: IRouter = Router();
 
-const UPDATED = "2026-10-08";
+const UPDATED = "2026-10-22";
+export const CONTACT_EMAIL = "drfrancis@clinicalforesight.ai";
 
 const html = `<!doctype html>
 <html lang="en">
@@ -23,7 +24,7 @@ const html = `<!doctype html>
 </head>
 <body>
 <h1>RapidRecall AI privacy policy</h1>
-<p class="muted">Last updated ${UPDATED}. This is a draft for review before the app is published.</p>
+<p class="muted">Last updated ${UPDATED}.</p>
 
 <p>RapidRecall AI is a study companion for students aged 13 and older. It is built and operated by an individual developer. This page says what the app collects, why, where it goes, and how to delete it.</p>
 
@@ -32,13 +33,13 @@ const html = `<!doctype html>
   <li><strong>Your account:</strong> the email address, and name if you share it, from the sign-in you choose (email and password, Apple, or Google). Sign-in is handled by Clerk.</li>
   <li><strong>Your study content:</strong> the courses and exams you add, the material you upload or photograph (notes, syllabi, slides, web pages), the questions and answers in your practice sets and flashcards, your memory sheet, and your conversation with the coach.</li>
   <li><strong>Lectures:</strong> audio you record stays on your phone. If you choose to transcribe a recording, the audio is sent for transcription and only the transcript is kept on our servers.</li>
-  <li><strong>Your plan:</strong> whether you have Premium, when it renews or ends, and how many question sets and coach messages you used today. Purchases are made through Apple and checked by RevenueCat; RapidRecall AI never sees your payment details.</li>
+  <li><strong>Your plan:</strong> whether you have Premium or an exam pass, when it renews or ends, and how much you used the app each day (question sets, coach messages and AI use). Purchases are made through Apple and checked by RevenueCat; RapidRecall AI never sees your payment details.</li>
   <li><strong>Usage needed to run the app:</strong> request logs with timestamps and error reports, kept for a limited time to keep the service working.</li>
 </ul>
 <p>The app does not collect your location, contacts, photos beyond the ones you pick, or advertising identifiers, and it does not show ads.</p>
 
 <h2>How AI is used</h2>
-<p>Before any of your content goes to an AI provider, the app asks for your consent and names the providers. Your messages, course names, selected materials and quiz answers are sent to <strong>Anthropic</strong> (Claude) to coach you, write practice questions and explain results. Lecture recordings you choose to transcribe are sent to <strong>OpenAI</strong> for transcription. These providers process the content to return a result; they are not permitted to use it to advertise to you. AI can make mistakes; the app shows you the explanation behind every answer and lets you report a question or a reply.</p>
+<p>Before any of your content goes to an AI provider, the app asks for your consent and names the providers. Your messages, course names, selected materials (including photos you pick, so their text can be read) and quiz answers are sent to <strong>Anthropic</strong> (Claude) to coach you, write practice questions and explain results. Lecture recordings you choose to transcribe are sent to <strong>OpenAI</strong> for transcription. These providers process the content to return a result; they are not permitted to use it to advertise to you. AI can make mistakes; the app shows you the explanation behind every answer and lets you report a question or a reply.</p>
 
 <h2>Where it is stored</h2>
 <p>Your account data and study content are stored on servers hosted by Render in the United States. Lecture audio is stored only on your device.</p>
@@ -57,7 +58,7 @@ const html = `<!doctype html>
 </ul>
 
 <h2>Contact</h2>
-<p>Questions about this policy or your data: <em>[contact email to be added before publication]</em>.</p>
+<p>Questions about this policy or your data: <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
 
 <h2>Changes</h2>
 <p>If this policy changes in a way that matters, the app will tell you before the change applies to you.</p>
@@ -66,6 +67,38 @@ const html = `<!doctype html>
 
 router.get("/privacy", (_req, res) => {
   res.type("html").send(html);
+});
+
+const support = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RapidRecall AI support</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; padding: 24px 16px 64px; font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 720px; margin-inline: auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 12px; } h2 { font-size: 1.1rem; margin: 28px 0 8px; } p, li { margin: 0 0 10px; } ul { padding-left: 20px; }
+</style>
+</head>
+<body>
+<h1>RapidRecall AI support</h1>
+<p>Questions, problems or ideas: email <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>. We answer within two business days.</p>
+
+<h2>Common questions</h2>
+<ul>
+  <li><strong>Restore a purchase:</strong> open Courses &amp; exams › Account and tap Restore Purchases, signed in with the same Apple ID you bought with.</li>
+  <li><strong>Cancel a subscription:</strong> Settings › your name › Subscriptions › RapidRecall AI. The exam pass doesn't renew, so there is nothing to cancel.</li>
+  <li><strong>A wrong answer or a bad reply:</strong> tap "Looks wrong?" on a question, or press and hold a coach reply to report it.</li>
+  <li><strong>Delete your account and data:</strong> Courses &amp; exams › Account › Delete my account. It removes everything from our servers.</li>
+</ul>
+
+<p><a href="/privacy">Privacy policy</a></p>
+</body>
+</html>`;
+
+router.get("/support", (_req, res) => {
+  res.type("html").send(support);
 });
 
 export default router;

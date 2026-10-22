@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-22 — D-160: Contact email, a support page, and the App Store listing
+- Contact email drfrancis@clinicalforesight.ai (Dan) on the privacy policy and a new public page at /support (restore, cancel, report, delete; the Support URL App Store Connect asks for). The policy is no longer marked a draft; it now names exam passes, daily AI use, and photos going to Anthropic to be read.
+- docs/store/APP_STORE_LISTING.md: name, subtitle, promo text, keywords, description, age rating answers, App Privacy label answers, App Review notes, screenshot plan.
+- A `development-simulator` EAS profile (Dan: "ok") for the store screenshots; the existing profiles are unchanged.
+- **Decided by:** Dan.
+
 ## 2026-10-22 — D-159: App Store pre-submission fixes
 - From the store preflight (two code reviews against Apple's rules: accounts, AI disclosure, privacy, purchases, permissions, links). No blockers. Fixed: the paywall's trial line now takes the trial length from the store and says Apple's rule (cancel at least 24 hours before the free trial ends); "preview build / TestFlight" wording on the paywall and Account replaced by "Purchases aren't available right now"; the second AI consent card (session screen) now names Anthropic Claude and OpenAI for transcription; "You can change this choice at any time" replaced by how to withdraw (delete the account in Account); the privacy page's deletion path corrected (Courses & exams → Account → Delete my account); the build stamp shows only in development builds.
 - For Dan: confirm Render has AI_PROVIDER=anthropic (the code falls back to OpenAI); the privacy page is marked a draft for review; give App Review a demo account (email and password) in the review notes; Clerk production instance before release; PREMIUM_LIMITS=on at launch.
