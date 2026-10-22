@@ -18,8 +18,8 @@ import { MANAGE_SUBSCRIPTIONS_URL, purchasesAvailable, restore } from '@/lib/pur
 
 /**
  * The Account page (D-080, Dan: "we need a link to account page"): privacy, the welcome and
- * the tour again, sign out, and account deletion (D-046) set apart at the bottom. Reached
- * from the "Account" row on the course list, which keeps its own Sign out in view (D-079).
+ * the tour again, sign out, and account deletion (D-046) set apart at the bottom. The Account
+ * tab (D-164); the course list's own Sign out and Account rows (D-079, D-080) moved here.
  */
 export default function AccountScreen() {
   const colors = useColors();
@@ -51,8 +51,6 @@ export default function AccountScreen() {
 
   if (isLoaded && !isSignedIn) return <Redirect href="/" />;
 
-  const back = () => { if (router.canGoBack()) router.back(); else router.replace('/course-list'); };
-
   // Account deletion (D-046): everything on the server and the sign-in identity, after typing DELETE.
   const removeAccount = async () => {
     if (deleteWord.trim() !== 'DELETE' || deleteAccount.isPending) return;
@@ -82,11 +80,11 @@ export default function AccountScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="screen-account">
-      <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={back} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
+      {/* A tab (D-164): no back; the tab bar is the way between the three pages. */}
+      <View style={[styles.header, styles.tabHeader]}>
         <View style={styles.headerCopy}><Text style={styles.title}>Account</Text></View>
       </View>
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 30 }]}>
         <View style={styles.planCard} testID="panel-plan">
           <Text style={styles.rowName}>{planLine(status)}</Text>
           {status?.plan !== 'premium' ? <Pressable accessibilityRole="button" onPress={() => router.push('/premium')} style={({ pressed }) => [styles.planButton, pressed && styles.pressed]} testID="button-see-premium"><Text style={styles.planButtonText}>See Premium</Text></Pressable> : null}
@@ -138,6 +136,7 @@ export default function AccountScreen() {
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   header: { minHeight: 58, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, gap: 6 },
+  tabHeader: { paddingLeft: 18 },
   headerCopy: { flex: 1, minWidth: 0 },
   title: { color: colors.foreground, fontSize: 20, fontWeight: '700' },
   caption: { color: colors.mutedForeground, fontSize: 12 },

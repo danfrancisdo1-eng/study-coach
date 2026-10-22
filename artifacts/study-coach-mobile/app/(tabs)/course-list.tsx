@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { useAuth, useClerk } from '@clerk/expo';
+import { useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,16 +14,14 @@ import {
 import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { premiumCode } from '@/lib/premium-ui';
-import { ActionButton } from '@/components/ActionButton';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
-import { BUILD } from '@/constants/build';
 import { CourseListSkeleton } from '@/components/Skeleton';
 import { KindChoice } from '@/components/KindChoice';
 
 /**
- * Courses & exams on their own page (D-036): the home screen keeps only the "Coach · <course>"
- * line, which opens this list. Tap a row to make it the coach's focus and go back; the
- * chevron opens the course's own screen; Add creates a course or a certification exam.
+ * Courses & exams, the Courses tab (D-036, D-164): the home screen's "Studying · <course>"
+ * strip opens it too. Tap a row to open the course (it becomes the coach's focus); Add
+ * creates a course or a certification exam.
  */
 
 type StateRecord = Record<string, unknown>;
@@ -52,7 +50,6 @@ function rowsFrom(state: unknown): Row[] {
 
 export default function CourseListScreen() {
   const { isLoaded, isSignedIn, userId } = useAuth();
-  const { signOut } = useClerk();
   const colors = useColors();
   const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
@@ -93,9 +90,6 @@ export default function CourseListScreen() {
     if (typeof score === 'number') lastResult.set(summary.courseId, `last set ${Math.round(score)}%`);
   }
 
-  // The list is the home for a returning account (D-056): with the coach screen underneath, go back to it; as the root, open it.
-  const atRoot = !router.canGoBack();
-  const toCoach = () => { if (router.canGoBack()) router.back(); else router.push('/(tabs)'); };
   const lecturesFor = (courseId: string) => (lecturesQuery.data?.lectures ?? []).filter((l) => l.courseId === courseId).length;
 
   // After an exam is added, fetch its official guide once; the row shows progress meanwhile.
@@ -146,19 +140,15 @@ export default function CourseListScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="screen-course-list">
-      <View style={styles.header}>
-        {atRoot ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Talk to your coach" onPress={toCoach} style={styles.iconButton} testID="button-coach"><Feather name="message-circle" size={22} color={colors.primaryText} /></Pressable>
-        ) : (
-          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => { if (router.canGoBack()) router.back(); else router.navigate('/(tabs)'); }} style={styles.iconButton} testID="button-back"><Feather name="chevron-left" size={24} color={colors.foreground} /></Pressable>
-        )}
+      {/* A tab (D-164): no back and no coach icon; the tab bar is the way between the three pages. */}
+      <View style={[styles.header, styles.tabHeader]}>
         <View style={styles.headerCopy}><Text style={styles.title}>Courses & exams</Text></View>
         <Pressable accessibilityRole="button" onPress={() => setAddOpen(true)} style={styles.addButton} testID="button-add-course">
           <Feather name="plus" size={16} color={colors.primaryText} /><Text style={styles.addText}>Add</Text>
         </Pressable>
       </View>
       {stateQuery.isLoading ? <CourseListSkeleton /> : (
-        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
+        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 30 }]}>
           {error && !addOpen ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
           {rows.map((row) => (
             // One tap opens the course (D-065, usability finding 3: the row used to do two things). The course you open becomes the coach's course.
@@ -176,19 +166,7 @@ export default function CourseListScreen() {
             </Pressable>
           ))}
           {!rows.length ? <Text style={styles.empty}>No courses yet. Add one here, or just tell the coach what you're studying.</Text> : null}
-          {/* Dan (2026-10-12): a plain way to the coach right after the courses, not only the header icon. */}
-          <View style={styles.coachButton}><ActionButton label="Talk to the coach" icon="message-circle" onPress={toCoach} testID="button-talk-to-coach" /></View>
-          {/* Sign out stays in view (Dan: "There is no logout button anywhere" once Account was folded, D-079); the rest folds. */}
-          <Pressable accessibilityRole="button" hitSlop={{ top: 5, bottom: 5 }} onPress={() => void signOut()} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, styles.signOutRow, pressed && styles.pressed]} testID="button-sign-out">
-            <Feather name="log-out" size={14} color={colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Sign out</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>The next sign-in starts with the tour</Text></View>
-          </Pressable>
-          {/* The Account page (D-080): privacy, welcome and tour again, sign out, delete my account. */}
-          <Pressable accessibilityRole="button" hitSlop={{ top: 5, bottom: 5 }} onPress={() => router.push('/account')} style={({ pressed }) => [styles.row, styles.rowMain, styles.compactRow, pressed && styles.pressed]} testID="button-account">
-            <Feather name="user" size={14} color={colors.mutedForeground} />
-            <View style={styles.rowCopy}><Text maxFontSizeMultiplier={1} style={styles.compactName}>Account</Text><Text maxFontSizeMultiplier={1} numberOfLines={1} style={styles.compactCaption}>Privacy, the tour again, delete my account{__DEV__ ? ` · build ${BUILD}` : ''}</Text></View>
-            <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
-          </Pressable>
+          {/* Sign out and Account used to sit here (D-079, D-080); both live on the Account tab now (D-164). */}
         </ScrollView>
       )}
 
@@ -254,13 +232,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   rowCopy: { flex: 1, minWidth: 0 },
   rowName: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
   empty: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20, paddingVertical: 12 },
-  signOutRow: { marginTop: 18 },
-  coachButton: { marginTop: 4, marginBottom: 8 },
-  sectionTitle: { color: colors.mutedForeground, fontSize: 13, fontWeight: '700', marginTop: 18, marginBottom: 2 },
-  // Account rows (Dan: "about half the size and decrease the font, it's distracting"): 36 pt with a 44-pt hit area via the row's own padding.
-  compactRow: { minHeight: 34, paddingVertical: 3, gap: 8 },
-  compactName: { color: colors.foreground, fontSize: 13, fontWeight: '600' },
-  compactCaption: { color: colors.mutedForeground, fontSize: 10.5 },
+  tabHeader: { paddingLeft: 18 },
   errorText: { color: colors.destructive, fontSize: 13 },
   sheetContent: { paddingHorizontal: 18, paddingTop: 10, gap: 15 },
   input: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.card, color: colors.foreground, fontSize: 15, paddingHorizontal: 13 },

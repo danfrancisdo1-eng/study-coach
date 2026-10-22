@@ -175,9 +175,8 @@ export default function CoachHome() {
       if (recent) setFocusCourseId(recent.id);
     }
   }, [courses.length, messages.length]);
-  // The course list page (D-036): pick the coach's focus, open a course, add one.
-  // The list is the home for a returning account (D-056): when it is underneath, go back to it; otherwise open it.
-  const openCourses = () => { if (router.canGoBack()) router.back(); else router.push('/course-list'); };
+  // The Courses tab (D-036, D-164): pick the coach's focus, open a course, add one.
+  const openCourses = () => router.navigate('/course-list');
   const activeQuiz = chatQuery.data?.activeQuiz ?? null;
   const activeDeck = chatQuery.data?.activeDeck ?? null;
   // A practice set lives in the thread as a card under the coach message that started it
@@ -478,10 +477,7 @@ export default function CoachHome() {
           <Text style={styles.brand}>RapidRecall AI</Text>
           <Text numberOfLines={1} style={styles.headerSub}>Your coach</Text>
         </View>
-        {/* Dan: "need a Return to course list button" on the chat. Sign out is not here: it read as "go back" (D-065); it lives in Account. */}
-        <Pressable accessibilityLabel="Return to course list" accessibilityRole="button" testID="button-courses" onPress={openCourses} style={styles.iconButton}>
-          <Feather name="list" size={20} color={colors.foreground} />
-        </Pressable>
+        {/* The list icon that was here is the Courses tab now (D-164). */}
       </View>
 
       {loading ? (
@@ -631,7 +627,7 @@ export default function CoachHome() {
       </Modal>
       {(consented || showWelcome) && !loading && !loadError ? (
         // During the welcome the composer stays in place but dimmed and inert (Dan: the first tap is the course, not a message into an empty thread).
-        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10) }, showWelcome && styles.composerDimmed]} accessibilityElementsHidden={showWelcome} importantForAccessibility={showWelcome ? 'no-hide-descendants' : 'auto'}>
+        <View style={[styles.composer, showWelcome && styles.composerDimmed]} accessibilityElementsHidden={showWelcome} importantForAccessibility={showWelcome ? 'no-hide-descendants' : 'auto'}>
           {error ? <Text style={styles.errorText} testID="status-chat-error">{error}</Text> : null}
           <View style={styles.composerRow}>
             <Pressable accessibilityLabel="Add material or record a lecture" accessibilityRole="button" disabled={showWelcome} onPress={openPlus} style={styles.plusButton} testID="button-materials-plus">
@@ -762,7 +758,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
   suggestion: { minHeight: 44, maxWidth: '100%', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.chipBorder, backgroundColor: colors.chipBg, alignItems: 'center', justifyContent: 'center' },
   suggestionText: { color: colors.primaryText, fontSize: 13.5, lineHeight: 18, fontWeight: '600' },
-  composer: { paddingHorizontal: 14, paddingTop: 8, gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
+  composer: { paddingHorizontal: 14, paddingTop: 8, paddingBottom: 10, gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
   composerDimmed: { opacity: 0.35, pointerEvents: 'none' },
   composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   plusButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
