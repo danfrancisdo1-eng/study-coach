@@ -377,7 +377,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   hook: { gap: 6, padding: 14, borderRadius: 14, backgroundColor: colors.hookBg },
   hookHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   hookKicker: { ...TYPE.smallSemi, color: colors.hookText },
-  hookText: { ...TYPE.bodySemi, color: colors.reviewText },
+  hookText: { ...TYPE.bodySemi, color: colors.hookText }, // D-171: amber box, amber text
   cardTitle: { ...TYPE.heading, fontSize: 24, lineHeight: 30, color: colors.foreground },
   option: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.background, paddingHorizontal: 13, paddingVertical: 10 },
   optionChosen: { borderColor: colors.primary, borderWidth: 2, paddingHorizontal: 12, paddingVertical: 9 },

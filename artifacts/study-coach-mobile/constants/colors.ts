@@ -10,18 +10,20 @@
  *
  * primary is a FILL (indigo with a white label in light mode, a light indigo with an ink label in
  * dark mode); primaryText is the indigo for text and icons on surfaces. highlight / highlightText
- * are the amber pair with the same shape; chipBg / chipBorder are the soft amber surface. The
- * memory-hook box (hookBg / hookText) keeps its navy for now. Every text pair here is at least
- * 4.5:1 on the surface it is meant for (checked 2026-10-22).
+ * are the amber pair with the same shape; chipBg / chipBorder are the soft amber surface;
+ * hookBg / hookText are the memory-trick ("Remember it") box, amber-tinted per mode (D-171).
+ * navyBg / navyText are the old fixed navy, kept for the Pop Quiz card in the chat and the
+ * flashcard back. Every text pair here is at least 4.5:1 on the surface it is meant for
+ * (checked 2026-10-22).
  */
 
 const shared = {
-  // Dan's review card and hook chip, fixed in both modes.
+  // Dan's review card, fixed in both modes, and the navy of the Pop Quiz card and flashcard back.
   reviewBg: '#101418',
   reviewText: '#eef2f6',
   reviewMuted: '#aab6c3',
-  hookBg: '#1f2f4f',
-  hookText: '#b9d0ff',
+  navyBg: '#1f2f4f',
+  navyText: '#b9d0ff',
 };
 
 const light = {
@@ -61,6 +63,9 @@ const light = {
 
   chipBg: '#fff6df',
   chipBorder: '#e9cf8a',
+  // The memory-trick box (D-171): 9.2:1.
+  hookBg: '#fff6df',
+  hookText: '#5c3d00',
 
   border: '#d9dee7',
   input: '#d9dee7',
@@ -99,6 +104,8 @@ const dark: typeof light = {
 
   chipBg: '#1c2740',
   chipBorder: '#3a4a6a',
+  hookBg: '#3a2e12', // 9.3:1 (D-171)
+  hookText: '#ffd27a',
 
   border: '#2a3650',
   input: '#2a3650',

@@ -14,6 +14,7 @@ import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
 import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { STAT_VALUE_WIDTH, StatRow } from '@/components/StatRow';
+import { masteryIsStrong, masteryLabel, masteryShare, masteryValue } from '@/lib/mastery';
 import { friendlyError } from '@/lib/friendly-error';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
 import { courseExamFacts, factPicks, factsFromInputs, needsFactsLookup, realExamLine, timedChoices, type TimedSize } from '@/lib/exam-facts';
@@ -292,13 +293,14 @@ export default function CourseScreen() {
           <View style={styles.card} testID="panel-topic-history">
             <View style={styles.rowBetween}>
               <Text style={styles.kicker}>Topics tested · {results?.topics.length ?? 0}</Text>
-              {results?.topics.length ? <Text style={styles.kicker}>missed / asked</Text> : null}
+              {results?.topics.length ? <Text style={styles.kicker}>right / asked</Text> : null}
             </View>
             {resultsQuery.isLoading ? <ActivityIndicator color={colors.primaryText} /> : null}
-            {/* D-167: one line per topic, the count in a fixed column. Review finding 18 (D-076): the bar is the missed share, in the wrong colour, so it reads the same as the number. */}
-            {(results?.topics ?? []).map((t) => (
-              <StatRow key={t.topic} label={t.topic} value={`${t.missed}/${t.total}`} fraction={t.total ? t.missed / t.total : 0} fillColor={colors.wrong} accessibilityLabel={`${t.topic}: missed ${t.missed} of ${t.total}`} testID="row-topic-tested" />
-            ))}
+            {/* D-167: one line per topic, the count in a fixed column. D-171 (replaces D-076's missed-share bar): the bar is the share got RIGHT, primary at 70% and up, grey below, so a full bar means the topic is known, as on the score card. */}
+            {(results?.topics ?? []).map((t) => {
+              const right = t.total - t.missed;
+              return <StatRow key={t.topic} label={t.topic} value={masteryValue(right, t.total)} fraction={masteryShare(right, t.total)} fillColor={masteryIsStrong(right, t.total) ? colors.primary : colors.mutedForeground} accessibilityLabel={masteryLabel(t.topic, right, t.total)} testID="row-topic-tested" />;
+            })}
             {results && !results.topics.length ? <Text style={styles.caption}>Nothing graded yet. Practice questions or a simulated exam will fill this in.</Text> : null}
           </View>
 

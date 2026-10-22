@@ -5,7 +5,8 @@
 ### Done
 - **Indigo primary, amber highlight (D-170):** `constants/colors.ts` only for the swap (every button, progress fill, selected course, active tab and glow ring follows); `highlight*` tokens added; coach and "Coach recommends" chips keep amber text; the exam clock warning is orange. Course page: one filled button (Add material until the course has material, then Practice questions). Paywall: "Try again" under the price error. Build #69.
 - RevenueCat toasts in the Dev app explained (D-170): the `.dev` app ID has no store products; nothing to fix in code; TestFlight unaffected.
-- Verified here: `pnpm run typecheck` passes; mobile tests 96/96; `pnpm exec expo export --platform ios` builds (8.3 MB hbc). Not pushed yet (Dan's OK).
+- Verified here: `pnpm run typecheck` passes; mobile tests 96/96; `pnpm exec expo export --platform ios` builds (8.3 MB hbc). Pushed as `design/option-b`.
+- **The five follow-ups (D-171), Dan: "All is a go":** mastery bars (right / asked, indigo at 70%+, grey below; `lib/mastery.ts`, 3 tests) on the course page and the score card; "Remember it" box amber per mode, Pop Quiz keeps its navy (`navyBg` / `navyText`); plain ✓ ✗ in the review list; the send button's empty state is the soft fill with a grey arrow; a hairline under the Account header once scrolled (`ScreenHeader divider`). Build #70. Verified here: typecheck; mobile tests 99/99; iOS bundle exports.
 
 ### UX checklist (docs/UX_PRINCIPLES.md), code review only
 1. Tap targets: PASS (no size change; the new Try again is the 50-pt secondary button). 2. One primary action: PASS, and now true on the course page. 3. Chunked: unchanged. 4. Native patterns: unchanged. 5. Progress shown: unchanged (bars are indigo). 6. One accent, not colour-only: PASS (one primary, amber only on chips and the Resume strip; right/wrong keep their ✓ ✗). 7. Theme tokens; Dark Mode: PASS (token-only change; both palettes edited together; every text pair ≥ 4.5:1, computed). 8. Contrast, labels, Reduce Motion: PASS (Try again has a role and label; no new motion). 9. Paywall: PASS (Restore, terms and close unchanged; Try again added).
@@ -15,12 +16,13 @@
 - Course page: a course with material shows Practice questions filled and Add material outlined; an empty course the reverse.
 - Paywall in TestFlight: prices load; in the Dev app, Try again shows the same error again (expected).
 
+### Needs real-iPhone check (D-171)
+- Course page: a topic with 9/10 right shows an indigo bar, 1/8 a short grey one; "right / asked" heading.
+- A missed answer on the set card: the "Remember it" box is amber-tinted, readable in both modes; the Pop Quiz card in the chat is still navy.
+- Review list: plain ✓ / ✗; send button grey until something is typed; Account header hairline appears when the page scrolls.
+
 ### Next (Dan's call)
-- Mastery bars on the course page (right/asked, fill = right share; reverses D-076's "missed share in red").
-- "Remember it" box amber-tinted per mode instead of fixed navy; the Pop Quiz card in the chat would keep the navy.
-- Review-list ✗ marks: plain ✗ without the circle, or a grey numeral with ✗ only on mixed lists.
-- Chat send button: disabled state as the soft fill (today a faded primary that reads as broken).
-- Account tab: the large title doesn't collapse as the page scrolls (a native large-title header or a material strip).
+- Right/wrong feedback animation with sound (Dan's ask, plan sent in chat): a ✓ that rises from the last letter and fades, a short chime, haptic; an ✗ with a short buzz. No new dependency (expo-audio, expo-haptics, Reanimated are in the app). Waits for his OK.
 
 ## Session 15 — 2026-10-22 (Dan on the phone; Claude Code in the cloud)
 

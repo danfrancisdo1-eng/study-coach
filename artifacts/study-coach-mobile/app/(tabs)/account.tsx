@@ -31,6 +31,7 @@ export default function AccountScreen() {
   const { signOut } = useClerk();
   const deleteAccount = useDeleteAccount();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false); // D-171: the header's hairline once the page moves under it
   const [deleteWord, setDeleteWord] = useState('');
   const [error, setError] = useState('');
   // Premium (D-090): the plan line, Restore Purchases and Manage subscription.
@@ -82,8 +83,8 @@ export default function AccountScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="screen-account">
       {/* A tab (D-164): no back; the tab bar is the way between the three pages. */}
-      <ScreenHeader title="Account" />
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 30 }]}>
+      <ScreenHeader title="Account" divider={scrolled} />
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 30 }]} onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 4)} scrollEventThrottle={32}>
         <View style={styles.planCard} testID="panel-plan">
           <Text style={styles.rowName}>{planLine(status)}</Text>
           {status?.plan !== 'premium' ? <Pressable accessibilityRole="button" onPress={() => router.push('/premium')} style={({ pressed }) => [styles.planButton, pressed && styles.pressed]} testID="button-see-premium"><Text style={styles.planButtonText}>See Premium</Text></Pressable> : null}

@@ -53,5 +53,5 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   optionTextCorrect: { fontWeight: '600' },
   trick: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 10, borderRadius: 12, backgroundColor: colors.hookBg, marginTop: 2 },
   trickText: { flex: 1, color: colors.hookText, fontSize: 13, lineHeight: 18 },
-  trickLabel: { fontWeight: '700', color: colors.reviewText },
+  trickLabel: { fontWeight: '700', color: colors.hookText }, // D-171
 });

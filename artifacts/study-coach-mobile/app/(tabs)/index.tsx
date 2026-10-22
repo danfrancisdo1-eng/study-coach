@@ -376,7 +376,7 @@ export default function CoachHome() {
             // D-131: the check question as its own card, so the eye stops on it (Dan: "my eyes would read past it").
             <Pressable key={i} accessibilityRole="button" accessibilityLabel={`Pop Quiz: ${block.spans.map((s) => s.text).join('')}. Double tap to answer.`}
               onPress={() => inputRef.current?.focus()} style={styles.popQuiz} testID="chat-pop-quiz">
-              <View style={styles.popQuizHead}><Feather name="help-circle" size={16} color={colors.hookText} /><Text style={styles.popQuizTitle}>Pop Quiz</Text></View>
+              <View style={styles.popQuizHead}><Feather name="help-circle" size={16} color={colors.navyText} /><Text style={styles.popQuizTitle}>Pop Quiz</Text></View>
               <Text style={styles.popQuizText}>{inline(block.spans)}</Text>
               <Text style={styles.popQuizHint}>Type your answer below.</Text>
             </Pressable>
@@ -643,8 +643,9 @@ export default function CoachHome() {
               returnKeyType="send" blurOnSubmit submitBehavior="blurAndSubmit" onSubmitEditing={() => void sendMessage()}
             />
             </GlowRing>
-            <Pressable accessibilityLabel="Send" accessibilityRole="button" disabled={busy || !draft.trim()} onPress={() => void sendMessage()} style={[styles.sendButton, (busy || !draft.trim()) && styles.disabled]} testID="button-send-home-chat">
-              <Feather name="send" size={18} color={colors.primaryForeground} />
+            {/* D-171: when there is nothing to send the button is the soft fill with a grey arrow, not a faded primary (which read as broken). */}
+            <Pressable accessibilityLabel="Send" accessibilityRole="button" accessibilityState={{ disabled: busy || !draft.trim() }} disabled={busy || !draft.trim()} onPress={() => void sendMessage()} style={[styles.sendButton, (busy || !draft.trim()) && styles.sendButtonOff]} testID="button-send-home-chat">
+              <Feather name="send" size={18} color={busy || !draft.trim() ? colors.mutedForeground : colors.primaryForeground} />
             </Pressable>
           </View>
         </View>
@@ -707,16 +708,16 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   heading: { color: colors.foreground, fontSize: 16, lineHeight: 22, fontWeight: '700' },
   headingGap: { marginTop: 12 },
   bulletRow: { flexDirection: 'row', gap: 8, paddingLeft: 2, marginBottom: 2 },
-  popQuiz: { gap: 6, padding: 14, borderRadius: 14, backgroundColor: colors.hookBg, marginTop: 6 },
+  popQuiz: { gap: 6, padding: 14, borderRadius: 14, backgroundColor: colors.navyBg, marginTop: 6 }, // D-171: the one navy card in the chat
   popQuizHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  popQuizTitle: { color: colors.hookText, fontSize: 15, fontWeight: '800', letterSpacing: 0.3 },
-  popQuizText: { color: colors.hookText, fontSize: 16, lineHeight: 23 }, // Dan: plain text; the box is enough
-  popQuizHint: { color: colors.hookText, fontSize: 13, opacity: 0.8 },
+  popQuizTitle: { color: colors.navyText, fontSize: 15, fontWeight: '800', letterSpacing: 0.3 },
+  popQuizText: { color: colors.navyText, fontSize: 16, lineHeight: 23 }, // Dan: plain text; the box is enough
+  popQuizHint: { color: colors.navyText, fontSize: 13, opacity: 0.8 },
   quoteRow: { borderLeftWidth: 3, borderLeftColor: colors.border, paddingLeft: 12, paddingVertical: 4, marginVertical: 4 },
   bulletText: { flex: 1 },
   trickCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, padding: 11, borderRadius: 14, backgroundColor: colors.hookBg },
   trickText: { flex: 1, color: colors.hookText, fontSize: 13.5, lineHeight: 19.5 },
-  trickLabel: { fontWeight: '700', color: colors.reviewText },
+  trickLabel: { fontWeight: '700', color: colors.hookText }, // D-171: amber trick card
   trickNumber: { color: colors.hookText, fontSize: 11, opacity: 0.7 },
   body: { color: colors.foreground, fontSize: 14.5, lineHeight: 21 },
   link: { color: colors.primaryText, textDecorationLine: 'underline' },
@@ -764,6 +765,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   inputRing: { flex: 1 },
   input: { borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.card, color: colors.foreground, fontSize: 15, lineHeight: 20, paddingHorizontal: 13, paddingVertical: Platform.OS === 'ios' ? 11 : 8 },
   sendButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  sendButtonOff: { backgroundColor: colors.secondary },
   disabled: { opacity: 0.45 },
   consentWrap: { flex: 1, padding: 18, gap: 10 },
   consentCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 20, gap: 12 },

@@ -53,7 +53,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   caption: { color: colors.mutedForeground, fontSize: 12.5, lineHeight: 17 },
   deck: { height: 132 },
   face: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, padding: 16, justifyContent: 'center', gap: 4, borderRadius: colors.radius, backgroundColor: colors.reviewBg, backfaceVisibility: 'hidden' },
-  faceBack: { backgroundColor: colors.hookBg },
+  faceBack: { backgroundColor: colors.navyBg }, // D-171: the flip keeps its navy
   faceKicker: { color: colors.reviewMuted, fontSize: 12, fontWeight: '600' },
   faceTitle: { color: colors.reviewText, fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
 });

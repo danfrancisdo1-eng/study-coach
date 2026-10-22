@@ -13,6 +13,7 @@ import { useColors } from '@/hooks/useColors';
 import { Bone, SkeletonGroup } from '@/components/Skeleton';
 import { ProgressBar } from '@/components/ProgressBar';
 import { StatRow } from '@/components/StatRow';
+import { masteryIsStrong, masteryLabel, masteryShare, masteryValue } from '@/lib/mastery';
 import { writtenProgress } from '@/lib/progress';
 import { FONT, TYPE } from '@/constants/type';
 import { topicParts } from '@/lib/topic-label';
@@ -210,7 +211,8 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
             <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`Question ${position + 1}, ${result === 'correct' ? 'correct' : result === 'wrong' ? 'missed' : 'answered'}: ${q.concept}`}
               onPress={() => setExpandedId(open ? null : q.id)} style={({ pressed }) => [styles.row, pressed && styles.pressed]} testID={`row-live-${position}`}>
               <CardText style={styles.rowNumber}>{position + 1}</CardText>
-              <Feather name={result === 'correct' ? 'check-circle' : result === 'wrong' ? 'x-circle' : 'circle'} size={16} color={result === 'correct' ? colors.correct : result === 'wrong' ? colors.wrong : colors.mutedForeground} />
+              {/* D-171: a plain mark; ten red circles in a column read as punishment. The row's label still says correct or missed. */}
+              <Feather name={result === 'correct' ? 'check' : result === 'wrong' ? 'x' : 'minus'} size={16} color={result === 'correct' ? colors.correct : result === 'wrong' ? colors.wrong : colors.mutedForeground} />
               <CardText numberOfLines={open ? undefined : 1} style={styles.rowText}>{q.concept || q.prompt}</CardText>
               <Feather name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
             </Pressable>
@@ -237,8 +239,8 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
             <View style={styles.tallyHead}><CardText style={styles.kicker}>By section</CardText><CardText style={styles.kicker}>right / asked</CardText></View>
             {/* D-167: one line per section, the count in a fixed column so the numbers line up. */}
             {tallies.map((t) => (
-              <StatRow key={t.concept} label={t.concept} value={`${t.correct}/${t.total}`} fraction={t.correct / t.total} fillColor={t.correct < t.total ? colors.primaryText : colors.primary}
-                labelStyle={styles.tallyName} valueStyle={styles.tallyCount} maxFontSizeMultiplier={1} accessibilityLabel={`${t.concept}: ${t.correct} of ${t.total}`} testID="row-section-tally" />
+              <StatRow key={t.concept} label={t.concept} value={masteryValue(t.correct, t.total)} fraction={masteryShare(t.correct, t.total)} fillColor={masteryIsStrong(t.correct, t.total) ? colors.primary : colors.mutedForeground}
+                labelStyle={styles.tallyName} valueStyle={styles.tallyCount} maxFontSizeMultiplier={1} accessibilityLabel={masteryLabel(t.concept, t.correct, t.total)} testID="row-section-tally" />
             ))}
           </View>
         ) : null}
@@ -369,7 +371,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   hook: { gap: 6, padding: 14, borderRadius: 14, backgroundColor: colors.hookBg },
   hookHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   hookKicker: { ...TYPE.kicker, color: colors.hookText },
-  hookText: { ...TYPE.bodySemi, color: colors.reviewText },
+  hookText: { ...TYPE.bodySemi, color: colors.hookText }, // D-171: amber box, amber text
   heading: { ...TYPE.heading, color: colors.foreground },
   score: { color: colors.foreground },
   scoreBig: { ...TYPE.score, color: colors.foreground },

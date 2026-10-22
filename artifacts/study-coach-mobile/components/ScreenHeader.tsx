@@ -27,16 +27,18 @@ export type ScreenHeaderProps = {
   /** Something before the copy (the app mark on the coach screen). */
   mark?: React.ReactNode;
   titleLines?: number;
+  /** A hairline under the header while the page is scrolled (D-171), so content has an edge to pass under. */
+  divider?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 };
 
-export function ScreenHeader({ title, kicker, subtitle, leading = 'none', onLeading, leadingLabel, leadingDisabled, leadingTestID, right, mark, titleLines = 1, style, testID }: ScreenHeaderProps) {
+export function ScreenHeader({ title, kicker, subtitle, leading = 'none', onLeading, leadingLabel, leadingDisabled, leadingTestID, right, mark, titleLines = 1, divider, style, testID }: ScreenHeaderProps) {
   const colors = useColors();
   const icon = leading === 'close' ? 'x' : leading === 'down' ? 'chevron-down' : 'chevron-left';
   const label = leadingLabel ?? (leading === 'close' ? 'Close' : 'Back');
   return (
-    <View style={[styles.header, leading === 'none' && !mark && styles.headerFlush, style]} testID={testID}>
+    <View style={[styles.header, leading === 'none' && !mark && styles.headerFlush, divider && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }, style]} testID={testID}>
       {leading !== 'none' ? (
         <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={leadingDisabled} onPress={onLeading} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]} testID={leadingTestID ?? (leading === 'close' ? 'button-close' : 'button-back')}>
           <Feather name={icon} size={24} color={leadingDisabled ? colors.mutedForeground : colors.foreground} />

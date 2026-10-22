@@ -2,6 +2,16 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-22 — D-171: Mastery bars, an amber "Remember it" box, plain review marks, a quiet send button, a header edge
+- The five follow-ups from the design review (D-170), Dan: "All is a go."
+- **Mastery bars** (`lib/mastery.ts`, tested): "Topics tested" on the course page now reads right / asked and the bar fills with the share got RIGHT: primary (indigo) at 70% and up, grey (`mutedForeground`) below. Replaces D-076's bar of the missed share in red, under which a topic missed 7 of 8 times drew an almost full bar, which reads as achievement; the score card's "By section" rows already worked the new way and now use the same rule and colours. The VoiceOver label reads "<topic>: 7 of 10 right".
+- **"Remember it" box**: `hookBg` / `hookText` are amber per mode (light `#fff6df` / `#5c3d00`, 9.2:1; dark `#3a2e12` / `#ffd27a`, 9.3:1), on the set card, the quiz review, the onboarding trick and the chat's memory-trick cards. The old fixed navy lives on as `navyBg` / `navyText` for the chat's Pop Quiz card (the one navy card there, which is why it works) and the onboarding flashcard's back.
+- **Review list**: plain ✓ and ✗ (Feather check / x), not circled; the row's accessibility label still says correct or missed.
+- **Send button**: with nothing to send it is the soft fill (`secondary`) with a grey arrow and `accessibilityState.disabled`, instead of the primary at 45% opacity, which read as broken.
+- **Account header**: `ScreenHeader` takes `divider`; the Account tab turns it on once the page has scrolled 4 pt, so the cards have an edge to pass under. Other screens can opt in the same way.
+- Build #70. Verified here: typecheck; mobile tests 99/99 (3 new); `expo export --platform ios` builds. Needs real-iPhone check: the course page bars for a strong and a weak topic in both modes; the amber box on a missed answer; the review list marks; the send button before and after typing; the Account hairline while scrolling.
+- **Decided by:** Dan.
+
 ## 2026-10-22 — D-170: Indigo primary, amber demoted to a highlight (Dan: "indigo with amber highlights")
 - Dan's design review (Claude in the cloud, with his Dev-app screenshots and the colour/font sheet): the app chrome was amber-only while the app icon is indigo with a yellow "AI", so the brand's main colour never appeared in the UI; the amber did five jobs (primary button, selected course, progress, chips, active tab) and the timer's warning amber looked like the brand colour. He chose option B from three (keep amber / indigo with amber highlights / teal).
 - Tokens (`constants/colors.ts`): `primary` is the icon's indigo, `#2b4fd8` with a white label in light mode (6.5:1), `#7c9bff` with an ink label in dark mode (6.8:1); `primaryText` `#2548b8` / `#7c9bff` (7.8:1 on white, 6.1:1 on the dark card). The amber lives on as `highlight` / `highlightForeground` / `highlightText` (same shape as the primary trio); `chipBg` / `chipBorder` unchanged. The exam clock's 5-minute warning is an orange (`#c2410c` / `#fb923c`, 5.2:1 and 7.0:1), not the amber, so a warning never reads as a brand colour. Every token that used `primary` (buttons, progress fills, the selected course, the active tab, the sign-in buttons, the glow ring) is indigo now with no per-screen edit.
