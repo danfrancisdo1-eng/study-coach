@@ -13,6 +13,7 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { AuroraBackground } from '@/components/AuroraBackground';
+import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { blocksOf, type Span } from '@/lib/coach-text';
@@ -653,9 +654,9 @@ export default function CoachHome() {
             />
             </GlowRing>
             {/* D-171: when there is nothing to send the button is the soft fill with a grey arrow, not a faded primary (which read as broken). */}
-            <Pressable accessibilityLabel="Send" accessibilityRole="button" accessibilityState={{ disabled: busy || !draft.trim() }} disabled={busy || !draft.trim()} onPress={() => void sendMessage()} style={[styles.sendButton, (busy || !draft.trim()) && styles.sendButtonOff]} testID="button-send-home-chat">
+            <PressScale scale={PRESS_SCALE.icon} accessibilityLabel="Send" accessibilityRole="button" accessibilityState={{ disabled: busy || !draft.trim() }} disabled={busy || !draft.trim()} onPress={() => void sendMessage()} style={[styles.sendButton, (busy || !draft.trim()) && styles.sendButtonOff]} testID="button-send-home-chat">
               <Feather name="send" size={18} color={busy || !draft.trim() ? colors.mutedForeground : colors.primaryForeground} />
-            </Pressable>
+            </PressScale>
           </View>
         </View>
       ) : null}

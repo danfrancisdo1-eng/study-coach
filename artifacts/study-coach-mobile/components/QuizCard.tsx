@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
+import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getGetStudySessionQueryKey, useFlagStudyQuestion, useGetStudySession, useGradeStudyQuiz, useSaveStudyAnswer,
@@ -248,9 +249,9 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
           {reportNote(reviewing)}
         </View>
         {progress}
-        <Pressable accessibilityRole="button" onPress={() => { setJustAnsweredId(null); setReviewingId(null); }} style={styles.primaryButton} testID="button-quiz-next">
+        <PressScale accessibilityRole="button" onPress={() => { setJustAnsweredId(null); setReviewingId(null); }} style={styles.primaryButton} testID="button-quiz-next">
           <CardText style={styles.primaryText}>{answered.length >= questions.length && !writing ? 'See the score' : 'Next question'}</CardText>
-        </Pressable>
+        </PressScale>
       </View>
     );
   }
@@ -355,11 +356,11 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
       {bubbles}
       <CardText style={styles.prompt}>{current.prompt}</CardText>
       {current.options.map((option, i) => (
-        <Pressable key={option.id} accessibilityRole="button" accessibilityState={{ selected: chosen === option.id }} disabled={busy} onPress={() => void choose(option.id)}
-          style={({ pressed }) => [styles.option, chosen === option.id && styles.optionChosen, pressed && styles.pressed, busy && styles.disabled]} testID={`button-quiz-option-${i}`}>
+        <PressScale key={option.id} scale={PRESS_SCALE.card} haptic={false} accessibilityRole="button" accessibilityState={{ selected: chosen === option.id }} disabled={busy} onPress={() => void choose(option.id)}
+          style={[styles.option, chosen === option.id && styles.optionChosen, busy && styles.disabled]} testID={`button-quiz-option-${i}`}>
           <CardText style={[styles.optionLetter, chosen === option.id && styles.optionLetterChosen]}>{'ABCDE'[i]}</CardText>
           <CardText style={styles.optionText}>{option.text}</CardText>
-        </Pressable>
+        </PressScale>
       ))}
       {isExam ? (
         <Pressable accessibilityRole="button" accessibilityState={{ selected: marks.has(current.id) }} onPress={() => toggleMark(current.id)} style={[styles.markButton, marks.has(current.id) && styles.markButtonOn]} testID="button-quiz-mark">
@@ -439,6 +440,5 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   primaryText: { ...TYPE.button, color: colors.primaryForeground },
   secondaryButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border },
   secondaryText: { ...TYPE.smallSemi, color: colors.foreground },
-  pressed: { opacity: 0.8 },
   disabled: { opacity: 0.5 },
 });

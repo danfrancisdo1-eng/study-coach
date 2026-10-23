@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeIn, FadeInUp, LinearTransition } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
+import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getGetStudySessionQueryKey, useFlagStudyQuestion, useGetStudySession, useGradeStudyQuiz, useSaveStudyAnswer,
@@ -147,9 +148,9 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
           const correct = feedback ? feedback.correctOptionId === option.id : false;
           const mark = correct ? 'correct' : chosen ? 'wrong' : null;
           return (
-            <Pressable key={option.id} accessibilityRole="button" accessibilityLabel={`${'ABCDE'[i]}. ${option.text}${mark === 'correct' ? ', correct answer' : mark === 'wrong' ? ', your answer, wrong' : ''}`} accessibilityState={{ selected: chosen, disabled: !answerable }} disabled={!answerable || busy}
+            <PressScale key={option.id} scale={PRESS_SCALE.card} haptic={false} accessibilityRole="button" accessibilityLabel={`${'ABCDE'[i]}. ${option.text}${mark === 'correct' ? ', correct answer' : mark === 'wrong' ? ', your answer, wrong' : ''}`} accessibilityState={{ selected: chosen, disabled: !answerable }} disabled={!answerable || busy}
               onPress={() => void choose(question, option.id)}
-              style={({ pressed }) => [styles.option, mark === 'correct' && styles.optionCorrect, mark === 'wrong' && styles.optionWrong, pressed && answerable && styles.pressed, busy && answerable && styles.disabled]}
+              style={[styles.option, mark === 'correct' && styles.optionCorrect, mark === 'wrong' && styles.optionWrong, busy && answerable && styles.disabled]}
               testID={`button-live-option-${i}`}>
               {mark ? (
                 <View style={[styles.optionMark, mark === 'correct' ? styles.optionMarkRight : styles.optionMarkWrong]}><Feather name={mark === 'correct' ? 'check' : 'x'} size={16} color="#ffffff" /></View>
@@ -161,7 +162,7 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
                 {/* D-172: the rising mark after the last letter of the answer just tapped. */}
                 {chosen && mark && justAnsweredId === question.id ? <AnswerMark kind={mark} lineHeight={TYPE.option.lineHeight} /> : null}
               </CardText>
-            </Pressable>
+            </PressScale>
           );
         })}
       </View>
@@ -274,9 +275,9 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
       <View style={styles.live} onLayout={liveLayout(step)} testID="panel-live-feedback">
         {questionBlock(reviewing, position, false)}
         <Animated.View entering={FadeInUp.duration(280)}>{feedbackBlock(reviewing)}</Animated.View>
-        <Pressable accessibilityRole="button" disabled={busy} onPress={() => { setJustAnsweredId(null); if (last) void gradeSet(); else setReviewingId(null); }} style={[last ? styles.primaryButton : styles.nextButton, busy && styles.disabled]} testID="button-live-next">
+        <PressScale accessibilityRole="button" disabled={busy} onPress={() => { setJustAnsweredId(null); if (last) void gradeSet(); else setReviewingId(null); }} style={[last ? styles.primaryButton : styles.nextButton, busy && styles.disabled]} testID="button-live-next">
           {busy ? <ActivityIndicator color={last ? colors.primaryForeground : colors.background} /> : <><CardText style={last ? styles.primaryText : styles.nextText}>{last ? 'See the score' : 'Next question'}</CardText><Feather name="arrow-right" size={18} color={last ? colors.primaryForeground : colors.background} /></>}
-        </Pressable>
+        </PressScale>
       </View>
     );
   } else if (current) {
@@ -298,9 +299,9 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
     live = (
       <View style={styles.live} onLayout={liveLayout(step)} testID="panel-live-grade">
         <CardText style={styles.heading}>All {questions.length} answered.</CardText>
-        <Pressable accessibilityRole="button" disabled={busy} onPress={() => void gradeSet()} style={[styles.primaryButton, busy && styles.disabled]} testID="button-live-grade">
+        <PressScale accessibilityRole="button" disabled={busy} onPress={() => void gradeSet()} style={[styles.primaryButton, busy && styles.disabled]} testID="button-live-grade">
           {busy ? <ActivityIndicator color={colors.primaryForeground} /> : <><CardText style={styles.primaryText}>Grade</CardText><Feather name="arrow-right" size={18} color={colors.primaryForeground} /></>}
-        </Pressable>
+        </PressScale>
       </View>
     );
   }

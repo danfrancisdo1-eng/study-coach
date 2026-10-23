@@ -1,7 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { PressScale } from '@/components/PressScale';
 
 // Moved verbatim from app/(tabs)/courses.tsx (behavior-preserving refactor) so the
 // material intake sheet and the chat-first home can share it.
@@ -17,23 +18,22 @@ export function ActionButton({ label, onPress, disabled, secondary, testID, icon
 }) {
   const colors = useColors();
   return (
-    <Pressable
+    <PressScale
       accessibilityRole="button"
       testID={testID}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.actionButton,
         { backgroundColor: secondary ? colors.card : colors.primary, borderColor: secondary ? colors.border : colors.primary },
         secondary && styles.secondaryAction,
         fill && styles.fill,
         disabled && styles.disabled,
-        pressed && !disabled && styles.pressed,
       ]}
     >
       {icon ? <Feather name={icon} size={16} color={secondary ? colors.foreground : colors.primaryForeground} /> : null}
       <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.actionText, fill && styles.fillText, { color: secondary ? colors.foreground : colors.primaryForeground }]}>{label}</Text>
-    </Pressable>
+    </PressScale>
   );
 }
 
@@ -45,5 +45,4 @@ const styles = StyleSheet.create({
   fillText: { flexShrink: 1 },
   actionText: { fontSize: 14, fontWeight: '700' },
   disabled: { opacity: 0.48 },
-  pressed: { opacity: 0.78 },
 });
