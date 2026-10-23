@@ -21,7 +21,8 @@
 - Merged to main (fast-forward, 8c18020). **TestFlight build 14** submitted from 8c18020 at 12:24 PM and accepted by App Store Connect ("Submitted your app"). Build 12 was a wasted rebuild of 11 (the Mac had not pulled; the submit was cut off); build 13 failed on the EAS free-plan quota; Dan moved EAS to the Starter plan.
 
 ### Open
-- **Sign out shows an error** (Dan: "it's been doing this before"). Not yet reproduced; likely the Coach tab refetching with no token after `queryClient.clear()` in `app/_layout.tsx` and flashing "Couldn't load" before the redirect to /intro. Waiting on the exact message / screenshot.
+- **Sign out shows the crash screen** ("Something went wrong. Please reload the app to continue.") on TestFlight build 14; **Try again** then lands on the intro, which plays normally, so it is one bad render during the sign-out transition, not the intro screen. The queries guard missing data and the tab screens have no hooks after their Redirect, so the thrower is still unknown. The Dev app on Dan's phone logs `Cannot find native module 'ExpoVideo'` at bundle load (built before expo-video), so it cannot show the stack until rebuilt (`eas build --profile development`); alternative: show `error.message` on the fallback in store builds. **Dan: hold; batch with the next fixes.**
+- Haptics on build 14 confirmed (light tick; Dan: "it was light, I wasn't focusing"). Aurora and motion seen on the phone.
 
 ### Needs real-iPhone check
 - Score reveal: after Grade the big number pops and counts up, the section bars sweep in one after another (the 70%+ ones with a bright tip and halo), then the review rows appear top to bottom. With Reduce Motion on, everything is simply there.
