@@ -12,7 +12,9 @@ import { afterIntro } from '@/lib/intro';
  * the tour. Skip is always on screen; the sound is ON from the start and the pill is a Mute button
  * (D-176, Dan: "change the button on the intro video to mute instead of play for sound"); tapping the
  * video toggles it too; at the end (or on Skip) it hands over to the tour. Account → "Watch the intro" replays it with `?replay=1`.
- * The credential's QR code and ID are blurred in the file itself (Dan's name stays).
+ * The end card (D-181) is Dan's real NVIDIA-Certified Professional: Agentic AI and Google Cloud
+ * Generative AI Leader certificates, held 4.5 s while the music fades; the QR code and every
+ * credential ID are blurred and pixelated in the file itself (his name, titles and dates stay).
  */
 export default function IntroScreen() {
   const insets = useSafeAreaInsets();
