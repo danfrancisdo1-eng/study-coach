@@ -12,10 +12,16 @@
 
 - **Frosted score card (4 of 5):** `components/GlassFill.tsx` (native blur + a white 65% / ink 62% wash; Android gets a 94% wash) and `glassBorder` (hairline at 8% / 10%); the LiveSetCard turns to glass once graded and the older QuizCard's score panel is glass; the study sheet (a solid overlay) gets its own aurora so the glass has something to show. `lib/glass.ts` + `lib/glass.test.mjs` composite the wash over the strongest aurora glow and check foreground and muted text keep 4.5:1 in both modes, blurred or not. Build #79. Verified here: typecheck; mobile tests 111/111; iOS bundle exports.
 
-### In progress
-- Score count-up + glowing bars (5 of 5).
+- **Score count-up, glowing bars, staggered rows (5 of 5):** the practice score pops (0.9 → 1.06 → 1) and counts 0 → N over ~600 ms (`hooks/useCountUp.ts`, timings in `lib/count-up.ts`, 3 tests); each By-section bar fills from the left 200 ms + 90 ms per row later over 700 ms, strong bars (70%+) get a lighter leading edge and a soft indigo halo (`StatRow glow` / `revealDelayMs`; the course page's bars are unchanged); review rows fade in 500 ms + 50 ms apiece. The older QuizCard's score counts up too. VoiceOver reads only the final score. Reduce Motion: final numbers and full bars at once. Build #80. Verified here: typecheck; mobile tests 114/114; iOS bundle exports.
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only — the whole pass
+1. Tap targets: PASS (no size change; the squash is a transform, hit areas unchanged). 2. One primary action: PASS (the gradient goes only on the button that was already the primary; secondary and ink buttons unchanged). 3. Chunked: unchanged. 4. Native patterns: PASS (light impact haptic is the system "tick"; blur is the system material). 5. Progress shown: PASS (bars animate to the same values; the course page's bars are still). 6. One accent, not colour-only: PASS (aurora and gradient are the same indigo/amber; strong bars are also labelled "7/10"; glow is extra, never the only signal). 7. Theme tokens; Dark Mode: PASS (`primaryGradientEnd` in both palettes; aurora, wash and hairline per scheme; `lib/colors-contrast.test.mjs` and `lib/glass.test.mjs` compute the pairs). 8. Contrast, labels, Reduce Motion: PASS (label ≥ 4.5:1 on both gradient ends and on glass over the strongest glow; aurora and glass hidden from VoiceOver; score reads as "Score: 7 of 10"; Reduce Motion: no drift, no squash (dim instead), no count-up, bars full, rows at once). 9. Paywall: PASS (the paywall only gained the aurora behind it; Restore, terms, close unchanged).
+
+### Next
+- Merge `feat/glass-motion` into main; a TestFlight build when Dan wants testers on it.
 
 ### Needs real-iPhone check
+- Score reveal: after Grade the big number pops and counts up, the section bars sweep in one after another (the 70%+ ones with a bright tip and halo), then the review rows appear top to bottom. With Reduce Motion on, everything is simply there.
 - Frosted score: after Grade, the card goes translucent with the glows showing through, faintly, behind the score and the By section bars; text stays crisp. Older (non-practice) sets: same on their score panel.
 - Gradient buttons: the indigo buttons shade lighter toward the bottom-right in light mode and deeper in dark mode; labels stay readable on both ends.
 - Press squash: Send, Next question, Grade and the Add material buttons shrink a touch and tick under the thumb; answer cards shrink a hair with no tick (the right/wrong buzz follows). Disabled buttons do neither.

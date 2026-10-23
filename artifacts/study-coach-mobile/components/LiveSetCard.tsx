@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
-import Animated, { FadeIn, FadeInUp, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp, LinearTransition, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { useQueryClient } from '@tanstack/react-query';
@@ -20,6 +20,8 @@ import { Bone, SkeletonGroup } from '@/components/Skeleton';
 import { ProgressBar } from '@/components/ProgressBar';
 import { StatRow } from '@/components/StatRow';
 import { masteryIsStrong, masteryLabel, masteryShare, masteryValue } from '@/lib/mastery';
+import { barDelayMs, rowDelayMs } from '@/lib/count-up';
+import { useCountUp } from '@/hooks/useCountUp';
 import { writtenProgress } from '@/lib/progress';
 import { FONT, TYPE } from '@/constants/type';
 import { topicParts } from '@/lib/topic-label';
@@ -228,7 +230,7 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
         const open = expandedId === q.id;
         const position = questions.indexOf(q);
         return (
-          <Animated.View key={q.id} entering={FadeIn.duration(220)} layout={LinearTransition.duration(220)}>
+          <Animated.View key={q.id} entering={FadeIn.duration(220).delay(rowDelayMs(collapsed.indexOf(q)))} layout={LinearTransition.duration(220)}>
             <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`Question ${position + 1}, ${result === 'correct' ? 'correct' : result === 'wrong' ? 'missed' : 'answered'}: ${q.concept}`}
               onPress={() => setExpandedId(open ? null : q.id)} style={({ pressed }) => [styles.row, pressed && styles.pressed]} testID={`row-live-${position}`}>
               <CardText style={styles.rowNumber}>{position + 1}</CardText>
@@ -251,7 +253,8 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
     live = (
       <Animated.View entering={FadeInUp.duration(320)} style={styles.live} onLayout={liveLayout(step)} testID="panel-live-score">
         <Confetti sessionId={sessionId} perfect={isPerfect(quiz.grade)} />
-        <CardText style={styles.score}><CardText style={styles.scoreBig}>{quiz.grade.correct}</CardText><CardText style={styles.scoreOf}>/{quiz.grade.answered}</CardText></CardText>
+        {/* D-179: the score pops in and counts up; VoiceOver reads the final number only. */}
+        <ScoreCountUp correct={quiz.grade.correct} answered={quiz.grade.answered} bigStyle={styles.scoreBig} ofStyle={styles.scoreOf} style={styles.score} />
         <CardText style={styles.body}>{scoreLine(percent)}</CardText>
         {/* Review finding 14 (D-087): the big score already says it; only skipped questions need a line. */}
         {quiz.grade.unanswered ? <CardText style={styles.small}>{quiz.grade.unanswered} skipped.</CardText> : null}
@@ -259,8 +262,9 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
           <View style={styles.tallies} testID="panel-live-tallies">
             <View style={styles.tallyHead}><CardText style={styles.kicker}>By section</CardText><CardText style={styles.kicker}>right / asked</CardText></View>
             {/* D-167: one line per section, the count in a fixed column so the numbers line up. */}
-            {tallies.map((t) => (
+            {tallies.map((t, i) => (
               <StatRow key={t.concept} label={t.concept} value={masteryValue(t.correct, t.total)} fraction={masteryShare(t.correct, t.total)} fillColor={masteryIsStrong(t.correct, t.total) ? colors.primary : colors.mutedForeground}
+                glow={masteryIsStrong(t.correct, t.total)} revealDelayMs={barDelayMs(i)}
                 labelStyle={styles.tallyName} valueStyle={styles.tallyCount} maxFontSizeMultiplier={1} accessibilityLabel={masteryLabel(t.concept, t.correct, t.total)} testID="row-section-tally" />
             ))}
           </View>
@@ -324,6 +328,27 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
       ) : null}
       {live}
       {rows}
+    </Animated.View>
+  );
+}
+
+/**
+ * The big score (D-179): scales 0.9 → 1.06 → 1 as it appears and counts 0 → `correct` over
+ * about 600 ms. Reduce Motion: the final number, still. The accessibility label is the final
+ * score, so VoiceOver never reads the intermediate numbers.
+ */
+function ScoreCountUp({ correct, answered, style, bigStyle, ofStyle }: { correct: number; answered: number; style: object; bigStyle: object; ofStyle: object }) {
+  const reduceMotion = useReducedMotion();
+  const shown = useCountUp(correct);
+  const scale = useSharedValue(reduceMotion ? 1 : 0.9);
+  useEffect(() => {
+    if (reduceMotion) { scale.value = 1; return; }
+    scale.value = withSequence(withTiming(1.06, { duration: 300 }), withTiming(1, { duration: 200 }));
+  }, [reduceMotion, scale, correct]);
+  const pop = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return (
+    <Animated.View style={[{ alignSelf: 'flex-start' }, pop]} accessible accessibilityLabel={`Score: ${correct} of ${answered}`} testID="text-score">
+      <CardText style={style}><CardText style={bigStyle}>{shown}</CardText><CardText style={ofStyle}>/{answered}</CardText></CardText>
     </Animated.View>
   );
 }

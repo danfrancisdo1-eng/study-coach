@@ -10,6 +10,7 @@ import {
 } from '@workspace/api-client-react';
 import { Confetti } from '@/components/Confetti';
 import { GlassFill, glassBorder } from '@/components/GlassFill';
+import { useCountUp } from '@/hooks/useCountUp';
 import { AnswerMark } from '@/components/AnswerMark';
 import { useAnswerSounds } from '@/hooks/useAnswerSounds';
 import { answerKind, shouldPlayAnswerSound, shouldShowAnswerMark } from '@/lib/answer-feedback';
@@ -76,6 +77,7 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
   const clearMarks = () => { setMarks(new Set()); AsyncStorage.removeItem(marksKey).catch(() => {}); };
   const session = sessionQuery.data;
   const quiz = session?.quiz ?? null;
+  const shownCorrect = useCountUp(quiz?.grade?.correct ?? 0); // D-179: the score counts up
   const busy = saveAnswer.isPending || grade.isPending;
   // A reported question stays out of the set unless the re-check confirmed its key.
   const counts = (q: StudyQuizQuestionsItem) => !q.flag || q.flag.recheck?.verdict === 'key_holds';
@@ -202,7 +204,7 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
         {/* D-130: "All topics" with each section on its own line, not one long capitalised run. */}
         <CardText style={styles.kicker}>{kindLabel} · {topicParts(session.topic).title}</CardText>
         {topicParts(session.topic).sections.map((section) => <CardText key={section} style={styles.sectionLine}>{section}</CardText>)}
-        <View style={styles.scoreRow}><CardText style={styles.score}>{quiz.grade.correct}</CardText><CardText style={styles.scoreOf}> / {quiz.grade.limitMinutes ? quiz.grade.answered + quiz.grade.unanswered : quiz.grade.answered}</CardText></View>
+        <View style={styles.scoreRow} accessible accessibilityLabel={`Score: ${quiz.grade.correct} of ${quiz.grade.limitMinutes ? quiz.grade.answered + quiz.grade.unanswered : quiz.grade.answered}`}><CardText style={styles.score}>{shownCorrect}</CardText><CardText style={styles.scoreOf}> / {quiz.grade.limitMinutes ? quiz.grade.answered + quiz.grade.unanswered : quiz.grade.answered}</CardText></View>
         {/* Dan (2026-10-12): "20% on the questions you answered" read like 20% missed. Say the score plainly. */}
         <CardText style={styles.body}>{scoreLine(quiz.grade)}</CardText>
         {timeUsedLine(quiz.grade) ? <CardText style={styles.muted} testID="text-time-used">{timeUsedLine(quiz.grade)}</CardText> : null}
