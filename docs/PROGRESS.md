@@ -1,5 +1,22 @@
 # Progress
 
+## Session 17 — 2026-10-23 (Dan on the phone and at the Mac; Claude in the cloud) — branch `feat/coach-v31`
+
+### Done
+- **Design branch merged to main** (D-170–D-173, fast-forward); Dan heard the cha-ching on the Dev app (#72).
+- **D-174:** the Resume strip says "Grade your set" once every question is answered (was "question 11 of 10"). Build #73.
+- **D-176:** the intro video plays with sound; the pill is Mute / Unmute. Build #74.
+- **D-175, coach.v31:** memory tricks as contrast groups with clue words and a hook from the student's world; two eval cases updated/added. Verified here: typecheck (6 packages); `pnpm run test` 260/261 (the one failure is the known `git show a9994c0` test that cannot run on a shallow clone); mobile tests 103/103.
+
+### Needs Dan (Mac)
+- Run the coach evals for v31: `cd artifacts/api-server && pnpm run eval -- --provider anthropic --task coach` (about two minutes, about a dollar). Paste the summary line; I'll tune the wording if a case fails.
+- Then merge `feat/coach-v31` into main and run the TestFlight build.
+
+### Needs real-iPhone check
+- Finish a set: the strip reads "Grade your set: 10 of 10 answered" and opens the grade screen.
+- Account → Watch the intro: sound on from the start, pill says Mute, flips to Unmute.
+- "Memory tricks for the misses" after a graded set: grouped tricks with Clue words and Picture it / Think lines (server change; reaches the Dev app without a rebuild once Render deploys main).
+
 ## Session 16 — 2026-10-22 (Dan on the phone; Claude in the cloud) — branch `design/option-b`
 
 ### Done
