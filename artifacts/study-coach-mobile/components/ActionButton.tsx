@@ -13,7 +13,11 @@ export function ActionButton({ label, onPress, disabled, secondary, testID, icon
   secondary?: boolean;
   testID?: string;
   icon?: React.ComponentProps<typeof Feather>['name'];
-  /** In a two-column grid (D-168): the button takes half the row, every button the same width. */
+  /**
+   * In a two-column grid (D-168): the button takes half the row, every button the same width.
+   * D-180: every label in the grid is the same size; a long one wraps to two centred lines (put
+   * the break in the label with \n so it never falls in an odd place). Nothing shrinks to fit.
+   */
   fill?: boolean;
 }) {
   const colors = useColors();
@@ -33,7 +37,9 @@ export function ActionButton({ label, onPress, disabled, secondary, testID, icon
       ]}
     >
       {icon ? <Feather name={icon} size={16} color={secondary ? colors.foreground : colors.primaryForeground} /> : null}
-      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.actionText, fill && styles.fillText, { color: secondary ? colors.foreground : colors.primaryForeground }]}>{label}</Text>
+      {fill
+        ? <Text numberOfLines={2} maxFontSizeMultiplier={1.3} style={[styles.actionText, styles.fillText, { color: secondary ? colors.foreground : colors.primaryForeground }]}>{label}</Text>
+        : <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.actionText, { color: secondary ? colors.foreground : colors.primaryForeground }]}>{label}</Text>}
     </PressScale>
   );
 }
@@ -43,7 +49,8 @@ const styles = StyleSheet.create({
   secondaryAction: {},
   // Two per row with the grid's 8-pt gap; an odd last one stretches across.
   fill: { flexBasis: '47%', flexGrow: 1, alignSelf: 'stretch', paddingHorizontal: 12 },
-  fillText: { flexShrink: 1 },
+  // The icon and the text sit together in the middle; the text centres its own lines.
+  fillText: { flexShrink: 1, textAlign: 'center' },
   actionText: { fontSize: 14, fontWeight: '700' },
   disabled: { opacity: 0.48 },
 });

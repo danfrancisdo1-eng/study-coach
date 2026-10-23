@@ -269,19 +269,19 @@ export default function CourseScreen() {
             <View style={styles.grid}>
               {/* D-170: one filled primary per screen. Adding material is the primary until the course has some; then practising is. */}
               <ActionButton fill label="Add material" icon="plus-circle" secondary={materials.length > 0 || lectures.length > 0} onPress={() => scrollTo(intakeY.current)} testID="button-action-material" />
-              <ActionButton fill label="Add another course" icon="plus" secondary onPress={() => router.push({ pathname: '/course-list', params: { add: '1' } })} testID="button-action-add-course" />
+              <ActionButton fill label="Add a course" icon="plus" secondary onPress={() => router.push({ pathname: '/course-list', params: { add: '1' } })} testID="button-action-add-course" />
             </View>
             <Text style={styles.kicker}>Study with the coach</Text>
             <View style={styles.grid}>
               <ActionButton fill label="Practice questions" icon="edit-3" secondary={materials.length === 0 && lectures.length === 0} onPress={() => startWithCoach('practice', null)} testID="button-action-practice" />
-              <ActionButton fill label="Talk to the coach" icon="message-circle" secondary onPress={talkToCoach} testID="button-action-chat" />
+              <ActionButton fill label="Ask the coach" icon="message-circle" secondary onPress={talkToCoach} testID="button-action-chat" />
               <ActionButton fill label="Simulated exam" icon="clock" secondary onPress={() => (isExam ? setTimedPicker(true) : startWithCoach('exam', null))} testID="button-action-exam" />
               <ActionButton fill label="Flashcards" icon="layers" secondary onPress={() => setPicker('flashcards')} testID="button-action-flashcards" />
               <ActionButton fill label="Memory tricks" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
               <ActionButton fill label="Outline" icon="list" secondary onPress={() => startWithCoach('outline', null)} testID="button-action-outline" />
-              <ActionButton fill label="Review sheet (PDF)" icon="file-text" secondary onPress={() => router.push({ pathname: '/review/[courseId]', params: { courseId: courseId! } })} testID="button-action-review-sheet" />
+              <ActionButton fill label="Review PDF" icon="file-text" secondary onPress={() => router.push({ pathname: '/review/[courseId]', params: { courseId: courseId! } })} testID="button-action-review-sheet" />
               {/* D-155 (Dan): only while the course has no material; once something is uploaded the other actions use it. */}
-              {materials.length === 0 && lectures.length === 0 ? <ActionButton fill label="Questions without material" icon="help-circle" secondary onPress={() => void questionsWithoutMaterial()} testID="button-action-no-material" /> : null}
+              {materials.length === 0 && lectures.length === 0 ? <ActionButton fill label={"Questions\nwithout material"} icon="help-circle" secondary onPress={() => void questionsWithoutMaterial()} testID="button-action-no-material" /> : null}
             </View>
             {noMaterialNote ? (
               <View style={styles.noteRow} testID="note-no-material">

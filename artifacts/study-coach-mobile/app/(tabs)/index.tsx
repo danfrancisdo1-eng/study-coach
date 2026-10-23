@@ -41,7 +41,7 @@ import { passMarkLine } from '@/lib/exam-sheet';
 const FINISHED_SET_MESSAGE = 'I finished the set.'; // sent for the student after Grade so the coach can respond to the result
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
 const SIM_EXAM_CHIP = 'Simulated exam'; // D-130: opens the timed sheet, not a chat message
-const REVIEW_CHIP = 'Review sheet (PDF)'; // D-139: opens the course's review sheet, not a chat message
+const REVIEW_CHIP = 'Review sheet (PDF)'; // D-139: opens the course's review sheet, not a chat message. The coach sends this exact text (coach.v31), so it stays as is; the course page's button says "Review PDF" (D-180).
 
 /**
  * Chat-first home (SPEC §7, D-016): the conversation is the app. The coach asks for the
