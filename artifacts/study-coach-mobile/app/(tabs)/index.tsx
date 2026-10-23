@@ -202,23 +202,30 @@ export default function CoachHome() {
 
   // The list is inverted (newest message first in the data, drawn at the bottom), so it
   // opens at the newest message with no scroll arithmetic; scrollToEnd kept landing short.
-  // A new message lands at the bottom (offset 0); once its height is known, a reply taller
-  // than the viewport is scrolled so its top is in view, so a long reply with chips under it
-  // is read from the start (Dan, 2026-10-08). Measured, so it cannot overshoot: scrollToIndex
-  // with viewPosition on an inverted list jumped past the reply to the previous message.
+  // A new message is placed ONCE, when both are known: that it is the newest, and its height.
+  // A reply taller than the viewport is scrolled so its top is in view, so a long reply with
+  // chips under it is read from the start (Dan, 2026-10-08); a short one sits at the bottom.
+  // D-177 (Dan: memory tricks "keeps you at the bottom of the thread"): before, a scroll-to-bottom
+  // on every new message raced the top-of-reply scroll, and whichever ran last won. Measured, so it
+  // cannot overshoot: scrollToIndex with viewPosition on an inverted list jumped past the reply.
   const newestFirst = useMemo(() => [...messages].reverse(), [messages]);
   const viewportRef = useRef(0);
-  const positionedRef = useRef<string | null>(null);
+  const placedRef = useRef<string | null>(null);
+  const heightsRef = useRef(new Map<string, number>());
   const [stripHeight, setStripHeight] = useState(48); // the glass course strip overlaps the top of the chat (D-048)
-  useEffect(() => {
-    positionedRef.current = null;
-    listRef.current?.scrollToOffset({ offset: 0, animated: true });
-  }, [messages.length]);
-  const placeNewest = (id: string, height: number) => {
-    if (positionedRef.current === id || id !== messages[messages.length - 1]?.id) return;
-    positionedRef.current = id;
+  const settleNewest = () => {
+    const newest = messages[messages.length - 1];
+    if (!newest || placedRef.current === newest.id) return;
+    const height = heightsRef.current.get(newest.id);
+    if (height === undefined) return; // placed once its layout arrives
+    placedRef.current = newest.id;
     const room = viewportRef.current - stripHeight - 24;
-    if (room > 0 && height > room) listRef.current?.scrollToOffset({ offset: height - room, animated: true });
+    listRef.current?.scrollToOffset({ offset: room > 0 && height > room ? height - room : 0, animated: true });
+  };
+  useEffect(() => { settleNewest(); }, [messages.length]);
+  const placeNewest = (id: string, height: number) => {
+    heightsRef.current.set(id, height);
+    settleNewest();
   };
 
   // The course screen's handoff (D-058) goes out once the chat is loaded, consented and on that course. Before the early returns: hooks keep their order.

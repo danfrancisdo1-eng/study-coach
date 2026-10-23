@@ -9,6 +9,11 @@ Newest first. Each entry: date, decision, why, who decided.
 - Cost: a tricks reply is longer (about 2–3 cents at Sonnet pricing, up from about 2); the evals are a one-time test cost of about a dollar.
 - **Decided by:** Dan ("go both. I think it's a huge upgrade and the way I envisioned it").
 
+## 2026-10-23 — D-177: A long coach reply opens at its top, not its bottom
+- Dan: "when users pick memory tricks you have to scroll up to see them because it keeps you at the bottom of the thread." The Oct 8 top-of-reply scroll was still there, but a second scroll-to-bottom ran on every new message and the two raced; with a tall reply the bottom scroll often ran last. Now a new message is placed once, when it is known to be the newest and its height has been measured: taller than the viewport → its top under the course strip; shorter → the bottom, as before. Build #75.
+- Verified here: typecheck; mobile tests 103/103. Needs real-iPhone check: "Memory tricks for the misses" lands with "Quick memory tricks" at the top; a short reply still sits at the bottom; sending a message still shows it.
+- **Decided by:** Dan (bug).
+
 ## 2026-10-23 — D-176: The intro video plays with sound; the pill is Mute
 - Dan: "change the button on the intro video to mute instead of play for sound." Phone: the sound is on from the start; the top-left pill reads "Mute" (speaker icon) and flips to "Unmute" (crossed speaker); tapping the video still toggles it. Skip unchanged. Web intro left as it was ("Tap for sound"); say the word and it follows. Build #74.
 - Browsers block autoplay with sound, which is why the web version started muted; iOS has no such rule for an app's own bundled video.
