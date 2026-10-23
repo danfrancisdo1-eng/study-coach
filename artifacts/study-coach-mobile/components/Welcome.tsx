@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, SlideInRight, cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
@@ -9,11 +9,12 @@ import { PressScale } from '@/components/PressScale';
  * The welcome for an account with no course yet (D-047, D-055): the three steps in the order
  * of the real flow, each numbered, sliding in from the right one after another with a small
  * bounce as it lands (the first at once, then one every two seconds), one boundary line, the
- * gold "1st  Add a course or exam" button whose outline blinks once the boxes are in, and a
- * plain "explore first" line. It shows every launch until a course or exam exists (D-055), so
- * the motion only ever plays for a new account. With Reduce Motion on, the boxes appear in the
- * same rhythm without sliding and the outline stays lit. It sits in the chat area of the coach
- * screen; the composer under it stays visible but dimmed until one of the two choices is made.
+ * "1st  Add a course or exam" button whose outline blinks once the boxes are in. It shows every
+ * launch until a course or exam exists (D-055), so the motion only ever plays for a new account.
+ * With Reduce Motion on, the boxes appear in the same rhythm without sliding and the outline stays
+ * lit. It sits in the chat area of the coach screen; D-181: the message box under it is live
+ * ("Or ask your coach anything"), so a student who is not ready to add a course can ask instead
+ * (the "I'll explore first" line it replaces did nothing).
  */
 const STEP_GAP_MS = 2000; // Dan: "after 2 seconds have the second box slide in"
 const STEPS: { ordinal: string; icon: React.ComponentProps<typeof Feather>['name']; title: string; body: string }[] = [
@@ -22,7 +23,7 @@ const STEPS: { ordinal: string; icon: React.ComponentProps<typeof Feather>['name
   { ordinal: '3rd', icon: 'message-circle', title: 'Talk to your coach', body: 'practice sets, timed exams, flashcards, and a straight readiness call.' },
 ];
 
-export function Welcome({ onAddCourse, onExplore, busy = false }: { onAddCourse: () => void; onExplore: () => void; busy?: boolean }) {
+export function Welcome({ onAddCourse, busy = false }: { onAddCourse: () => void; busy?: boolean }) {
   const colors = useColors();
   const styles = createStyles(colors);
   const reduceMotion = useReducedMotion();
@@ -60,9 +61,6 @@ export function Welcome({ onAddCourse, onExplore, busy = false }: { onAddCourse:
             <Text style={styles.primaryButtonText}><Text style={styles.primaryOrdinal}>1st</Text>  Add a course or exam</Text>
           </PressScale>
         </View>
-        <Pressable accessibilityRole="button" disabled={busy} onPress={onExplore} style={({ pressed }) => [styles.textButton, busy && styles.disabled, pressed && !busy && styles.pressed]} testID="button-welcome-explore">
-          <Text style={styles.textButtonText}>I'll explore first</Text>
-        </Pressable>
       </View>
     </ScrollView>
   );
@@ -89,8 +87,5 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   primaryButton: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary, paddingHorizontal: 16 },
   primaryButtonText: { color: colors.primaryForeground, fontSize: 17, fontWeight: '700' },
   primaryOrdinal: { fontSize: 14 },
-  textButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', paddingHorizontal: 12 },
-  textButtonText: { color: colors.foreground, fontSize: 15, fontWeight: '600' },
   disabled: { opacity: 0.45 },
-  pressed: { opacity: 0.8 },
 });

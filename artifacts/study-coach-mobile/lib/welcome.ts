@@ -8,8 +8,13 @@
 type StateRecord = Record<string, unknown>;
 const record = (value: unknown): StateRecord => (value && typeof value === 'object' ? value as StateRecord : {});
 
-/** True when the welcome should be on screen: a replay was asked for, or the account has no course or exam yet (D-055). */
-export function shouldShowWelcome(state: unknown, replay = false): boolean {
+/**
+ * True when the welcome should be on screen: a replay was asked for, or the account has no course
+ * or exam yet (D-055). D-181: once the student has typed a question under it this visit
+ * (`asked`), it steps aside for the chat; with no course it is back on the next launch.
+ */
+export function shouldShowWelcome(state: unknown, replay = false, asked = false): boolean {
+  if (asked) return false;
   if (replay) return true;
   const s = record(state);
   return !(Array.isArray(s.courses) && s.courses.length > 0);
@@ -31,3 +36,18 @@ export function replayOnOpen(flag: string | null, hasHandoff: boolean): boolean 
 }
 
 export const welcomeReplayKey = (userId: string) => `study-coach-welcome-replay:${userId}`;
+
+/**
+ * A question typed under the welcome (D-181, replacing "I'll explore first", which did nothing):
+ * with consent it goes straight to the coach; without it the consent card comes first and the
+ * question waits, then goes out once consent is given. An empty box does nothing.
+ */
+export function welcomeAsk(draft: string, consented: boolean): 'send' | 'consent-first' | 'nothing' {
+  if (!draft.trim()) return 'nothing';
+  return consented ? 'send' : 'consent-first';
+}
+
+/** The message box's hint: an invitation under the welcome, a plain one in the chat (D-181). */
+export function composerPlaceholder(welcomeShowing: boolean): string {
+  return welcomeShowing ? 'Or ask your coach anything' : 'Ask your coach anything';
+}

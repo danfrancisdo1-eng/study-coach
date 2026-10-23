@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { replayOnOpen, shouldShowWelcome, withWelcomeSeen } from './welcome.ts';
+import { composerPlaceholder, replayOnOpen, shouldShowWelcome, welcomeAsk, withWelcomeSeen } from './welcome.ts';
 
 test('a new account (no state, or no courses and never dismissed) sees the welcome', () => {
   assert.equal(shouldShowWelcome(null), true);
@@ -41,4 +41,18 @@ test('a replayed welcome shows once and never over a course-screen request (D-06
   assert.equal(replayOnOpen('1', false), true);
   assert.equal(replayOnOpen('1', true), false);
   assert.equal(replayOnOpen(null, false), false);
+});
+
+test('a question typed under the welcome moves it aside for this visit, even over a replay (D-181)', () => {
+  assert.equal(shouldShowWelcome({ courses: [] }, false, true), false);
+  assert.equal(shouldShowWelcome({ courses: [] }, true, true), false);
+  assert.equal(shouldShowWelcome({ courses: [] }, false, false), true, 'next launch: back, while there is no course');
+});
+
+test('the question goes to the coach with consent, waits for the consent card without it (D-181)', () => {
+  assert.equal(welcomeAsk('How does this work?', true), 'send');
+  assert.equal(welcomeAsk('How does this work?', false), 'consent-first');
+  assert.equal(welcomeAsk('   ', true), 'nothing');
+  assert.equal(composerPlaceholder(true), 'Or ask your coach anything');
+  assert.equal(composerPlaceholder(false), 'Ask your coach anything');
 });
