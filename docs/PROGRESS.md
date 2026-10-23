@@ -1,5 +1,25 @@
 # Progress
 
+## Session 19 — 2026-10-23 (Dan away for 45 min; Claude in the cloud) — branch `fix/beta-round-2` → main
+
+### Done (D-180, one commit each)
+- **Action grid:** every label one size; long labels wrap to two centred lines with the break written in ("Questions\nwithout material"); "Add a course", "Ask the coach", "Review PDF" (the chat chip keeps the coach's exact "Review sheet (PDF)" so the server match still opens the sheet). Build #81.
+- **Paywall:** title "Choose your plan", a Premium · Exam Pass segment with a one-line blurb, the table / plan cards / button switch in place, the orphan Exam Pass card under the button is gone, default segment follows how the screen opened; Free column "Free week" for practice sets; buy buttons on the gradient PressScale. `paywallSegments()` + tests. Build #82.
+- **Sign out:** `lib/sign-out.ts` leaves the tabs (to the intro) before dropping the session; a failed sign-out returns to Account with an alert; the crash screen shows `crashLine(error)` (message + first app file) in store builds. Build #83.
+- Verified here: mobile typecheck; mobile tests 119/119; `expo export --platform ios` after each commit (8.5 MB hbc). Repo typecheck and full tests run before the merge (see below).
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (segment items 44 pt; grid buttons unchanged at 45+ pt). 2. One primary action: PASS (the paywall has one filled button per segment; the grid still has one filled button). 3. Chunked: PASS (paywall order: reason → title → segment → table → choices → button → terms → Restore → legal). 4. Native patterns: PASS (segment uses tab roles with selected state). 5. Progress: unchanged. 6. One accent, not colour-only: PASS (the active segment is outlined and labelled, not colour alone). 7. Tokens; Dark Mode: PASS (segment uses `secondary`/`card`/`primaryText`). 8. Contrast, labels, Reduce Motion: PASS (segment text muted ≥ 4.5:1 on `secondary` per D-170 pairs; crash line is selectable text; no new motion beyond PressScale, which dims under Reduce Motion). 9. Paywall rules: PASS (what is free vs paid in the table; price, period and renewal in the terms line; Restore Purchases and close unchanged; no pre-selected upsell — the segment only reflects how the screen opened).
+
+### Needs real-iPhone check (TestFlight build 15)
+- Course page: every grid label the same size; "Questions / without material" on two centred lines; "Add a course", "Ask the coach", "Review PDF".
+- Paywall (Account → See Premium, and from an exam course): the segment switches the table, cards and button; the Exam Pass default when opened from an exam; Start your free week / Get the exam pass still work in sandbox.
+- Sign out: no crash screen; the intro plays, then the tour, then sign-in. If a crash screen ever shows, the grey line under "Please reload" is what to send.
+
+### Open
+- The coach prompt still tells students to look for the "Review sheet (PDF)" button; rename in the next coach version (evals).
+- The Dev app on Dan's phone predates expo-video; rebuild it (`eas build --profile development`) before using it for anything that touches the intro.
+
 ## Session 18 — 2026-10-23 (Dan in the Design canvas; Claude in the cloud) — branch `feat/glass-motion`
 
 ### Done
