@@ -11,6 +11,9 @@
 ### UX checklist (docs/UX_PRINCIPLES.md), code review only
 1. Tap targets: PASS (segment items 44 pt; grid buttons unchanged at 45+ pt). 2. One primary action: PASS (the paywall has one filled button per segment; the grid still has one filled button). 3. Chunked: PASS (paywall order: reason → title → segment → table → choices → button → terms → Restore → legal). 4. Native patterns: PASS (segment uses tab roles with selected state). 5. Progress: unchanged. 6. One accent, not colour-only: PASS (the active segment is outlined and labelled, not colour alone). 7. Tokens; Dark Mode: PASS (segment uses `secondary`/`card`/`primaryText`). 8. Contrast, labels, Reduce Motion: PASS (segment text muted ≥ 4.5:1 on `secondary` per D-170 pairs; crash line is selectable text; no new motion beyond PressScale, which dims under Reduce Motion). 9. Paywall rules: PASS (what is free vs paid in the table; price, period and renewal in the terms line; Restore Purchases and close unchanged; no pre-selected upsell — the segment only reflects how the screen opened).
 
+### Shipped
+- Merged to main (fast-forward, 71a736c). **TestFlight build 15** submitted from 71a736c at 4:33 PM and accepted by App Store Connect.
+
 ### Needs real-iPhone check (TestFlight build 15)
 - Course page: every grid label the same size; "Questions / without material" on two centred lines; "Add a course", "Ask the coach", "Review PDF".
 - Paywall (Account → See Premium, and from an exam course): the segment switches the table, cards and button; the Exam Pass default when opened from an exam; Start your free week / Get the exam pass still work in sandbox.
