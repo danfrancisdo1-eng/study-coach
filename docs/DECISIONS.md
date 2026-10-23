@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-23 — D-176: The intro video plays with sound; the pill is Mute
+- Dan: "change the button on the intro video to mute instead of play for sound." Phone: the sound is on from the start; the top-left pill reads "Mute" (speaker icon) and flips to "Unmute" (crossed speaker); tapping the video still toggles it. Skip unchanged. Web intro left as it was ("Tap for sound"); say the word and it follows. Build #74.
+- Browsers block autoplay with sound, which is why the web version started muted; iOS has no such rule for an app's own bundled video.
+- **Decided by:** Dan.
+
 ## 2026-10-23 — D-174: The Resume strip says "Grade your set" once every question is answered
 - Dan's screenshot: "Resume set: question 11 of 10" after answering all ten. `resumeLabel` in lib/live-set.ts (tested): the next question while any is open; "Grade your set: 10 of 10 answered" when none is; the tap opens the set sheet as before, which shows the grade button. Build #73.
 - **Decided by:** Dan (bug).
