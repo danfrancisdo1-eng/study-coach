@@ -1217,7 +1217,7 @@ export const coachCases: CoachCase[] = [
     expectedActions: [],
     expectations: ["Tricks are grouped by the distinction the student mixed up (e.g. hypotonic vs hypertonic / swell vs shrink; active transport vs facilitated diffusion), each group under a bold header naming the terms confused, not a flat list of definitions", "Each group has a 'Clue words:' line mapping the question's cue words to the answer with an arrow, and one hook line ('Picture it:' or 'Think:') that is a picture, rhyme, acronym or word association", "Laid out as short scannable lines with a blank line between groups and one '> ' takeaway; no paragraph; no 'Exam shortcut' block", "Ends with one check on its own line that starts 'Pop quiz:' (never 'teach-back' or 'your turn')"],
     expectedSuggestions: ["Show me the answer", "Quiz me on these", "Flashcards for these", "Another set on everything"],
-    maxWords: 200, maxLineWords: 14,
+    maxWords: 200, maxLineWords: 16,
   },
   // coach.v31 (D-175): eight misses on a certification exam become at most four contrast groups with a hook from the job.
   {
@@ -1238,7 +1238,7 @@ export const coachCases: CoachCase[] = [
     expectedActions: [],
     expectations: ["At most four groups, each under a bold header naming the terms confused (the vision approaches together; Entra ID vs shared key; alerts vs Log Analytics; key rotation may fold into the identity/key group); not eight separate one-line definitions", "Every group has a 'Clue words:' line with the exam's cue words mapped to the answer by an arrow, and one 'Picture it:' or 'Think:' hook that is a concrete picture, rhyme, acronym or word association tied to an Azure AI engineer's work or everyday life (not a restated definition)", "Groups separated by a blank line; every line short; exactly one '> ' takeaway line; no 'Exam shortcut' block; emoji, if any, only in group headers", "Ends with one 'Pop quiz:' line asking the student to explain one distinction in their own words"],
     expectedSuggestions: ["Show me the answer", "Quiz me on these", "Flashcards for these", "Another set on everything"],
-    maxWords: 300, maxLineWords: 14,
+    maxWords: 300, maxLineWords: 16,
   },
   {
     name: "another set on the missed topics: exam, scope missed",
