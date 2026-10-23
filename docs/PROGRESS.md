@@ -8,6 +8,10 @@
 - **D-176:** the intro video plays with sound; the pill is Mute / Unmute. Build #74.
 - **D-175, coach.v31:** memory tricks as contrast groups with clue words and a hook from the student's world; two eval cases updated/added. Verified here: typecheck (6 packages); `pnpm run test` 260/261 (the one failure is the known `git show a9994c0` test that cannot run on a shallow clone); mobile tests 103/103.
 
+### Beta decisions (D-178)
+- PREMIUM_LIMITS stays off for the beta; watch costs (Anthropic spend alert; `ai_cost`). TestFlight: build 11 submitted from main at d0b5a72 (before D-177); public link via an External group once Apple's beta review passes. Three internal invites (Layla, Danny, Hanna) pending acceptance; the public link makes them unnecessary.
+- After the beta: Clerk Move 2 (Dan's own application; ID remap migration), free-questions-before-trial for courses, prompt caching + cheaper grading model.
+
 ### Needs Dan (Mac)
 - Run the coach evals for v31: `cd artifacts/api-server && pnpm run eval -- --provider anthropic --task coach` (about two minutes, about a dollar). Paste the summary line; I'll tune the wording if a case fails.
 - Then merge `feat/coach-v31` into main and run the TestFlight build.

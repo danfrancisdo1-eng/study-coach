@@ -9,6 +9,13 @@ Newest first. Each entry: date, decision, why, who decided.
 - Cost: a tricks reply is longer (about 2–3 cents at Sonnet pricing, up from about 2); the evals are a one-time test cost of about a dollar.
 - **Decided by:** Dan ("go both. I think it's a huge upgrade and the way I envisioned it").
 
+## 2026-10-23 — D-178: The beta runs with no limits; costs are watched, not capped
+- Dan: "I want the testers to not have limits and we will just keep an eye on the numbers." PREMIUM_LIMITS stays off on Render for the TestFlight beta (family and a public link); every tester has everything; no OWNER_ACCOUNT_IDS additions needed. Watch: an Anthropic spend alert and the per-account `ai_cost` table.
+- Cost model worked through from the 2026-10-23 simulated-student run (Sonnet): a coach reply 2.4–2.8¢ (memory tricks ~3.5¢), a 10-question set 2.4¢ to write and 0.7¢ to grade, a flashcard deck 2.2¢, upload notes 1.4¢. A light day ≈ 10¢, a typical day ≈ 30¢, the full 100-a-day plan ≈ 70¢; prompt caching and bank reuse should bring those to roughly 6 / 18 / 40¢. Against $11.04 net monthly ($5.67/month net on yearly), casual and regular subscribers are well in profit; a daily grinder on monthly loses money, bounded by the Premium caps (20 sets, 300 messages a day) at about $1.40/day. Dan: acceptable.
+- Deferred to after the beta: "N free questions on a course before the free week" (Dan: a launch question, not a beta one); the Clerk production move (Move 2); prompt caching and a cheaper model for grading (pure savings; to do before launch).
+- Also noted: Dan's Clerk dashboard login (danfrancisdo1@gmail.com) owns no application; the app's instance safe-firefly-7699 was created by Replit, as HANDOFF says. Move 2 starts by creating his own application there.
+- **Decided by:** Dan.
+
 ## 2026-10-23 — D-177: A long coach reply opens at its top, not its bottom
 - Dan: "when users pick memory tricks you have to scroll up to see them because it keeps you at the bottom of the thread." The Oct 8 top-of-reply scroll was still there, but a second scroll-to-bottom ran on every new message and the two raced; with a tall reply the bottom scroll often ran last. Now a new message is placed once, when it is known to be the newest and its height has been measured: taller than the viewport → its top under the course strip; shorter → the bottom, as before. Build #75.
 - Verified here: typecheck; mobile tests 103/103. Needs real-iPhone check: "Memory tricks for the misses" lands with "Quick memory tricks" at the top; a short reply still sits at the bottom; sending a message still shows it.
