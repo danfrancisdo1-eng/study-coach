@@ -708,7 +708,7 @@ export const coachCases: CoachCase[] = [
     message: "Ok, score was 6/10 — 4 misses, mostly on cooldown vs warm-up and step vs target tracking. Can you give me memory tricks for those misses?",
     expectedActions: [],
     expectations: ["Goes by the app's result (5 of 7; missed scheduled scaling and ELB health checks), kindly noting the difference from what the student said", "Never says it cannot see the score", "Memory tricks cover the actual misses (scheduled scaling, ELB health checks), not only the ones the student named"],
-    maxWords: 180,
+    maxWords: 260, // coach.v31 (D-175): grouped tricks with clue and hook lines run longer than the old flat list (was 180)
   },
   {
     name: "a timed practice exam typed in the chat points to Simulated exam (PMP, simulated student)",
