@@ -79,11 +79,11 @@ test('the paywall never shows purchase cards without a product (store fetch fail
   assert.equal(paywallState(true, [{}], 'Payment cancelled'), 'ready');
 });
 
-test('the paywall table matches the plans: a free student gets no practice sets (D-155, D-163)', async () => {
+test('the paywall table matches the plans: free practice sets come with the free week (D-155, D-163, D-180)', async () => {
   const { paywallRows } = await import('./premium-ui.ts');
   const student = paywallRows('student');
   assert.deepEqual(student.head, ['Free', 'Premium']);
-  assert.deepEqual(student.rows.find((r) => r[0] === 'Practice sets'), ['Practice sets', 'None', '20 a day']);
+  assert.deepEqual(student.rows.find((r) => r[0] === 'Practice sets'), ['Practice sets', 'Free week', '20 a day']);
   assert.deepEqual(student.rows.find((r) => r[0] === 'Courses'), ['Courses', '1', 'Unlimited']);
   assert.ok(!student.rows.some((r) => /every feature/i.test(r[0])));
   const exam = paywallRows('exam');
@@ -91,4 +91,18 @@ test('the paywall table matches the plans: a free student gets no practice sets 
   assert.deepEqual(exam.rows[0], ['Questions', '50', 'Unlimited']);
   // Short labels so the table stays one line per row at large text sizes.
   for (const [label] of [...student.rows, ...exam.rows]) assert.ok(label.length <= 16, label);
+});
+
+test('the paywall offers its two products as a segment, each with a one-line blurb (D-180)', async () => {
+  const { paywallSegments, paywallMode } = await import('./premium-ui.ts');
+  const segments = paywallSegments();
+  assert.deepEqual(segments.map((s) => s.mode), ['student', 'exam']);
+  assert.deepEqual(segments.map((s) => s.label), ['Premium', 'Exam Pass']);
+  for (const s of segments) {
+    assert.ok(s.blurb.length > 0 && s.blurb.length <= 70, `${s.label}: one short line`);
+    assert.ok(/renew/i.test(s.blurb), `${s.label}: says whether it renews`);
+  }
+  // The default segment follows how the paywall was opened.
+  assert.ok(segments.some((s) => s.mode === paywallMode('exam_free_used', undefined)));
+  assert.equal(paywallMode(undefined, undefined), 'student');
 });

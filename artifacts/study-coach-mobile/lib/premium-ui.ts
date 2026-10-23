@@ -103,5 +103,19 @@ export function paywallRows(mode: 'exam' | 'student'): { head: [string, string];
   if (mode === 'exam') {
     return { head: ['Free', 'Exam Pass'], rows: [['Questions', '50', 'Unlimited'], ['Review PDF', 'Yes', 'Yes'], ['How long', 'Once', '60 days']] };
   }
-  return { head: ['Free', 'Premium'], rows: [['Courses', '1', 'Unlimited'], ['Practice sets', 'None', '20 a day'], ['Coach messages', '40 a day', '300 a day']] };
+  // D-180: "Free week" rather than "None": the free plan's practice sets come with the free week, and "None" read as a punishment line.
+  return { head: ['Free', 'Premium'], rows: [['Courses', '1', 'Unlimited'], ['Practice sets', 'Free week', '20 a day'], ['Coach messages', '40 a day', '300 a day']] };
+}
+
+/**
+ * The paywall's two products as a segment control (D-180): the student subscription and the exam
+ * pass, each with one line that says who it is for. The paywall used to show the exam pass as a
+ * card under the subscribe button that flipped the whole screen with no way back.
+ */
+export type PaywallSegment = { mode: 'student' | 'exam'; label: string; blurb: string };
+export function paywallSegments(): PaywallSegment[] {
+  return [
+    { mode: 'student', label: 'Premium', blurb: 'Every course, with the coach. Renews monthly or yearly.' },
+    { mode: 'exam', label: 'Exam Pass', blurb: 'One certification exam for 60 days. One payment, no renewal.' },
+  ];
 }

@@ -12,15 +12,18 @@ import { AuroraBackground } from '@/components/AuroraBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
-import { orderPackages, packageLabel, paywallMode, paywallReason, paywallRows, paywallState, savingLabel, trialLength, trialTerms } from '@/lib/premium-ui';
+import { orderPackages, packageLabel, paywallMode, paywallReason, paywallRows, paywallSegments, paywallState, savingLabel, trialLength, trialTerms } from '@/lib/premium-ui';
+import { PressScale } from '@/components/PressScale';
 import { TERMS_URL, buy, premiumPackages, purchasesAvailable, restore } from '@/lib/purchases';
 
 /**
- * The paywall (D-090, D-153, SPEC §9, UX_PRINCIPLES "Paywall rules"). Students: what is free and what
- * Premium adds, the yearly and monthly cards (yearly picked first, its badge the real saving), one button
- * ("Start your free week" while Apple's free week applies), what happens after the free week, Restore
- * Purchases, terms and privacy, a visible close. A certification exam (?kind=exam, or the free 50 used):
- * the exam pass, one payment for 60 days, no renewal. Opened from Account, or with ?reason=<code>.
+ * The paywall (D-090, D-153, SPEC §9, UX_PRINCIPLES "Paywall rules"). Two products on one screen,
+ * chosen with a segment under the title (D-180, Dan: "confusing, not organized right"): Premium
+ * (what is free and what it adds, the yearly and monthly cards with the real saving as the badge,
+ * one button, "Start your free week" while Apple's free week applies, what happens after) and the
+ * Exam Pass (one payment for 60 days, no renewal). The segment the screen opens on follows how it
+ * was opened (?kind=exam or the exam-free-used refusal → Exam Pass). Then Restore Purchases, terms
+ * and privacy, a visible close. Opened from Account, or with ?reason=<code>.
  */
 export default function PremiumScreen() {
   const colors = useColors();
@@ -29,7 +32,7 @@ export default function PremiumScreen() {
   const queryClient = useQueryClient();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const { reason, kind, courseId } = useLocalSearchParams<{ reason?: string; kind?: string; courseId?: string }>();
-  const mode = paywallMode(reason, kind);
+  const [mode, setMode] = useState<'student' | 'exam'>(() => paywallMode(reason, kind));
   const [selected, setSelected] = useState<string | null>(null);
   const refresh = useRefreshPremium();
   const [packages, setPackages] = useState<PurchasesPackage[] | null>(null);
@@ -80,7 +83,19 @@ export default function PremiumScreen() {
       <ScreenHeader leading="close" onLeading={close} leadingTestID="button-close-premium" />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
         <Text style={styles.kicker}>{paywallReason(reason)}</Text>
-        <Text style={styles.title}>{mode === 'exam' ? 'Exam Pass' : 'RapidRecall AI Premium'}</Text>
+        <Text style={styles.title}>Choose your plan</Text>
+        {/* D-180: the two products side by side; the table, the cards and the button below follow the choice. */}
+        <View style={styles.segment} accessibilityRole="tablist" testID="paywall-segment">
+          {paywallSegments().map((seg) => {
+            const on = seg.mode === mode;
+            return (
+              <PressScale key={seg.mode} haptic={false} accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={() => { if (!on) { setMode(seg.mode); setMessage(''); setError(''); } }} style={[styles.segmentItem, on && styles.segmentOn]} testID={`segment-${seg.mode}`}>
+                <Text style={[styles.segmentText, on && styles.segmentTextOn]}>{seg.label}</Text>
+              </PressScale>
+            );
+          })}
+        </View>
+        <Text style={styles.segmentBlurb} testID="text-segment-blurb">{paywallSegments().find((s) => s.mode === mode)!.blurb}</Text>
         <View style={styles.compare} accessible accessibilityLabel={table.rows.map(([label, free, paid]) => `${label}: ${table.head[0]} ${free}, ${table.head[1]} ${paid}`).join('. ')} testID="paywall-table">
           <View style={[styles.compareRow, styles.compareDivider]}>
             <Text style={styles.compareLabel} />
@@ -107,9 +122,9 @@ export default function PremiumScreen() {
               <Text style={styles.cardTitle}>Exam pass · {pass.product.priceString}</Text>
               <Text style={styles.cardCaption}>60 days of everything for your exam. One payment; it does not renew.</Text>
             </View>
-            <Pressable accessibilityRole="button" disabled={!!busy} onPress={() => void subscribe(pass)} style={({ pressed }) => [styles.buy, pressed && styles.pressed, !!busy && styles.disabled]} testID="button-buy-exam-pass">
+            <PressScale gradient accessibilityRole="button" disabled={!!busy} onPress={() => void subscribe(pass)} style={[styles.buy, !!busy && styles.disabled]} testID="button-buy-exam-pass">
               {busy === pass.identifier ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={styles.buyTitle}>Get the exam pass</Text>}
-            </Pressable>
+            </PressScale>
           </>;
         })() : (() => {
           const monthly = packages.find((p) => p.packageType === 'MONTHLY');
@@ -132,23 +147,12 @@ export default function PremiumScreen() {
                 </Pressable>
               );
             })}
-            <Pressable accessibilityRole="button" disabled={!!busy} onPress={() => void subscribe(chosen)} style={({ pressed }) => [styles.buy, pressed && styles.pressed, !!busy && styles.disabled]} testID="button-buy">
+            <PressScale gradient accessibilityRole="button" disabled={!!busy} onPress={() => void subscribe(chosen)} style={[styles.buy, !!busy && styles.disabled]} testID="button-buy">
               {busy === chosen.identifier ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={styles.buyTitle}>{freeWeek ? 'Start your free week' : 'Subscribe'}</Text>}
-            </Pressable>
+            </PressScale>
             <Text style={styles.trial} testID="text-trial-terms">{trialTerms(chosen.product.priceString, chosen.packageType === 'ANNUAL' ? 'year' : 'month', trial)}</Text>
           </>;
         })()}
-
-        {/* D-163 (Dan: "as big as the other choices"): the exam pass is a full-size choice, not a small link. */}
-        {mode === 'student' ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Exam Pass, for a certification exam" onPress={() => router.setParams({ kind: 'exam' })} style={({ pressed }) => [styles.card, pressed && styles.pressed]} testID="link-exam-pass">
-            <View style={styles.cardHead}>
-              <Text style={styles.cardTitle}>Exam Pass</Text>
-            </View>
-            <Text style={styles.cardCaption}>For a certification exam: one payment for 60 days. It does not renew.</Text>
-            <Feather name="chevron-right" size={22} color={colors.mutedForeground} style={styles.cardCheck} />
-          </Pressable>
-        ) : null}
 
         {message ? <Text style={styles.success} accessibilityRole="alert" testID="status-premium-message">{message}</Text> : null}
         {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
@@ -178,6 +182,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   content: { paddingHorizontal: 20, gap: 14 },
   kicker: { color: colors.mutedForeground, fontSize: 15, lineHeight: 21 },
   title: { color: colors.foreground, fontSize: 28, lineHeight: 34, fontWeight: '700' },
+  segment: { flexDirection: 'row', padding: 3, borderRadius: 14, backgroundColor: colors.secondary, gap: 3 },
+  segmentItem: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 11 },
+  segmentOn: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.primaryText },
+  segmentText: { color: colors.mutedForeground, fontSize: 15, fontWeight: '600' },
+  segmentTextOn: { color: colors.primaryText },
+  segmentBlurb: { color: colors.foreground, fontSize: 14, lineHeight: 20, marginTop: -6 },
   compare: { borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
   compareRow: { flexDirection: 'row', alignItems: 'center', minHeight: 44, paddingHorizontal: 14, gap: 8 },
   compareDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
