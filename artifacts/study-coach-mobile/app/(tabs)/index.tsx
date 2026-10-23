@@ -32,7 +32,7 @@ import { HomeSkeleton } from '@/components/Skeleton';
 import { LiveSetCard } from '@/components/LiveSetCard';
 import { ProgressBar, useElapsed } from '@/components/ProgressBar';
 import { estimate } from '@/lib/progress';
-import { liveSetAction } from '@/lib/live-set';
+import { liveSetAction, resumeLabel } from '@/lib/live-set';
 import { courseExamFacts, type TimedSize } from '@/lib/exam-facts';
 import { passMarkLine } from '@/lib/exam-sheet';
 
@@ -584,7 +584,7 @@ export default function CoachHome() {
         <Pressable accessibilityRole="button" onPress={() => setStudyOpen(true)} style={styles.resumeBar} testID="button-resume-study">
           <Feather name={activeDeck ? 'layers' : 'edit-3'} size={16} color={colors.primaryForeground} />
           <Text style={styles.resumeText}>
-            {activeDeck ? `Resume flashcards: ${activeDeck.done} of ${activeDeck.total} done` : `Resume set: question ${(activeQuiz?.answered ?? 0) + 1} of ${activeQuiz?.total ?? ''}`}
+            {resumeLabel(activeDeck ? { kind: 'deck', done: activeDeck.done, total: activeDeck.total } : { kind: 'quiz', answered: activeQuiz?.answered ?? 0, total: activeQuiz?.total ?? 0 })}
           </Text>
           <Feather name="chevron-right" size={18} color={colors.primaryForeground} />
         </Pressable>

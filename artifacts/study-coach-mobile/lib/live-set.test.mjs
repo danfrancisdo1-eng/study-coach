@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { conceptTallies, liveScrollOffset, liveSetAction, rowResult, scoreLine, sectionOf, sectionTallies } from './live-set.ts';
+import { conceptTallies, liveScrollOffset, liveSetAction, resumeLabel, rowResult, scoreLine, sectionOf, sectionTallies } from './live-set.ts';
 
 test('the live set is the latest start_quiz action with a session, whichever message holds it', () => {
   assert.equal(liveSetAction([]), null);
@@ -58,4 +58,12 @@ test('section tallies group "Section: detail" concepts by their section; plain c
     { concept: 'Implement vision', correct: 0, total: 1 },
   ]);
   assert.deepEqual(sectionTallies([q('Cells', 'a', 'a'), q('ATP', 'b', 'c')]), [{ concept: 'Cells', correct: 1, total: 1 }, { concept: 'ATP', correct: 0, total: 1 }]);
+});
+
+test('the Resume strip never names a question past the end (D-174)', () => {
+  assert.equal(resumeLabel({ kind: 'quiz', answered: 2, total: 10 }), 'Resume set: question 3 of 10');
+  assert.equal(resumeLabel({ kind: 'quiz', answered: 10, total: 10 }), 'Grade your set: 10 of 10 answered');
+  assert.equal(resumeLabel({ kind: 'quiz', answered: 11, total: 10 }), 'Grade your set: 10 of 10 answered');
+  assert.equal(resumeLabel({ kind: 'quiz', answered: 0, total: 0 }), 'Resume set: question 1 of 0');
+  assert.equal(resumeLabel({ kind: 'deck', done: 4, total: 12 }), 'Resume flashcards: 4 of 12 done');
 });

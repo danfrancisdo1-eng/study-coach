@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-23 — D-174: The Resume strip says "Grade your set" once every question is answered
+- Dan's screenshot: "Resume set: question 11 of 10" after answering all ten. `resumeLabel` in lib/live-set.ts (tested): the next question while any is open; "Grade your set: 10 of 10 answered" when none is; the tap opens the set sheet as before, which shows the grade button. Build #73.
+- **Decided by:** Dan (bug).
+
 ## 2026-10-23 — D-173: The mark rises for 1.2 s; the right sound is a fast "ch-ching"; the wrong sound is a polite buzzer
 - Dan, from build #71 on his phone ("it's all good"): "the check should last maybe 1200 ms rising, and sound something like cha-ching but pronounced fast so it's more like ch-ching. And I envisioned something a little more annoying like a buzzer for a wrong answer, but probably not a good idea to annoy someone trying my app."
 - Mark: the rise is 1200 ms (was 650), ease-out, visible for the first two-thirds and fading over the last 400 ms; Reduce Motion holds for the same time in place.

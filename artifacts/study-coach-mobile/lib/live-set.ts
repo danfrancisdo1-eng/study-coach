@@ -76,3 +76,14 @@ export function liveScrollOffset(liveHeight: number, room: number, slack: number
   if (!(room > 0) || !(liveHeight > 0)) return 0;
   return Math.max(0, Math.round(liveHeight + slack - room));
 }
+
+/**
+ * The Resume strip's label (D-174). While questions are open it names the next one; once every
+ * question is answered the set only needs grading, so it says that instead of "question 11 of 10"
+ * (Dan's screenshot, 2026-10-22). Flashcards name the cards done.
+ */
+export function resumeLabel(active: { kind: 'quiz'; answered: number; total: number } | { kind: 'deck'; done: number; total: number }): string {
+  if (active.kind === 'deck') return `Resume flashcards: ${active.done} of ${active.total} done`;
+  if (active.total > 0 && active.answered >= active.total) return `Grade your set: ${active.total} of ${active.total} answered`;
+  return `Resume set: question ${Math.min(active.answered + 1, Math.max(active.total, 1))} of ${active.total}`;
+}
