@@ -9,17 +9,18 @@ import { afterIntro } from '@/lib/intro';
 
 /**
  * Dan's intro video (D-134, D-150): full screen, once, the first time the app ever opens, before
- * the tour. Skip is always on screen; the sound is off until the student taps the video; at the end
- * (or on Skip) it hands over to the tour. Account → "Watch the intro" replays it with `?replay=1`.
+ * the tour. Skip is always on screen; the sound is ON from the start and the pill is a Mute button
+ * (D-176, Dan: "change the button on the intro video to mute instead of play for sound"); tapping the
+ * video toggles it too; at the end (or on Skip) it hands over to the tour. Account → "Watch the intro" replays it with `?replay=1`.
  * The credential's QR code and ID are blurred in the file itself (Dan's name stays).
  */
 export default function IntroScreen() {
   const insets = useSafeAreaInsets();
   const { replay } = useLocalSearchParams<{ replay?: string }>();
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
   const player = useVideoPlayer(require('@/assets/video/intro.mp4'), (p) => {
     p.loop = false;
-    p.muted = true;
+    p.muted = false;
     p.play();
   });
   const { status } = useEvent(player, 'statusChange', { status: player.status });
@@ -47,7 +48,7 @@ export default function IntroScreen() {
       <View style={[styles.topBar, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
         <Pressable onPress={toggleSound} style={styles.pill} accessibilityRole="button" accessibilityLabel={muted ? 'Turn the sound on' : 'Turn the sound off'}>
           <Feather name={muted ? 'volume-x' : 'volume-2'} size={18} color="#fff" />
-          {muted ? <Text style={styles.pillText}>Tap for sound</Text> : null}
+          <Text style={styles.pillText}>{muted ? 'Unmute' : 'Mute'}</Text>
         </Pressable>
         <Pressable onPress={() => void leave()} style={styles.pill} accessibilityRole="button" testID="button-intro-skip">
           <Text style={styles.pillText}>Skip</Text>
