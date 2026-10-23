@@ -17,8 +17,11 @@
 ### UX checklist (docs/UX_PRINCIPLES.md), code review only — the whole pass
 1. Tap targets: PASS (no size change; the squash is a transform, hit areas unchanged). 2. One primary action: PASS (the gradient goes only on the button that was already the primary; secondary and ink buttons unchanged). 3. Chunked: unchanged. 4. Native patterns: PASS (light impact haptic is the system "tick"; blur is the system material). 5. Progress shown: PASS (bars animate to the same values; the course page's bars are still). 6. One accent, not colour-only: PASS (aurora and gradient are the same indigo/amber; strong bars are also labelled "7/10"; glow is extra, never the only signal). 7. Theme tokens; Dark Mode: PASS (`primaryGradientEnd` in both palettes; aurora, wash and hairline per scheme; `lib/colors-contrast.test.mjs` and `lib/glass.test.mjs` compute the pairs). 8. Contrast, labels, Reduce Motion: PASS (label ≥ 4.5:1 on both gradient ends and on glass over the strongest glow; aurora and glass hidden from VoiceOver; score reads as "Score: 7 of 10"; Reduce Motion: no drift, no squash (dim instead), no count-up, bars full, rows at once). 9. Paywall: PASS (the paywall only gained the aurora behind it; Restore, terms, close unchanged).
 
-### Next
-- Merge `feat/glass-motion` into main; a TestFlight build when Dan wants testers on it.
+### Shipped
+- Merged to main (fast-forward, 8c18020). **TestFlight build 14** submitted from 8c18020 at 12:24 PM and accepted by App Store Connect ("Submitted your app"). Build 12 was a wasted rebuild of 11 (the Mac had not pulled; the submit was cut off); build 13 failed on the EAS free-plan quota; Dan moved EAS to the Starter plan.
+
+### Open
+- **Sign out shows an error** (Dan: "it's been doing this before"). Not yet reproduced; likely the Coach tab refetching with no token after `queryClient.clear()` in `app/_layout.tsx` and flashing "Couldn't load" before the redirect to /intro. Waiting on the exact message / screenshot.
 
 ### Needs real-iPhone check
 - Score reveal: after Grade the big number pops and counts up, the section bars sweep in one after another (the 70%+ ones with a bright tip and halo), then the review rows appear top to bottom. With Reduce Motion on, everything is simply there.
