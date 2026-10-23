@@ -604,6 +604,7 @@ export default function CoachHome() {
         <View style={styles.overlay}>
           <Pressable accessibilityRole="button" accessibilityLabel="Back to chat" onPress={() => setStudyOpen(false)} style={[styles.overlayBackdrop, { height: insets.top + 28 }]} />
           <View style={[styles.overlaySheet, { paddingBottom: insets.bottom }]}>
+            <AuroraBackground />
             <ScreenHeader leading="down" leadingLabel="Back to chat" onLeading={() => setStudyOpen(false)} leadingTestID="button-back-to-chat"
               kicker={deckSessionId ? 'Flashcards' : quizIsPractice ? 'Practice' : 'Exam'} title={topicParts((activeDeck ?? activeQuiz)?.topic ?? 'RapidRecall AI').title} />
             <ScrollView ref={quizScrollRef} style={styles.studySheet} contentContainerStyle={[styles.quizDockContent, { paddingBottom: 24 }]} keyboardShouldPersistTaps="handled" testID="dock-quiz">

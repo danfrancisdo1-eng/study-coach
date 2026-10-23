@@ -10,10 +10,13 @@
 
 - **Gradient primary buttons (3 of 5):** `PressScale gradient` paints `primary → primaryGradientEnd` (new token, both palettes) diagonally under the label, clipped to the corner radius; the solid fill stays as the fallback. On every primary action: ActionButton's primary variant, Send (when it can send), See the score, Grade, Next question, Welcome's 1st button, Add course / Add material, the AI consent button, Save / Record lecture, the lecture page's primary. Secondary, dark "Next question" (ink fill) and the red Delete button are unchanged. `lib/colors-contrast.test.mjs` checks the label against both ends (light 5.2:1, dark 4.8:1). Build #78. Verified here: typecheck; mobile tests 109/109; iOS bundle exports.
 
+- **Frosted score card (4 of 5):** `components/GlassFill.tsx` (native blur + a white 65% / ink 62% wash; Android gets a 94% wash) and `glassBorder` (hairline at 8% / 10%); the LiveSetCard turns to glass once graded and the older QuizCard's score panel is glass; the study sheet (a solid overlay) gets its own aurora so the glass has something to show. `lib/glass.ts` + `lib/glass.test.mjs` composite the wash over the strongest aurora glow and check foreground and muted text keep 4.5:1 in both modes, blurred or not. Build #79. Verified here: typecheck; mobile tests 111/111; iOS bundle exports.
+
 ### In progress
-- Frosted score card (4 of 5), score count-up (5).
+- Score count-up + glowing bars (5 of 5).
 
 ### Needs real-iPhone check
+- Frosted score: after Grade, the card goes translucent with the glows showing through, faintly, behind the score and the By section bars; text stays crisp. Older (non-practice) sets: same on their score panel.
 - Gradient buttons: the indigo buttons shade lighter toward the bottom-right in light mode and deeper in dark mode; labels stay readable on both ends.
 - Press squash: Send, Next question, Grade and the Add material buttons shrink a touch and tick under the thumb; answer cards shrink a hair with no tick (the right/wrong buzz follows). Disabled buttons do neither.
 - Aurora: faint indigo/amber glows behind every screen in both modes; they drift so slowly you only notice by comparing a minute apart; with Reduce Motion on they hold still. Scrolling the chat and typing stay smooth (the glows are three SVG circles on the GPU; if a frame drops, lower the sizes in `lib/aurora.ts`).

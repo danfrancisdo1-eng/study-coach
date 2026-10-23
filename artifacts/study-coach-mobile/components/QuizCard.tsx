@@ -9,6 +9,7 @@ import {
   type StudyQuestionFlagInputKind, type StudySession, type StudyQuizQuestionsItem,
 } from '@workspace/api-client-react';
 import { Confetti } from '@/components/Confetti';
+import { GlassFill, glassBorder } from '@/components/GlassFill';
 import { AnswerMark } from '@/components/AnswerMark';
 import { useAnswerSounds } from '@/hooks/useAnswerSounds';
 import { answerKind, shouldPlayAnswerSound, shouldShowAnswerMark } from '@/lib/answer-feedback';
@@ -194,7 +195,9 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
     // Misses, plus reported questions (with their verdict) so the student sees what happened to them.
     const misses = quiz.questions.filter((q) => q.feedback && q.feedback.selectedOptionId && (q.feedback.selectedOptionId !== q.feedback.correctOptionId || (q.flag && !counts(q))));
     return (
-      <View style={styles.card} testID="panel-quiz-score">
+      <View style={[styles.card, glassBorder(colors.scheme)]} testID="panel-quiz-score">
+        {/* D-179: the score card is frosted glass over the aurora. */}
+        <GlassFill />
         <Confetti sessionId={sessionId} perfect={isPerfect(quiz.grade)} />
         {/* D-130: "All topics" with each section on its own line, not one long capitalised run. */}
         <CardText style={styles.kicker}>{kindLabel} · {topicParts(session.topic).title}</CardText>

@@ -9,6 +9,7 @@ import {
   type StudyQuestionFlagInputKind, type StudySession, type StudyQuizQuestionsItem,
 } from '@workspace/api-client-react';
 import { Confetti } from '@/components/Confetti';
+import { GlassFill, glassBorder } from '@/components/GlassFill';
 import { AnswerMark } from '@/components/AnswerMark';
 import { useAnswerSounds } from '@/hooks/useAnswerSounds';
 import { answerKind, shouldPlayAnswerSound, shouldShowAnswerMark } from '@/lib/answer-feedback';
@@ -307,7 +308,9 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
   }
 
   return (
-    <Animated.View layout={LinearTransition.duration(220)} style={styles.card} testID="card-live-set">
+    <Animated.View layout={LinearTransition.duration(220)} style={[styles.card, quiz.grade && glassBorder(colors.scheme)]} testID="card-live-set">
+      {/* D-179: once graded, the card is frosted glass over the aurora. */}
+      {quiz.grade ? <GlassFill /> : null}
       <View style={styles.head}>
         {/* D-130: "All topics" with each section on its own line, not one long capitalised run. */}
         <CardText style={styles.kicker}>Practice · {topicParts(session.topic).title}</CardText>
