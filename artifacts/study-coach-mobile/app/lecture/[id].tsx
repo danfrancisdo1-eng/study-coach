@@ -13,6 +13,7 @@ import { NotesView } from '@/components/NotesView';
 import { ProgressBar, useElapsed } from '@/components/ProgressBar';
 import { timeLeftText, transcribeWorkMs, uploadThenWork } from '@/lib/progress';
 import { useColors } from '@/hooks/useColors';
+import { AuroraBackground } from '@/components/AuroraBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import {
   editedSegments, formatDuration, spokenDuration, transcriptHasText, transcriptionBlocker, type TranscriptSegment,
@@ -170,6 +171,7 @@ export default function LectureScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <AuroraBackground />
       <ScreenHeader leading="back" leadingLabel="Back to lectures" onLeading={() => goBack()} leadingDisabled={busy === 'transcribing'} leadingTestID="button-lecture-back" kicker={courseName ? `${courseName} · Lecture` : 'Lecture'} title={lecture?.title ?? 'Lecture'} titleLines={2} />
 
       {query.isLoading ? <ActivityIndicator style={styles.loading} color={colors.primaryText} /> : null}

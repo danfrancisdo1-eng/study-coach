@@ -1,5 +1,17 @@
 # Progress
 
+## Session 18 — 2026-10-23 (Dan in the Design canvas; Claude in the cloud) — branch `feat/glass-motion`
+
+### Done
+- **D-179 picked:** eight glass/motion effects shown on moving canvas boards, chosen one at a time. In: aurora everywhere, frosted score card, gradient primary buttons, press squash + light haptic on buttons, score count-up with glowing bars and staggered review rows. Out: Liquid Glass tab bar/strip, answers springing in, Resume strip pulse.
+- **Aurora (1 of 5):** `components/AuroraBackground.tsx` (SVG radial glows under a 60 s Reanimated drift; still under Reduce Motion; no touches; hidden from VoiceOver) mounted as the first child of the nine screen roots (Coach, Courses, Account, study space, course, review, lecture, lectures, paywall). Layout data and the Reduce Motion rule in `lib/aurora.ts` (3 tests). Build #76. Verified here: mobile typecheck; `node --test lib/aurora.test.mjs` 3/3; `expo export --platform ios` builds (8.5 MB hbc).
+
+### In progress
+- Press squash + haptic (2 of 5), gradient buttons (3), frosted score card (4), score count-up (5).
+
+### Needs real-iPhone check
+- Aurora: faint indigo/amber glows behind every screen in both modes; they drift so slowly you only notice by comparing a minute apart; with Reduce Motion on they hold still. Scrolling the chat and typing stay smooth (the glows are three SVG circles on the GPU; if a frame drops, lower the sizes in `lib/aurora.ts`).
+
 ## Session 17 — 2026-10-23 (Dan on the phone and at the Mac; Claude in the cloud) — branch `feat/coach-v31`
 
 ### Done

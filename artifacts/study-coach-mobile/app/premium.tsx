@@ -8,6 +8,7 @@ import { Feather } from '@expo/vector-icons';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { getGetPremiumStatusQueryKey, useRefreshPremium } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { AuroraBackground } from '@/components/AuroraBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
@@ -75,6 +76,7 @@ export default function PremiumScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="screen-premium">
+      <AuroraBackground />
       <ScreenHeader leading="close" onLeading={close} leadingTestID="button-close-premium" />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
         <Text style={styles.kicker}>{paywallReason(reason)}</Text>

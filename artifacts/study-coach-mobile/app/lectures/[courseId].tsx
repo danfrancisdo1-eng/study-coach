@@ -13,6 +13,7 @@ import {
 import { createLecture, getListLecturesQueryKey, useListLectures, type LectureSummary } from '@workspace/api-client-react';
 import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
+import { AuroraBackground } from '@/components/AuroraBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import {
   formatDuration, normalizedTitle, recordedSeconds, recordingLimitState, spokenDuration, type PendingRecording,
@@ -199,6 +200,7 @@ export default function CourseLecturesScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <AuroraBackground />
       <ScreenHeader leading="back" leadingLabel="Back to the course" onLeading={() => goBack()} leadingDisabled={recording} leadingTestID="button-lectures-back" kicker={courseName || undefined} title="Lectures" />
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 140 }]} keyboardShouldPersistTaps="handled">

@@ -14,6 +14,7 @@ import { Image,
 } from 'react-native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
+import { AuroraBackground } from '@/components/AuroraBackground';
 import { ActionButton } from '@/components/ActionButton';
 import { MaterialIntake, type IntakeStatus, type SavedMaterial } from '@/components/MaterialIntake';
 import { useAuth, useClerk } from '@clerk/expo';
@@ -998,6 +999,7 @@ function StudyCoach() {
 
   return (
     <KeyboardAvoidingView style={[styles.page, { paddingTop: insets.top + 7 }]} behavior="padding" keyboardVerticalOffset={0}>
+      <AuroraBackground />
       <Header title={view === 'session' ? (session?.topic ?? 'Study session') : 'Study space'} subtitle={view === 'session' ? (course?.name ?? 'Your saved session') : 'Your account · Study space'} onBack={view === 'session' ? openHome : undefined} onSignOut={() => void signOut()} />
       <FlatList
         data={view === 'session' ? [] : ['study-space']}

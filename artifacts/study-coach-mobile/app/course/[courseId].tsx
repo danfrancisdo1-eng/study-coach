@@ -12,6 +12,7 @@ import {
 } from '@workspace/api-client-react';
 import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
+import { AuroraBackground } from '@/components/AuroraBackground';
 import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { STAT_VALUE_WIDTH, StatRow } from '@/components/StatRow';
 import { masteryIsStrong, masteryLabel, masteryShare, masteryValue } from '@/lib/mastery';
@@ -225,6 +226,7 @@ export default function CourseScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <AuroraBackground />
       <ScreenHeader leading="back" onLeading={() => goBack()} kicker={isExam ? `Certification exam${typeof course?.examDate === 'string' ? ` · ${describeExamDate(course.examDate)}` : ''}` : 'Course'}
         title={typeof course?.name === 'string' ? course.name : 'Course'}
         right={<HeaderIconButton icon="edit-2" label="Edit name and date" onPress={openEditor} testID="button-edit-course" />} />

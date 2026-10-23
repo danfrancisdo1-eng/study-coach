@@ -10,6 +10,7 @@ import { WebView } from 'react-native-webview';
 import { File, Paths } from 'expo-file-system';
 import { useCreateReviewSheet, type ReviewSheet } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { AuroraBackground } from '@/components/AuroraBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { premiumCode } from '@/lib/premium-ui';
@@ -102,6 +103,7 @@ export default function ReviewSheetScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="screen-review-sheet">
+      <AuroraBackground />
       <ScreenHeader leading="back" onLeading={() => goBack()} title="Review sheet" />
       {pdfUri ? (
         <WebView source={{ uri: pdfUri }} originWhitelist={['*']} allowingReadAccessToURL={pdfUri.slice(0, pdfUri.lastIndexOf('/') + 1)} style={[styles.pdf, { marginBottom: insets.bottom + 76 }]} testID="view-review-pdf" />

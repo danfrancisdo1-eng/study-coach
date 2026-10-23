@@ -12,6 +12,7 @@ import {
   getGetStudyStateQueryKey, getListStudySessionsQueryKey, useGetStudyState, useListStudySessions, useLookupExamGuide, usePutStudyState, getListLecturesQueryKey, useListLectures,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { AuroraBackground } from '@/components/AuroraBackground';
 import { HeaderIconButton, HeaderTextButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { premiumCode } from '@/lib/premium-ui';
@@ -141,6 +142,7 @@ export default function CourseListScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="screen-course-list">
+      <AuroraBackground />
       {/* A tab (D-164): no back and no coach icon; the tab bar is the way between the three pages. */}
       <ScreenHeader title="Courses & exams" right={<HeaderTextButton icon="plus" label="Add" onPress={() => setAddOpen(true)} testID="button-add-course" />} />
       {stateQuery.isLoading ? <CourseListSkeleton /> : (

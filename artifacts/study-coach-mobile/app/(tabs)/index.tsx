@@ -12,6 +12,7 @@ import {
   type HomeChat, type HomeChatMessage,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { AuroraBackground } from '@/components/AuroraBackground';
 import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { blocksOf, type Span } from '@/lib/coach-text';
@@ -491,6 +492,7 @@ export default function CoachHome() {
 
   return (
     <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: insets.top }]}>
+      <AuroraBackground />
       {/* The list icon that was here is the Courses tab now (D-164). */}
       <ScreenHeader mark={<Image source={require('@/assets/images/app-icon.png')} style={styles.brandMark} accessibilityLabel="RapidRecall AI logo" />} title="RapidRecall AI" subtitle="Your coach" style={styles.brandHeader} />
 

@@ -10,6 +10,7 @@ import { Feather } from '@expo/vector-icons';
 import { getGetPremiumStatusQueryKey, useDeleteAccount, useGetPremiumStatus, useRefreshPremium } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { useAnswerSounds } from '@/hooks/useAnswerSounds';
+import { AuroraBackground } from '@/components/AuroraBackground';
 import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { BUILD } from '@/constants/build';
@@ -84,6 +85,7 @@ export default function AccountScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="screen-account">
+      <AuroraBackground />
       {/* A tab (D-164): no back; the tab bar is the way between the three pages. */}
       <ScreenHeader title="Account" divider={scrolled} />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 30 }]} onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 4)} scrollEventThrottle={32}>
