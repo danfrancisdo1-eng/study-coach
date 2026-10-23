@@ -13,6 +13,7 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { AuroraBackground } from '@/components/AuroraBackground';
+import { PressScale } from '@/components/PressScale';
 import { HeaderIconButton, HeaderTextButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { premiumCode } from '@/lib/premium-ui';
@@ -175,9 +176,9 @@ export default function CourseListScreen() {
             <View style={styles.sheetContent} testID="panel-added-next">
               <Text style={styles.nextTitle}>What next?</Text>
               <Animated.View entering={FadeInUp.delay(80).duration(260)}>
-                <Pressable accessibilityRole="button" onPress={() => { const id = justAdded.id; setJustAdded(null); setAddOpen(false); router.push({ pathname: '/course/[courseId]', params: { courseId: id, intake: '1' } }); }} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]} testID="button-next-material">
+                <PressScale gradient accessibilityRole="button" onPress={() => { const id = justAdded.id; setJustAdded(null); setAddOpen(false); router.push({ pathname: '/course/[courseId]', params: { courseId: id, intake: '1' } }); }} style={styles.primaryButton} testID="button-next-material">
                   <Text style={styles.primaryButtonText}>Add material</Text>
-                </Pressable>
+                </PressScale>
               </Animated.View>
               <Animated.View entering={FadeInUp.delay(260).duration(260)}>
                 <Pressable accessibilityRole="button" onPress={() => setJustAdded(null)} style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]} testID="button-next-another">
@@ -198,9 +199,9 @@ export default function CourseListScreen() {
             {addKind === 'exam' ? <TextInput value={addDate} onChangeText={setAddDate} placeholder="Exam date, e.g. Nov 14 (optional)" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-add-date" /> : null}
             {addKind === 'exam' && addDate.trim() ? <Text style={styles.caption} testID="text-add-date-hint">{examDateHint(addDate)}</Text> : null}
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
-            <Pressable accessibilityRole="button" disabled={busy || !addName.trim() || !addKind} onPress={() => void addCourse()} style={[styles.primaryButton, (busy || !addName.trim() || !addKind) && styles.disabled]} testID="button-save-add">
+            <PressScale gradient accessibilityRole="button" disabled={busy || !addName.trim() || !addKind} onPress={() => void addCourse()} style={[styles.primaryButton, (busy || !addName.trim() || !addKind) && styles.disabled]} testID="button-save-add">
               <Text style={styles.primaryButtonText}>{addKind === 'exam' ? 'Add exam' : addKind === 'course' ? 'Add course' : 'Add'}</Text>
-            </Pressable>
+            </PressScale>
           </View>
           )}
         </KeyboardAvoidingView>

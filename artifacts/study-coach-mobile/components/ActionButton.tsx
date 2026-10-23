@@ -19,6 +19,7 @@ export function ActionButton({ label, onPress, disabled, secondary, testID, icon
   const colors = useColors();
   return (
     <PressScale
+      gradient={!secondary}
       accessibilityRole="button"
       testID={testID}
       disabled={disabled}

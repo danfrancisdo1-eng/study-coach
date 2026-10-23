@@ -14,6 +14,7 @@ import { createLecture, getListLecturesQueryKey, useListLectures, type LectureSu
 import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
 import { AuroraBackground } from '@/components/AuroraBackground';
+import { PressScale } from '@/components/PressScale';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import {
   formatDuration, normalizedTitle, recordedSeconds, recordingLimitState, spokenDuration, type PendingRecording,
@@ -284,9 +285,9 @@ export default function CourseLecturesScreen() {
 
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
         {phase.kind === 'naming' ? (
-          <Pressable accessibilityRole="button" onPress={() => void saveNamedRecording()} style={styles.primaryButton} testID="button-save-lecture">
+          <PressScale gradient accessibilityRole="button" onPress={() => void saveNamedRecording()} style={styles.primaryButton} testID="button-save-lecture">
             <Text style={styles.primaryText}>Save lecture</Text>
-          </Pressable>
+          </PressScale>
         ) : (
           <>
             {!recording ? <Text style={styles.caption}>Only record where your instructor and classmates allow it.</Text> : null}
@@ -297,14 +298,14 @@ export default function CourseLecturesScreen() {
                 <Text style={styles.secondaryText}>{paused ? 'Resume' : 'Pause'}</Text>
               </Pressable>
             ) : null}
-            <Pressable
+            <PressScale gradient
               accessibilityRole="button" accessibilityLabel={recording ? 'Stop recording' : 'Record lecture'} disabled={busy}
               onPress={() => void (recording ? finishRecording() : startRecording())}
-              style={({ pressed }) => [styles.primaryButton, busy && styles.disabled, pressed && styles.pressed]} testID="button-record-lecture"
+              style={[styles.primaryButton, busy && styles.disabled]} testID="button-record-lecture"
             >
               {busy ? <ActivityIndicator color={colors.primaryForeground} /> : <Feather name={recording ? 'square' : 'mic'} size={20} color={colors.primaryForeground} />}
               <Text style={styles.primaryText}>{recording ? 'Stop recording' : busy ? 'Please wait' : 'Record lecture'}</Text>
-            </Pressable>
+            </PressScale>
           </>
         )}
       </View>

@@ -249,7 +249,7 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
           {reportNote(reviewing)}
         </View>
         {progress}
-        <PressScale accessibilityRole="button" onPress={() => { setJustAnsweredId(null); setReviewingId(null); }} style={styles.primaryButton} testID="button-quiz-next">
+        <PressScale gradient accessibilityRole="button" onPress={() => { setJustAnsweredId(null); setReviewingId(null); }} style={styles.primaryButton} testID="button-quiz-next">
           <CardText style={styles.primaryText}>{answered.length >= questions.length && !writing ? 'See the score' : 'Next question'}</CardText>
         </PressScale>
       </View>

@@ -41,6 +41,9 @@ const light = {
   primary: '#2b4fd8',
   primaryForeground: '#ffffff',
   primaryText: '#2548b8',
+  // D-179: primary buttons are a diagonal gradient from `primary` to this lighter end; the
+  // label keeps 5.2:1 against the light end (the worst case).
+  primaryGradientEnd: '#3d5fe8',
   // The amber, demoted to a highlight (D-170): 9.6:1 with ink on the fill; highlightText 5.5:1 on chipBg.
   highlight: '#f2b544',
   highlightForeground: '#15192a',
@@ -85,6 +88,8 @@ const dark: typeof light = {
   primary: '#7c9bff',
   primaryForeground: '#0f1726',
   primaryText: '#7c9bff',
+  // D-179: the gradient runs from `primary` to this deeper end; the ink label keeps 4.8:1 on it.
+  primaryGradientEnd: '#5b7cf0',
   highlight: '#f2b544',
   highlightForeground: '#15192a',
   highlightText: '#f2b544',

@@ -8,10 +8,13 @@
 
 - **Press squash + haptic (2 of 5):** `components/PressScale.tsx`, a Pressable that squashes while pressed (buttons 0.96, the round Send 0.92, answer cards 0.98; `lib/press-scale.ts`, 2 tests) and springs back, with a light haptic tick on press-in; answer cards pass `haptic={false}` so only their right/wrong pattern fires. Applied to `ActionButton` (every shared button), Send, the answer options, Next question / See the score, Grade. Reduce Motion: no movement, the control dims instead. Build #77. Verified here: typecheck; mobile tests 108/108; iOS bundle exports.
 
+- **Gradient primary buttons (3 of 5):** `PressScale gradient` paints `primary → primaryGradientEnd` (new token, both palettes) diagonally under the label, clipped to the corner radius; the solid fill stays as the fallback. On every primary action: ActionButton's primary variant, Send (when it can send), See the score, Grade, Next question, Welcome's 1st button, Add course / Add material, the AI consent button, Save / Record lecture, the lecture page's primary. Secondary, dark "Next question" (ink fill) and the red Delete button are unchanged. `lib/colors-contrast.test.mjs` checks the label against both ends (light 5.2:1, dark 4.8:1). Build #78. Verified here: typecheck; mobile tests 109/109; iOS bundle exports.
+
 ### In progress
-- Gradient buttons (3 of 5), frosted score card (4), score count-up (5).
+- Frosted score card (4 of 5), score count-up (5).
 
 ### Needs real-iPhone check
+- Gradient buttons: the indigo buttons shade lighter toward the bottom-right in light mode and deeper in dark mode; labels stay readable on both ends.
 - Press squash: Send, Next question, Grade and the Add material buttons shrink a touch and tick under the thumb; answer cards shrink a hair with no tick (the right/wrong buzz follows). Disabled buttons do neither.
 - Aurora: faint indigo/amber glows behind every screen in both modes; they drift so slowly you only notice by comparing a minute apart; with Reduce Motion on they hold still. Scrolling the chat and typing stay smooth (the glows are three SVG circles on the GPU; if a frame drops, lower the sizes in `lib/aurora.ts`).
 

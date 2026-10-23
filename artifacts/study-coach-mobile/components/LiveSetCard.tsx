@@ -275,7 +275,7 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
       <View style={styles.live} onLayout={liveLayout(step)} testID="panel-live-feedback">
         {questionBlock(reviewing, position, false)}
         <Animated.View entering={FadeInUp.duration(280)}>{feedbackBlock(reviewing)}</Animated.View>
-        <PressScale accessibilityRole="button" disabled={busy} onPress={() => { setJustAnsweredId(null); if (last) void gradeSet(); else setReviewingId(null); }} style={[last ? styles.primaryButton : styles.nextButton, busy && styles.disabled]} testID="button-live-next">
+        <PressScale gradient={last} accessibilityRole="button" disabled={busy} onPress={() => { setJustAnsweredId(null); if (last) void gradeSet(); else setReviewingId(null); }} style={[last ? styles.primaryButton : styles.nextButton, busy && styles.disabled]} testID="button-live-next">
           {busy ? <ActivityIndicator color={last ? colors.primaryForeground : colors.background} /> : <><CardText style={last ? styles.primaryText : styles.nextText}>{last ? 'See the score' : 'Next question'}</CardText><Feather name="arrow-right" size={18} color={last ? colors.primaryForeground : colors.background} /></>}
         </PressScale>
       </View>
@@ -299,7 +299,7 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
     live = (
       <View style={styles.live} onLayout={liveLayout(step)} testID="panel-live-grade">
         <CardText style={styles.heading}>All {questions.length} answered.</CardText>
-        <PressScale accessibilityRole="button" disabled={busy} onPress={() => void gradeSet()} style={[styles.primaryButton, busy && styles.disabled]} testID="button-live-grade">
+        <PressScale gradient accessibilityRole="button" disabled={busy} onPress={() => void gradeSet()} style={[styles.primaryButton, busy && styles.disabled]} testID="button-live-grade">
           {busy ? <ActivityIndicator color={colors.primaryForeground} /> : <><CardText style={styles.primaryText}>Grade</CardText><Feather name="arrow-right" size={18} color={colors.primaryForeground} /></>}
         </PressScale>
       </View>

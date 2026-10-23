@@ -517,10 +517,10 @@ export default function CoachHome() {
               <View key={line.icon} style={styles.consentLine}><Feather name={line.icon} size={16} color={colors.mutedForeground} style={styles.consentIcon} /><Text style={[styles.body, styles.consentText]}>{line.text}</Text></View>
             ))}
             {PRIVACY_URL ? <Text style={[styles.body, styles.link]} accessibilityRole="link" onPress={openPrivacy} testID="link-privacy">Read the privacy policy</Text> : null}
-            <Pressable accessibilityRole="button" disabled={busy} onPress={() => void giveConsent()} style={[styles.primaryButton, busy && styles.disabled]} testID="button-ai-consent">
+            <PressScale gradient accessibilityRole="button" disabled={busy} onPress={() => void giveConsent()} style={[styles.primaryButton, busy && styles.disabled]} testID="button-ai-consent">
               <Feather name="check" size={16} color={colors.primaryForeground} />
               <Text style={styles.primaryButtonText}>I understand and consent</Text>
-            </Pressable>
+            </PressScale>
           </View>
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
@@ -654,7 +654,7 @@ export default function CoachHome() {
             />
             </GlowRing>
             {/* D-171: when there is nothing to send the button is the soft fill with a grey arrow, not a faded primary (which read as broken). */}
-            <PressScale scale={PRESS_SCALE.icon} accessibilityLabel="Send" accessibilityRole="button" accessibilityState={{ disabled: busy || !draft.trim() }} disabled={busy || !draft.trim()} onPress={() => void sendMessage()} style={[styles.sendButton, (busy || !draft.trim()) && styles.sendButtonOff]} testID="button-send-home-chat">
+            <PressScale scale={PRESS_SCALE.icon} gradient={!busy && !!draft.trim()} accessibilityLabel="Send" accessibilityRole="button" accessibilityState={{ disabled: busy || !draft.trim() }} disabled={busy || !draft.trim()} onPress={() => void sendMessage()} style={[styles.sendButton, (busy || !draft.trim()) && styles.sendButtonOff]} testID="button-send-home-chat">
               <Feather name="send" size={18} color={busy || !draft.trim() ? colors.mutedForeground : colors.primaryForeground} />
             </PressScale>
           </View>

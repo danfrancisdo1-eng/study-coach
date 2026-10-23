@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, SlideInRight, cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { PressScale } from '@/components/PressScale';
 
 /**
  * The welcome for an account with no course yet (D-047, D-055): the three steps in the order
@@ -55,9 +56,9 @@ export function Welcome({ onAddCourse, onExplore, busy = false }: { onAddCourse:
       <View style={styles.bottom}>
         <View style={styles.primaryWrap}>
           <Animated.View pointerEvents="none" style={[styles.primaryOutline, outline]} />
-          <Pressable accessibilityRole="button" accessibilityLabel="1st. Add a course or exam" disabled={busy} onPress={onAddCourse} style={({ pressed }) => [styles.primaryButton, busy && styles.disabled, pressed && !busy && styles.pressed]} testID="button-welcome-add">
+          <PressScale gradient accessibilityRole="button" accessibilityLabel="1st. Add a course or exam" disabled={busy} onPress={onAddCourse} style={[styles.primaryButton, busy && styles.disabled]} testID="button-welcome-add">
             <Text style={styles.primaryButtonText}><Text style={styles.primaryOrdinal}>1st</Text>  Add a course or exam</Text>
-          </Pressable>
+          </PressScale>
         </View>
         <Pressable accessibilityRole="button" disabled={busy} onPress={onExplore} style={({ pressed }) => [styles.textButton, busy && styles.disabled, pressed && !busy && styles.pressed]} testID="button-welcome-explore">
           <Text style={styles.textButtonText}>I'll explore first</Text>

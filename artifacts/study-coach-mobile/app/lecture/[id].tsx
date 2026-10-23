@@ -14,6 +14,7 @@ import { ProgressBar, useElapsed } from '@/components/ProgressBar';
 import { timeLeftText, transcribeWorkMs, uploadThenWork } from '@/lib/progress';
 import { useColors } from '@/hooks/useColors';
 import { AuroraBackground } from '@/components/AuroraBackground';
+import { PressScale } from '@/components/PressScale';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import {
   editedSegments, formatDuration, spokenDuration, transcriptHasText, transcriptionBlocker, type TranscriptSegment,
@@ -263,10 +264,10 @@ export default function LectureScreen() {
 
       {primary || busy === 'saving' ? (
         <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
-          <Pressable accessibilityRole="button" disabled={!primary} onPress={primary?.onPress} style={({ pressed }) => [styles.primaryButton, !primary && styles.disabled, pressed && styles.pressed]} testID={primary?.testID ?? 'button-saving'}>
+          <PressScale gradient accessibilityRole="button" disabled={!primary} onPress={primary?.onPress} style={[styles.primaryButton, !primary && styles.disabled]} testID={primary?.testID ?? 'button-saving'}>
             {busy === 'saving' ? <ActivityIndicator color={colors.primaryForeground} /> : null}
             <Text style={styles.primaryText}>{busy === 'saving' ? 'Saving…' : primary?.label}</Text>
-          </Pressable>
+          </PressScale>
         </View>
       ) : null}
     </View>
@@ -302,6 +303,5 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     primaryButton: { minHeight: 54, borderRadius: 14, backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
     primaryText: { color: colors.primaryForeground, fontSize: 19, fontWeight: '700' }, // 19pt bold = large text; brand orange passes 3:1 only for large text
     disabled: { opacity: 0.55 },
-    pressed: { opacity: 0.8 },
   });
 }
