@@ -7,6 +7,7 @@ Newest first. Each entry: date, decision, why, who decided.
 - Mark: the rise is 1200 ms (was 650), ease-out, visible for the first two-thirds and fading over the last 400 ms; Reduce Motion holds for the same time in place.
 - Right: a new clip, half a second: a 60 ms brushed noise tick ("ch") then a bright bell ("ching": C7, its fifth, a short inharmonic sparkle, a little C6 body) ringing out; volume 0.85. Still synthesized for the app, no sample.
 - Wrong: a buzzer, kept polite: 110 Hz square-wave tone with a 25 Hz rattle, 240 ms, volume 0.6. Dan's own call that an annoying one would cost him users.
+- Then Dan sent his own cash-register clip ("cha-ching-money.mp3") and, after a synthesized copy of its shape, said "why can't you just use the one I gave you?" So the shipped `right.wav` is his clip: leading silence and the drawer thunk trimmed (0.17–1.12 s of the original), loudness-normalised, 0.95 s, mono 22 kHz. Licence: Dan's clip, Dan's call; noted here so it is not mistaken for a synthesized one.
 - Build #72. Verified here: typecheck; mobile tests 102/102. Needs real-iPhone check: the new clips at normal volume; the slower rise on a two-line answer.
 - **Decided by:** Dan.
 

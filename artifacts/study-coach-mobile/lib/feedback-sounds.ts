@@ -1,8 +1,8 @@
 /**
- * The sounds and haptics behind a graded answer (D-172). Two short clips made for the app
- * (assets/sounds): a fast "ch-ching" (a brushed tick, then a bright bell) for a right answer,
- * a short, quiet buzzer for a wrong one (Dan: a buzzer, "but probably not a good idea to annoy
- * someone trying my app", so it is low and over in a quarter second). Both are
+ * The sounds and haptics behind a graded answer (D-172, D-173). Two short clips (assets/sounds):
+ * for a right answer Dan's own cash-register "cha-ching" recording, trimmed to the lever click
+ * and the bell (0.95 s); for a wrong one a short, quiet buzzer made for the app (Dan: a buzzer,
+ * "but probably not a good idea to annoy someone trying my app"). Both are
  * loaded once when a set opens, so the first answer plays without a delay, and the audio mode
  * is set so they follow the phone's silent switch and mix with whatever else is playing
  * (a podcast is not interrupted). Haptics do not depend on the "Answer sounds" switch: they
