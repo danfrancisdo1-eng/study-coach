@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { Feather } from '@expo/vector-icons';
 import { reloadAppAsync } from 'expo';
+import { crashLine } from '@/lib/crash-line';
 
 export type ErrorFallbackProps = {
   error: Error;
@@ -74,6 +75,10 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
 
         <Text style={[styles.message, { color: colors.mutedForeground }]}>
           Please reload the app to continue.
+        </Text>
+        {/* D-180: the one line a tester can send us; the full stack stays behind the dev-only button. */}
+        <Text selectable style={[styles.detail, { color: colors.mutedForeground }]} testID="text-crash-line">
+          {crashLine(error)}
         </Text>
 
         <Pressable
@@ -188,6 +193,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     lineHeight: 40,
+  },
+  detail: {
+    fontSize: 12,
+    lineHeight: 16,
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 20,
+    opacity: 0.8,
   },
   message: {
     fontSize: 16,

@@ -15,6 +15,7 @@ import { Image,
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
 import { AuroraBackground } from '@/components/AuroraBackground';
+import { SIGNED_OUT_ROUTE, signOutInOrder } from '@/lib/sign-out';
 import { ActionButton } from '@/components/ActionButton';
 import { MaterialIntake, type IntakeStatus, type SavedMaterial } from '@/components/MaterialIntake';
 import { useAuth, useClerk } from '@clerk/expo';
@@ -991,7 +992,7 @@ function StudyCoach() {
   if (stateQuery.isError || sessionsQuery.isError) {
     return (
       <View style={[styles.page, { paddingTop: insets.top + 18 }]}>
-        <Header title="Study space" subtitle="Account" onSignOut={() => void signOut()} />
+        <Header title="Study space" subtitle="Account" onSignOut={() => void signOutInOrder(() => router.replace(SIGNED_OUT_ROUTE), () => signOut())} />
         <View style={styles.errorCard}><Text style={styles.errorTitle}>Could not load your account data</Text><Text style={styles.body}>{readableError(stateQuery.error ?? sessionsQuery.error)}</Text><ActionButton label="Try again" icon="refresh-cw" onPress={() => { stateQuery.refetch(); sessionsQuery.refetch(); }} testID="button-retry-load" /></View>
       </View>
     );
@@ -1000,7 +1001,7 @@ function StudyCoach() {
   return (
     <KeyboardAvoidingView style={[styles.page, { paddingTop: insets.top + 7 }]} behavior="padding" keyboardVerticalOffset={0}>
       <AuroraBackground />
-      <Header title={view === 'session' ? (session?.topic ?? 'Study session') : 'Study space'} subtitle={view === 'session' ? (course?.name ?? 'Your saved session') : 'Your account · Study space'} onBack={view === 'session' ? openHome : undefined} onSignOut={() => void signOut()} />
+      <Header title={view === 'session' ? (session?.topic ?? 'Study session') : 'Study space'} subtitle={view === 'session' ? (course?.name ?? 'Your saved session') : 'Your account · Study space'} onBack={view === 'session' ? openHome : undefined} onSignOut={() => void signOutInOrder(() => router.replace(SIGNED_OUT_ROUTE), () => signOut())} />
       <FlatList
         data={view === 'session' ? [] : ['study-space']}
         renderItem={() => (

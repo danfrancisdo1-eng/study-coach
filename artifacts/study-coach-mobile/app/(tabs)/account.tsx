@@ -13,6 +13,7 @@ import { useAnswerSounds } from '@/hooks/useAnswerSounds';
 import { AuroraBackground } from '@/components/AuroraBackground';
 import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
+import { SIGNED_OUT_ROUTE, signOutInOrder } from '@/lib/sign-out';
 import { BUILD } from '@/constants/build';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { welcomeReplayKey } from '@/lib/welcome';
@@ -56,6 +57,12 @@ export default function AccountScreen() {
 
   if (isLoaded && !isSignedIn) return <Redirect href="/" />;
 
+  // D-180: leave the tabs first, then drop the session (see lib/sign-out.ts). A failed sign-out says so and stays signed in.
+  const leaveAndSignOut = async () => {
+    const result = await signOutInOrder(() => router.replace(SIGNED_OUT_ROUTE), () => signOut());
+    if (result === 'failed') { router.replace('/account'); Alert.alert("Couldn't sign out", 'Check your connection and try again.'); }
+  };
+
   // Account deletion (D-046): everything on the server and the sign-in identity, after typing DELETE.
   const removeAccount = async () => {
     if (deleteWord.trim() !== 'DELETE' || deleteAccount.isPending) return;
@@ -66,7 +73,7 @@ export default function AccountScreen() {
       if (userId) AsyncStorage.removeItem(`study-coach-focus:${userId}`).catch(() => {});
       queryClient.clear();
       if (!result.identityDeleted) Alert.alert('Your data is deleted', 'Your sign-in could not be removed automatically. Contact support and it will be finished by hand.');
-      await signOut();
+      await leaveAndSignOut();
     } catch (problem) {
       setError(friendlyError(problem));
     }
@@ -117,7 +124,7 @@ export default function AccountScreen() {
         {/* D-150: Dan's intro video again; it comes back here. */}
         {row('film', 'Watch the intro', 'The short video from the first launch', () => router.push('/intro?replay=1'), 'button-replay-intro')}
         {row('play-circle', 'See the tour again', 'The five pages from the first launch', () => router.push('/onboarding?replay=1'), 'button-replay-tour')}
-        {row('log-out', 'Sign out', 'The next sign-in starts with the tour', () => void signOut(), 'button-sign-out')}
+        {row('log-out', 'Sign out', 'The next sign-in starts with the tour', () => void leaveAndSignOut(), 'button-sign-out')}
         <View style={styles.divider} />
         {row('trash-2', 'Delete my account', 'Removes your courses, sets, chats and sign-in. Cannot be undone.', () => { setError(''); setDeleteWord(''); setDeleteOpen(true); }, 'button-delete-account', true)}
         {/* The account's id (D-095): Dan pastes it into OWNER_ACCOUNT_IDS on Render; press and hold to copy. Not a secret. */}
