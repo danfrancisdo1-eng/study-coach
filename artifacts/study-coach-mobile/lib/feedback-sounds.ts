@@ -1,6 +1,8 @@
 /**
  * The sounds and haptics behind a graded answer (D-172). Two short clips made for the app
- * (assets/sounds): a two-note chime for a right answer, a low buzz for a wrong one. Both are
+ * (assets/sounds): a fast "ch-ching" (a brushed tick, then a bright bell) for a right answer,
+ * a short, quiet buzzer for a wrong one (Dan: a buzzer, "but probably not a good idea to annoy
+ * someone trying my app", so it is low and over in a quarter second). Both are
  * loaded once when a set opens, so the first answer plays without a delay, and the audio mode
  * is set so they follow the phone's silent switch and mix with whatever else is playing
  * (a podcast is not interrupted). Haptics do not depend on the "Answer sounds" switch: they
@@ -25,8 +27,8 @@ export function prepareFeedbackSounds(): Promise<void> {
         correct: createAudioPlayer(require('../assets/sounds/right.wav')),
         wrong: createAudioPlayer(require('../assets/sounds/wrong.wav')),
       };
-      players.correct.volume = 0.8;
-      players.wrong.volume = 0.7;
+      players.correct.volume = 0.85;
+      players.wrong.volume = 0.6;
     } catch {
       players = null; // No sound on this device; the haptic and the mark still happen.
     }

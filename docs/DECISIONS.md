@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-23 — D-173: The mark rises for 1.2 s; the right sound is a fast "ch-ching"; the wrong sound is a polite buzzer
+- Dan, from build #71 on his phone ("it's all good"): "the check should last maybe 1200 ms rising, and sound something like cha-ching but pronounced fast so it's more like ch-ching. And I envisioned something a little more annoying like a buzzer for a wrong answer, but probably not a good idea to annoy someone trying my app."
+- Mark: the rise is 1200 ms (was 650), ease-out, visible for the first two-thirds and fading over the last 400 ms; Reduce Motion holds for the same time in place.
+- Right: a new clip, half a second: a 60 ms brushed noise tick ("ch") then a bright bell ("ching": C7, its fifth, a short inharmonic sparkle, a little C6 body) ringing out; volume 0.85. Still synthesized for the app, no sample.
+- Wrong: a buzzer, kept polite: 110 Hz square-wave tone with a 25 Hz rattle, 240 ms, volume 0.6. Dan's own call that an annoying one would cost him users.
+- Build #72. Verified here: typecheck; mobile tests 102/102. Needs real-iPhone check: the new clips at normal volume; the slower rise on a two-line answer.
+- **Decided by:** Dan.
+
 ## 2026-10-22 — D-172: A rising ✓ or ✗ with a sound and a haptic after every graded answer
 - Dan: "a green check appear at the end of the sentence when they answer the question right with an audible sound ... a hit of dopamine every time it's right; the check could appear hovering over the last letter at the letter's base then rise to the top of the line and disappear. In addition an x when they are wrong with a short buzzing noise." Plan approved ("go").
 - **The mark** (`components/AnswerMark.tsx`): drawn inside the answer's Text right after its last character, so it sits where the sentence ends however the text wraps. A ✓ in the correct green or an ✗ in the wrong red fades in on the baseline, rises one line height over 650 ms while fading out and growing a little, and is gone. Reduce Motion: it fades in and out in place. Hidden from VoiceOver (the answer's own icon, colour and label carry the verdict). Practice sets in the chat (`LiveSetCard`: on the option just tapped) and the full-screen practice card (`QuizCard`: after "Correct" / "Not quite"). Shown once, for the answer just given; reopening a row later shows no mark.

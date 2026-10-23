@@ -10,10 +10,13 @@ import type { AnswerKind } from '@/lib/answer-feedback';
  * last letter at the letter's base, then rise to the top of the line and disappear"). Rendered
  * INSIDE the answer's Text, right after its last character, so it sits where the sentence ends
  * however the text wraps. A green ✓ or a red ✗ fades in on the baseline, rises one line height
- * over 650 ms while fading out, and is gone. With Reduce Motion it fades in and out in place.
+ * over 1200 ms (Dan: "maybe 1200 ms rising") while fading out over its last third, and is gone.
+ * With Reduce Motion it fades in, holds, and fades out in place over the same time.
  * The mark is decoration: the answer's own icon and colour (and its accessibility label) carry
  * the verdict, so it is hidden from VoiceOver.
  */
+const RISE_MS = 1200;
+
 export function AnswerMark({ kind, lineHeight = 23, size = 18, play = true }: { kind: AnswerKind; lineHeight?: number; size?: number; play?: boolean }) {
   const colors = useColors();
   const reduceMotion = useReducedMotion();
@@ -25,11 +28,11 @@ export function AnswerMark({ kind, lineHeight = 23, size = 18, play = true }: { 
     rise.value = 0;
     opacity.value = 0;
     if (reduceMotion) {
-      opacity.value = withSequence(withTiming(1, { duration: 150 }), withDelay(450, withTiming(0, { duration: 250 })));
+      opacity.value = withSequence(withTiming(1, { duration: 150 }), withDelay(700, withTiming(0, { duration: 350 })));
       return;
     }
-    opacity.value = withSequence(withTiming(1, { duration: 120 }), withDelay(230, withTiming(0, { duration: 300 })));
-    rise.value = withTiming(1, { duration: 650, easing: Easing.out(Easing.cubic) });
+    opacity.value = withSequence(withTiming(1, { duration: 120 }), withDelay(680, withTiming(0, { duration: 400 })));
+    rise.value = withTiming(1, { duration: RISE_MS, easing: Easing.out(Easing.quad) });
   }, [play, kind, reduceMotion, rise, opacity]);
 
   const style = useAnimatedStyle(() => ({

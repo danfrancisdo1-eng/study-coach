@@ -23,7 +23,9 @@
 
 - **Answer feedback (D-172), Dan: "go":** a ✓ / ✗ that rises from the end of the answer and fades (`AnswerMark`), a chime or buzz made for the app (`assets/sounds`), success / error haptics; "Answer sounds" switch on Account; silent during timed exams and when the phone is muted. Build #71. Verified here: typecheck; mobile tests 102/102; iOS bundle exports with both clips. **Needs a new EAS build** (new asset files).
 
-### Needs real-iPhone check (D-172)
+- **D-173 (Dan's phone review of #71):** the mark rises for 1.2 s; "ch-ching" (tick + bright bell) for right; a short, quiet buzzer for wrong. Build #72. Verified here: typecheck; mobile tests 102/102.
+
+### Needs real-iPhone check (D-172 / D-173)
 - Answer a practice question right and wrong: the mark rises from the last letter and fades; the chime / buzz plays; the haptic fires. Silent switch on: haptic only. Account → Answer sounds off: no sound. A timed exam: nothing. Reduce Motion: the mark fades in place.
 - The two clips are attached in the chat for a listen before the build; the volumes (0.8 / 0.7) and the tones are easy to change.
 
