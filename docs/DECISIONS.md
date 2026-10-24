@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-24 — D-190: The OneDrive button signs in to OneDrive directly
+- Dan: "build it". The OneDrive button opened Apple's Files picker, which shows OneDrive only when the OneDrive app is installed and switched on in Files; for most students it showed no OneDrive at all.
+- Now: tapping OneDrive opens Microsoft's sign-in page the first time (a browser sheet), then the student's own OneDrive inside the + sheet: folders first, then only the files the app can read (PDF, Word, PowerPoint, text, Markdown, photos), A–Z, with a search box, Back and Close. Tapping a file copies it to the phone and it goes through the normal upload (12 MB limit, big files split, notes, duplicate check). "Signed in as … · Disconnect" at the bottom. The Files button still opens Apple's picker.
+- Security: the Azure app "Study Coach" (registered 2026-10-03) as a public client with PKCE: no secret anywhere. Read-only (Files.Read, offline_access). Everything runs on the phone: the Microsoft refresh token is kept in the Keychain (expo-secure-store), the access token only in memory; neither reaches our server. No new dependency (expo-auth-session, expo-secure-store, expo-file-system were already in the app).
+- Needs, before it can work: Dan adds the redirect URI `study-coach-mobile://onedrive` in Azure (App registrations → Study Coach → Authentication → Add a platform → Mobile and desktop applications). Works only in TestFlight/App Store or a development build; in Expo Go it says so.
+- Not yet: Microsoft publisher verification (school/work accounts see an "unverified" warning, and some schools block outside apps); the web app keeps its file picker.
+- Build #94. Verified here: repo typecheck; `pnpm run test` 310/310 (new: lib/onedrive.test.mjs, 8 tests: read-only scopes, URLs and OData quoting, list filtering and order, size/type errors, token freshness and storage, download link, plain errors); iOS bundle exports. Not run here: the sign-in and file list on a phone (no device or Microsoft account in the cloud session).
+- **Decided by:** Dan.
+
 ## 2026-10-24 — D-187: Practice sets, flashcards, memory tricks and the review sheet read the notes
 - Dan, on D-124's choice (they read the full raw text): "why wouldn't the flashcards and the memory tricks go off the bulleted condensed file that actually has the meat of the lecture in it, not the ahs and talking to his friend about Saturday night?" D-124 kept the raw text for "more detail makes better questions", decided before lecture notes existed.
 - Now each upload's notes are used when they exist, the raw text only while there are none; a lecture's notes replace its transcript; a lecture without notes still gives its transcript (`lib/study-text.ts`, used by sourceChunks). The course router still searches the original files for anything the notes don't cover (D-128), so exact quotes and dates are not lost.
