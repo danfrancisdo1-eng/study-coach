@@ -70,7 +70,7 @@ export default function CourseListScreen() {
   const { add } = useLocalSearchParams<{ add?: string }>(); // the welcome's "Add a course or exam" lands here with the sheet open (D-047)
   const [addOpen, setAddOpen] = useState(false);
   // After a save the sheet turns into "what next?" (D-057): Add material, Add another course, Return to the list.
-  const [justAdded, setJustAdded] = useState<{ id: string; name: string } | null>(null);
+  const [justAdded, setJustAdded] = useState<{ id: string; name: string; kind: 'course' | 'exam' } | null>(null);
   const [addKind, setAddKind] = useState<'course' | 'exam' | null>(null); // D-158: no default; the student picks
   const [addName, setAddName] = useState('');
   const [addDate, setAddDate] = useState('');
@@ -129,7 +129,7 @@ export default function CourseListScreen() {
       const result = await putState.mutateAsync({ data: { state: { aiConsent: false, materials: [], ...state, courses: [...(Array.isArray(state.courses) ? state.courses : []), course] }, version: previous?.version ?? 0 } });
       queryClient.setQueryData(stateKey, result);
       setAddName(''); setAddDate(''); setAddKind(null);
-      setJustAdded({ id: course.id, name: course.name });
+      setJustAdded({ id: course.id, name: course.name, kind: course.kind });
       setFocusId(course.id);
       if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, course.id).catch(() => {});
       // The guide lookup is an AI call: before consent it is refused, so the home screen runs it right after the card.
@@ -185,9 +185,11 @@ export default function CourseListScreen() {
             <View style={styles.sheetContent} testID="panel-added-next">
               <Text style={styles.nextTitle}>What next?</Text>
               <Animated.View entering={FadeInUp.delay(80).duration(260)}>
-                <PressScale gradient accessibilityRole="button" onPress={() => { const id = justAdded.id; setJustAdded(null); setAddOpen(false); router.push({ pathname: '/course/[courseId]', params: { courseId: id, intake: '1' } }); }} style={styles.primaryButton} testID="button-next-material">
-                  <Text style={styles.primaryButtonText}>Add material</Text>
+                {/* D-188: a college course asks for its syllabus first (every quiz and exam date); an exam has its date already. */}
+                <PressScale gradient accessibilityRole="button" onPress={() => { const { id, kind } = justAdded; setJustAdded(null); setAddOpen(false); router.push({ pathname: '/course/[courseId]', params: { courseId: id, intake: '1', ...(kind === 'course' ? { syllabus: '1' } : {}) } }); }} style={styles.primaryButton} testID="button-next-material">
+                  <Text style={styles.primaryButtonText}>{justAdded.kind === 'course' ? 'Add your syllabus' : 'Add material'}</Text>
                 </PressScale>
+                {justAdded.kind === 'course' ? <Text style={styles.syllabusWhy}>Every quiz and exam date, and what's covered.</Text> : null}
               </Animated.View>
               <Animated.View entering={FadeInUp.delay(260).duration(260)}>
                 <Pressable accessibilityRole="button" onPress={() => setJustAdded(null)} style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]} testID="button-next-another">
@@ -239,6 +241,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   secondaryButton: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, paddingHorizontal: 16 },
   secondaryButtonText: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
   nextTitle: { color: colors.mutedForeground, fontSize: 15, lineHeight: 21 },
+  syllabusWhy: { color: colors.mutedForeground, fontSize: 13, lineHeight: 18, textAlign: 'center', marginTop: 6 },
   pressed: { opacity: 0.8 },
   disabled: { opacity: 0.45 },
 });

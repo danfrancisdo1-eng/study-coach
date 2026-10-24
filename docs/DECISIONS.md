@@ -20,6 +20,15 @@ Newest first. Each entry: date, decision, why, who decided.
 - Build #92. Verified here: repo typecheck; `pnpm run test` 293/293 (new: coach-v32-inputs); mobile tests 124/124; iOS bundle exports; evals compile.
 - **Decided by:** Dan.
 
+## 2026-10-24 — D-188: College courses ask for the syllabus; exams show their countdown
+- Dan: "it's really important that with these college kids that we get the syllabus ... with the syllabus, we get the dates." For a certification exam "the equivalent is basically the date that they're taking the exam. And we already asked for that." Until now the app only named a syllabus as one example in a list.
+- After adding a college course, "What next?" opens with "Add your syllabus" ("Every quiz and exam date, and what's covered."), which lands on the course's upload card with "Start with your syllabus: a photo of it or the PDF." Exams keep "Add material".
+- The course page of a college course has a Syllabus card: "Add your syllabus ..." with an Add syllabus button until one is saved, then "Next: <the next quiz, exam or due line from it>" (`lib/syllabus.ts`: a syllabus by its name or by three of its usual sections; the next dated quiz/exam/due line from its notes, past ones skipped; nothing is invented).
+- The Coach strip shows an exam's countdown ("3 days left", "Exam today") in place of the course count.
+- The coach's side (ask once for a missing syllabus; a heads-up with a plan inside 7 days of an exam) comes in the coach update with the 10-or-20 choice, which needs evals on the Mac.
+- Build #91. Verified here: mobile typecheck; mobile tests 128/128 (new: syllabus); iOS bundle exports.
+- **Decided by:** Dan.
+
 ## 2026-10-24 — D-186: The welcome says drilling, not chatting; questions right after material
 - Dan: "Talk to your coach ... I don't want them to think, hey, just start talking to AI, when the most important thing in the whole app is taking questions, exam questions over and over and over ... sitting on the toilet, eating dinner, walking down the street." And "studying an hour a day [doesn't] work as well as studying for 2 minutes thirty times a day."
 - Welcome title: "Your material, turned into questions." Under it: "A few minutes, many times a day, beats an hour of cramming." (spaced practice). Step 3: "3rd Answer questions. Repeatedly." with "Quick sets of 10 or 20, anywhere. Whatever you miss comes back until it sticks." (the 10-or-20 choice is item 6, coming with the coach update). Was "A tutor that has already read your material" and "3rd Talk to your coach".
@@ -34,6 +43,14 @@ Newest first. Each entry: date, decision, why, who decided.
 - No notes call during the upload for parts; the coach writes each part's notes in the background the next time the course chat is used (D-124's backfill), one normal-size notes call per part.
 - API: the extraction reply gains `parts` (the whole text stays in `text` for apps that predate parts); `characterCount` up to 400,000. Website links keep their 100,000 limit.
 - Build #89. Verified here: typecheck (repo); `pnpm run test` 302/302 (new: splitter unit tests incl. Dan's real packet, an end-to-end 200,000-character upload); iOS bundle exports.
+- **Decided by:** Dan.
+
+## 2026-10-24 — D-184: Account page order; the plan box links stay inside the box
+- Dan (on build 17): "Restore purchases and Manage subscription run over the box", and an order that makes sense, with the story where people will see it.
+- Order: plan box (Premium · renews …, Restore Purchases, Manage subscription), Why I built this, Watch the intro, See the tour again, See the welcome again, Privacy policy, Answer sounds, Sign out, then Delete my account under the divider.
+- The two plan links wrap to a second line inside the box instead of running past its edge.
+- "Renews Oct 25, 2026" is Apple's own date: TestFlight purchases are sandbox subscriptions, which renew about once a day. A real App Store purchase shows a month (or a year) later. D-183 is taken by the Maestro branch.
+- Build #95 (was #88; renumbered when merged after D-185, D-186 and D-190). Verified here: mobile typecheck; mobile tests 124/124; iOS bundle exports.
 - **Decided by:** Dan.
 
 ## 2026-10-23 — D-182: The intro ends on Dan's real certificates; the welcome has one button and a live message box; an About page
