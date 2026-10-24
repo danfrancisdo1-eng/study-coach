@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Link, Redirect, useRouter } from 'expo-router';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Link, Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth, useSignIn } from '@clerk/expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
@@ -11,6 +11,7 @@ import { Feather } from '@expo/vector-icons';
 import { SocialSignIn } from '@/components/SocialSignIn';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { SIGNED_IN_BEFORE_KEY, signInTitle } from '@/lib/sign-in-copy';
+import { signInLanding } from '@/lib/sign-out';
 
 export default function SignInScreen() {
   const colors = useColors();
@@ -20,6 +21,9 @@ export default function SignInScreen() {
   const router = useRouter();
   const { signIn, errors, fetchStatus } = useSignIn();
   const { isSignedIn } = useAuth();
+  // D-191: a sign-out lands here with signingOut=1 before the session is gone; once it is, the flag is dropped.
+  const { signingOut } = useLocalSearchParams<{ signingOut?: string }>();
+  useEffect(() => { if (!isSignedIn && signingOut) router.setParams({ signingOut: undefined }); }, [isSignedIn, signingOut]);
   const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -68,8 +72,12 @@ export default function SignInScreen() {
     if (signIn.status === 'complete') await finishSignIn();
   };
 
-  if (isSignedIn) {
+  const landing = signInLanding(isSignedIn, signingOut === '1');
+  if (landing === 'home') {
     return <Redirect href="/" />;
+  }
+  if (landing === 'wait') {
+    return <View style={[styles.screen, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }]}><ActivityIndicator color={colors.primaryText} /></View>;
   }
 
   const needsEmailCode = signIn.status === 'needs_client_trust';

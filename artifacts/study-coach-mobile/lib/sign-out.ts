@@ -16,5 +16,15 @@ export async function signOutInOrder(leave: () => void, signOut: () => Promise<u
   }
 }
 
-/** Where a sign-out goes first: the intro, which hands over to the tour and then the sign-in. */
-export const SIGNED_OUT_ROUTE = '/intro' as const;
+/**
+ * Where a sign-out goes first. D-191 (Dan): straight to the sign-in page, no intro or tour (a
+ * cold start while signed out still plays them, D-152). signingOut=1 tells the sign-in page the
+ * session is still being dropped, so it waits instead of sending a still-signed-in user home.
+ */
+export const SIGNED_OUT_ROUTE = { pathname: '/(auth)/sign-in', params: { signingOut: '1' } } as const;
+
+/** What the sign-in page shows: a spinner while a sign-out finishes, home when signed in, else the form. */
+export function signInLanding(isSignedIn: boolean | undefined, signingOut: boolean): 'wait' | 'home' | 'form' {
+  if (isSignedIn) return signingOut ? 'wait' : 'home';
+  return 'form';
+}
