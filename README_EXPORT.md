@@ -10,6 +10,8 @@ This archive contains the current project source, configuration, lockfile, share
 - artifacts/mockup-sandbox: component/design preview
 - lib: shared API client, API contract, validation, database schema, and AI integration
 
+**Out of date:** this export note describes the original Replit setup. The API server and database now run on Render (render.yaml, Dockerfile); see docs/HANDOFF.md.
+
 ## Basic setup
 Use Node.js 24 and pnpm. Run `pnpm install` at the archive root, then `pnpm run typecheck`. See replit.md and each package.json for the run/build commands.
 

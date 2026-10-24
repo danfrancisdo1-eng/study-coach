@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-24 — D-190: The OneDrive button signs in to OneDrive directly
+- Dan: "build it". The OneDrive button opened Apple's Files picker, which shows OneDrive only when the OneDrive app is installed and switched on in Files; for most students it showed no OneDrive at all.
+- Now: tapping OneDrive opens Microsoft's sign-in page the first time (a browser sheet), then the student's own OneDrive inside the + sheet: folders first, then only the files the app can read (PDF, Word, PowerPoint, text, Markdown, photos), A–Z, with a search box, Back and Close. Tapping a file copies it to the phone and it goes through the normal upload (12 MB limit, big files split, notes, duplicate check). "Signed in as … · Disconnect" at the bottom. The Files button still opens Apple's picker.
+- Security: the Azure app "Study Coach" (registered 2026-10-03) as a public client with PKCE: no secret anywhere. Read-only (Files.Read, offline_access). Everything runs on the phone: the Microsoft refresh token is kept in the Keychain (expo-secure-store), the access token only in memory; neither reaches our server. No new dependency (expo-auth-session, expo-secure-store, expo-file-system were already in the app).
+- Needs, before it can work: Dan adds the redirect URI `study-coach-mobile://onedrive` in Azure (App registrations → Study Coach → Authentication → Add a platform → Mobile and desktop applications). Works only in TestFlight/App Store or a development build; in Expo Go it says so.
+- Not yet: Microsoft publisher verification (school/work accounts see an "unverified" warning, and some schools block outside apps); the web app keeps its file picker.
+- Build #94. Verified here: repo typecheck; `pnpm run test` 310/310 (new: lib/onedrive.test.mjs, 8 tests: read-only scopes, URLs and OData quoting, list filtering and order, size/type errors, token freshness and storage, download link, plain errors); iOS bundle exports. Not run here: the sign-in and file list on a phone (no device or Microsoft account in the cloud session).
+- **Decided by:** Dan.
+
 ## 2026-10-24 — D-186: The welcome says drilling, not chatting; questions right after material
 - Dan: "Talk to your coach ... I don't want them to think, hey, just start talking to AI, when the most important thing in the whole app is taking questions, exam questions over and over and over ... sitting on the toilet, eating dinner, walking down the street." And "studying an hour a day [doesn't] work as well as studying for 2 minutes thirty times a day."
 - Welcome title: "Your material, turned into questions." Under it: "A few minutes, many times a day, beats an hour of cramming." (spaced practice). Step 3: "3rd Answer questions. Repeatedly." with "Quick sets of 10 or 20, anywhere. Whatever you miss comes back until it sticks." (the 10-or-20 choice is item 6, coming with the coach update). Was "A tutor that has already read your material" and "3rd Talk to your coach".
@@ -23,7 +32,7 @@ Newest first. Each entry: date, decision, why, who decided.
 - Order: plan box (Premium · renews …, Restore Purchases, Manage subscription), Why I built this, Watch the intro, See the tour again, See the welcome again, Privacy policy, Answer sounds, Sign out, then Delete my account under the divider.
 - The two plan links wrap to a second line inside the box instead of running past its edge.
 - "Renews Oct 25, 2026" is Apple's own date: TestFlight purchases are sandbox subscriptions, which renew about once a day. A real App Store purchase shows a month (or a year) later. D-183 is taken by the Maestro branch.
-- Build #93 (was #88; renumbered when merged after D-185 and D-186). Verified here: mobile typecheck; mobile tests 124/124; iOS bundle exports.
+- Build #95 (was #88; renumbered when merged after D-185, D-186 and D-190). Verified here: mobile typecheck; mobile tests 124/124; iOS bundle exports.
 - **Decided by:** Dan.
 
 ## 2026-10-23 — D-182: The intro ends on Dan's real certificates; the welcome has one button and a live message box; an About page

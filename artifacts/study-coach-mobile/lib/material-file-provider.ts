@@ -15,7 +15,7 @@ export const FILE_PROVIDER_OPTIONS = {
   multiple: false,
 } as const;
 
-const SUPPORTED_EXTENSIONS = new Set([
+export const SUPPORTED_EXTENSIONS = new Set([
   'txt', 'md', 'markdown', 'pdf', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'webp',
 ]);
 

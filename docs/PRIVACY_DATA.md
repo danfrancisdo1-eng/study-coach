@@ -39,6 +39,7 @@ payment data (none yet), location, contacts, advertising identifiers. No analyti
 | Web search (via Anthropic's web search tool) | the search query only (exam name/topic) | exam guide lookup; "search the web" requests | as above |
 | RevenueCat | the account id (as app user id) and Apple purchase receipts | when the student subscribes or restores | RevenueCat DPA; no payment card data reaches Study Coach |
 | Render | hosts the API and the database | always | Render DPA |
+| Microsoft (OneDrive, D-190) | the student's Microsoft sign-in; then, from the phone, read-only requests for their folder lists, searches and the one file they pick | only when the student taps OneDrive and signs in | Microsoft's own terms. The Microsoft sign-in (refresh token) is kept in the phone's Keychain and never reaches Study Coach's server; the picked file is uploaded like any other file |
 
 Study Coach has no sharing feature (the session-report share was removed in D-088): nothing is sent to anyone beyond the providers above.
 
@@ -48,6 +49,7 @@ Study Coach has no sharing feature (the session-report share was removed in D-08
 - **13+ checkbox** on sign-up (gates Create account and Apple/Google); attestation line on sign-in in front of Apple/Google.
 - **Report a reply**: press and hold a coach reply → wrong / harmful / other; stored on the message and logged for review.
 - **"Looks wrong?"** on any question: a second model re-checks the answer key.
+- **Disconnect OneDrive** (in the OneDrive panel of the + sheet): removes the Microsoft sign-in from the phone (D-190). Access can also be removed at account.microsoft.com → Privacy → Apps and services.
 - **Delete a course**: removes that course's materials, sessions, lectures and review items.
 - **Delete my account** (Account tab): one request removes all four tables' rows for the account and the Clerk user. Not reversible.
 

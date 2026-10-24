@@ -21,8 +21,8 @@
 - artifacts/api-server — Express 5 API. This IS the AI proxy: the AI key lives only on the server. Keep Express; don't rewrite it in another framework.
 - lib/ — OpenAPI contract (lib/api-spec/openapi.yaml), Orval-generated client and Zod schemas, Drizzle/Postgres schema (lib/db), AI client (lib/integrations-openai-ai-server).
 - Auth: Clerk (Google + Sign in with Apple). Data: Postgres for account data; the web "classic workspace" uses browser IndexedDB only.
-- Backend currently runs on Replit (testing). Production hosting is not chosen yet.
-- AI today: OpenAI through Replit AI Integrations. 4 chat-completion call sites (coach.ts, study.ts) + 1 audio transcription (coach.ts, gpt-4o-mini-transcribe).
+- Backend runs on Render: web service study-coach-api (https://study-coach-api-pskt.onrender.com), built from main. After merging server changes, check its Deploys page; if the merge commit isn't there, use Manual Deploy → Deploy latest commit. Replit is not used (only in the first week).
+- AI today (render.yaml): Claude for the chat tasks (AI_PROVIDER=anthropic); OpenAI directly for the classic quiz and for audio transcription (gpt-4o-mini-transcribe). The env var names still start with AI_INTEGRATIONS_OPENAI_ from the Replit days; they now point at api.openai.com. The live values are set in the Render dashboard.
 - AI target: Anthropic Claude for tutoring, quizzes, planning, and image/text extraction, behind a provider-agnostic module so models can be swapped. Model IDs come from server config/env, never hardcoded. The Claude API does not transcribe audio, so lecture transcription stays on a separate speech-to-text provider (to be decided).
 
 ## 3. How to work
@@ -73,7 +73,7 @@
 - Material intake stays simple: the persistent corner + opens Photos, Files, OneDrive, Website link. No permanent explanatory text beside +.
 - Uploads (D-120): every upload (photo, PDF, slides, website, syllabus, lecture) is turned by the coach into Markdown notes (typos fixed, bullets; a syllabus keeps every date, quiz and grading line). The student reviews the notes read-only and corrects them by telling the coach; no hand editing. The raw extracted text (and full lecture transcripts) is kept in storage and only searched when the notes don't cover something, never sent with every question. Photos themselves stay on the phone. Duplicates in the same course are skipped.
 - Opening/closing intake preserves conversation, quiz answers, and drafts.
-- The OneDrive button currently opens Apple's Files picker. Never describe it as a direct OneDrive integration until that's built.
+- OneDrive (D-190): the OneDrive button signs in with Microsoft on the phone (read-only, Files.Read; public client, no secret) and lists the student's own OneDrive; the Files button still opens Apple's Files picker. Needs the redirect URI study-coach-mobile://onedrive registered on the Azure app, and works only in a TestFlight/App Store or development build, not in Expo Go.
 - Each course is a Project (D-119): the course's chat answers from that course's material only; uploads must belong to a course.
 - Course notes (D-119): the coach writes and maintains each course's notes as Markdown (lecture notes, course facts such as dates). The student reviews them read-only and corrects them by telling the coach in the course chat; the coach updates the notes, says what it changed, and the change can be undone. Only the coach edits notes; students never edit them by hand. Original uploads and transcripts are never edited. A PDF copy is made only on request.
 - Guardian reports are never sent automatically.
