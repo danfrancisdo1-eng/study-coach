@@ -9,7 +9,8 @@ Recorded October 3, 2026 from the owner's Azure registration screenshot.
 - Selected audience: Any Entra ID Tenant + Personal Microsoft accounts. Overview displays “All Microsoft account users.”
 - State: Activated
 - Redirect URI: not configured at registration
-- Client credential: not created during registration
+- Client credential: not created during registration (and never needed: the app is a public client)
+- D-190 (2026-10-24): the app signs in with this registration. It needs, under Authentication → Add a platform → Mobile and desktop applications, the custom redirect URI `study-coach-mobile://onedrive`. Permissions asked at sign-in: Files.Read and offline_access (delegated; no admin consent for personal accounts).
 
 Evidence: [Azure overview screenshot](../screenshots/microsoft-app-registration-2026-10-03.png).
 

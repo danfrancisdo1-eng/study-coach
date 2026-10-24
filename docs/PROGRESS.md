@@ -1,5 +1,20 @@
 # Progress
 
+## Session 23b — 2026-10-24 — direct OneDrive (D-190), branch `feat/onedrive-direct`
+
+### Done
+- The OneDrive button signs in with Microsoft and lists the student's OneDrive (read-only); a picked file goes through the normal upload. Build #94.
+- Verified here: repo typecheck; `pnpm run test` 310/310; iOS bundle exports.
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (rows 52 pt, Back/Close 44 pt, Disconnect 44 pt tall). 2. One primary action: PASS (Sign in to OneDrive is the only filled button; while browsing the rows are the action). 3. Chunked: PASS (folders first, readable files only, search for long folders). 4. Native patterns: PASS (list rows with chevrons, back chevron, close ×, Microsoft's page in the system sign-in sheet). 5. Progress: PASS (spinner while listing or downloading, then the existing upload bar). 6. One accent, not colour-only: PASS (folder icon tinted plus the "12 items" text). 7. Tokens; Dark Mode; Dynamic Type: PASS for tokens and both themes; Dynamic Type PARTIAL (names wrap to two lines; not checked at the largest size on a phone). 8. Labels; Reduce Motion: PASS (every row and button labelled; no animation). 9. Paywall: N/A.
+
+### Blocker
+- Dan adds the redirect URI `study-coach-mobile://onedrive` in Azure (steps in D-190) before testing.
+
+### Needs real-iPhone check (TestFlight)
+- + → OneDrive: Microsoft sign-in opens, then the OneDrive list; open a folder, Back, search; pick a PDF → it uploads and saves like a Files upload; Disconnect, then OneDrive asks to sign in again. A school account (if one is handy): what Microsoft shows.
+
 ## Session 23 — 2026-10-24 (Dan on the phone; Claude in the cloud) — the plan Dan approved, item 1 of 6
 
 ### Approved plan (Dan: "everything ... I'm a go")
