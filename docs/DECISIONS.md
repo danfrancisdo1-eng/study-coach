@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-24 — D-187: Practice sets, flashcards, memory tricks and the review sheet read the notes
+- Dan, on D-124's choice (they read the full raw text): "why wouldn't the flashcards and the memory tricks go off the bulleted condensed file that actually has the meat of the lecture in it, not the ahs and talking to his friend about Saturday night?" D-124 kept the raw text for "more detail makes better questions", decided before lecture notes existed.
+- Now each upload's notes are used when they exist, the raw text only while there are none; a lecture's notes replace its transcript; a lecture without notes still gives its transcript (`lib/study-text.ts`, used by sourceChunks). The course router still searches the original files for anything the notes don't cover (D-128), so exact quotes and dates are not lost.
+- Server only; no phone change. Verified here: api typecheck; `pnpm run test` 292/292 (new: study-from-notes). Before merging: a 3-student simulation on the Mac (`node sims/run.mjs --quick`, about $2–3) to compare question quality; this cloud session has no AI key.
+- **Decided by:** Dan.
+
 ## 2026-10-24 — D-186: The welcome says drilling, not chatting; questions right after material
 - Dan: "Talk to your coach ... I don't want them to think, hey, just start talking to AI, when the most important thing in the whole app is taking questions, exam questions over and over and over ... sitting on the toilet, eating dinner, walking down the street." And "studying an hour a day [doesn't] work as well as studying for 2 minutes thirty times a day."
 - Welcome title: "Your material, turned into questions." Under it: "A few minutes, many times a day, beats an hour of cramming." (spaced practice). Step 3: "3rd Answer questions. Repeatedly." with "Quick sets of 10 or 20, anywhere. Whatever you miss comes back until it sticks." (the 10-or-20 choice is item 6, coming with the coach update). Was "A tutor that has already read your material" and "3rd Talk to your coach".
