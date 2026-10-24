@@ -27,7 +27,7 @@ import { QuizCard } from '@/components/QuizCard';
 import { FlashcardDeck } from '@/components/FlashcardDeck';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { Welcome } from '@/components/Welcome';
-import { replayOnOpen, shouldShowWelcome, welcomeReplayKey, withWelcomeSeen } from '@/lib/welcome';
+import { composerPlaceholder, replayOnOpen, shouldShowWelcome, welcomeAsk, welcomeReplayKey, withWelcomeSeen } from '@/lib/welcome';
 import { GlassBar } from '@/components/GlassBar';
 import { GlowRing } from '@/components/GlowRing';
 import { HomeSkeleton } from '@/components/Skeleton';
@@ -110,6 +110,9 @@ export default function CoachHome() {
   const { send: handoff, courseId: handoffCourseId, timed: handoffTimed } = useLocalSearchParams<{ send?: string; courseId?: string; timed?: string }>();
   const handoffSentRef = useRef<string | null>(null);
   const [welcomeBusy, setWelcomeBusy] = useState(false);
+  // D-182: a question typed under the welcome moves it aside for this visit; it waits here while the consent card is answered.
+  const [askedFromWelcome, setAskedFromWelcome] = useState(false);
+  const [pendingAsk, setPendingAsk] = useState<string | null>(null);
 
   const stateQuery = useGetStudyState({ query: { queryKey: [...getGetStudyStateQueryKey(), userId], enabled: !!userId } });
   // One thread per course (D-038): the chat follows the focused course; no focus = the general thread.
@@ -232,6 +235,13 @@ export default function CoachHome() {
 
   // The course screen's handoff (D-058) goes out once the chat is loaded, consented and on that course. Before the early returns: hooks keep their order.
   const sendTextRef = useRef<(text: string, timed?: TimedSize) => Promise<void>>(async () => {});
+  // D-182: a question asked under the welcome before consent goes out as soon as consent is given; the draft stays in the box until it is sent.
+  useEffect(() => {
+    if (!pendingAsk || !consented || stateQuery.isLoading || chatQuery.isLoading) return;
+    const question = pendingAsk;
+    setPendingAsk(null);
+    void sendTextRef.current(question);
+  }, [pendingAsk, consented, stateQuery.isLoading, chatQuery.isLoading]);
   useEffect(() => {
     if (!handoff || stateQuery.isLoading || chatQuery.isLoading || stateQuery.error || chatQuery.error || !consented || busy) return;
     if (handoffCourseId && focusCourseId !== handoffCourseId) return;
@@ -265,7 +275,7 @@ export default function CoachHome() {
 
   // The welcome (D-047) is dismissed by either choice; the account remembers it (`welcomeSeenAt`),
   // then "Add a course or exam" opens the courses page with the Add sheet already up.
-  const dismissWelcome = async (next: 'add' | 'explore') => {
+  const dismissWelcome = async (next: 'add' | 'ask') => {
     if (welcomeBusy) return;
     setWelcomeBusy(true);
     setError('');
@@ -339,7 +349,19 @@ export default function CoachHome() {
   // The + corner (CLAUDE.md §8): opens the material sheet on the course the coach
   // most recently worked on; with no course yet, the Add sheet.
   sendTextRef.current = sendText;
-  const sendMessage = () => sendText(draft);
+  // D-182: from under the welcome, the first question moves the welcome aside; without consent it waits for the consent card.
+  const askFromWelcome = () => {
+    const decision = welcomeAsk(draft, consented);
+    if (decision === 'nothing') return;
+    setAskedFromWelcome(true);
+    if (decision === 'send') { void dismissWelcome('ask'); void sendText(draft); return; }
+    // Consent first: no welcome-seen save here, so it cannot race the consent save on the same state version.
+    setReplayWelcome(false);
+    if (userId) AsyncStorage.removeItem(welcomeReplayKey(userId)).catch(() => {});
+    setPendingAsk(draft);
+    Keyboard.dismiss();
+  };
+  const sendMessage = () => (showWelcome ? askFromWelcome() : sendText(draft));
 
   const openPlus = () => {
     const course = focusCourse ?? defaultIntakeCourse(courses, messages);
@@ -489,7 +511,7 @@ export default function CoachHome() {
 
   const loading = stateQuery.isLoading || chatQuery.isLoading;
   const loadError = stateQuery.error ?? chatQuery.error;
-  const showWelcome = !loading && !loadError && shouldShowWelcome(stateQuery.data?.state, replayWelcome);
+  const showWelcome = !loading && !loadError && shouldShowWelcome(stateQuery.data?.state, replayWelcome, askedFromWelcome);
 
   return (
     <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: insets.top }]}>
@@ -500,7 +522,7 @@ export default function CoachHome() {
       {loading ? (
         <HomeSkeleton />
       ) : showWelcome ? (
-        <Welcome busy={welcomeBusy} onAddCourse={() => void dismissWelcome('add')} onExplore={() => void dismissWelcome('explore')} />
+        <Welcome busy={welcomeBusy} onAddCourse={() => void dismissWelcome('add')} />
       ) : loadError ? (
         <View style={styles.errorCard}>
           <Text style={styles.errorTitle}>Couldn’t load your chat</Text>
@@ -637,19 +659,19 @@ export default function CoachHome() {
         </View>
       </Modal>
       {(consented || showWelcome) && !loading && !loadError ? (
-        // During the welcome the composer stays in place but dimmed and inert (Dan: the first tap is the course, not a message into an empty thread).
-        <View style={[styles.composer, showWelcome && styles.composerDimmed]} accessibilityElementsHidden={showWelcome} importantForAccessibility={showWelcome ? 'no-hide-descendants' : 'auto'}>
+        // D-182: the composer is live under the welcome too ("Or ask your coach anything"); it used to be dimmed and inert, which left a new student stuck.
+        <View style={styles.composer}>
           {error ? <Text style={styles.errorText} testID="status-chat-error">{error}</Text> : null}
           <View style={styles.composerRow}>
-            <Pressable accessibilityLabel="Add material or record a lecture" accessibilityRole="button" disabled={showWelcome} onPress={openPlus} style={styles.plusButton} testID="button-materials-plus">
+            <Pressable accessibilityLabel="Add material or record a lecture" accessibilityRole="button" onPress={openPlus} style={styles.plusButton} testID="button-materials-plus">
               <Feather name="plus" size={22} color={colors.primaryForeground} />
             </Pressable>
             {/* The gold ring spins only while the coach is writing a reply or a set (D-048). */}
             <GlowRing active={send.isPending} radius={16} style={styles.inputRing}>
             <TextInput
               ref={inputRef}
-              value={draft} onChangeText={setDraft} placeholder="Message your coach" placeholderTextColor={colors.mutedForeground}
-              multiline maxLength={8000} style={[styles.input, { height: draft ? draftHeight : 44 }]} editable={!busy && !showWelcome} accessibilityLabel="Message your coach" testID="input-home-chat"
+              value={draft} onChangeText={setDraft} placeholder={composerPlaceholder(showWelcome)} placeholderTextColor={colors.mutedForeground}
+              multiline maxLength={8000} style={[styles.input, { height: draft ? draftHeight : 44 }]} editable={!busy} accessibilityLabel="Ask your coach" testID="input-home-chat"
               onContentSizeChange={(e) => setDraftHeight(Math.min(140, Math.max(44, Math.ceil(e.nativeEvent.contentSize.height) + (Platform.OS === 'ios' ? 22 : 16))))}
               returnKeyType="send" blurOnSubmit submitBehavior="blurAndSubmit" onSubmitEditing={() => void sendMessage()}
             />
@@ -770,7 +792,6 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   choiceValue: { width: 58, textAlign: 'right', fontSize: 15, lineHeight: 20, fontVariant: ['tabular-nums'] },
   choicePill: { alignSelf: 'flex-start' },
   composer: { paddingHorizontal: 14, paddingTop: 8, paddingBottom: 10, gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
-  composerDimmed: { opacity: 0.35, pointerEvents: 'none' },
   composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   plusButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   inputRing: { flex: 1 },
