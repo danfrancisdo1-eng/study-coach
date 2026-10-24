@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-24 — D-188: College courses ask for the syllabus; exams show their countdown
+- Dan: "it's really important that with these college kids that we get the syllabus ... with the syllabus, we get the dates." For a certification exam "the equivalent is basically the date that they're taking the exam. And we already asked for that." Until now the app only named a syllabus as one example in a list.
+- After adding a college course, "What next?" opens with "Add your syllabus" ("Every quiz and exam date, and what's covered."), which lands on the course's upload card with "Start with your syllabus: a photo of it or the PDF." Exams keep "Add material".
+- The course page of a college course has a Syllabus card: "Add your syllabus ..." with an Add syllabus button until one is saved, then "Next: <the next quiz, exam or due line from it>" (`lib/syllabus.ts`: a syllabus by its name or by three of its usual sections; the next dated quiz/exam/due line from its notes, past ones skipped; nothing is invented).
+- The Coach strip shows an exam's countdown ("3 days left", "Exam today") in place of the course count.
+- The coach's side (ask once for a missing syllabus; a heads-up with a plan inside 7 days of an exam) comes in the coach update with the 10-or-20 choice, which needs evals on the Mac.
+- Build #91. Verified here: mobile typecheck; mobile tests 128/128 (new: syllabus); iOS bundle exports.
+- **Decided by:** Dan.
+
 ## 2026-10-23 — D-182: The intro ends on Dan's real certificates; the welcome has one button and a live message box; an About page
 - Built on 2026-10-23 as D-181; renumbered D-182 (build stamps #85–#87) when merged after the Add-course fix, which took D-181.
 - **Intro video:** the illustrated credential card ("Certified Professional Cloud AI", a privacy stand-in) is replaced by Dan's real certificates, because the founder story now names them: NVIDIA-Certified Professional: Agentic AI (issued 9/30/26) and Google Cloud Certified Generative AI Leader (issued 9/28/26). QR code, NVIDIA credential ID, Google ID and series ID are blurred and pixelated (checked: unreadable). First cut showed them for 1.8 s mid-video; Dan: "a little fast ... have that slide on the end card". Final order: PASSED → logo → both certificates held 4.5 s (soft fade-in, slow zoom) while the original music fades out. 25.7 s, 3.3 MB (was 23 s, 4.3 MB). Dan: "a definite go".

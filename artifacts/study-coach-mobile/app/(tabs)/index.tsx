@@ -18,6 +18,7 @@ import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { blocksOf, type Span } from '@/lib/coach-text';
 import { topicParts } from '@/lib/topic-label';
+import { daysLeft, daysLeftLabel } from '@/lib/syllabus';
 import { chipParts, hasValues } from '@/lib/chip-label';
 import { premiumCode } from '@/lib/premium-ui';
 import { ActionButton } from '@/components/ActionButton';
@@ -603,7 +604,8 @@ export default function CoachHome() {
           <Pressable accessibilityRole="button" accessibilityLabel="Courses and exams" accessibilityHint="Choose which course the coach works on, open a course, or add one" onPress={() => (courses.length ? openCourses() : router.navigate({ pathname: '/course-list', params: { add: '1' } }))} style={({ pressed }) => [styles.focusBar, pressed && styles.pressed]} testID="button-focus-course">
             <Text style={styles.kicker}>{focusCourse ? 'Studying' : 'Coach'}</Text>
             <Text numberOfLines={1} style={styles.focusText}>{focusCourse ? focusCourse.name : courses.length ? 'All courses' : 'Add a course or exam'}</Text>
-            <Text style={styles.focusCount}>{courses.length ? `${courses.length} ${courses.length === 1 ? 'course' : 'courses'}` : ''}</Text>
+            {/* D-188: an exam's countdown in place of the course count, so the date is always in view. */}
+            <Text style={styles.focusCount} testID="text-focus-count">{focusCourse?.kind === 'exam' && daysLeft(focusCourse.examDate) !== null ? daysLeftLabel(daysLeft(focusCourse.examDate)!) : courses.length ? `${courses.length} ${courses.length === 1 ? 'course' : 'courses'}` : ''}</Text>
             <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
           </Pressable>
         </GlassBar>
