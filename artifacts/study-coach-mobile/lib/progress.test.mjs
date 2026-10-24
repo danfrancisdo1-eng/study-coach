@@ -2,7 +2,7 @@
 // uploaded), an honest estimate elsewhere that slows down and never reaches 100% on its own.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { estimate, materialWorkMs, timeLeftText, transcribeWorkMs, uploadThenWork, writtenProgress } from './progress.ts';
+import { estimate, materialWorkMs, timeLeftText, transcribeWorkMs, uploadThenWork, waitFor, writtenProgress } from './progress.ts';
 
 test('estimate: 0 at the start, about 80% at the expected time, never 100%', () => {
   assert.equal(estimate(0, 10_000), 0);
@@ -38,4 +38,13 @@ test('writtenProgress: the real count and percentage of questions written', () =
   assert.deepEqual(writtenProgress(4, 10), { fraction: 0.4, label: 'Writing questions: 4 of 10 (40%)' });
   assert.deepEqual(writtenProgress(0, 0), { fraction: 0, label: 'Writing questions…' });
   assert.equal(writtenProgress(12, 10).fraction, 1);
+});
+
+test('D-191: flashcards get their own filling bar; sets keep theirs; a chat gets none', () => {
+  assert.deepEqual(waitFor('Flashcards on all topics'), { label: 'Coach is making your flashcards…', expectedMs: 20_000 });
+  assert.equal(waitFor('Make me a flash card deck on chapter 3')?.label, 'Coach is making your flashcards…');
+  assert.equal(waitFor('Give me a practice set on all topics')?.label, 'Coach is writing the first questions…');
+  assert.equal(waitFor('Timed exam: full')?.expectedMs, 15_000);
+  assert.equal(waitFor('What is RBAC?'), null);
+  assert.equal(waitFor(undefined), null);
 });
