@@ -2,12 +2,28 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-24 — D-186: The welcome says drilling, not chatting; questions right after material
+- Dan: "Talk to your coach ... I don't want them to think, hey, just start talking to AI, when the most important thing in the whole app is taking questions, exam questions over and over and over ... sitting on the toilet, eating dinner, walking down the street." And "studying an hour a day [doesn't] work as well as studying for 2 minutes thirty times a day."
+- Welcome title: "Your material, turned into questions." Under it: "A few minutes, many times a day, beats an hour of cramming." (spaced practice). Step 3: "3rd Answer questions. Repeatedly." with "Quick sets of 10 or 20, anywhere. Whatever you miss comes back until it sticks." (the 10-or-20 choice is item 6, coming with the coach update). Was "A tutor that has already read your material" and "3rd Talk to your coach".
+- After an upload is saved (coach screen's + sheet and the course page), a "Start practice questions" button starts a practice set on that course.
+- Build #90. Verified here: mobile typecheck; mobile tests 128/128; iOS bundle exports.
+- **Decided by:** Dan.
+
+## 2026-10-24 — D-185: Big uploads are split at their chapters instead of refused
+- Dan: his AI-103 study packet (199,685 characters, the whole course) was refused at the 100,000-character limit and nothing was saved. "If someone uploads something and it goes over a limit, we should be able to chunk that at least and keep that part ... I like it going by sections and chapters."
+- A file is now read up to 400,000 characters. Over 90,000, the server cuts it at chapter headings ("# Chapter 3" or a line like "Chapter 3 ..."), then section headings, then paragraphs, then sentences, never inside a word, and nothing is lost (`lib/split-upload.ts`). The parts are packed so each takes as many whole chapters as fit: Dan's packet becomes 3 parts (86,263 / 64,924 / 47,099 characters: Chapters 1–15, 16 to Appendix A, Appendix B).
+- The app lists the parts ("Part 1 of 3: Chapter 1 ... to Chapter 15 ...") and saves each as its own upload ("<file> (part 2 of 3)") in one save. If the account's storage (900 KB) can't hold them all, it keeps the parts that fit from the start and names the rest: "Saved parts 1–2 of 3 (...). Part 3 (...) didn't fit: your account's storage is full. Delete an older upload in this course to make room, then add the file again." Web saves the parts too.
+- No notes call during the upload for parts; the coach writes each part's notes in the background the next time the course chat is used (D-124's backfill), one normal-size notes call per part.
+- API: the extraction reply gains `parts` (the whole text stays in `text` for apps that predate parts); `characterCount` up to 400,000. Website links keep their 100,000 limit.
+- Build #89. Verified here: typecheck (repo); `pnpm run test` 302/302 (new: splitter unit tests incl. Dan's real packet, an end-to-end 200,000-character upload); iOS bundle exports.
+- **Decided by:** Dan.
+
 ## 2026-10-24 — D-184: Account page order; the plan box links stay inside the box
 - Dan (on build 17): "Restore purchases and Manage subscription run over the box", and an order that makes sense, with the story where people will see it.
 - Order: plan box (Premium · renews …, Restore Purchases, Manage subscription), Why I built this, Watch the intro, See the tour again, See the welcome again, Privacy policy, Answer sounds, Sign out, then Delete my account under the divider.
 - The two plan links wrap to a second line inside the box instead of running past its edge.
 - "Renews Oct 25, 2026" is Apple's own date: TestFlight purchases are sandbox subscriptions, which renew about once a day. A real App Store purchase shows a month (or a year) later. D-183 is taken by the Maestro branch.
-- Build #88. Verified here: mobile typecheck; mobile tests 124/124; iOS bundle exports.
+- Build #93 (was #88; renumbered when merged after D-185 and D-186). Verified here: mobile typecheck; mobile tests 124/124; iOS bundle exports.
 - **Decided by:** Dan.
 
 ## 2026-10-23 — D-182: The intro ends on Dan's real certificates; the welcome has one button and a live message box; an About page

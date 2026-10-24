@@ -20,7 +20,8 @@ const STEP_GAP_MS = 2000; // Dan: "after 2 seconds have the second box slide in"
 const STEPS: { ordinal: string; icon: React.ComponentProps<typeof Feather>['name']; title: string; body: string }[] = [
   { ordinal: '1st', icon: 'book-open', title: 'Add a course or exam', body: 'with an optional exam date.' },
   { ordinal: '2nd', icon: 'plus-circle', title: 'Add your material', body: 'notes, a syllabus, photos, a file, or record a lecture. Audio stays on the phone.' },
-  { ordinal: '3rd', icon: 'message-circle', title: 'Talk to your coach', body: 'practice sets, timed exams, flashcards, and a straight readiness call.' },
+  // D-186 (Dan): the app is drilling, not chatting. "The most important thing in the whole app is taking questions, over and over."
+  { ordinal: '3rd', icon: 'repeat', title: 'Answer questions. Repeatedly.', body: 'Quick sets of 10 or 20, anywhere. Whatever you miss comes back until it sticks.' },
 ];
 
 export function Welcome({ onAddCourse, busy = false }: { onAddCourse: () => void; busy?: boolean }) {
@@ -38,7 +39,9 @@ export function Welcome({ onAddCourse, busy = false }: { onAddCourse: () => void
   return (
     <ScrollView contentContainerStyle={styles.content} bounces={false} keyboardShouldPersistTaps="handled" testID="panel-welcome">
       <View style={styles.top}>
-        <Text style={styles.title} accessibilityRole="header">A tutor that has already read your material.</Text>
+        <Text style={styles.title} accessibilityRole="header">Your material, turned into questions.</Text>
+        {/* D-186: spaced practice, Dan's own experience ("2 minutes thirty times a day ... it's always in your head"). */}
+        <Text style={styles.lead}>A few minutes, many times a day, beats an hour of cramming.</Text>
         <View style={styles.steps}>
           {STEPS.map((step, i) => (
             <Animated.View key={step.title} entering={SlideInRight.delay(i * STEP_GAP_MS).duration(320).easing(Easing.out(Easing.back(1.15)))} style={styles.step}
@@ -71,6 +74,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   content: { flexGrow: 1, justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 10, paddingBottom: 6, gap: 12 },
   top: { gap: 12 },
   title: { color: colors.foreground, fontSize: 23, lineHeight: 29, letterSpacing: -0.4, fontWeight: '600' },
+  lead: { color: colors.mutedForeground, fontSize: 16, lineHeight: 22, marginTop: -6 },
   steps: { gap: 8 },
   step: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingRight: 12, paddingLeft: 10, borderRadius: colors.radius, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   bar: { width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: colors.primary },
