@@ -121,6 +121,8 @@ export default function AccountScreen() {
           AsyncStorage.setItem(welcomeReplayKey(userId), '1').catch(() => {}).finally(() => router.navigate('/(tabs)'));
         }, 'button-replay-welcome')}
         {/* The first-launch tour (D-049) plays once per phone; this replays it and comes back here. */}
+        {/* D-182: the founder story. */}
+        {row('award', 'Why I built this', 'Two AI certifications, no AI background, this method', () => router.push('/about'), 'button-about')}
         {/* D-150: Dan's intro video again; it comes back here. */}
         {row('film', 'Watch the intro', 'The short video from the first launch', () => router.push('/intro?replay=1'), 'button-replay-intro')}
         {row('play-circle', 'See the tour again', 'The five pages from the first launch', () => router.push('/onboarding?replay=1'), 'button-replay-tour')}
