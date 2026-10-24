@@ -1,0 +1,9 @@
+# Flow 1: sign in with email and password; the tab bar appears.
+appId: com.danfrancis.studycoach.dev
+name: Sign in
+---
+- runFlow: common/sign-in.yaml
+- takeScreenshot: 01-signed-in
+- assertVisible: "Coach"
+- assertVisible: "Courses"
+- assertVisible: "Account"

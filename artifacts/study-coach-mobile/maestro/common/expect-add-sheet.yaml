@@ -1,0 +1,12 @@
+# The Add sheet is open (the course-or-exam choice and the name field), then it is closed.
+appId: com.danfrancis.studycoach.dev
+---
+- extendedWaitUntil:
+    visible: "Is this a course or a certification exam?"
+    timeout: 8000
+- assertVisible:
+    id: "input-add-name"
+- takeScreenshot: ${SHOT}
+- tapOn:
+    id: "button-close-add"
+- assertNotVisible: "Is this a course or a certification exam?"

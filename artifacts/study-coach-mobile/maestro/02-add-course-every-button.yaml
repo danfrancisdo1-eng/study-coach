@@ -1,0 +1,79 @@
+# Flow 2: "Add a course or exam" opens the Add sheet from every button, every time (D-181).
+appId: com.danfrancis.studycoach.dev
+name: Add a course from every button
+---
+- runFlow: common/sign-in.yaml
+- runFlow: common/delete-maestro-courses.yaml
+
+# 1. The welcome's "1st Add a course or exam" (an account with no courses), then add one.
+- tapOn: "Coach"
+- tapOn:
+    id: "button-welcome-add"
+- extendedWaitUntil:
+    visible: "Is this a course or a certification exam?"
+    timeout: 8000
+- takeScreenshot: 02-welcome-add-sheet
+- tapOn:
+    id: "button-kind-course"
+- tapOn:
+    id: "input-add-name"
+- inputText: "Maestro Biology"
+- tapOn:
+    id: "button-save-add"
+- extendedWaitUntil:
+    visible:
+      id: "panel-added-next"
+    timeout: 15000
+- takeScreenshot: 02-course-added
+- tapOn:
+    id: "button-next-list"
+- assertVisible: "Maestro Biology"
+
+# 2. The Courses tab's Add, twice (the second tap is the case the old bug broke).
+- tapOn:
+    id: "button-add-course"
+- runFlow:
+    file: common/expect-add-sheet.yaml
+    env:
+      SHOT: 02-courses-add-first
+- tapOn:
+    id: "button-add-course"
+- runFlow:
+    file: common/expect-add-sheet.yaml
+    env:
+      SHOT: 02-courses-add-second
+
+# 3. "Add a course" inside a course, twice.
+- tapOn: "Maestro Biology"
+- scrollUntilVisible:
+    element:
+      id: "button-action-add-course"
+- tapOn:
+    id: "button-action-add-course"
+- runFlow:
+    file: common/expect-add-sheet.yaml
+    env:
+      SHOT: 02-course-page-add-first
+- tapOn: "Maestro Biology"
+- scrollUntilVisible:
+    element:
+      id: "button-action-add-course"
+- tapOn:
+    id: "button-action-add-course"
+- runFlow:
+    file: common/expect-add-sheet.yaml
+    env:
+      SHOT: 02-course-page-add-second
+
+# 4. Back on the Coach tab and into Courses again: the Add still opens.
+- tapOn: "Coach"
+- tapOn: "Courses"
+- tapOn:
+    id: "button-add-course"
+- runFlow:
+    file: common/expect-add-sheet.yaml
+    env:
+      SHOT: 02-courses-add-after-coach
+
+- runFlow: common/delete-maestro-courses.yaml
+- takeScreenshot: 02-cleaned-up

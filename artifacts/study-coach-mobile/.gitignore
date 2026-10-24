@@ -39,3 +39,6 @@ yarn-error.*
 .vercel
 
 .env
+
+# Maestro screenshots and the test account
+maestro/screens/

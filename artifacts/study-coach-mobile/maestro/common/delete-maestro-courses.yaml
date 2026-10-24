@@ -1,0 +1,23 @@
+# Deletes every course named "Maestro …" left by earlier runs (confirm word: Maestro).
+appId: com.danfrancis.studycoach.dev
+---
+- tapOn: "Courses"
+- repeat:
+    while:
+      visible: "Maestro.*"
+    commands:
+      - tapOn: "Maestro.*"
+      - scrollUntilVisible:
+          element:
+            id: "button-delete-course"
+      - tapOn:
+          id: "button-delete-course"
+      - tapOn:
+          id: "input-confirm-course-name"
+      - inputText: "Maestro"
+      - tapOn:
+          id: "button-confirm-delete-course"
+      - extendedWaitUntil:
+          visible: "Courses"
+          timeout: 15000
+      - tapOn: "Courses"

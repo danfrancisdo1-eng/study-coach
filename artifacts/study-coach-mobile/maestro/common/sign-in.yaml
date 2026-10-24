@@ -1,0 +1,85 @@
+# Signs out of whatever account the simulator holds, then signs in as the test account.
+# The test account's email has +clerk_test, so any emailed code is 424242 (Clerk test mode).
+appId: com.danfrancis.studycoach.dev
+---
+- runFlow: open-app.yaml
+- runFlow:
+    when:
+      visible: "Account"
+    commands:
+      - tapOn: "Account"
+      - scrollUntilVisible:
+          element:
+            id: "button-sign-out"
+      - tapOn:
+          id: "button-sign-out"
+# The intro video and the tour play before every sign-in (D-152).
+- extendedWaitUntil:
+    visible:
+      id: "button-intro-skip|button-onboarding-skip|screen-sign-in"
+    timeout: 30000
+- runFlow:
+    when:
+      visible:
+        id: "button-intro-skip"
+    commands:
+      - tapOn:
+          id: "button-intro-skip"
+# The tour: page 1 has only "Agree and continue"; later pages have Skip; the last page has only its button.
+- repeat:
+    times: 7
+    while:
+      notVisible:
+        id: "input-sign-in-email"
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: "button-onboarding-skip"
+          commands:
+            - tapOn:
+                id: "button-onboarding-skip"
+      - runFlow:
+          when:
+            visible:
+              id: "button-onboarding-next"
+          commands:
+            - tapOn:
+                id: "button-onboarding-next"
+- extendedWaitUntil:
+    visible:
+      id: "input-sign-in-email"
+    timeout: 20000
+- takeScreenshot: 01-sign-in-screen
+- tapOn:
+    id: "input-sign-in-email"
+- eraseText: 60
+- inputText: ${MAESTRO_EMAIL}
+- tapOn:
+    id: "input-sign-in-password"
+- eraseText: 40
+- inputText: ${MAESTRO_PASSWORD}
+# The keyboard covers the button: scroll the page up until the button is clear of it.
+- repeat:
+    times: 3
+    commands:
+      - swipe:
+          start: 50%, 40%
+          end: 50%, 15%
+          duration: 400
+- tapOn:
+    id: "button-sign-in-submit"
+- runFlow:
+    when:
+      visible:
+        id: "input-sign-in-code"
+    commands:
+      - tapOn:
+          id: "input-sign-in-code"
+      - inputText: "424242"
+      - tapOn:
+          id: "button-sign-in-verify"
+# Signed in: the tab bar is on screen.
+- extendedWaitUntil:
+    visible: "Account"
+    timeout: 30000

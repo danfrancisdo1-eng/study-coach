@@ -1,0 +1,15 @@
+# Opens the RapidRecall Dev app on the Metro server on this Mac (started by scripts/ui-test.sh).
+appId: com.danfrancis.studycoach.dev
+---
+- stopApp
+- openLink: "exp+study-coach-mobile://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081"
+- extendedWaitUntil:
+    visible:
+      text: ".*(Courses|Skip|Sign in|Welcome|course).*"
+    timeout: 60000
+# The dev menu's first-run tip, if it shows.
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
