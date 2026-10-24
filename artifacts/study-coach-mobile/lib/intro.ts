@@ -1,5 +1,5 @@
 /**
- * Intro video (D-134, D-150, D-152): Dan's 23-second intro plays full screen before the welcome tour
+ * Intro video (D-134, D-150, D-152): Dan's 26-second intro (D-182: ends on his two real certificates) plays full screen before the welcome tour
  * every time someone has to sign in (a new download, a sign-out, a deleted account; Dan: "make it play
  * if they sign out and need to sign back in"), with Skip always on screen and sound off until tapped.
  * Account replays it.
