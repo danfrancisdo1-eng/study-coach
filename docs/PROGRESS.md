@@ -1,5 +1,16 @@
 # Progress
 
+## Session 23e — 2026-10-24 — report card sections and tip cards (D-193), branch `feat/report-sections`
+
+### Done
+- The report card and the Memory tips reply come in sections (divider, coloured title) with each tip its own card; "tricks" are "tips". coach.v34. Build #101.
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only + rendered preview
+1. Tap targets: N/A. 2. One primary action: PASS (unchanged chips). 3. Chunked: PASS (four titled sections; tips as separate cards, at most 3; bold only on key terms). 4. Native patterns: PASS. 5. Progress: PASS (How you did, Readiness). 6. One accent, not colour-only: PASS (section titles are words in the accent colour). 7. Tokens; Dark Mode; Dynamic Type: PASS (tokens only; text wraps inside cards). 8. Labels: PASS (section and tip titles are headers for VoiceOver). 9. Paywall: N/A.
+
+### Needs real-iPhone check
+- Finish a set with misses: the four sections, three tip cards, readiness box; "Memory tips for the misses" gives the same cards.
+
 ## Session 23d — 2026-10-24 — report card, readiness, personality (D-192), branch `feat/report-card` (on top of `feat/coach-v32`)
 
 ### Done
