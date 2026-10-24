@@ -3,6 +3,17 @@
 appId: com.danfrancis.studycoach.dev
 ---
 - runFlow: open-app.yaml
+# A sign-in left half-done reopens on the code step: finish it (the test account's code is always 424242).
+- runFlow:
+    when:
+      visible: "Email verification code"
+    commands:
+      - tapOn: "Enter code"
+      - inputText: "424242"
+      - tapOn: "Verify and sign in"
+      - extendedWaitUntil:
+          visible: "Account"
+          timeout: 30000
 - runFlow:
     when:
       visible: "Account"
@@ -16,7 +27,7 @@ appId: com.danfrancis.studycoach.dev
 # The intro video and the tour play before every sign-in (D-152).
 - extendedWaitUntil:
     visible:
-      id: "button-intro-skip|button-onboarding-skip|screen-sign-in"
+      id: "button-intro-skip|button-onboarding-skip|button-onboarding-next|screen-sign-in"
     timeout: 30000
 - runFlow:
     when:
@@ -30,7 +41,7 @@ appId: com.danfrancis.studycoach.dev
     times: 7
     while:
       notVisible:
-        id: "input-sign-in-email"
+        id: "screen-sign-in"
     commands:
       - runFlow:
           when:
@@ -48,9 +59,19 @@ appId: com.danfrancis.studycoach.dev
                 id: "button-onboarding-next"
 - extendedWaitUntil:
     visible:
-      id: "input-sign-in-email"
+      id: "screen-sign-in"
     timeout: 20000
 - takeScreenshot: 01-sign-in-screen
+# Clerk keeps a half-done sign-in: the screen can open on the code step. Start over so email and password are typed fresh.
+- runFlow:
+    when:
+      visible: "Email verification code"
+    commands:
+      - tapOn: "Start over"
+      - extendedWaitUntil:
+          visible:
+            id: "input-sign-in-email"
+          timeout: 10000
 - tapOn:
     id: "input-sign-in-email"
 - eraseText: 60
@@ -69,16 +90,23 @@ appId: com.danfrancis.studycoach.dev
           duration: 400
 - tapOn:
     id: "button-sign-in-submit"
+# iOS offers to save the password; it covers the screen.
+- extendedWaitUntil:
+    visible: "Not Now|Account"
+    timeout: 8000
+    optional: true
 - runFlow:
     when:
-      visible:
-        id: "input-sign-in-code"
+      visible: "Not Now"
     commands:
-      - tapOn:
-          id: "input-sign-in-code"
+      - tapOn: "Not Now"
+- runFlow:
+    when:
+      visible: "Email verification code"
+    commands:
+      - tapOn: "Enter code"
       - inputText: "424242"
-      - tapOn:
-          id: "button-sign-in-verify"
+      - tapOn: "Verify and sign in"
 # Signed in: the tab bar is on screen.
 - extendedWaitUntil:
     visible: "Account"

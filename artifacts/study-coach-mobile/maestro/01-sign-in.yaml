@@ -5,5 +5,5 @@ name: Sign in
 - runFlow: common/sign-in.yaml
 - takeScreenshot: 01-signed-in
 - assertVisible: "Coach"
-- assertVisible: "Courses"
+- assertVisible: "Courses and exams"
 - assertVisible: "Account"

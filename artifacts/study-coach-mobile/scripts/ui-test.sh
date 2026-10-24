@@ -1,5 +1,5 @@
 #!/bin/sh
-# Button-pressing tests on the simulator (D-182). Run before every TestFlight build:
+# Button-pressing tests on the simulator (D-183). Run before every TestFlight build:
 #   sh scripts/ui-test.sh            all flows
 #   sh scripts/ui-test.sh 02         flows whose file name starts with 02
 # Needs: Maestro + Java 17 (Homebrew), the RapidRecall Dev app on the "iPhone 18 Pro Max"

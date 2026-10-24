@@ -1,23 +1,42 @@
 # Deletes every course named "Maestro …" left by earlier runs (confirm word: Maestro).
 appId: com.danfrancis.studycoach.dev
 ---
-- tapOn: "Courses"
+- tapOn: "Courses and exams"
 - repeat:
     while:
-      visible: "Maestro.*"
+      visible: "Open Maestro.*"
     commands:
-      - tapOn: "Maestro.*"
-      - scrollUntilVisible:
-          element:
+      - tapOn: "Open Maestro.*"
+      # "Delete course…" is at the very bottom of the course page.
+      - repeat:
+          times: 3
+          commands:
+            - swipe:
+                start: 50%, 75%
+                end: 50%, 20%
+                duration: 300
+      - extendedWaitUntil:
+          visible:
             id: "button-delete-course"
+          timeout: 10000
       - tapOn:
           id: "button-delete-course"
       - tapOn:
           id: "input-confirm-course-name"
       - inputText: "Maestro"
+      # Return closes the keyboard (one-line field), then the confirm button can be scrolled to.
+      - pressKey: Enter
+      - swipe:
+          start: 50%, 70%
+          end: 50%, 30%
+          duration: 400
+      - extendedWaitUntil:
+          visible:
+            id: "button-confirm-delete-course"
+          timeout: 5000
       - tapOn:
           id: "button-confirm-delete-course"
       - extendedWaitUntil:
-          visible: "Courses"
+          visible: "Courses and exams"
           timeout: 15000
-      - tapOn: "Courses"
+      - tapOn: "Courses and exams"

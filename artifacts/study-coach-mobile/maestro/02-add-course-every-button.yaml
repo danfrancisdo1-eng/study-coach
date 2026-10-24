@@ -27,7 +27,7 @@ name: Add a course from every button
 - takeScreenshot: 02-course-added
 - tapOn:
     id: "button-next-list"
-- assertVisible: "Maestro Biology"
+- assertVisible: "Open Maestro Biology"
 
 # 2. The Courses tab's Add, twice (the second tap is the case the old bug broke).
 - tapOn:
@@ -44,7 +44,7 @@ name: Add a course from every button
       SHOT: 02-courses-add-second
 
 # 3. "Add a course" inside a course, twice.
-- tapOn: "Maestro Biology"
+- tapOn: "Open Maestro Biology"
 - scrollUntilVisible:
     element:
       id: "button-action-add-course"
@@ -54,7 +54,7 @@ name: Add a course from every button
     file: common/expect-add-sheet.yaml
     env:
       SHOT: 02-course-page-add-first
-- tapOn: "Maestro Biology"
+- tapOn: "Open Maestro Biology"
 - scrollUntilVisible:
     element:
       id: "button-action-add-course"
@@ -67,7 +67,7 @@ name: Add a course from every button
 
 # 4. Back on the Coach tab and into Courses again: the Add still opens.
 - tapOn: "Coach"
-- tapOn: "Courses"
+- tapOn: "Courses and exams"
 - tapOn:
     id: "button-add-course"
 - runFlow:
