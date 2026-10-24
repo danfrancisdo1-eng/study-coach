@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-24 — D-191: Beta round 4: the practice card's topics fit; questions or the course page right after adding; a flashcards bar; sign-out goes to sign-in
+- Dan (screenshots on build 19, before building with D-184/D-188):
+- **Practice card header:** "Azure AI services and solution design · Generative AI and Azu…" ran off the card and squeezed "Practice · All topics" and the 0/10 count out. The title and its sections now stack in one column beside the count (`LiveSetCard`).
+- **After adding a course ("What next?"):** two new rows under the primary one. "Start practice questions" first shows a warning box ("Better with your material": the syllabus and notes make the questions follow the class; without them the coach writes from general knowledge, or for an exam from the official outline) with "Start anyway", which sends the existing no-material practice request to the coach on that course. "Go to <course>" opens the course page. Add another course and Return to course list stay.
+- **Flashcards:** a filling bar, "Coach is making your flashcards…" (about 20 s; Dan timed 19 s), where the screen showed only "Coach is thinking…". Sets keep theirs (`waitFor` in lib/progress.ts).
+- **Sign out:** straight to the sign-in page (was the intro video, then the tour, D-152). The page waits with a spinner while the session is dropped (signingOut=1), so the D-180 order (leave the tabs first) still holds. A cold start while signed out still plays the intro. Account's caption now reads "Back to the sign-in page".
+- Build #98. Verified here: repo typecheck; `pnpm run test`; iOS bundle exports. Not run here: the screens on a phone.
+- **Decided by:** Dan.
+
 ## 2026-10-24 — D-190: The OneDrive button signs in to OneDrive directly
 - Dan: "build it". The OneDrive button opened Apple's Files picker, which shows OneDrive only when the OneDrive app is installed and switched on in Files; for most students it showed no OneDrive at all.
 - Now: tapping OneDrive opens Microsoft's sign-in page the first time (a browser sheet), then the student's own OneDrive inside the + sheet: folders first, then only the files the app can read (PDF, Word, PowerPoint, text, Markdown, photos), A–Z, with a search box, Back and Close. Tapping a file copies it to the phone and it goes through the normal upload (12 MB limit, big files split, notes, duplicate check). "Signed in as … · Disconnect" at the bottom. The Files button still opens Apple's picker.

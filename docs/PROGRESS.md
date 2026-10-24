@@ -1,5 +1,19 @@
 # Progress
 
+## Session 23c — 2026-10-24 — beta round 4 (D-191), branch `fix/beta-round-4`
+
+### Done
+- Practice card header fits; "Start practice questions" (with a warning) and "Go to <course>" after adding a course; a flashcards progress bar; sign-out goes straight to sign-in. Build #98.
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (new rows 50 pt, Start anyway 44 pt). 2. One primary action: PASS ("Add your syllabus"/"Add material" stays the only filled button; the warning's button is secondary). 3. Chunked: PASS (the warning is a title and two sentences). 4. Native patterns: PASS. 5. Progress: PASS (the flashcards bar). 6. Accent, not colour-only: PASS (the warning has an icon and a title, not just the amber border). 7. Tokens; Dark Mode; Dynamic Type: PASS (tokens only; the course name in "Go to …" wraps to two lines). 8. Labels: PASS (all Pressables have roles and visible text). 9. Paywall: N/A.
+
+### Needs real-iPhone check
+- A practice set with guide sections: the header shows "Practice · All topics", each section on its own line, and 0/10.
+- Add a course → Start practice questions → the warning → Start anyway → a set on that course. Go to <course> opens it.
+- Flashcards from a course: the bar fills while they're made.
+- Account → Sign out → the sign-in page (no intro, no tour); sign back in works.
+
 ## Session 23b — 2026-10-24 — direct OneDrive (D-190), branch `feat/onedrive-direct`
 
 ### Done
