@@ -13,7 +13,8 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v31";
+import * as coachPrompt from "../prompts/coach.v32";
+import { daysUntil, isSyllabus, setSizeOf } from "../lib/syllabus";
 import { courseContext, NOTES_BLOCK, PLANNING } from "../lib/course-context";
 import { indexText, routedContext, sectionsOf, wordSearch } from "../lib/course-sections";
 import { routeCourse } from "../lib/course-router";
@@ -647,6 +648,9 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       materials: own.length,
       lectures: lectureRows.filter((l) => l.courseId === course.id).length,
       ...(materialNames.length ? { materialNames } : {}),
+      // D-189: a college course says whether its syllabus is in; a dated exam says how many days are left.
+      ...((course.kind ?? "course") === "course" ? { hasSyllabus: own.some((m) => !(typeof m.lectureId === "string") && isSyllabus(m)) } : {}),
+      ...(daysUntil(today, course.examDate) !== null ? { daysLeft: daysUntil(today, course.examDate)! } : {}),
     };
   });
   // Each course is a Project (D-122): a course's conversation knows that course only, and reads
@@ -703,7 +707,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const courseEvents = eventsFrom(courseSessions);
   const results = resultsHistoryText(courseEvents);
   const reps = dailyReps(courseEvents, offset, clock);
-  const daily = threadId ? dailyText(reps) : null;
+  const daily = threadId ? dailyText(reps, setSizeOf(state)) : null;
   const firstToday = firstMessageToday(messages, offset, clock);
   const lastQuizAction = latestQuizAction(messages);
   const lastQuizSession = lastQuizAction ? await loadSession(ownerId, lastQuizAction.sessionId) : null;
@@ -712,6 +716,14 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const lastDeckSession = lastDeckAction ? await loadSession(ownerId, lastDeckAction.sessionId) : null;
   const deck = lastDeckAction ? deckContext(courses, lastDeckSession) : null;
 
+  // D-189: the student's set size; ask once for a missing syllabus; an exam 2–7 days out gets a heads-up on the day's first message.
+  const setSize = setSizeOf(state);
+  const threadSummary = threadId ? summary.find((c) => c.id === threadId) : undefined;
+  const askSyllabus = !!threadSummary && threadSummary.hasSyllabus === false && !messages.some((m) => m.role === "assistant" && /syllabus/i.test(m.content));
+  const examSoon = threadSummary && threadSummary.kind === "exam" && typeof threadSummary.daysLeft === "number" && threadSummary.daysLeft >= 2 && threadSummary.daysLeft <= 7 && firstToday
+    ? { courseName: threadSummary.name, days: threadSummary.daysLeft } : null;
+  const coachSystem = () => coachPrompt.systemPrompt({ today, daily, firstMessageToday: firstToday, courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, setSize, askSyllabus, examSoon });
+
   let coach;
   if (timed) {
     // No coach AI call: the app writes the reply (D-114).
@@ -719,7 +731,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   } else try {
     const response = await complete("coach", {
       ...(material ? { context: material.text } : {}),
-      system: coachPrompt.systemPrompt({ today, daily, firstMessageToday: firstToday, courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null }),
+      system: coachSystem(),
       messages: [...history, { role: "user", content }],
     });
     coach = parseCoachReply(response.text);
@@ -730,7 +742,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       try {
         const again = await complete("coach", {
           ...(material ? { context: material.text } : {}),
-          system: coachPrompt.systemPrompt({ today, daily, firstMessageToday: firstToday, courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null }),
+          system: coachSystem(),
           messages: [...history, { role: "user", content }, { role: "assistant", content: response.text ?? "" }, { role: "user", content: "(App note, not from the student: your reply says the set is starting, but it has no start_quiz or start_flashcards action, so nothing would appear. Reply again: either include the action now, or ask the one thing you still need to know.)" }],
         });
         const second = parseCoachReply(again.text);
@@ -751,10 +763,13 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const plan = planActions(courses, coach.actions);
   if (timed && threadId) plan.quiz = { courseId: threadId, topic: "All topics", count: timed.count, scope: "all", kind: "exam" };
   // D-139: "Next 10" always starts the day's next 10 here, whatever the reply said.
-  if (!timed && threadId && content.toLowerCase() === NEXT_TEN.toLowerCase()) { plan.quiz = { courseId: threadId, topic: "Today's 10", count: DAILY_SET, scope: "daily", kind: "practice" }; plan.deck = null; }
+  // D-189: "Next 10" or "Next 20" starts the day's next set at the student's chosen size.
+  if (!timed && threadId && (content.toLowerCase() === NEXT_TEN.toLowerCase() || /^next 20$/i.test(content.trim()))) { plan.quiz = { courseId: threadId, topic: `Today's ${setSize}`, count: setSize, scope: "daily", kind: "practice" }; plan.deck = null; }
+  // D-189: a practice set the coach starts at the default size uses the student's.
+  if (!timed && plan.quiz && plan.quiz.kind === "practice" && plan.quiz.scope !== "daily" && plan.quiz.count === DAILY_SET && setSize !== DAILY_SET) plan.quiz = { ...plan.quiz, count: setSize };
   // D-139: the line after a graded set carries the day's count.
   // D-155 (Dan: "I never asked for a study plan"): only after a set from the plan ("Next 10").
-  if (threadId && content === FINISHED_SET && quiz?.graded && lastQuizSession?.daily) coach = { ...coach, reply: `${coach.reply} ${dailyLine(reps, quiz.answered)}` };
+  if (threadId && content === FINISHED_SET && quiz?.graded && lastQuizSession?.daily) coach = { ...coach, reply: `${coach.reply} ${dailyLine(reps, quiz.answered, setSizeOf(state))}` };
   if (plan.notes.length) req.log.info({ notes: plan.notes }, "Home chat actions skipped");
   // The free plan has one course (D-090): a coach reply that would add another is not applied.
   if (premium && premium.limits.courses !== null && plan.creates.length && courses.length + plan.creates.length > premium.limits.courses) {

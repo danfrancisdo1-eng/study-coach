@@ -135,6 +135,7 @@ export const getStudyStateResponseVersionMin = 0;
 export const GetStudyStateResponse = zod.object({
   "state": zod.union([zod.object({
   "aiConsent": zod.boolean(),
+  "setSize": zod.union([zod.literal(10),zod.literal(20)]).optional().describe('D-189: questions per practice set the student chose in Account; 10 when absent.'),
   "courses": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "materials": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "topics": zod.record(zod.string(), zod.unknown()).optional(),
@@ -156,6 +157,7 @@ export const putStudyStateBodyVersionMin = 0;
 export const PutStudyStateBody = zod.object({
   "state": zod.object({
   "aiConsent": zod.boolean(),
+  "setSize": zod.union([zod.literal(10),zod.literal(20)]).optional().describe('D-189: questions per practice set the student chose in Account; 10 when absent.'),
   "courses": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "materials": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "topics": zod.record(zod.string(), zod.unknown()).optional(),
@@ -173,6 +175,7 @@ export const putStudyStateResponseVersionMin = 0;
 export const PutStudyStateResponse = zod.object({
   "state": zod.union([zod.object({
   "aiConsent": zod.boolean(),
+  "setSize": zod.union([zod.literal(10),zod.literal(20)]).optional().describe('D-189: questions per practice set the student chose in Account; 10 when absent.'),
   "courses": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "materials": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "topics": zod.record(zod.string(), zod.unknown()).optional(),
@@ -467,6 +470,7 @@ export const DeleteCourseParams = zod.object({
 export const DeleteCourseResponse = zod.object({
   "state": zod.object({
   "aiConsent": zod.boolean(),
+  "setSize": zod.union([zod.literal(10),zod.literal(20)]).optional().describe('D-189: questions per practice set the student chose in Account; 10 when absent.'),
   "courses": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "materials": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "topics": zod.record(zod.string(), zod.unknown()).optional(),
@@ -490,6 +494,7 @@ export const DeleteCourseResponse = zod.object({
 export const ImportStudyStateBody = zod.object({
   "state": zod.object({
   "aiConsent": zod.boolean(),
+  "setSize": zod.union([zod.literal(10),zod.literal(20)]).optional().describe('D-189: questions per practice set the student chose in Account; 10 when absent.'),
   "courses": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "materials": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "topics": zod.record(zod.string(), zod.unknown()).optional(),
@@ -506,6 +511,7 @@ export const importStudyStateResponseVersionMin = 0;
 export const ImportStudyStateResponse = zod.object({
   "state": zod.union([zod.object({
   "aiConsent": zod.boolean(),
+  "setSize": zod.union([zod.literal(10),zod.literal(20)]).optional().describe('D-189: questions per practice set the student chose in Account; 10 when absent.'),
   "courses": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "materials": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "topics": zod.record(zod.string(), zod.unknown()).optional(),

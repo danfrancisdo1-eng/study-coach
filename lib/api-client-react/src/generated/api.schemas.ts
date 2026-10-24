@@ -165,6 +165,17 @@ export interface PremiumStatus {
   examPasses?: PremiumStatusExamPassesItem[];
 }
 
+/**
+ * D-189: questions per practice set the student chose in Account; 10 when absent.
+ */
+export type StudyStateSetSize = typeof StudyStateSetSize[keyof typeof StudyStateSetSize];
+
+
+export const StudyStateSetSize = {
+  NUMBER_10: 10,
+  NUMBER_20: 20,
+} as const;
+
 export type StudyStateCoursesItem = { [key: string]: unknown };
 
 export type StudyStateMaterialsItem = { [key: string]: unknown };
@@ -182,6 +193,8 @@ export type StudyStateReviewScheduleItem = { [key: string]: unknown };
  */
 export interface StudyState {
   aiConsent: boolean;
+  /** D-189: questions per practice set the student chose in Account; 10 when absent. */
+  setSize?: StudyStateSetSize;
   courses?: StudyStateCoursesItem[];
   materials?: StudyStateMaterialsItem[];
   topics?: StudyStateTopics;

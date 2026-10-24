@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-24 — D-189: coach.v32: 10 or 20 per set, ask once for the syllabus, the exam countdown heads-up
+- Dan: set size: "I did 20s ... that was my sweet spot ... Let them choose." Syllabus: the coach should ask for it. Exams: "if the coach notices, hey, we only got 3 days left, and you're missing all this material ... we better get on the ball here."
+- **Questions per set:** Account has "Questions per set: 10 | 20" (saved on the account as `setSize`). The coach says the student's size everywhere ("Next 20", "100 a day, 20 at a time", "20 more toward today's 100"); "Next 10" or "Next 20" starts the day's next set at that size; a practice set the coach starts at the default size uses the student's; the daily-reps lines use it too.
+- **Syllabus:** a college course's chat tells the coach whether a syllabus is saved (lib/syllabus.ts, same check as the phone). With none, and the coach never having mentioned a syllabus in that conversation, the coach adds one line after its answer: "Do you have the syllabus? Add a photo or the PDF with the + button: it gives me every quiz and exam date." Once only. A date question with no syllabus: it says why it doesn't know and asks for it; never guesses.
+- **Countdown:** a certification exam 2–7 days away, on the student's first message that day: one encouraging opening line with the days left and the one or two areas to hit first (unpracticed guide sections or the weakest topics in the results), never "you might fail", no fake urgency; chips "Next N" and that area. The day-before review-PDF rule (v26) is unchanged. A course's chat also sees "(in N days)" after its exam date.
+- coach.v31 → **coach.v32** (`src/prompts/coach.v32.ts`); evals gain 5 cases (Next 20, the plan at 20, the syllabus ask, a date with no syllabus, the AI-103 heads-up). **Not merged until the coach evals pass on the Mac** (`pnpm --filter @workspace/api-server run eval -- coach`); this cloud session has no AI key.
+- Build #92. Verified here: repo typecheck; `pnpm run test` 293/293 (new: coach-v32-inputs); mobile tests 124/124; iOS bundle exports; evals compile.
+- **Decided by:** Dan.
+
 ## 2026-10-23 — D-182: The intro ends on Dan's real certificates; the welcome has one button and a live message box; an About page
 - Built on 2026-10-23 as D-181; renumbered D-182 (build stamps #85–#87) when merged after the Add-course fix, which took D-181.
 - **Intro video:** the illustrated credential card ("Certified Professional Cloud AI", a privacy stand-in) is replaced by Dan's real certificates, because the founder story now names them: NVIDIA-Certified Professional: Agentic AI (issued 9/30/26) and Google Cloud Certified Generative AI Leader (issued 9/28/26). QR code, NVIDIA credential ID, Google ID and series ID are blurred and pixelated (checked: unreadable). First cut showed them for 1.8 s mid-video; Dan: "a little fast ... have that slide on the end card". Final order: PASSED → logo → both certificates held 4.5 s (soft fade-in, slow zoom) while the original music fades out. 25.7 s, 3.3 MB (was 23 s, 4.3 MB). Dan: "a definite go".
