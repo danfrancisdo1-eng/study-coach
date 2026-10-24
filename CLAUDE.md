@@ -22,7 +22,7 @@
 - lib/ — OpenAPI contract (lib/api-spec/openapi.yaml), Orval-generated client and Zod schemas, Drizzle/Postgres schema (lib/db), AI client (lib/integrations-openai-ai-server).
 - Auth: Clerk (Google + Sign in with Apple). Data: Postgres for account data; the web "classic workspace" uses browser IndexedDB only.
 - Backend runs on Render: web service study-coach-api (https://study-coach-api-pskt.onrender.com), built from main. After merging server changes, check its Deploys page; if the merge commit isn't there, use Manual Deploy → Deploy latest commit. Replit is not used (only in the first week).
-- AI today: OpenAI through Replit AI Integrations. 4 chat-completion call sites (coach.ts, study.ts) + 1 audio transcription (coach.ts, gpt-4o-mini-transcribe).
+- AI today (render.yaml): Claude for the chat tasks (AI_PROVIDER=anthropic); OpenAI directly for the classic quiz and for audio transcription (gpt-4o-mini-transcribe). The env var names still start with AI_INTEGRATIONS_OPENAI_ from the Replit days; they now point at api.openai.com. The live values are set in the Render dashboard.
 - AI target: Anthropic Claude for tutoring, quizzes, planning, and image/text extraction, behind a provider-agnostic module so models can be swapped. Model IDs come from server config/env, never hardcoded. The Claude API does not transcribe audio, so lecture transcription stays on a separate speech-to-text provider (to be decided).
 
 ## 3. How to work
