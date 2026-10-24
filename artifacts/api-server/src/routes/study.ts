@@ -34,6 +34,7 @@ import {
   type JsonObject, type Quiz, type Session, type SourceStatus, type StoredQuestion, type StoredQuestionFlag, type StudyQuestionFlagKind,
 } from "../lib/session-quiz";
 import { timeIsUp } from "../lib/exam-timer";
+import { MAX_SPLIT_UPLOAD_CHARS, UPLOAD_PART_CHARS, partName, splitUpload } from "../lib/split-upload";
 import { newUploadsWithoutCourse } from "../lib/course-materials";
 
 import { addsCourseBeyondPlan, examFreeLeft, limitMessage } from "../lib/premium";
@@ -77,7 +78,8 @@ async function premiumGate(res: Response, ownerId: string, state: JsonObject, co
 const router: IRouter = Router();
 const MAX_STATE_BYTES = 900_000;
 const MAX_SESSION_MESSAGES = 80;
-const MAX_EXTRACTED_TEXT_CHARS = 100_000;
+// D-185: a file is read up to 400,000 characters; anything over one part's size is split at its chapters (lib/split-upload).
+const MAX_EXTRACTED_TEXT_CHARS = MAX_SPLIT_UPLOAD_CHARS;
 const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
 const MAX_ARCHIVE_XML_BYTES = 10_000_000;
 const MAX_ARCHIVE_UNCOMPRESSED_BYTES = 40_000_000;
@@ -130,12 +132,12 @@ function materialFormat(filename: string, contentType: string | undefined): Mate
 
 function enforceTextLimit(text: string): string {
   if (text.length > MAX_EXTRACTED_TEXT_CHARS) {
-    throw new MaterialReadError("Extracted text exceeds the 100,000 character limit; no text was returned.");
+    throw new MaterialReadError("Extracted text exceeds the 400,000 character limit; no text was returned.");
   }
   const normalized = text.replace(/\r\n?/g, "\n").trim();
   if (!normalized) throw new MaterialReadError("No readable text was found in this file.");
   if (normalized.length > MAX_EXTRACTED_TEXT_CHARS) {
-    throw new MaterialReadError("Extracted text exceeds the 100,000 character limit; no text was returned.");
+    throw new MaterialReadError("Extracted text exceeds the 400,000 character limit; no text was returned.");
   }
   return normalized;
 }
@@ -524,7 +526,7 @@ async function extractMaterial(buffer: Buffer, format: MaterialFormat): Promise<
             .join(" ");
           charCount += pageText.length;
           if (charCount > MAX_EXTRACTED_TEXT_CHARS) {
-            throw new MaterialReadError("Extracted text exceeds the 100,000 character limit; no text was returned.");
+            throw new MaterialReadError("Extracted text exceeds the 400,000 character limit; no text was returned.");
           }
           if (pageText.trim()) pages.push(pageText);
         }
@@ -643,7 +645,7 @@ async function extractMaterial(buffer: Buffer, format: MaterialFormat): Promise<
           const slideText = paragraphs.join("\n");
           charCount += slideText.length;
           if (charCount > MAX_EXTRACTED_TEXT_CHARS) {
-            throw new MaterialReadError("Extracted text exceeds the 100,000 character limit; no text was returned.");
+            throw new MaterialReadError("Extracted text exceeds the 400,000 character limit; no text was returned.");
           }
           if (slideText) slideTexts.push(slideText);
         }
@@ -759,22 +761,27 @@ router.post("/study/materials/extract", async (req, res): Promise<void> => {
   }
   try {
     const { text, coverage } = await extractMaterial(req.body, format);
-    const notes = await notesForExtraction(owner(req), { uploadName: filename, format, text });
+    // D-185: a big file comes back as parts cut at its chapters; the app saves each part as its own upload,
+    // and the coach writes each part's notes in the background (one notes call per normal-size part).
+    const split = text.length > UPLOAD_PART_CHARS ? splitUpload(text) : [];
+    const parts = split.length > 1 ? split.map((part) => ({ name: partName(filename, part.index, split.length), text: part.text, characterCount: part.text.length, firstHeading: part.firstHeading, lastHeading: part.lastHeading })) : undefined;
+    const notes = parts ? undefined : await notesForExtraction(owner(req), { uploadName: filename, format, text });
     res.json({
       filename,
       format,
       text,
       ...(notes ? { notes } : {}),
+      ...(parts ? { parts } : {}),
       status: "complete",
       coverage,
       characterCount: text.length,
-      coverageNote: coverage === "entire_file"
+      coverageNote: (parts ? `This file is ${text.length.toLocaleString("en-US")} characters, so it was split into ${parts.length} parts at its chapter headings. Each part is saved as its own upload. ` : "") + (coverage === "entire_file"
         ? "All UTF-8 text was read; line endings were normalized and boundary whitespace was trimmed."
         : coverage === "selectable_text_only"
           ? "Only the PDF's selectable text layer is included; scanned or image-only text is not processed."
           : coverage === "document_body_text"
             ? "DOCX body paragraphs and tables are included; embedded images and non-body document sections may be omitted."
-            : "Slide text shapes are included in presentation order; image text, charts, and speaker notes are not extracted.",
+            : "Slide text shapes are included in presentation order; image text, charts, and speaker notes are not extracted."),
     });
   } catch (error) {
     if (error instanceof MaterialReadError) {

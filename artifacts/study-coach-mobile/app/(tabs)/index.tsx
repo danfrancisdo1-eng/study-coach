@@ -19,6 +19,7 @@ import { friendlyError } from '@/lib/friendly-error';
 import { blocksOf, type Span } from '@/lib/coach-text';
 import { topicParts } from '@/lib/topic-label';
 import { daysLeft, daysLeftLabel } from '@/lib/syllabus';
+import { studyRequest } from '@/lib/course-actions';
 import { chipParts, hasValues } from '@/lib/chip-label';
 import { premiumCode } from '@/lib/premium-ui';
 import { ActionButton } from '@/components/ActionButton';
@@ -371,13 +372,13 @@ export default function CoachHome() {
     setIntakeCourseId(course.id);
   };
 
-  const saveMaterial = async (addition: SavedMaterial) => {
+  const saveMaterial = async (additions: SavedMaterial[]) => {
     const previous = stateQuery.data;
     if (!previous) throw new Error('Your account is still loading. Try again in a moment.');
     const state = record(previous.state);
     const materials = Array.isArray(state.materials) ? state.materials : [];
     try {
-      const result = await putState.mutateAsync({ data: { state: { ...state, aiConsent: true, materials: [...materials, addition] }, version: previous.version } });
+      const result = await putState.mutateAsync({ data: { state: { ...state, aiConsent: true, materials: [...materials, ...additions] }, version: previous.version } });
       queryClient.setQueryData([...getGetStudyStateQueryKey(), userId], result);
     } catch (problem) {
       if ((problem as { status?: number }).status === 409) await queryClient.invalidateQueries({ queryKey: [...getGetStudyStateQueryKey(), userId] });
@@ -708,6 +709,8 @@ export default function CoachHome() {
                 busy={busy}
                 savedMaterials={materialsFrom(stateQuery.data?.state, intakeCourse.id)}
                 onSave={saveMaterial}
+                // D-186: straight into questions on this course once something is saved.
+                onStartQuestions={() => { const id = intakeCourse.id; setIntakeCourseId(null); selectCourse(id); handoffSentRef.current = null; router.setParams({ send: studyRequest('practice', null), courseId: id }); }}
                 onStatusChange={(status) => setIntakeBusy(status.uploading || status.saving)}
                 onError={(problem) => setError(readableError(problem))}
                 footer={() => (

@@ -296,6 +296,20 @@ export const StudyMaterialExtractionCoverage = {
   public_page_text: 'public_page_text',
 } as const;
 
+export type StudyMaterialExtractionPartsItem = {
+  /** "<filename> (part 2 of 3)" */
+  name: string;
+  text: string;
+  /**
+     * @minimum 1
+     * @maximum 90000
+     */
+  characterCount: number;
+  /** The part's first chapter or section heading; empty when it has none. */
+  firstHeading: string;
+  lastHeading: string;
+};
+
 export interface StudyMaterialExtraction {
   filename: string;
   format: StudyMaterialExtractionFormat;
@@ -305,12 +319,14 @@ export interface StudyMaterialExtraction {
   coverage: StudyMaterialExtractionCoverage;
   /**
      * @minimum 1
-     * @maximum 100000
+     * @maximum 400000
      */
   characterCount: number;
   coverageNote: string;
-  /** D-124: the coach's Markdown notes for this upload (typos fixed, every date and grading line kept). Absent without AI consent or when the notes could not be written; the raw text is still returned. */
+  /** D-124: the coach's Markdown notes for this upload (typos fixed, every date and grading line kept). Absent without AI consent or when the notes could not be written; the raw text is still returned. Absent when the file came back in parts (D-185). */
   notes?: string;
+  /** D-185: a file over 90,000 characters is split at its chapter headings (then sections, then paragraphs) into parts the app saves as separate uploads. Absent when the file is one part. `text` still holds the whole file, for apps that predate parts. */
+  parts?: StudyMaterialExtractionPartsItem[];
 }
 
 export type StudySessionStatus = typeof StudySessionStatus[keyof typeof StudySessionStatus];

@@ -12,6 +12,7 @@ import { NotesView } from '@/components/NotesView';
 import { ProgressBar, useElapsed } from '@/components/ProgressBar';
 import { materialWorkMs, timeLeftText, uploadThenWork } from '@/lib/progress';
 import { uploadMaterial } from '@/lib/material-upload';
+import { isStorageFull, partRange, partsSavedLine } from '@/lib/upload-parts';
 import { useAuth } from '@clerk/expo';
 
 /**
@@ -104,15 +105,17 @@ function MaterialExtractionTask({ upload, onComplete, onFailure, onProgress }: {
   return null;
 }
 
-export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSave, onStatusChange, onError, footer }: {
+export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSave, onStatusChange, onError, footer, onStartQuestions }: {
   courseId: string;
   aiConsent: boolean;
   /** Parent-level busy flag (other mutations in flight). */
   busy: boolean;
   /** Materials already saved for this course, for the duplicate check. */
   savedMaterials: SavedMaterial[];
-  /** Persist one reviewed material. Throws on failure; the preview is kept so the student can retry. */
-  onSave: (addition: SavedMaterial) => Promise<void>;
+  /** Persist the reviewed material in one save: one upload, or a big file's parts (D-185). Throws on failure; the preview is kept so the student can retry. */
+  onSave: (additions: SavedMaterial[]) => Promise<void>;
+  /** D-186: after a save, the next step is questions (Dan: the app is drilling, not chatting). Absent: no button. */
+  onStartQuestions?: () => void;
   onStatusChange?: (status: IntakeStatus) => void;
   onError?: (problem: unknown) => void;
   /** Rendered under the controls (check-in actions, "Done" button). */
@@ -126,6 +129,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
   const [materialNotice, setMaterialNotice] = useState('');
   const [materialUpload, setMaterialUpload] = useState<PendingMaterial | null>(null);
   const [extractedMaterial, setExtractedMaterial] = useState<StudyMaterialExtraction | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
   const [materialUploading, setMaterialUploading] = useState(false);
   // D-126: what the waiting bar shows. sent = share of the file uploaded; workStart = when the
   // server's part (reading, writing notes) began; size drives the estimate.
@@ -159,7 +163,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
         return;
       }
       setExtractedMaterial(null);
-      setMaterialUploading(true); setSent(0); setFileBytes(0); setWorkStart(null);
+      setMaterialUploading(true); setJustSaved(false); setSent(0); setFileBytes(0); setWorkStart(null);
       setMaterialNotice(`${fileName} · uploading for text extraction. Nothing is saved yet.`);
       setMaterialUpload({ id: id(), uri: picked.uri, filename: fileName, courseId });
     } catch (problem) {
@@ -189,7 +193,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
       }
       const filename = asset.fileName || 'Study photo.jpg';
       setExtractedMaterial(null);
-      setMaterialUploading(true); setSent(0); setFileBytes(0); setWorkStart(null);
+      setMaterialUploading(true); setJustSaved(false); setSent(0); setFileBytes(0); setWorkStart(null);
       setMaterialNotice('Reading your photo…');
       setMaterialUpload({ id: id(), uri: asset.uri, filename, courseId });
     } catch (problem) {
@@ -205,7 +209,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
       const url = new URL(/^https?:\/\//i.test(input) ? input : `https://${input}`);
       if (!['http:', 'https:'].includes(url.protocol) || !url.hostname.includes('.') || url.username || url.password || url.href.length > 2048) throw new Error();
       setExtractedMaterial(null);
-      setMaterialUploading(true); setSent(0); setFileBytes(0); setWorkStart(null);
+      setMaterialUploading(true); setJustSaved(false); setSent(0); setFileBytes(0); setWorkStart(null);
       setMaterialNotice('Reading the website…');
       setMaterialUpload({ id: id(), uri: '', url: url.href, filename: url.hostname, courseId });
     } catch {
@@ -217,7 +221,8 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
     if (!mounted.current || upload.courseId !== courseId) return;
     setMaterialUploading(false);
     setExtractedMaterial(result);
-    setMaterialNotice(result.notes ? `${result.filename}: here are your notes. Check them, then Save.` : `${result.filename} is ready. Notes will be written after you save.`);
+    setMaterialNotice(result.parts?.length ? `${result.filename} is big, so it was split into ${result.parts.length} parts at its chapters. Check them, then Save.`
+      : result.notes ? `${result.filename}: here are your notes. Check them, then Save.` : `${result.filename} is ready. Notes will be written after you save.`);
   };
 
   const handleMaterialExtractionError = (upload: PendingMaterial, problem: unknown) => {
@@ -236,6 +241,37 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
     if (!materialUpload || !extractedMaterial || materialUpload.courseId !== courseId || !extractedMaterial.text.trim() || allBusy) return;
     setSaving(true);
     try {
+      const base = {
+        courseId,
+        extractionFormat: extractedMaterial.format,
+        extractionStatus: extractedMaterial.status,
+        extractionCoverage: extractedMaterial.coverage,
+        coverageNote: extractedMaterial.coverageNote,
+        ...(extractedMaterial.sourceUrl ? { sourceUrl: extractedMaterial.sourceUrl } : {}),
+      };
+      const parts = extractedMaterial.parts ?? [];
+      if (parts.length > 1) {
+        // D-185: every part in one save; when the account is full, keep the parts that fit (from the start) and name the rest.
+        const fresh = parts.filter((part) => !savedMaterials.some((material) => material.courseId === courseId && material.text === part.text));
+        if (!fresh.length) { setMaterialNotice('This material is already saved for this course.'); setExtractedMaterial(null); setMaterialUpload(null); return; }
+        const additions: SavedMaterial[] = fresh.map((part) => ({ ...base, id: id(), name: part.name, text: part.text }));
+        let saved = additions.length;
+        for (;;) {
+          try {
+            if (saved > 0) await onSave(additions.slice(0, saved));
+            break;
+          } catch (problem) {
+            if (!isStorageFull(problem) || saved === 0) throw problem;
+            saved -= 1;
+          }
+        }
+        if (!mounted.current) return;
+        setMaterialNotice(partsSavedLine(extractedMaterial.filename, fresh, saved));
+        if (saved > 0) setJustSaved(true);
+        setExtractedMaterial(null);
+        setMaterialUpload(null);
+        return;
+      }
       if (savedMaterials.some((material) => material.courseId === courseId && material.text === extractedMaterial.text)) {
         setMaterialNotice('This material is already saved for this course.');
         setExtractedMaterial(null);
@@ -243,20 +279,16 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
         return;
       }
       const addition: SavedMaterial = {
+        ...base,
         id: id(),
-        courseId,
         name: extractedMaterial.filename,
         text: extractedMaterial.text,
-        extractionFormat: extractedMaterial.format,
-        extractionStatus: extractedMaterial.status,
-        extractionCoverage: extractedMaterial.coverage,
-        coverageNote: extractedMaterial.coverageNote,
         ...(extractedMaterial.notes ? { notes: extractedMaterial.notes } : {}),
-        ...(extractedMaterial.sourceUrl ? { sourceUrl: extractedMaterial.sourceUrl } : {}),
       };
-      await onSave(addition);
+      await onSave([addition]);
       if (!mounted.current) return;
       setMaterialNotice(`${extractedMaterial.filename} saved to this course.`);
+      setJustSaved(true);
       setExtractedMaterial(null);
       setMaterialUpload(null);
     } catch (problem) {
@@ -298,6 +330,9 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
           />
         </View>
       ) : null}
+      {justSaved && onStartQuestions && !extractedMaterial && !materialUploading ? (
+        <ActionButton label="Start practice questions" icon="edit-3" onPress={onStartQuestions} disabled={allBusy} testID="button-start-after-save" />
+      ) : null}
       {extractedMaterial ? (
         <View style={styles.extractionPreview} testID="panel-material-extraction-preview">
           <Text style={styles.kicker}>REVIEW MATERIAL · {extractedMaterial.format.toUpperCase()}</Text>
@@ -306,11 +341,19 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
           {extractedMaterial.sourceUrl ? <Text selectable style={styles.caption}>{extractedMaterial.sourceUrl}</Text> : null}
           {/* D-124: read-only. Anything wrong? Tell the coach in this course's chat after saving. */}
           <ScrollView style={[styles.input, { maxHeight: 320 }]} nestedScrollEnabled testID="panel-upload-notes">
-            {extractedMaterial.notes ? <NotesView notes={extractedMaterial.notes} /> : <Text selectable style={styles.muted}>{extractedMaterial.text}</Text>}
+            {extractedMaterial.parts?.length ? (
+              // D-185: a big file is listed by part (where each one starts and ends), not as 200,000 characters of text.
+              extractedMaterial.parts.map((part, i) => (
+                <View key={part.name} style={styles.partRow} testID="row-upload-part">
+                  <Text style={styles.cardTitle}>Part {i + 1} of {extractedMaterial.parts!.length}</Text>
+                  <Text style={styles.muted}>{partRange([part]) || `${part.characterCount.toLocaleString()} characters`}</Text>
+                </View>
+              ))
+            ) : extractedMaterial.notes ? <NotesView notes={extractedMaterial.notes} /> : <Text selectable style={styles.muted}>{extractedMaterial.text}</Text>}
           </ScrollView>
-          <Text style={styles.caption}>{extractedMaterial.notes ? 'Anything wrong? After saving, tell the coach in this course\'s chat and it fixes the notes.' : 'The coach will turn this into notes after you save.'}</Text>
+          <Text style={styles.caption}>{extractedMaterial.parts?.length ? 'Each part is saved as its own upload, and the coach writes notes for each one.' : extractedMaterial.notes ? 'Anything wrong? After saving, tell the coach in this course\'s chat and it fixes the notes.' : 'The coach will turn this into notes after you save.'}</Text>
           <View style={styles.buttonRow}>
-            <ActionButton label="Save to course" icon="check" onPress={() => void saveExtractedMaterial()} disabled={allBusy || !extractedMaterial.text.trim()} testID="button-save-extracted-material" />
+            <ActionButton label={extractedMaterial.parts?.length ? `Save ${extractedMaterial.parts.length} parts` : 'Save to course'} icon="check" onPress={() => void saveExtractedMaterial()} disabled={allBusy || !extractedMaterial.text.trim()} testID="button-save-extracted-material" />
             <ActionButton
               label="Discard"
               secondary
@@ -344,6 +387,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   stack: { gap: 14 },
   extractionPreview: { padding: 14, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, gap: 10 },
+  partRow: { gap: 2, paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   kicker: { color: colors.mutedForeground, fontSize: 12.5, lineHeight: 17, fontWeight: '600' },
   cardTitle: { color: colors.foreground, fontSize: 17, lineHeight: 23, fontWeight: '700' },
   muted: { color: colors.mutedForeground, fontSize: 13, lineHeight: 19 },
