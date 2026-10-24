@@ -17,6 +17,8 @@ import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { blocksOf, sectionsOf, type Block, type Span } from '@/lib/coach-text';
+import { MemoryCardsSheet, useCardsSeen, useMemoryCards } from '@/components/MemoryCards';
+import { cardsBarLabel, isMemoryTipsChip } from '@/lib/memory-cards';
 import { topicParts } from '@/lib/topic-label';
 import { daysLeft, daysLeftLabel } from '@/lib/syllabus';
 import { studyRequest } from '@/lib/course-actions';
@@ -206,6 +208,12 @@ export default function CoachHome() {
   // D-130 (Dan: "No option for exam or simul"): after a graded set on a certification exam, the
   // after-set chips also offer the timed Simulated exam (opens the course's timed sheet).
   const chips = focusCourse?.kind === 'exam' && baseChips.includes('Another set on everything') && !baseChips.includes(SIM_EXAM_CHIP) ? [...baseChips, SIM_EXAM_CHIP] : baseChips;
+  // D-194: the latest graded set's memory cards, behind a bar above the chat box (one card at a time).
+  const cardsSessionId = liveSet && activeQuiz?.sessionId !== liveSet.sessionId ? liveSet.sessionId : null;
+  const memoryCards = useMemoryCards(cardsSessionId, userId);
+  const [cardsSeen, markCardsSeen] = useCardsSeen(userId, cardsSessionId);
+  const [cardsOpen, setCardsOpen] = useState(false);
+  const cardsBar = cardsBarLabel(memoryCards, cardsSeen);
 
   // The list is inverted (newest message first in the data, drawn at the bottom), so it
   // opens at the newest message with no scroll arithmetic; scrollToEnd kept landing short.
@@ -462,7 +470,8 @@ export default function CoachHome() {
           <View style={column ? styles.choiceColumn : styles.chipRow}>
             {parts.map(({ text: chip, label, value }) => (
               <Pressable key={chip} accessibilityRole="button" accessibilityLabel={value !== null ? `${label}, ${value}` : undefined} disabled={busy}
-                onPress={() => (chip === SIM_EXAM_CHIP && focusCourse ? router.push({ pathname: '/course/[courseId]', params: { courseId: focusCourse.id, timed: '1' } })
+                onPress={() => (isMemoryTipsChip(chip) && cardsBar ? setCardsOpen(true)
+                  : chip === SIM_EXAM_CHIP && focusCourse ? router.push({ pathname: '/course/[courseId]', params: { courseId: focusCourse.id, timed: '1' } })
                   : chip === REVIEW_CHIP && focusCourse ? router.push({ pathname: '/review/[courseId]', params: { courseId: focusCourse.id } }) : void sendText(chip))}
                 style={[value !== null ? styles.choiceRow : styles.suggestion, column && value === null && styles.choicePill, busy && styles.disabled]} testID={chip === SIM_EXAM_CHIP ? 'button-suggestion-simulated' : chip === REVIEW_CHIP ? 'button-suggestion-review' : value !== null ? 'button-choice' : 'button-suggestion'}>
                 {value !== null ? (
@@ -642,6 +651,16 @@ export default function CoachHome() {
           <Feather name="chevron-right" size={18} color={colors.primaryForeground} />
         </Pressable>
       ) : null}
+      {consented && !loading && !loadError && !activeStudyId && cardsBar ? (
+        <Pressable accessibilityRole="button" accessibilityHint="Opens your memory cards, one at a time" onPress={() => setCardsOpen(true)} style={({ pressed }) => [styles.cardsBar, pressed && styles.pressed]} testID="button-memory-cards">
+          {memoryCards?.status === 'writing' ? <ActivityIndicator size="small" color={colors.hookText} /> : <Text style={styles.cardsBarIcon} accessibilityElementsHidden importantForAccessibility="no">🧠</Text>}
+          <Text style={styles.cardsBarText} numberOfLines={1}>{cardsBar}</Text>
+          <Feather name="chevron-right" size={18} color={colors.hookText} />
+        </Pressable>
+      ) : null}
+      {cardsSessionId && userId ? (
+        <MemoryCardsSheet visible={cardsOpen} view={memoryCards} sessionId={cardsSessionId} userId={userId} seen={cardsSeen} onSeen={markCardsSeen} onClose={() => setCardsOpen(false)} />
+      ) : null}
       {/* The set or deck over the chat (D-059): a dimmed thread behind, a sheet that fills the screen, Back to chat on top. */}
       <Modal visible={studyOpen && Boolean(quizSessionId || deckSessionId) && Boolean(userId)} transparent animationType="fade" onRequestClose={() => setStudyOpen(false)}>
         <View style={styles.overlay}>
@@ -803,6 +822,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   setCardTitle: { color: colors.foreground, fontSize: 14.5, fontWeight: '700' },
   resumeBar: { marginHorizontal: 14, marginBottom: 6, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, borderRadius: 14, backgroundColor: colors.primary },
   resumeText: { flex: 1, color: colors.primaryForeground, fontSize: 15, fontWeight: '700' },
+  cardsBar: { marginHorizontal: 14, marginBottom: 6, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, borderRadius: 14, backgroundColor: colors.hookBg, borderWidth: 1, borderColor: colors.chipBorder },
+  cardsBarIcon: { fontSize: 18 },
+  cardsBarText: { flex: 1, color: colors.hookText, fontSize: 15, fontWeight: '700' },
   backToChat: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary, marginTop: 4 },
   backToChatText: { color: colors.primaryForeground, fontSize: 17, fontWeight: '700' },
   toCourses: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },

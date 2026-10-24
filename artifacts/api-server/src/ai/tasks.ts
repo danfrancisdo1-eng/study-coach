@@ -4,7 +4,7 @@
 //   AI_PROVIDER_<TASK>=openai|anthropic per-task override, e.g. AI_PROVIDER_TUTOR
 //   AI_MODEL_<TASK>=<model id>          per-task model override, e.g. AI_MODEL_TUTOR
 
-export type AiTask = "image_ocr" | "tutor" | "session_quiz" | "syllabus" | "classic_quiz" | "exam_plan" | "coach" | "flashcards" | "exam_guide" | "memory_sheet" | "quiz_check" | "flag_check" | "web_lookup" | "review_sheet" | "course_notes" | "upload_notes" | "upload_notes_fix" | "course_router";
+export type AiTask = "image_ocr" | "tutor" | "session_quiz" | "syllabus" | "classic_quiz" | "exam_plan" | "coach" | "flashcards" | "exam_guide" | "memory_sheet" | "quiz_check" | "flag_check" | "web_lookup" | "review_sheet" | "course_notes" | "upload_notes" | "upload_notes_fix" | "course_router" | "memory_cards";
 export type AiProvider = "openai" | "anthropic";
 export type Effort = "low" | "medium" | "high";
 
@@ -23,7 +23,7 @@ type ProviderDefaults = Omit<TaskConfig, "provider" | "json">;
 
 // JSON output tasks get a schema from ./schemas (TASK_SCHEMAS).
 const JSON_TASKS: Record<AiTask, boolean> = {
-  image_ocr: true, tutor: false, session_quiz: true, syllabus: true, classic_quiz: true, exam_plan: true, coach: true, flashcards: true, exam_guide: false, memory_sheet: true, quiz_check: true, flag_check: true, web_lookup: false, review_sheet: false, course_notes: true, upload_notes: true, upload_notes_fix: true, course_router: true,
+  image_ocr: true, tutor: false, session_quiz: true, syllabus: true, classic_quiz: true, exam_plan: true, coach: true, flashcards: true, exam_guide: false, memory_sheet: true, quiz_check: true, flag_check: true, web_lookup: false, review_sheet: false, course_notes: true, upload_notes: true, upload_notes_fix: true, course_router: true, memory_cards: true,
 };
 
 // Today's production settings.
@@ -46,6 +46,7 @@ const OPENAI: Record<AiTask, ProviderDefaults> = {
   upload_notes: { model: "gpt-5.6-terra", maxTokens: 16000 },
   upload_notes_fix: { model: "gpt-5.6-terra", maxTokens: 16000 },
   course_router: { model: "gpt-5.4-mini", maxTokens: 1500 },
+  memory_cards: { model: "gpt-5.6-terra", maxTokens: 6000 },
 };
 
 // Starting points from docs/AUDIT.md section 5c; confirmed or changed by evals.
@@ -83,6 +84,8 @@ const ANTHROPIC: Record<AiTask, ProviderDefaults> = {
   upload_notes_fix: { model: "claude-sonnet-5-5", maxTokens: 32000, effort: "low" },
   // Course router (D-127): picks a big course's sections for each question. Small and fast.
   course_router: { model: "claude-haiku-4-5", maxTokens: 1500 },
+  // Memory cards (D-194): after a graded set, one card per top miss (diagnosis → technique → tool).
+  memory_cards: { model: "claude-sonnet-5-5", maxTokens: 12000, effort: "low" },
 };
 
 function provider(value: string | undefined): AiProvider | undefined {

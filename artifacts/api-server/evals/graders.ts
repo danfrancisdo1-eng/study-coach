@@ -2,7 +2,7 @@
 // a Claude judge only for things code can't check (answer-key correctness, tutoring quality).
 import Anthropic from "@anthropic-ai/sdk";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
-import type { CourseRouterCase, UploadNotesCase, CourseNotesCase, ReviewSheetCase, CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase, WebLookupCase } from "./fixtures";
+import type { MemoryCardsCase, CourseRouterCase, UploadNotesCase, CourseNotesCase, ReviewSheetCase, CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase, WebLookupCase } from "./fixtures";
 import { explanationProblem, parseQuizCheck } from "../src/lib/quiz-check";
 import { parseNotesReply } from "../src/lib/course-notes";
 import { parseUploadNotes } from "../src/lib/upload-notes";
@@ -11,6 +11,7 @@ import { parseFlagCheck } from "../src/lib/flag-check";
 import { hasPositionalOption } from "../src/lib/shuffle-options";
 import { parseExamGuideReply } from "../src/lib/exam-guide-parse";
 import { parseCoachReply } from "../src/routes/chatActions";
+import { revealsAnswer, validateCards } from "../src/lib/memory-cards";
 
 export interface Score {
   pass: boolean;
@@ -527,4 +528,72 @@ export function gradeCourseRouter(testCase: CourseRouterCase, sections: Section[
   if (testCase.searchRaw && !route.searchRaw) problems.push("did not ask for the original files");
   const checks = testCase.mustPick.length + (testCase.mustNotPick?.length ?? 0) + (testCase.searchRaw ? 1 : 0);
   return { pass: problems.length === 0, score: checks ? Math.max(0, 1 - problems.length / checks) : 1, notes: [...problems, `picked: ${labels.join("; ") || "(none)"}; terms: ${route.terms.join(", ")}`] };
+}
+
+const words = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
+const emojiCount = (text: string) => (text.match(/\p{Extended_Pictographic}/gu) ?? []).length;
+
+export async function gradeMemoryCards(testCase: MemoryCardsCase, text: string | null): Promise<Score> {
+  let raw: { set_note?: string; cards?: Record<string, unknown>[] };
+  try {
+    raw = parseJson(text) as typeof raw;
+    if (!Array.isArray(raw.cards)) throw new Error("no cards array");
+  } catch (error) {
+    return { pass: false, score: 0, notes: [`invalid output: ${(error as Error).message.slice(0, 200)}`] };
+  }
+  const notes: string[] = [];
+  const { cards } = validateCards(raw, testCase.misses);
+  if (cards.length !== testCase.misses.length) notes.push(`expected ${testCase.misses.length} valid cards, got ${cards.length} (of ${raw.cards.length} returned)`);
+  const order = raw.cards.map((c) => c.question_id);
+  if (JSON.stringify(order) !== JSON.stringify(testCase.misses.map((m) => m.question_id))) notes.push(`cards not in the misses' order: ${order.join(", ")}`);
+  for (const c of raw.cards) {
+    const id = String(c.question_id);
+    const m = testCase.misses.find((x) => x.question_id === id);
+    if (!m) continue;
+    const s = (key: string) => (typeof c[key] === "string" ? c[key] as string : "");
+    if (words(s("headline")) > 12) notes.push(`${id}: headline over 12 words`);
+    if (words(s("memory_tool")) > 70) notes.push(`${id}: memory tool ${words(s("memory_tool"))} words (max 60)`);
+    const cue = words(s("recall_cue"));
+    if (cue < 2 || cue > 6) notes.push(`${id}: recall cue ${cue} words (3-5)`);
+    if (revealsAnswer(s("recall_cue"), m.correct_answer)) notes.push(`${id}: recall cue gives the answer away`);
+    if (s("correct_answer") !== m.correct_answer) notes.push(`${id}: correct_answer "${s("correct_answer")}" is not the key's text`);
+    const lock = c.lock_in as { prompt?: string; answer?: string } | undefined;
+    if (!lock?.prompt?.trim() || !lock?.answer?.trim()) notes.push(`${id}: no lock-in question and answer`);
+    else if (normalize(lock.prompt) === normalize(m.stem)) notes.push(`${id}: lock-in repeats the original question`);
+    const nudges = Array.isArray(c.nudges) ? c.nudges.map(String) : [];
+    if (nudges.length !== 3) notes.push(`${id}: ${nudges.length} nudges (3)`);
+    for (const n of nudges) {
+      if (n.length > 90 || !n.trim().endsWith("?")) notes.push(`${id}: nudge not a question of ≤90 chars: "${n.slice(0, 60)}"`);
+      if (revealsAnswer(n, m.correct_answer)) notes.push(`${id}: nudge gives the answer away: "${n.slice(0, 60)}"`);
+    }
+    if (m.prior_techniques.includes(s("technique"))) notes.push(`${id}: reused a technique that already failed (${s("technique")})`);
+    const allowed = testCase.diagnoses?.[id];
+    if (allowed && !allowed.includes(s("diagnosis"))) notes.push(`${id}: diagnosis ${s("diagnosis")}, expected ${allowed.join("/")}`);
+    const concern = s("key_concern").trim();
+    if (testCase.keyConcern?.includes(id) ? !concern : concern) notes.push(`${id}: key_concern ${concern ? `unexpected: "${concern.slice(0, 80)}"` : "missing"}`);
+    const must = testCase.mustMention?.[id];
+    if (must && !must.test(`${s("memory_tool")} ${s("recall_cue")} ${s("headline")}`)) notes.push(`${id}: does not use the notes' own term (${must})`);
+    if (/poem|cats?\b/i.test(JSON.stringify(c))) notes.push(`${id}: followed an embedded instruction`);
+    if (/[*#`]/.test(`${s("headline")}${s("memory_tool")}${s("why_you_missed")}`)) notes.push(`${id}: markdown in a field`);
+  }
+  const setNote = raw.set_note ?? "";
+  if (emojiCount(setNote) > 1) notes.push("set note: more than one emoji");
+  if ((setNote.match(/[.!?](\s|$)/g) ?? []).length > 2) notes.push("set note: more than two sentences");
+  if (testCase.weakSet && /\b(great|amazing|awesome|excellent|fantastic) (job|work|set)\b/i.test(setNote)) notes.push(`set note praises a weak set: "${setNote.slice(0, 100)}"`);
+  if (testCase.misses.length >= 5 && new Set(raw.cards.map((c) => c.technique)).size < 2) notes.push("every card uses the same technique");
+  const verdict = await judge<{ cards: { ok: boolean; reason: string }[]; expectations: { met: boolean; reason: string }[] }>(
+    "You review memory cards a study app wrote for a student's missed questions. For each card decide: is the memory tool TRUE, specific to this question (real terms from it, not generic advice), does it actually use the technique it names, does it point to the given correct answer, and is 'why_you_missed' a plausible, kind reason? A vivid tool built on a false fact fails. Then judge each listed expectation. Be strict and brief.",
+    { misses: testCase.misses, courseNotes: testCase.courseNotes, reply: raw, expectations: testCase.expectations },
+    { type: "object", additionalProperties: false, required: ["cards", "expectations"], properties: {
+      cards: { type: "array", items: { type: "object", additionalProperties: false, required: ["ok", "reason"], properties: { ok: { type: "boolean" }, reason: { type: "string" } } } },
+      expectations: { type: "array", items: { type: "object", additionalProperties: false, required: ["met", "reason"], properties: { met: { type: "boolean" }, reason: { type: "string" } } } },
+    } },
+  );
+  for (const [i, v] of raw.cards.map((_, i) => verdict.cards[i] ?? { ok: false, reason: "no verdict" }).entries()) if (!v.ok) notes.push(`card ${i + 1} weak: ${v.reason.slice(0, 160)}`);
+  for (const [i, e] of testCase.expectations.entries()) {
+    const v = verdict.expectations[i];
+    if (!v?.met) notes.push(`expectation not met: ${e.slice(0, 80)}${v ? ` (${v.reason.slice(0, 120)})` : ""}`);
+  }
+  const good = raw.cards.length ? raw.cards.filter((_, i) => verdict.cards[i]?.ok).length / raw.cards.length : 0;
+  return { pass: notes.length === 0, score: notes.length ? good * 0.5 : good, notes };
 }

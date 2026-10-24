@@ -105,8 +105,12 @@ export type Session = {
   daily?: boolean;
   scores: { diagnostic: Record<string, unknown> | null; targeted: Record<string, unknown> | null };
   reviewSchedule: Array<Record<string, unknown>>;
+  /** D-194: the memory cards for this session's graded set (memory-cards.ts). */
+  memoryCards?: MemoryCardsRecord | null;
   _version?: number;
 };
+
+import { memoryCardsView, type MemoryCardsRecord } from "./memory-cards";
 
 export function jsonObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -188,12 +192,13 @@ export function safeSession(session: Session): Record<string, unknown> {
     grade: value.grade,
     timer: value.timer ?? null,
   });
-  const { _version, attempts = [], quiz: currentQuiz, flashcards, ...publicSession } = session;
+  const { _version, attempts = [], quiz: currentQuiz, flashcards, memoryCards: _memoryCards, ...publicSession } = session;
   return {
     ...publicSession,
     quiz: currentQuiz ? publicQuiz(currentQuiz) : null,
     attempts: attempts.map(publicQuiz),
     flashcards: flashcards ?? null,
+    memoryCards: memoryCardsView(session, new Date()),
   };
 }
 

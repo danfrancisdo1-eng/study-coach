@@ -96,6 +96,27 @@ export const courseNotesSchema = object({ notes: string, summary: string });
 export const uploadNotesSchema = object({ notes: string });
 export const courseRouterSchema = object({ sections: strings, searchRaw: { type: "boolean" }, terms: strings });
 
+export const memoryCardsSchema = object({
+  set_note: string,
+  cards: {
+    type: "array",
+    items: object({
+      question_id: string,
+      diagnosis: { type: "string", enum: ["CONFUSION", "GAP", "SEQUENCE", "MECHANISM", "PROCEDURE", "MISREAD"] },
+      technique: { type: "string", enum: ["contrast_pair", "keyword_image", "acronym_acrostic", "chunking", "story_chain", "visual_scene", "why_chain", "analogy", "worked_step", "trap_flag", "mini_palace"] },
+      headline: string,
+      why_you_missed: string,
+      correct_answer: string,
+      memory_tool: string,
+      recall_cue: string,
+      visual_cue: string,
+      lock_in: object({ prompt: string, answer: string }),
+      nudges: strings,
+      key_concern: string,
+    }),
+  },
+});
+
 export const TASK_SCHEMAS: Partial<Record<AiTask, JsonSchema>> = {
   course_notes: courseNotesSchema,
   upload_notes: uploadNotesSchema,
@@ -105,6 +126,7 @@ export const TASK_SCHEMAS: Partial<Record<AiTask, JsonSchema>> = {
   flag_check: flagCheckSchema,
   coach: coachSchema,
   memory_sheet: memorySheetSchema,
+  memory_cards: memoryCardsSchema,
   flashcards: flashcardsSchema,
   image_ocr: imageOcrSchema,
   session_quiz: sessionQuizSchema,
