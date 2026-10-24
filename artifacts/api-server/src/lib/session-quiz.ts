@@ -1,6 +1,7 @@
 // Session + quiz data shapes, source selection, quiz generation and the public view of
 // a session. Moved verbatim from routes/study.ts (behavior-preserving refactor) so the
 // chat-first home (routes/chat.ts) can start question sets with the same code.
+import { studySources, studyText } from "./study-text";
 import { randomUUID } from "node:crypto";
 import { logger } from "./logger";
 import { complete } from "../ai";
@@ -232,13 +233,15 @@ export function sourceChunks(state: JsonObject | null, courseId: string, topic: 
   chunks: Array<{ label: string; text: string; score: number }>;
   status: SourceStatus;
 } {
-  const materials = [...(Array.isArray(state?.materials) ? state.materials : []), ...extraMaterials];
+  // D-187: notes first, a lecture's notes instead of its transcript (lib/study-text).
+  const materials = studySources(Array.isArray(state?.materials) ? state.materials : [], extraMaterials, courseId);
   const queryWords = `${topic} ${courseId}`.toLowerCase().split(/\W+/).filter((word) => word.length > 2);
   const all: Array<{ label: string; text: string; score: number }> = [];
   for (const item of materials) {
     // Only this course's uploads (D-121): one that belongs to no course reaches no course.
-    if (!jsonObject(item) || item.courseId !== courseId || typeof item.text !== "string") continue;
-    const text = item.text;
+    if (!jsonObject(item) || item.courseId !== courseId) continue;
+    const text = studyText(item);
+    if (text === null) continue;
     const label = typeof item.name === "string" ? item.name : typeof item.filename === "string" ? item.filename : "Course material";
     for (let offset = 0; offset < text.length; offset += SOURCE_CHUNK_LENGTH) {
       const chunk = text.slice(offset, offset + SOURCE_CHUNK_LENGTH);

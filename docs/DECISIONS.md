@@ -34,6 +34,12 @@ Newest first. Each entry: date, decision, why, who decided.
 - Build #92. Verified here: repo typecheck; `pnpm run test` 293/293 (new: coach-v32-inputs); mobile tests 124/124; iOS bundle exports; evals compile.
 - **Decided by:** Dan.
 
+## 2026-10-24 — D-187: Practice sets, flashcards, memory tricks and the review sheet read the notes
+- Dan, on D-124's choice (they read the full raw text): "why wouldn't the flashcards and the memory tricks go off the bulleted condensed file that actually has the meat of the lecture in it, not the ahs and talking to his friend about Saturday night?" D-124 kept the raw text for "more detail makes better questions", decided before lecture notes existed.
+- Now each upload's notes are used when they exist, the raw text only while there are none; a lecture's notes replace its transcript; a lecture without notes still gives its transcript (`lib/study-text.ts`, used by sourceChunks). The course router still searches the original files for anything the notes don't cover (D-128), so exact quotes and dates are not lost.
+- Server only; no phone change. Verified here: api typecheck; `pnpm run test` 292/292 (new: study-from-notes). Before merging: a 3-student simulation on the Mac (`node sims/run.mjs --quick`, about $2–3) to compare question quality; this cloud session has no AI key.
+- **Decided by:** Dan.
+
 ## 2026-10-24 — D-188: College courses ask for the syllabus; exams show their countdown
 - Dan: "it's really important that with these college kids that we get the syllabus ... with the syllabus, we get the dates." For a certification exam "the equivalent is basically the date that they're taking the exam. And we already asked for that." Until now the app only named a syllabus as one example in a list.
 - After adding a college course, "What next?" opens with "Add your syllabus" ("Every quiz and exam date, and what's covered."), which lands on the course's upload card with "Start with your syllabus: a photo of it or the PDF." Exams keep "Add material".
