@@ -1,5 +1,20 @@
 # Progress
 
+## Session 20 — 2026-10-23 (Dan reviewing build 15) — branch `feat/beta-round-3` → main
+
+### Done (D-181, one commit each)
+- **Intro video:** ends on Dan's real certificates (NVIDIA-Certified Professional: Agentic AI, Google Cloud Generative AI Leader) held 4.5 s after the logo while the music fades; QR code and every ID blurred and pixelated. 25.7 s, 3.3 MB. Build #84.
+- **Welcome:** "I'll explore first" removed (it did nothing). The message box is live under the welcome ("Or ask your coach anything"); the first question moves the welcome aside for this visit, waits through the consent card when needed, then goes out. Placeholder elsewhere "Ask your coach anything". Build #85.
+- **About:** `app/about.tsx` "Why I built this" (Account → Why I built this), both certifications on glass cards, Dan's story; a founder line on the paywall above Restore Purchases that opens it. Copy in `lib/founder.ts`; a test checks no credential or series ID appears. Build #86.
+- Verified here: mobile typecheck; mobile tests 123/123; `expo export --platform ios` after each commit (8.5 MB hbc; intro.mp4 3.3 MB in the bundle).
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (About rows are non-interactive; the founder link is a full-width row ≥ 44 pt). 2. One primary action: PASS (welcome now has exactly one button; the composer is secondary). 3. Chunked: PASS (About: two credential cards, three short paragraphs). 4. Native patterns: PASS (back header; Account row pattern). 5. Progress: unchanged. 6. One accent, not colour-only: PASS. 7. Tokens; Dark Mode: PASS (glass cards use GlassFill / glassBorder, text tokens). 8. Contrast, labels, Reduce Motion: PASS (credential cards have one combined label; the founder link has a hint; no new motion). 9. Paywall rules: PASS (the founder line sits below the terms and above Restore; nothing hides Restore, terms or close).
+
+### Needs real-iPhone check (next TestFlight build)
+- Sign out (or a fresh install): the intro ends on the two certificates, readable, and then the tour starts.
+- New account with no course: the welcome has one button; type "How does this work?" in the box and send → consent card → after "I understand and consent" the question goes out by itself and the coach answers.
+- Account → Why I built this; Account → See Premium → the founder line opens the same page.
 ## Session 20 — 2026-10-24 (Dan on the phone; Claude in the cloud) — branch `fix/add-course-button`
 
 ### Done
