@@ -12,7 +12,7 @@ import { Confetti } from '@/components/Confetti';
 import { GlassFill, glassBorder } from '@/components/GlassFill';
 import { AnswerMark } from '@/components/AnswerMark';
 import { useAnswerSounds } from '@/hooks/useAnswerSounds';
-import { answerKind, shouldPlayAnswerSound, shouldShowAnswerMark } from '@/lib/answer-feedback';
+import { answerKind, rightStreak, shouldPlayAnswerSound, shouldShowAnswerMark, verdictLine } from '@/lib/answer-feedback';
 import { feedbackHaptic, playFeedbackSound, prepareFeedbackSounds } from '@/lib/feedback-sounds';
 import { isPerfect } from '@/lib/perfect-score';
 import { useColors } from '@/hooks/useColors';
@@ -177,11 +177,15 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
     const feedback = question.feedback;
     if (!feedback) return null;
     const correct = feedback.selectedOptionId === feedback.correctOptionId;
+    // D-192: a few warm words after the verdict, and a 🔥 streak for 3+ right in a row.
+    const judged = questions.filter((q) => q.feedback);
+    const position = judged.indexOf(question);
+    const streak = rightStreak(judged.map((q) => q.feedback!.selectedOptionId === q.feedback!.correctOptionId), position);
     return (
       <View style={styles.feedback}>
         {/* Grok's feedback layout (Dan: "match it", D-063): a tinted panel headed by the verdict, then the trick as its own card. */}
         <View style={[styles.verdictPanel, correct ? styles.verdictPanelRight : styles.verdictPanelWrong]} testID={correct ? 'panel-verdict-right' : 'panel-verdict-wrong'}>
-          <CardText style={[styles.verdictTitle, { color: correct ? colors.correct : colors.wrong }]}>{correct ? 'Correct' : 'Not this one'}</CardText>
+          <CardText style={[styles.verdictTitle, { color: correct ? colors.correct : colors.wrong }]}>{verdictLine({ right: correct, streak, position })}</CardText>
           <CardText style={styles.body}>{feedback.explanation}</CardText>
         </View>
         {feedback.hook ? (

@@ -10,6 +10,7 @@ import type { StudyStateCoursesItem } from './studyStateCoursesItem';
 import type { StudyStateDeadlinesItem } from './studyStateDeadlinesItem';
 import type { StudyStateMaterialsItem } from './studyStateMaterialsItem';
 import type { StudyStateReviewScheduleItem } from './studyStateReviewScheduleItem';
+import type { StudyStateSetSize } from './studyStateSetSize';
 import type { StudyStateTopics } from './studyStateTopics';
 
 /**
@@ -17,6 +18,8 @@ import type { StudyStateTopics } from './studyStateTopics';
  */
 export interface StudyState {
   aiConsent: boolean;
+  /** D-189: questions per practice set the student chose in Account; 10 when absent. */
+  setSize?: StudyStateSetSize;
   courses?: StudyStateCoursesItem[];
   materials?: StudyStateMaterialsItem[];
   topics?: StudyStateTopics;

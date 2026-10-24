@@ -7,7 +7,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
-import { getGetPremiumStatusQueryKey, useDeleteAccount, useGetPremiumStatus, useRefreshPremium } from '@workspace/api-client-react';
+import { getGetPremiumStatusQueryKey, getGetStudyStateQueryKey, useDeleteAccount, useGetPremiumStatus, useGetStudyState, usePutStudyState, useRefreshPremium } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { useAnswerSounds } from '@/hooks/useAnswerSounds';
 import { AuroraBackground } from '@/components/AuroraBackground';
@@ -36,6 +36,23 @@ export default function AccountScreen() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false); // D-171: the header's hairline once the page moves under it
   const answerSounds = useAnswerSounds(); // D-172
+  // D-189 (Dan: "let them choose"): questions per set, 10 or 20, saved on the account so the coach and every device use it.
+  const stateKey = [...getGetStudyStateQueryKey(), userId];
+  const stateQuery = useGetStudyState({ query: { queryKey: stateKey, enabled: !!userId } });
+  const putState = usePutStudyState();
+  const setSize = (stateQuery.data?.state as { setSize?: unknown } | undefined)?.setSize === 20 ? 20 : 10;
+  const chooseSetSize = async (size: 10 | 20) => {
+    const current = stateQuery.data;
+    if (!current || size === setSize || putState.isPending) return;
+    try {
+      const base = (current.state && typeof current.state === 'object' ? current.state : {}) as Record<string, unknown>;
+      const result = await putState.mutateAsync({ data: { state: { ...base, aiConsent: base.aiConsent === true, setSize: size }, version: current.version } });
+      queryClient.setQueryData(stateKey, result);
+    } catch (problem) {
+      if ((problem as { status?: number }).status === 409) await queryClient.invalidateQueries({ queryKey: stateKey });
+      setPlanNote(friendlyError(problem));
+    }
+  };
   const [deleteWord, setDeleteWord] = useState('');
   const [error, setError] = useState('');
   // Premium (D-090): the plan line, Restore Purchases and Manage subscription.
@@ -127,6 +144,21 @@ export default function AccountScreen() {
           </View>
           <Switch value={answerSounds.enabled} onValueChange={answerSounds.setEnabled} trackColor={{ true: colors.primary }} testID="switch-answer-sounds" />
         </View>
+        <View style={styles.row} testID="row-set-size">
+          <Feather name="list" size={18} color={colors.mutedForeground} />
+          <View style={styles.rowCopy}>
+            <Text style={styles.rowName}>Questions per set</Text>
+            <Text style={styles.caption}>Quick sets of 10, or 20 at a time.</Text>
+          </View>
+          <View style={styles.segment} accessibilityRole="radiogroup" accessibilityLabel="Questions per set">
+            {([10, 20] as const).map((size) => (
+              <Pressable key={size} accessibilityRole="radio" accessibilityState={{ selected: setSize === size }} accessibilityLabel={`${size} questions`} disabled={putState.isPending || !stateQuery.data}
+                onPress={() => void chooseSetSize(size)} style={[styles.segmentItem, setSize === size && styles.segmentOn]} testID={`button-set-size-${size}`}>
+                <Text style={[styles.segmentText, setSize === size && styles.segmentTextOn]}>{size}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
         {row('log-out', 'Sign out', 'Back to the sign-in page', () => void leaveAndSignOut(), 'button-sign-out')}
         <View style={styles.divider} />
         {row('trash-2', 'Delete my account', 'Removes your courses, sets, chats and sign-in. Cannot be undone.', () => { setError(''); setDeleteWord(''); setDeleteOpen(true); }, 'button-delete-account', true)}
@@ -160,6 +192,11 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, paddingHorizontal: 12 },
   rowCopy: { flex: 1, minWidth: 0, gap: 2 },
   rowName: { color: colors.foreground, fontSize: 15, fontWeight: '600' },
+  segment: { flexDirection: 'row', borderRadius: 10, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
+  segmentItem: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, backgroundColor: colors.card },
+  segmentOn: { backgroundColor: colors.primary },
+  segmentText: { color: colors.foreground, fontSize: 15, fontWeight: '700' },
+  segmentTextOn: { color: colors.primaryForeground },
   planCard: { gap: 10, padding: 14, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, marginBottom: 8 },
   planButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.primary },
   planButtonText: { color: colors.primaryForeground, fontSize: 15, fontWeight: '700' },
