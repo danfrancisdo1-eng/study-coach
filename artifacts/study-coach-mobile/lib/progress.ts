@@ -45,3 +45,14 @@ export function writtenProgress(written: number, expected: number): { fraction: 
   const fraction = Math.min(1, written / expected);
   return { fraction, label: `Writing questions: ${Math.min(written, expected)} of ${expected} (${Math.round(fraction * 100)}%)` };
 }
+
+/**
+ * What the coach screen shows while a request is out (D-126, D-191): a filling bar for the slow
+ * ones (a set's first questions about 15 s, a deck about 20 s: Dan timed 19 s), dots for a chat.
+ */
+export function waitFor(content: string | null | undefined): { label: string; expectedMs: number } | null {
+  const text = content ?? '';
+  if (/flash ?cards?|\bdeck\b/i.test(text)) return { label: 'Coach is making your flashcards…', expectedMs: 20_000 };
+  if (/practice|exam|set|quiz|question/i.test(text)) return { label: 'Coach is writing the first questions…', expectedMs: 15_000 };
+  return null;
+}

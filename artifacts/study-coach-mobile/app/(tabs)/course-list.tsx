@@ -21,6 +21,7 @@ import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
 import { CourseListSkeleton } from '@/components/Skeleton';
 import { KindChoice } from '@/components/KindChoice';
 import { ADD_PARAM_CLEARED, wantsAddSheet } from '@/lib/add-sheet';
+import { studyRequest } from '@/lib/course-actions';
 
 /**
  * Courses & exams, the Courses tab (D-036, D-164): the home screen's "Studying · <course>"
@@ -71,6 +72,9 @@ export default function CourseListScreen() {
   const [addOpen, setAddOpen] = useState(false);
   // After a save the sheet turns into "what next?" (D-057): Add material, Add another course, Return to the list.
   const [justAdded, setJustAdded] = useState<{ id: string; name: string; kind: 'course' | 'exam' } | null>(null);
+  // D-191: "Start practice questions" right after adding warns once that material makes them better.
+  const [questionsWarn, setQuestionsWarn] = useState(false);
+  useEffect(() => { setQuestionsWarn(false); }, [justAdded?.id]);
   const [addKind, setAddKind] = useState<'course' | 'exam' | null>(null); // D-158: no default; the student picks
   const [addName, setAddName] = useState('');
   const [addDate, setAddDate] = useState('');
@@ -191,7 +195,39 @@ export default function CourseListScreen() {
                 </PressScale>
                 {justAdded.kind === 'course' ? <Text style={styles.syllabusWhy}>Every quiz and exam date, and what's covered.</Text> : null}
               </Animated.View>
+              <Animated.View entering={FadeInUp.delay(170).duration(260)}>
+                {/* D-191 (Dan): questions right away, with a warning that the syllabus or notes make them better. */}
+                <Pressable accessibilityRole="button" onPress={() => setQuestionsWarn(true)} style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]} testID="button-next-questions">
+                  <Text style={styles.secondaryButtonText}>Start practice questions</Text>
+                </Pressable>
+                {questionsWarn ? (
+                  <View style={styles.warnBox} testID="note-questions-without-material">
+                    <View style={styles.warnHead}>
+                      <Feather name="alert-triangle" size={16} color={colors.highlightText} />
+                      <Text style={styles.warnTitle}>Better with your material</Text>
+                    </View>
+                    <Text style={styles.warnText}>{justAdded.kind === 'course'
+                      ? 'Upload your syllabus and notes first and the questions follow what your class actually covers. Without them, the coach writes from general knowledge of the subject.'
+                      : 'Upload your study material first and the questions follow it. Without it, the coach writes from the official exam outline and general knowledge.'}</Text>
+                    <Pressable accessibilityRole="button" onPress={() => {
+                      const { id } = justAdded;
+                      setJustAdded(null); setAddOpen(false);
+                      const go = () => router.navigate({ pathname: '/(tabs)', params: { send: studyRequest('practiceNoMaterial', null), courseId: id } });
+                      // The coach screen reads its focus when it shows; set it first so the request goes to this course.
+                      if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, id).catch(() => {}).finally(go); else go();
+                    }} style={({ pressed }) => [styles.warnButton, pressed && styles.pressed]} testID="button-questions-anyway">
+                      <Text style={styles.secondaryButtonText}>Start anyway</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+              </Animated.View>
               <Animated.View entering={FadeInUp.delay(260).duration(260)}>
+                {/* D-191 (Dan): straight to the new course's page. */}
+                <Pressable accessibilityRole="button" onPress={() => { const { id } = justAdded; setJustAdded(null); setAddOpen(false); router.push({ pathname: '/course/[courseId]', params: { courseId: id } }); }} style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]} testID="button-next-open-course">
+                  <Text style={styles.secondaryButtonText} numberOfLines={2}>Go to {justAdded.name}</Text>
+                </Pressable>
+              </Animated.View>
+              <Animated.View entering={FadeInUp.delay(350).duration(260)}>
                 <Pressable accessibilityRole="button" onPress={() => setJustAdded(null)} style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]} testID="button-next-another">
                   <Text style={styles.secondaryButtonText}>Add another course</Text>
                 </Pressable>
@@ -242,6 +278,11 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   secondaryButtonText: { color: colors.foreground, fontSize: 16, fontWeight: '600' },
   nextTitle: { color: colors.mutedForeground, fontSize: 15, lineHeight: 21 },
   syllabusWhy: { color: colors.mutedForeground, fontSize: 13, lineHeight: 18, textAlign: 'center', marginTop: 6 },
+  warnBox: { marginTop: 10, padding: 14, gap: 8, borderRadius: 14, borderWidth: 1, borderColor: colors.highlight, backgroundColor: colors.card },
+  warnHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  warnTitle: { color: colors.foreground, fontSize: 15, fontWeight: '700' },
+  warnText: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20 },
+  warnButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, paddingHorizontal: 16 },
   pressed: { opacity: 0.8 },
   disabled: { opacity: 0.45 },
 });

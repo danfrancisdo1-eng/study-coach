@@ -35,7 +35,7 @@ import { GlowRing } from '@/components/GlowRing';
 import { HomeSkeleton } from '@/components/Skeleton';
 import { LiveSetCard } from '@/components/LiveSetCard';
 import { ProgressBar, useElapsed } from '@/components/ProgressBar';
-import { estimate } from '@/lib/progress';
+import { estimate, waitFor } from '@/lib/progress';
 import { liveSetAction, resumeLabel } from '@/lib/live-set';
 import { courseExamFacts, type TimedSize } from '@/lib/exam-facts';
 import { passMarkLine } from '@/lib/exam-sheet';
@@ -595,9 +595,13 @@ export default function CoachHome() {
               )}
             </View>
           )}
-          ListHeaderComponent={busy ? (send.isPending && /practice|exam|set|quiz|question/i.test(send.variables?.data.content ?? '')
-            ? <View style={styles.busyRow}><ProgressBar fraction={estimate(sendElapsed, 15_000)} label="Coach is writing the first questions…" testID="progress-first-questions" /></View>
-            : <View style={styles.busyRow}><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.caption}>Coach is thinking…</Text></View>) : null}
+          ListHeaderComponent={busy ? (() => {
+            // D-126, D-191: a filling bar while a set's first questions or a deck are written; dots for a chat.
+            const wait = send.isPending ? waitFor(send.variables?.data.content) : null;
+            return wait
+              ? <View style={styles.busyRow}><ProgressBar fraction={estimate(sendElapsed, wait.expectedMs)} label={wait.label} testID="progress-first-questions" /></View>
+              : <View style={styles.busyRow}><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.caption}>Coach is thinking…</Text></View>;
+          })() : null}
           testID="list-home-chat"
         />
         {/* The one frosted panel (D-048): the "Coach · <course>" strip, which the chat scrolls under. */}
