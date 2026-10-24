@@ -106,6 +106,18 @@ export default function AccountScreen() {
           {!purchasesAvailable() ? <Text style={styles.caption}>Purchases aren't available right now.</Text> : null}
           {planNote ? <Text style={styles.caption} accessibilityRole="alert">{planNote}</Text> : null}
         </View>
+        {/* D-184 (Dan): the story first, since it is nowhere else in the app; then the replays, privacy, sounds, sign out, delete. */}
+        {/* D-182: the founder story. */}
+        {row('award', 'Why I built this', 'Two AI certifications, no AI background, this method', () => router.push('/about'), 'button-about')}
+        {/* D-150: Dan's intro video again; it comes back here. */}
+        {row('film', 'Watch the intro', 'The short video from the first launch', () => router.push('/intro?replay=1'), 'button-replay-intro')}
+        {/* The first-launch tour (D-049) plays once per phone; this replays it and comes back here. */}
+        {row('play-circle', 'See the tour again', 'The five pages from the first launch', () => router.push('/onboarding?replay=1'), 'button-replay-tour')}
+        {row('compass', 'See the welcome again', 'The three steps: course, material, coach', () => {
+          if (!userId) return;
+          AsyncStorage.setItem(welcomeReplayKey(userId), '1').catch(() => {}).finally(() => router.navigate('/(tabs)'));
+        }, 'button-replay-welcome')}
+        {PRIVACY_URL ? row('shield', 'Privacy policy', 'What is collected, where it goes, how to delete it', openPrivacy, 'link-privacy') : null}
         {/* D-172: the chime and buzz after an answer. Haptics stay on either way; the phone's silent switch wins over this. */}
         <View style={styles.row} accessible accessibilityRole="switch" accessibilityLabel="Answer sounds" accessibilityHint="A short chime for a right answer and a buzz for a wrong one" accessibilityState={{ checked: answerSounds.enabled }} testID="row-answer-sounds">
           <Feather name="volume-2" size={18} color={colors.mutedForeground} />
@@ -115,17 +127,6 @@ export default function AccountScreen() {
           </View>
           <Switch value={answerSounds.enabled} onValueChange={answerSounds.setEnabled} trackColor={{ true: colors.primary }} testID="switch-answer-sounds" />
         </View>
-        {PRIVACY_URL ? row('shield', 'Privacy policy', 'What is collected, where it goes, how to delete it', openPrivacy, 'link-privacy') : null}
-        {row('compass', 'See the welcome again', 'The three steps: course, material, coach', () => {
-          if (!userId) return;
-          AsyncStorage.setItem(welcomeReplayKey(userId), '1').catch(() => {}).finally(() => router.navigate('/(tabs)'));
-        }, 'button-replay-welcome')}
-        {/* The first-launch tour (D-049) plays once per phone; this replays it and comes back here. */}
-        {/* D-182: the founder story. */}
-        {row('award', 'Why I built this', 'Two AI certifications, no AI background, this method', () => router.push('/about'), 'button-about')}
-        {/* D-150: Dan's intro video again; it comes back here. */}
-        {row('film', 'Watch the intro', 'The short video from the first launch', () => router.push('/intro?replay=1'), 'button-replay-intro')}
-        {row('play-circle', 'See the tour again', 'The five pages from the first launch', () => router.push('/onboarding?replay=1'), 'button-replay-tour')}
         {row('log-out', 'Sign out', 'The next sign-in starts with the tour', () => void leaveAndSignOut(), 'button-sign-out')}
         <View style={styles.divider} />
         {row('trash-2', 'Delete my account', 'Removes your courses, sets, chats and sign-in. Cannot be undone.', () => { setError(''); setDeleteWord(''); setDeleteOpen(true); }, 'button-delete-account', true)}
@@ -162,7 +163,8 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   planCard: { gap: 10, padding: 14, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, marginBottom: 8 },
   planButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.primary },
   planButtonText: { color: colors.primaryForeground, fontSize: 15, fontWeight: '700' },
-  planLinks: { flexDirection: 'row', gap: 20 },
+  // D-184: the two links wrap to a second line inside the box instead of running past its edge.
+  planLinks: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 20 },
   planLink: { color: colors.primaryText, fontSize: 14, fontWeight: '600', paddingVertical: 10 },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: 14 },
   build: { color: colors.mutedForeground, fontSize: 11, marginTop: 18, textAlign: 'center' },
