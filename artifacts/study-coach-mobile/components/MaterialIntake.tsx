@@ -9,6 +9,7 @@ import { useColors } from '@/hooks/useColors';
 import { friendlyError } from '@/lib/friendly-error';
 import { ActionButton } from '@/components/ActionButton';
 import { NotesView } from '@/components/NotesView';
+import { OneDrivePanel } from '@/components/OneDrivePanel';
 import { ProgressBar, useElapsed } from '@/components/ProgressBar';
 import { materialWorkMs, timeLeftText, uploadThenWork } from '@/lib/progress';
 import { uploadMaterial } from '@/lib/material-upload';
@@ -16,7 +17,7 @@ import { isStorageFull, partRange, partsSavedLine } from '@/lib/upload-parts';
 import { useAuth } from '@clerk/expo';
 
 /**
- * Material intake (CLAUDE.md §8): Photos, Files, OneDrive (via the Files picker),
+ * Material intake (CLAUDE.md §8): Photos, Files, OneDrive (direct sign-in, D-190),
  * Website link → transient extraction → editable preview → explicit "Save to course".
  * Extracted verbatim from app/(tabs)/courses.tsx so the chat-first home can reuse it.
  * The component owns its transient state; the parent owns the saved materials.
@@ -125,7 +126,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
   const styles = createStyles(colors);
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [showWebsiteInput, setShowWebsiteInput] = useState(false);
-  const [showCloudHelp, setShowCloudHelp] = useState(false);
+  const [showOneDrive, setShowOneDrive] = useState(false);
   const [materialNotice, setMaterialNotice] = useState('');
   const [materialUpload, setMaterialUpload] = useState<PendingMaterial | null>(null);
   const [extractedMaterial, setExtractedMaterial] = useState<StudyMaterialExtraction | null>(null);
@@ -171,6 +172,16 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
       setMaterialNotice(`The file was not saved. ${readableError(problem)}`);
       onError?.(problem);
     }
+  };
+
+  // D-190: a file picked in OneDrive is already on the phone; from here it is the Files path.
+  const pickFromOneDrive = (uri: string, filename: string) => {
+    if (!mounted.current) return;
+    setShowOneDrive(false);
+    setExtractedMaterial(null);
+    setMaterialUploading(true); setJustSaved(false); setSent(0); setFileBytes(0); setWorkStart(null);
+    setMaterialNotice(`${filename} · uploading for text extraction. Nothing is saved yet.`);
+    setMaterialUpload({ id: id(), uri, filename, courseId });
   };
 
   const choosePhoto = async () => {
@@ -367,13 +378,16 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
           </View>
         </View>
       ) : null}
-      <View style={styles.sourceGrid}>
-        <ActionButton label="Photos" icon="image" onPress={() => void choosePhoto()} disabled={allBusy || Boolean(extractedMaterial)} secondary testID="button-pick-photo" />
-        <ActionButton label="Files" icon="file" onPress={() => void chooseMaterial()} disabled={allBusy || Boolean(extractedMaterial)} secondary testID="button-pick-material" />
-        <ActionButton label="OneDrive" icon="cloud" onPress={() => { setShowCloudHelp(true); void chooseMaterial(); }} disabled={allBusy || Boolean(extractedMaterial)} secondary testID="button-pick-onedrive" />
-        <ActionButton label="Website link" icon="link" onPress={() => setShowWebsiteInput(!showWebsiteInput)} disabled={allBusy || Boolean(extractedMaterial)} secondary testID="button-website-link" />
-      </View>
-      {showCloudHelp ? <Text style={styles.caption}>In Files, tap Browse → OneDrive. If it is missing, sign into the OneDrive app, then enable OneDrive in Files → Browse → … → Edit.</Text> : null}
+      {showOneDrive && !allBusy && !extractedMaterial ? (
+        <OneDrivePanel aiConsent={aiConsent} onPick={pickFromOneDrive} onClose={() => setShowOneDrive(false)} />
+      ) : (
+        <View style={styles.sourceGrid}>
+          <ActionButton label="Photos" icon="image" onPress={() => void choosePhoto()} disabled={allBusy || Boolean(extractedMaterial)} secondary testID="button-pick-photo" />
+          <ActionButton label="Files" icon="file" onPress={() => void chooseMaterial()} disabled={allBusy || Boolean(extractedMaterial)} secondary testID="button-pick-material" />
+          <ActionButton label="OneDrive" icon="cloud" onPress={() => { setShowWebsiteInput(false); setShowOneDrive(true); }} disabled={allBusy || Boolean(extractedMaterial)} secondary testID="button-pick-onedrive" />
+          <ActionButton label="Website link" icon="link" onPress={() => setShowWebsiteInput(!showWebsiteInput)} disabled={allBusy || Boolean(extractedMaterial)} secondary testID="button-website-link" />
+        </View>
+      )}
       {showWebsiteInput ? <View style={styles.stack}>
         <TextInput accessibilityLabel="Website link" testID="input-website-link" value={websiteUrl} onChangeText={setWebsiteUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://…" placeholderTextColor={colors.mutedForeground} style={styles.input} />
         <ActionButton label="Read page" onPress={readWebsite} disabled={allBusy || !websiteUrl.trim() || Boolean(extractedMaterial)} testID="button-read-website" />
