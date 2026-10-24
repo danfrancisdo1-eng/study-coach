@@ -13,7 +13,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v32";
+import * as coachPrompt from "../prompts/coach.v33";
 import { daysUntil, isSyllabus, setSizeOf } from "../lib/syllabus";
 import { courseContext, NOTES_BLOCK, PLANNING } from "../lib/course-context";
 import { indexText, routedContext, sectionsOf, wordSearch } from "../lib/course-sections";
@@ -27,6 +27,7 @@ import * as webLookupPrompt from "../prompts/web-lookup.v1";
 import { lookupExamGuide } from "../lib/exam-guide";
 import { saveExamGuide } from "../lib/exam-guide-state";
 import { eventsFrom, resultsHistoryText, weakConcepts } from "../lib/results-history";
+import { reportFacts, reportFactsText } from "../lib/readiness";
 import { DAILY_SET, dailyLine, dailyReps, dailyText, firstMessageToday, localDay } from "../lib/daily-reps";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { excludedByReport, generateFlashcards, generateSessionQuiz, quizStatus, sourceChunks, sourceTextOf, type GenerateQuizInput, type Quiz, type QuizStatus, type Session, type StoredQuestion } from "../lib/session-quiz";
@@ -722,7 +723,12 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const askSyllabus = !!threadSummary && threadSummary.hasSyllabus === false && !messages.some((m) => m.role === "assistant" && /syllabus/i.test(m.content));
   const examSoon = threadSummary && threadSummary.kind === "exam" && typeof threadSummary.daysLeft === "number" && threadSummary.daysLeft >= 2 && threadSummary.daysLeft <= 7 && firstToday
     ? { courseName: threadSummary.name, days: threadSummary.daysLeft } : null;
-  const coachSystem = () => coachPrompt.systemPrompt({ today, daily, firstMessageToday: firstToday, courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, setSize, askSyllabus, examSoon });
+  // D-192: the report card's facts, on the first reply after a graded set in a course's own chat.
+  const facts = threadId && content === FINISHED_SET && quiz?.graded
+    ? reportFacts(courseEvents, threadSummary?.kind === "exam" && threadSummary.guideSections?.length ? threadSummary.guideSections : null, typeof threadSummary?.daysLeft === "number" ? threadSummary.daysLeft : null)
+    : null;
+  const report = facts ? { text: reportFactsText(facts, threadSummary?.kind === "exam"), isExam: threadSummary?.kind === "exam" } : null;
+  const coachSystem = () => coachPrompt.systemPrompt({ today, daily, firstMessageToday: firstToday, courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, setSize, askSyllabus, examSoon, report });
 
   let coach;
   if (timed) {
