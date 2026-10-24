@@ -39,3 +39,26 @@ export function answerKind(feedback: { selectedOptionId?: string | null; correct
   if (!feedback || !feedback.selectedOptionId) return null;
   return feedback.selectedOptionId === feedback.correctOptionId ? 'correct' : 'wrong';
 }
+
+/**
+ * The verdict line under an answered question (D-192, Dan: "good job! ... you just missed that
+ * one ... great improvement"; "have him use some emojis"). It still starts with the verdict
+ * (Correct / Not this one), then a few warm words that rotate by the question's place in the set
+ * so they don't repeat; a run of right answers gets a 🔥 streak. Never sarcastic, never guilt.
+ */
+const RIGHT_WORDS = ['Correct. Nice.', 'Correct. Got it.', 'Correct. Well done.', 'Correct. Good call.'];
+const WRONG_WORDS = ['Not this one.', 'Just missed that one.', 'Not quite. Here’s why.', 'Close, but not this one.'];
+
+export function verdictLine({ right, streak, position }: { right: boolean; streak: number; position: number }): string {
+  const i = Math.abs(position) % 4;
+  if (!right) return WRONG_WORDS[i]!;
+  if (streak >= 3) return `Correct. 🔥 ${streak} in a row!`;
+  return RIGHT_WORDS[i]!;
+}
+
+/** Right answers in a row ending at `index` (the set's answered questions, in order). */
+export function rightStreak(results: readonly boolean[], index: number): number {
+  let n = 0;
+  for (let i = Math.min(index, results.length - 1); i >= 0 && results[i]; i -= 1) n += 1;
+  return n;
+}
