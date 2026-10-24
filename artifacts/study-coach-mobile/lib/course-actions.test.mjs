@@ -6,7 +6,7 @@ test('each action becomes one plain request to the coach, on a topic or on every
   assert.equal(studyRequest('practice', 'Osmosis'), 'Give me a practice set on Osmosis');
   assert.equal(studyRequest('exam', null), 'Give me a simulated exam on all topics');
   assert.equal(studyRequest('flashcards', ALL_TOPICS), 'Flashcards on all topics');
-  assert.equal(studyRequest('hooks', 'Krebs cycle'), 'Give me memory tricks (hooks) for Krebs cycle');
+  assert.equal(studyRequest('hooks', 'Krebs cycle'), 'Give me memory tips for Krebs cycle');
   assert.equal(studyRequest('outline', null), 'Show me the outline of topics for this course');
   assert.match(studyRequest('practiceNoMaterial', null), /^Give me a practice set on all topics from your own knowledge/);
 });
