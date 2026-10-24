@@ -316,9 +316,12 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
       {/* D-179: once graded, the card is frosted glass over the aurora. */}
       {quiz.grade ? <GlassFill /> : null}
       <View style={styles.head}>
-        {/* D-130: "All topics" with each section on its own line, not one long capitalised run. */}
-        <CardText style={styles.kicker}>Practice · {topicParts(session.topic).title}</CardText>
-        {topicParts(session.topic).sections.map((section) => <CardText key={section} style={styles.sectionLine}>{section}</CardText>)}
+        {/* D-130: "All topics" with each section on its own line, not one long capitalised run.
+            D-191: title and sections stack in one column beside the count; in one row they ran off the card. */}
+        <View style={styles.headCopy}>
+          <CardText style={styles.kicker}>Practice · {topicParts(session.topic).title}</CardText>
+          {topicParts(session.topic).sections.map((section) => <CardText key={section} style={styles.sectionLine}>{section}</CardText>)}
+        </View>
         {!quiz.grade ? <CardText style={styles.headCount} accessibilityLabel={`${answered.length} of ${total} answered`}>{answered.length}/{total}</CardText> : null}
       </View>
       {!quiz.grade ? (
@@ -381,7 +384,8 @@ function QuestionSkeleton({ caption }: { caption: string }) {
 
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   card: { marginTop: 8, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 16, gap: 12 },
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
+  headCopy: { flex: 1, gap: 2 },
   sectionLine: { ...TYPE.small, color: colors.mutedForeground },
   kicker: { ...TYPE.kicker, color: colors.mutedForeground, flexShrink: 1 },
   headCount: { ...TYPE.small, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
