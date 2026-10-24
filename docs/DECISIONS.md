@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-24 — D-187: Practice sets, flashcards, memory tricks and the review sheet read the notes
+- Dan, on D-124's choice (they read the full raw text): "why wouldn't the flashcards and the memory tricks go off the bulleted condensed file that actually has the meat of the lecture in it, not the ahs and talking to his friend about Saturday night?" D-124 kept the raw text for "more detail makes better questions", decided before lecture notes existed.
+- Now each upload's notes are used when they exist, the raw text only while there are none; a lecture's notes replace its transcript; a lecture without notes still gives its transcript (`lib/study-text.ts`, used by sourceChunks). The course router still searches the original files for anything the notes don't cover (D-128), so exact quotes and dates are not lost.
+- Server only; no phone change. Verified here: api typecheck; `pnpm run test` 292/292 (new: study-from-notes). Before merging: a 3-student simulation on the Mac (`node sims/run.mjs --quick`, about $2–3) to compare question quality; this cloud session has no AI key.
+- **Decided by:** Dan.
+
 ## 2026-10-23 — D-182: The intro ends on Dan's real certificates; the welcome has one button and a live message box; an About page
 - Built on 2026-10-23 as D-181; renumbered D-182 (build stamps #85–#87) when merged after the Add-course fix, which took D-181.
 - **Intro video:** the illustrated credential card ("Certified Professional Cloud AI", a privacy stand-in) is replaced by Dan's real certificates, because the founder story now names them: NVIDIA-Certified Professional: Agentic AI (issued 9/30/26) and Google Cloud Certified Generative AI Leader (issued 9/28/26). QR code, NVIDIA credential ID, Google ID and series ID are blurred and pixelated (checked: unreadable). First cut showed them for 1.8 s mid-video; Dan: "a little fast ... have that slide on the end card". Final order: PASSED → logo → both certificates held 4.5 s (soft fade-in, slow zoom) while the original music fades out. 25.7 s, 3.3 MB (was 23 s, 4.3 MB). Dan: "a definite go".
