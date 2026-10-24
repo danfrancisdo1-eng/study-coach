@@ -23,6 +23,7 @@ import { whenLabel } from '@/lib/when';
 import { ActionButton } from '@/components/ActionButton';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
 import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake';
+import { isSyllabus, nextDated } from '@/lib/syllabus';
 import { CourseSkeleton } from '@/components/Skeleton';
 import { ALL_TOPICS, NO_MATERIAL_NOTE_KEY, studyRequest, topicChoices, type StudyAction } from '@/lib/course-actions';
 
@@ -41,7 +42,7 @@ const record = (value: unknown): StateRecord => (value && typeof value === 'obje
 const readable = (problem: unknown): string => friendlyError(problem);
 
 export default function CourseScreen() {
-  const { courseId, intake, timed } = useLocalSearchParams<{ courseId: string; intake?: string; timed?: string }>();
+  const { courseId, intake, timed, syllabus: syllabusAsk } = useLocalSearchParams<{ courseId: string; intake?: string; timed?: string; syllabus?: string }>();
   // "Add material" right after adding the course (D-057): the screen opens scrolled to the intake card.
   const scrollRef = useRef<ScrollView>(null);
   const intakeY = useRef<number | null>(null);
@@ -257,6 +258,28 @@ export default function CourseScreen() {
             </View>
           ) : null}
 
+          {/* D-188: the syllabus is the most valuable upload for a college course: ask for it until one is saved, then show its next date. */}
+          {!isExam ? (() => {
+            const syllabus = materials.find((m) => isSyllabus(m));
+            const next = syllabus ? nextDated(syllabus.notes ?? syllabus.text) : null;
+            return (
+              <View style={styles.card} testID="panel-syllabus">
+                <Text style={styles.kicker}>Syllabus</Text>
+                {syllabus ? (
+                  <>
+                    <Text style={[styles.body, { flex: 0 }]} testID="text-syllabus-next">{next ? `Next: ${next.line}` : 'Saved. No upcoming quiz, exam or due date in it.'}</Text>
+                    <Text style={styles.caption}>{syllabus.name}</Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={[styles.body, { flex: 0 }]}>Add your syllabus. It gives the coach every quiz and exam date, and what's covered.</Text>
+                    <ActionButton label="Add syllabus" icon="calendar" onPress={() => scrollTo(intakeY.current)} testID="button-add-syllabus" />
+                  </>
+                )}
+              </View>
+            );
+          })() : null}
+
           <View style={styles.card} testID="panel-course-actions">
             {readOnly ? (
               <View style={styles.readOnly} testID="panel-read-only">
@@ -390,6 +413,7 @@ export default function CourseScreen() {
 
           <View style={styles.card} onLayout={(e) => { intakeY.current = e.nativeEvent.layout.y; scrollToIntake(); }} testID="card-add-material">
             <Text style={styles.kicker}>Add material</Text>
+            {syllabusAsk === '1' && !isExam ? <Text style={styles.caption} testID="text-syllabus-ask">Start with your syllabus: a photo of it or the PDF.</Text> : null}
             <MaterialIntake
               key={`${userId ?? ''}:${courseId}`}
               courseId={courseId!}

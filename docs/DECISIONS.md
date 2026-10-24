@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-24 — D-188: College courses ask for the syllabus; exams show their countdown
+- Dan: "it's really important that with these college kids that we get the syllabus ... with the syllabus, we get the dates." For a certification exam "the equivalent is basically the date that they're taking the exam. And we already asked for that." Until now the app only named a syllabus as one example in a list.
+- After adding a college course, "What next?" opens with "Add your syllabus" ("Every quiz and exam date, and what's covered."), which lands on the course's upload card with "Start with your syllabus: a photo of it or the PDF." Exams keep "Add material".
+- The course page of a college course has a Syllabus card: "Add your syllabus ..." with an Add syllabus button until one is saved, then "Next: <the next quiz, exam or due line from it>" (`lib/syllabus.ts`: a syllabus by its name or by three of its usual sections; the next dated quiz/exam/due line from its notes, past ones skipped; nothing is invented).
+- The Coach strip shows an exam's countdown ("3 days left", "Exam today") in place of the course count.
+- The coach's side (ask once for a missing syllabus; a heads-up with a plan inside 7 days of an exam) comes in the coach update with the 10-or-20 choice, which needs evals on the Mac.
+- Build #91. Verified here: mobile typecheck; mobile tests 128/128 (new: syllabus); iOS bundle exports.
+- **Decided by:** Dan.
+
 ## 2026-10-24 — D-186: The welcome says drilling, not chatting; questions right after material
 - Dan: "Talk to your coach ... I don't want them to think, hey, just start talking to AI, when the most important thing in the whole app is taking questions, exam questions over and over and over ... sitting on the toilet, eating dinner, walking down the street." And "studying an hour a day [doesn't] work as well as studying for 2 minutes thirty times a day."
 - Welcome title: "Your material, turned into questions." Under it: "A few minutes, many times a day, beats an hour of cramming." (spaced practice). Step 3: "3rd Answer questions. Repeatedly." with "Quick sets of 10 or 20, anywhere. Whatever you miss comes back until it sticks." (the 10-or-20 choice is item 6, coming with the coach update). Was "A tutor that has already read your material" and "3rd Talk to your coach".
