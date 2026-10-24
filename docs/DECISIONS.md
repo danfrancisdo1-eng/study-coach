@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-24 — D-185: Big uploads are split at their chapters instead of refused
+- Dan: his AI-103 study packet (199,685 characters, the whole course) was refused at the 100,000-character limit and nothing was saved. "If someone uploads something and it goes over a limit, we should be able to chunk that at least and keep that part ... I like it going by sections and chapters."
+- A file is now read up to 400,000 characters. Over 90,000, the server cuts it at chapter headings ("# Chapter 3" or a line like "Chapter 3 ..."), then section headings, then paragraphs, then sentences, never inside a word, and nothing is lost (`lib/split-upload.ts`). The parts are packed so each takes as many whole chapters as fit: Dan's packet becomes 3 parts (86,263 / 64,924 / 47,099 characters: Chapters 1–15, 16 to Appendix A, Appendix B).
+- The app lists the parts ("Part 1 of 3: Chapter 1 ... to Chapter 15 ...") and saves each as its own upload ("<file> (part 2 of 3)") in one save. If the account's storage (900 KB) can't hold them all, it keeps the parts that fit from the start and names the rest: "Saved parts 1–2 of 3 (...). Part 3 (...) didn't fit: your account's storage is full. Delete an older upload in this course to make room, then add the file again." Web saves the parts too.
+- No notes call during the upload for parts; the coach writes each part's notes in the background the next time the course chat is used (D-124's backfill), one normal-size notes call per part.
+- API: the extraction reply gains `parts` (the whole text stays in `text` for apps that predate parts); `characterCount` up to 400,000. Website links keep their 100,000 limit.
+- Build #89. Verified here: typecheck (repo); `pnpm run test` 302/302 (new: splitter unit tests incl. Dan's real packet, an end-to-end 200,000-character upload); iOS bundle exports.
+- **Decided by:** Dan.
+
 ## 2026-10-23 — D-182: The intro ends on Dan's real certificates; the welcome has one button and a live message box; an About page
 - Built on 2026-10-23 as D-181; renumbered D-182 (build stamps #85–#87) when merged after the Add-course fix, which took D-181.
 - **Intro video:** the illustrated credential card ("Certified Professional Cloud AI", a privacy stand-in) is replaced by Dan's real certificates, because the founder story now names them: NVIDIA-Certified Professional: Agentic AI (issued 9/30/26) and Google Cloud Certified Generative AI Leader (issued 9/28/26). QR code, NVIDIA credential ID, Google ID and series ID are blurred and pixelated (checked: unreadable). First cut showed them for 1.8 s mid-video; Dan: "a little fast ... have that slide on the end card". Final order: PASSED → logo → both certificates held 4.5 s (soft fade-in, slow zoom) while the original music fades out. 25.7 s, 3.3 MB (was 23 s, 4.3 MB). Dan: "a definite go".

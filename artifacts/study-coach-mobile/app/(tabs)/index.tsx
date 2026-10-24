@@ -370,13 +370,13 @@ export default function CoachHome() {
     setIntakeCourseId(course.id);
   };
 
-  const saveMaterial = async (addition: SavedMaterial) => {
+  const saveMaterial = async (additions: SavedMaterial[]) => {
     const previous = stateQuery.data;
     if (!previous) throw new Error('Your account is still loading. Try again in a moment.');
     const state = record(previous.state);
     const materials = Array.isArray(state.materials) ? state.materials : [];
     try {
-      const result = await putState.mutateAsync({ data: { state: { ...state, aiConsent: true, materials: [...materials, addition] }, version: previous.version } });
+      const result = await putState.mutateAsync({ data: { state: { ...state, aiConsent: true, materials: [...materials, ...additions] }, version: previous.version } });
       queryClient.setQueryData([...getGetStudyStateQueryKey(), userId], result);
     } catch (problem) {
       if ((problem as { status?: number }).status === 409) await queryClient.invalidateQueries({ queryKey: [...getGetStudyStateQueryKey(), userId] });
