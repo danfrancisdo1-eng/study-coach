@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-24 — D-181: "Add a course or exam" opens the Add sheet every time (beta blocker)
+- Dan: beta testers report "the add a course or exam button non functional" (critical).
+- Cause (from D-164): the Courses screen is a tab and stays mounted, but it read `?add=1` only when it first drew. Every later request only switched to the list: "Add a course" on the course page, the coach's "Add a course or exam" chip, the welcome's button after the Courses tab had been opened once, and the "Add a course or exam" strip on the Coach tab (it never asked for the sheet at all).
+- Fix: the Courses tab opens the sheet whenever `?add=1` arrives and clears the param, so the next request opens it again (`lib/add-sheet.ts`, tested); the Coach strip asks for the sheet when there are no courses. The Add button in the Courses header was not affected.
+- Build #84. Verified here: repo typecheck; mobile tests 120/120; iOS bundle exports. Needs a phone check in the next TestFlight build.
+- **Decided by:** Dan (bug report); fix by Claude.
+
 ## 2026-10-23 — D-180: Beta round 2 — the action grid, the paywall, sign-out
 - **Action grid (Dan's screenshot of Microsoft AI 501: "font is variable and looks odd"):** every label in the course page's grid shrank to fit one line on its own, so "Flashcards" sat at full size next to a squeezed "Questions without material". Now every grid label is one size (nothing shrinks; a long label wraps to two lines, both centred, the icon beside the centred block). Dan: "it would be fine if they were centered". The break is written into the label ("Questions\nwithout material") so it never falls oddly. Trims with the same meaning: "Add another course" → "Add a course", "Talk to the coach" → "Ask the coach", "Review sheet (PDF)" → "Review PDF". The chat chip keeps the coach's exact text "Review sheet (PDF)" because the server sends it and the app matches it to open the sheet; the coach prompt still names the old button label (fix in the next coach version).
 - **Paywall (Dan: "confusing, not organized right"):** two products were stacked on one screen — the subscription's plan cards and button, then an Exam Pass card styled like a plan card sitting under the button, which flipped the whole screen into the other product with no way back. Now a two-segment switch under the title (Premium · Exam Pass) with one line describing the active one; the table, the cards and the button switch in place; the orphan card is gone; the default segment follows how the screen was opened (exam course or the exam-free-used refusal → Exam Pass). The Free column's "None" for practice sets reads "Free week".

@@ -20,6 +20,7 @@ import { premiumCode } from '@/lib/premium-ui';
 import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
 import { CourseListSkeleton } from '@/components/Skeleton';
 import { KindChoice } from '@/components/KindChoice';
+import { ADD_PARAM_CLEARED, wantsAddSheet } from '@/lib/add-sheet';
 
 /**
  * Courses & exams, the Courses tab (D-036, D-164): the home screen's "Studying · <course>"
@@ -67,13 +68,21 @@ export default function CourseListScreen() {
   const [focusId, setFocusId] = useState<string | null>(null);
   const [lookingUp, setLookingUp] = useState<string | null>(null);
   const { add } = useLocalSearchParams<{ add?: string }>(); // the welcome's "Add a course or exam" lands here with the sheet open (D-047)
-  const [addOpen, setAddOpen] = useState(add === '1');
+  const [addOpen, setAddOpen] = useState(false);
   // After a save the sheet turns into "what next?" (D-057): Add material, Add another course, Return to the list.
   const [justAdded, setJustAdded] = useState<{ id: string; name: string } | null>(null);
   const [addKind, setAddKind] = useState<'course' | 'exam' | null>(null); // D-158: no default; the student picks
   const [addName, setAddName] = useState('');
   const [addDate, setAddDate] = useState('');
   const [error, setError] = useState('');
+
+  // D-181: this tab stays mounted (D-164), so every ?add=1 is read when it arrives, then cleared so the next one opens the sheet too.
+  useEffect(() => {
+    if (!wantsAddSheet(add)) return;
+    setJustAdded(null);
+    setAddOpen(true);
+    router.setParams({ add: ADD_PARAM_CLEARED });
+  }, [add]);
 
   useEffect(() => {
     if (!userId) return;

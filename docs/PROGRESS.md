@@ -1,5 +1,18 @@
 # Progress
 
+## Session 20 — 2026-10-24 (Dan on the phone; Claude in the cloud) — branch `fix/add-course-button`
+
+### Done
+- **D-181, beta blocker:** "Add a course or exam" did nothing but switch to the list (the Courses tab read the add request only once). It now opens the Add sheet from every button: course page "Add a course", the coach chip, the welcome, and the Coach strip with no courses. Build #84.
+- Verified here: repo typecheck; mobile tests 120/120; `expo export --platform ios` builds (8.5 MB hbc).
+
+### Needs real-iPhone check (next TestFlight build)
+- New account: welcome "1st Add a course or exam" opens the sheet; close it, open the Courses tab, go back to Coach, tap the strip "Add a course or exam": the sheet opens again.
+- Inside a course: "Add a course" opens the sheet on the Courses tab.
+
+### Next
+- Dan: a TestFlight build from main with this fix for the beta testers (EAS runs on the Mac or from the Windows Desktop thread; this cloud session has no EAS login).
+
 ## Session 19 — 2026-10-23 (Dan away for 45 min; Claude in the cloud) — branch `fix/beta-round-2` → main
 
 ### Done (D-180, one commit each)
