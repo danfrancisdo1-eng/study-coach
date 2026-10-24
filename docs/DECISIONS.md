@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-24 — D-184: Account page order; the plan box links stay inside the box
+- Dan (on build 17): "Restore purchases and Manage subscription run over the box", and an order that makes sense, with the story where people will see it.
+- Order: plan box (Premium · renews …, Restore Purchases, Manage subscription), Why I built this, Watch the intro, See the tour again, See the welcome again, Privacy policy, Answer sounds, Sign out, then Delete my account under the divider.
+- The two plan links wrap to a second line inside the box instead of running past its edge.
+- "Renews Oct 25, 2026" is Apple's own date: TestFlight purchases are sandbox subscriptions, which renew about once a day. A real App Store purchase shows a month (or a year) later. D-183 is taken by the Maestro branch.
+- Build #88. Verified here: mobile typecheck; mobile tests 124/124; iOS bundle exports.
+- **Decided by:** Dan.
+
 ## 2026-10-23 — D-182: The intro ends on Dan's real certificates; the welcome has one button and a live message box; an About page
 - Built on 2026-10-23 as D-181; renumbered D-182 (build stamps #85–#87) when merged after the Add-course fix, which took D-181.
 - **Intro video:** the illustrated credential card ("Certified Professional Cloud AI", a privacy stand-in) is replaced by Dan's real certificates, because the founder story now names them: NVIDIA-Certified Professional: Agentic AI (issued 9/30/26) and Google Cloud Certified Generative AI Leader (issued 9/28/26). QR code, NVIDIA credential ID, Google ID and series ID are blurred and pixelated (checked: unreadable). First cut showed them for 1.8 s mid-video; Dan: "a little fast ... have that slide on the end card". Final order: PASSED → logo → both certificates held 4.5 s (soft fade-in, slow zoom) while the original music fades out. 25.7 s, 3.3 MB (was 23 s, 4.3 MB). Dan: "a definite go".

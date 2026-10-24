@@ -1,5 +1,17 @@
 # Progress
 
+## Session 22 — 2026-10-24 (Dan on build 17; Claude in the cloud) — Account page (D-184)
+
+### Done
+- Account page reordered (Dan's order): plan box, Why I built this, Watch the intro, See the tour again, See the welcome again, Privacy policy, Answer sounds, Sign out, Delete my account. Restore Purchases and Manage subscription wrap inside the plan box. Build #88.
+- Verified here: mobile typecheck; mobile tests 124/124; iOS bundle exports.
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (rows unchanged at 56 pt; plan links keep 10 pt padding). 2. One primary action: PASS (See Premium stays the only filled button). 3. Chunked: PASS (plan, then story and replays, then settings, then sign out and delete). 4. Native patterns: PASS (list rows with chevrons; the delete row set apart). 5. Progress: N/A. 6. One accent: PASS (unchanged). 7. Tokens; Dark Mode; Dynamic Type: PASS (no new colours; the links now wrap at large text sizes instead of overflowing). 8. Labels: PASS (unchanged). 9. Paywall: PASS (Restore Purchases still visible on Account).
+
+### Needs real-iPhone check (next build)
+- Account: the order above; Restore Purchases and Manage subscription both inside the box, at the default and at a large text size.
+
 ## Session 21 — 2026-10-23/24 (Dan reviewing build 15) — branch `feat/beta-round-3` → main (renumbered from D-181 to D-182 when merged after the Add-course fix)
 
 ### Done (D-182, one commit each)
