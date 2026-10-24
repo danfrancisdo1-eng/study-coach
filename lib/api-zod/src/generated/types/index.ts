@@ -95,6 +95,7 @@ export * from './studyFlashcardDeckCardsItemResultsItem';
 export * from './studyMaterialExtraction';
 export * from './studyMaterialExtractionCoverage';
 export * from './studyMaterialExtractionFormat';
+export * from './studyMaterialExtractionPartsItem';
 export * from './studyMaterialExtractionStatus';
 export * from './studyMessageInput';
 export * from './studyQuestionFeedback';

@@ -534,7 +534,9 @@ export const ExtractStudyWebsiteBody = zod.object({
   "url": zod.string().max(extractStudyWebsiteBodyUrlMax)
 })
 
-export const extractStudyWebsiteResponseCharacterCountMax = 100000;
+export const extractStudyWebsiteResponseCharacterCountMax = 400000;
+
+export const extractStudyWebsiteResponsePartsItemCharacterCountMax = 90000;
 
 
 
@@ -547,7 +549,14 @@ export const ExtractStudyWebsiteResponse = zod.object({
   "coverage": zod.enum(['entire_file', 'selectable_text_only', 'document_body_text', 'slide_text_only', 'visible_image_text', 'public_page_text']),
   "characterCount": zod.number().int().min(1).max(extractStudyWebsiteResponseCharacterCountMax),
   "coverageNote": zod.string(),
-  "notes": zod.string().optional().describe('D-124: the coach\'s Markdown notes for this upload (typos fixed, every date and grading line kept). Absent without AI consent or when the notes could not be written; the raw text is still returned.')
+  "notes": zod.string().optional().describe('D-124: the coach\'s Markdown notes for this upload (typos fixed, every date and grading line kept). Absent without AI consent or when the notes could not be written; the raw text is still returned. Absent when the file came back in parts (D-185).'),
+  "parts": zod.array(zod.object({
+  "name": zod.string().describe('"<filename> (part 2 of 3)"'),
+  "text": zod.string(),
+  "characterCount": zod.number().int().min(1).max(extractStudyWebsiteResponsePartsItemCharacterCountMax),
+  "firstHeading": zod.string().describe('The part\'s first chapter or section heading; empty when it has none.'),
+  "lastHeading": zod.string()
+})).optional().describe('D-185: a file over 90,000 characters is split at its chapter headings (then sections, then paragraphs) into parts the app saves as separate uploads. Absent when the file is one part. `text` still holds the whole file, for apps that predate parts.')
 })
 
 
@@ -821,7 +830,9 @@ export const ExtractStudyMaterialHeader = zod.object({
   "X-Filename": zod.string().min(1).max(extractStudyMaterialHeaderXFilenameMax).describe('Original filename; the server sanitizes it and uses its extension when needed to identify the format.')
 })
 
-export const extractStudyMaterialResponseCharacterCountMax = 100000;
+export const extractStudyMaterialResponseCharacterCountMax = 400000;
+
+export const extractStudyMaterialResponsePartsItemCharacterCountMax = 90000;
 
 
 
@@ -834,7 +845,14 @@ export const ExtractStudyMaterialResponse = zod.object({
   "coverage": zod.enum(['entire_file', 'selectable_text_only', 'document_body_text', 'slide_text_only', 'visible_image_text', 'public_page_text']),
   "characterCount": zod.number().int().min(1).max(extractStudyMaterialResponseCharacterCountMax),
   "coverageNote": zod.string(),
-  "notes": zod.string().optional().describe('D-124: the coach\'s Markdown notes for this upload (typos fixed, every date and grading line kept). Absent without AI consent or when the notes could not be written; the raw text is still returned.')
+  "notes": zod.string().optional().describe('D-124: the coach\'s Markdown notes for this upload (typos fixed, every date and grading line kept). Absent without AI consent or when the notes could not be written; the raw text is still returned. Absent when the file came back in parts (D-185).'),
+  "parts": zod.array(zod.object({
+  "name": zod.string().describe('"<filename> (part 2 of 3)"'),
+  "text": zod.string(),
+  "characterCount": zod.number().int().min(1).max(extractStudyMaterialResponsePartsItemCharacterCountMax),
+  "firstHeading": zod.string().describe('The part\'s first chapter or section heading; empty when it has none.'),
+  "lastHeading": zod.string()
+})).optional().describe('D-185: a file over 90,000 characters is split at its chapter headings (then sections, then paragraphs) into parts the app saves as separate uploads. Absent when the file is one part. `text` still holds the whole file, for apps that predate parts.')
 })
 
 

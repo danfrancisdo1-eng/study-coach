@@ -116,13 +116,15 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
   };
   // Shared by the in-session intake and the home-chat intake (same rules, one place).
   const saveMaterial = async (targetCourseId: string, preview: StudyMaterialExtraction) => {
-    if (!preview.text.trim() || preview.text.length > 100000) throw new Error('Material must contain 1–100,000 characters.');
+    // D-185: a big file arrives in parts cut at its chapters; each part is saved as its own upload, in one save.
+    const pieces = preview.parts?.length ? preview.parts.map((part) => ({ name: part.name, text: part.text })) : [{ name: preview.filename, text: preview.text }];
+    if (pieces.some((piece) => !piece.text.trim() || piece.text.length > 100000)) throw new Error('Material must contain 1–100,000 characters per part.');
     try {
-      await updateState(previous => ({ ...previous, materials: [...(previous.materials ?? []), {
-        id: crypto.randomUUID(), courseId: targetCourseId, name: preview.filename, text: preview.text.trim(), addedAt: new Date().toISOString(),
+      await updateState(previous => ({ ...previous, materials: [...(previous.materials ?? []), ...pieces.map((piece) => ({
+        id: crypto.randomUUID(), courseId: targetCourseId, name: piece.name, text: piece.text.trim(), addedAt: new Date().toISOString(),
         sourceUrl: preview.sourceUrl, extractionFormat: preview.format, extractionCoverage: preview.coverage, coverageNote: preview.coverageNote,
-        ...(preview.notes ? { notes: preview.notes } : {}),
-      }] }));
+        ...(preview.notes && pieces.length === 1 ? { notes: preview.notes } : {}),
+      }))] }));
     } catch (problem) {
       if (message(problem).includes('409')) await stateQuery.refetch();
       throw problem;

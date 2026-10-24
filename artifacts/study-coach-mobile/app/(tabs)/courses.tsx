@@ -557,8 +557,8 @@ function StudyCoach() {
       aiConsent={savedState.aiConsent === true}
       busy={busy && !intakeStatus.uploading && !intakeStatus.saving}
       savedMaterials={courseMaterials}
-      onSave={async (addition) => {
-        await persistStudyState({ ...savedState, materials: [...(savedState.materials ?? []), addition] });
+      onSave={async (additions) => {
+        await persistStudyState({ ...savedState, materials: [...(savedState.materials ?? []), ...additions] });
       }}
       onStatusChange={setIntakeStatus}
       onError={(problem) => { if (activeUserIdRef.current === userId) handleError(problem); }}
