@@ -1,8 +1,8 @@
 # Progress
 
-## Session 20 — 2026-10-23 (Dan reviewing build 15) — branch `feat/beta-round-3` → main
+## Session 21 — 2026-10-23/24 (Dan reviewing build 15) — branch `feat/beta-round-3` → main (renumbered from D-181 to D-182 when merged after the Add-course fix)
 
-### Done (D-181, one commit each)
+### Done (D-182, one commit each)
 - **Intro video:** ends on Dan's real certificates (NVIDIA-Certified Professional: Agentic AI, Google Cloud Generative AI Leader) held 4.5 s after the logo while the music fades; QR code and every ID blurred and pixelated. 25.7 s, 3.3 MB. Build #84.
 - **Welcome:** "I'll explore first" removed (it did nothing). The message box is live under the welcome ("Or ask your coach anything"); the first question moves the welcome aside for this visit, waits through the consent card when needed, then goes out. Placeholder elsewhere "Ask your coach anything". Build #85.
 - **About:** `app/about.tsx` "Why I built this" (Account → Why I built this), both certifications on glass cards, Dan's story; a founder line on the paywall above Restore Purchases that opens it. Copy in `lib/founder.ts`; a test checks no credential or series ID appears. Build #86.
@@ -15,6 +15,7 @@
 - Sign out (or a fresh install): the intro ends on the two certificates, readable, and then the tour starts.
 - New account with no course: the welcome has one button; type "How does this work?" in the box and send → consent card → after "I understand and consent" the question goes out by itself and the coach answers.
 - Account → Why I built this; Account → See Premium → the founder line opens the same page.
+
 ## Session 20 — 2026-10-24 (Dan on the phone; Claude in the cloud) — branch `fix/add-course-button`
 
 ### Done
