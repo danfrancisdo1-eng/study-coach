@@ -105,7 +105,7 @@ function MaterialExtractionTask({ upload, onComplete, onFailure, onProgress }: {
   return null;
 }
 
-export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSave, onStatusChange, onError, footer }: {
+export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSave, onStatusChange, onError, footer, onStartQuestions }: {
   courseId: string;
   aiConsent: boolean;
   /** Parent-level busy flag (other mutations in flight). */
@@ -114,6 +114,8 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
   savedMaterials: SavedMaterial[];
   /** Persist the reviewed material in one save: one upload, or a big file's parts (D-185). Throws on failure; the preview is kept so the student can retry. */
   onSave: (additions: SavedMaterial[]) => Promise<void>;
+  /** D-186: after a save, the next step is questions (Dan: the app is drilling, not chatting). Absent: no button. */
+  onStartQuestions?: () => void;
   onStatusChange?: (status: IntakeStatus) => void;
   onError?: (problem: unknown) => void;
   /** Rendered under the controls (check-in actions, "Done" button). */
@@ -127,6 +129,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
   const [materialNotice, setMaterialNotice] = useState('');
   const [materialUpload, setMaterialUpload] = useState<PendingMaterial | null>(null);
   const [extractedMaterial, setExtractedMaterial] = useState<StudyMaterialExtraction | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
   const [materialUploading, setMaterialUploading] = useState(false);
   // D-126: what the waiting bar shows. sent = share of the file uploaded; workStart = when the
   // server's part (reading, writing notes) began; size drives the estimate.
@@ -160,7 +163,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
         return;
       }
       setExtractedMaterial(null);
-      setMaterialUploading(true); setSent(0); setFileBytes(0); setWorkStart(null);
+      setMaterialUploading(true); setJustSaved(false); setSent(0); setFileBytes(0); setWorkStart(null);
       setMaterialNotice(`${fileName} · uploading for text extraction. Nothing is saved yet.`);
       setMaterialUpload({ id: id(), uri: picked.uri, filename: fileName, courseId });
     } catch (problem) {
@@ -190,7 +193,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
       }
       const filename = asset.fileName || 'Study photo.jpg';
       setExtractedMaterial(null);
-      setMaterialUploading(true); setSent(0); setFileBytes(0); setWorkStart(null);
+      setMaterialUploading(true); setJustSaved(false); setSent(0); setFileBytes(0); setWorkStart(null);
       setMaterialNotice('Reading your photo…');
       setMaterialUpload({ id: id(), uri: asset.uri, filename, courseId });
     } catch (problem) {
@@ -206,7 +209,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
       const url = new URL(/^https?:\/\//i.test(input) ? input : `https://${input}`);
       if (!['http:', 'https:'].includes(url.protocol) || !url.hostname.includes('.') || url.username || url.password || url.href.length > 2048) throw new Error();
       setExtractedMaterial(null);
-      setMaterialUploading(true); setSent(0); setFileBytes(0); setWorkStart(null);
+      setMaterialUploading(true); setJustSaved(false); setSent(0); setFileBytes(0); setWorkStart(null);
       setMaterialNotice('Reading the website…');
       setMaterialUpload({ id: id(), uri: '', url: url.href, filename: url.hostname, courseId });
     } catch {
@@ -264,6 +267,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
         }
         if (!mounted.current) return;
         setMaterialNotice(partsSavedLine(extractedMaterial.filename, fresh, saved));
+        if (saved > 0) setJustSaved(true);
         setExtractedMaterial(null);
         setMaterialUpload(null);
         return;
@@ -284,6 +288,7 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
       await onSave([addition]);
       if (!mounted.current) return;
       setMaterialNotice(`${extractedMaterial.filename} saved to this course.`);
+      setJustSaved(true);
       setExtractedMaterial(null);
       setMaterialUpload(null);
     } catch (problem) {
@@ -324,6 +329,9 @@ export function MaterialIntake({ courseId, aiConsent, busy, savedMaterials, onSa
             testID="button-cancel-material-extraction"
           />
         </View>
+      ) : null}
+      {justSaved && onStartQuestions && !extractedMaterial && !materialUploading ? (
+        <ActionButton label="Start practice questions" icon="edit-3" onPress={onStartQuestions} disabled={allBusy} testID="button-start-after-save" />
       ) : null}
       {extractedMaterial ? (
         <View style={styles.extractionPreview} testID="panel-material-extraction-preview">
