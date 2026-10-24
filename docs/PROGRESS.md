@@ -1,5 +1,20 @@
 # Progress
 
+## Session 23d — 2026-10-24 — report card, readiness, personality (D-192), branch `feat/report-card` (on top of `feat/coach-v32`)
+
+### Done
+- coach.v33: the report card after a graded set (result, progress, weak spots, a trick per miss, readiness and the next step), a little personality and a few emojis. `lib/readiness.ts` computes the level. Verdict lines with a 🔥 streak in the set. Build #99.
+- Verified here: repo typecheck; `pnpm run test`; iOS bundle exports.
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: N/A (no new controls). 2. One primary action: PASS (unchanged chips). 3. Chunked: PASS (the report card is five short parts, one or two lines each, blank lines between; tricks capped at 5). 4. Native patterns: PASS. 5. Progress: PASS (progress against the last set; readiness and the next step). 6. Not colour-only: PASS (readiness is words plus an emoji). 7. Tokens; Dark Mode; Dynamic Type: PASS (text only). 8. Labels; VoiceOver: PASS with care: emojis always sit next to words, at most five in the report. 9. Paywall: N/A.
+
+### Blocker
+- Coach evals on the Mac for coach.v32 (#11) and coach.v33 (this branch) before either merges.
+
+### Needs real-iPhone check
+- Finish a set on an exam with a guide: the report card's five parts, the readiness line, the chips. Finish a perfect set: no tricks, no weak spots. In the set: "Correct. 🔥 3 in a row!" on the third right answer in a row.
+
 ## Session 23b — 2026-10-24 — direct OneDrive (D-190), branch `feat/onedrive-direct`
 
 ### Done
