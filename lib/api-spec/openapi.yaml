@@ -759,6 +759,7 @@ components:
       required: [aiConsent]
       properties:
         aiConsent: { type: boolean }
+        setSize: { type: integer, enum: [10, 20], description: "D-189: questions per practice set the student chose in Account; 10 when absent." }
         courses: { type: array, items: { type: object, additionalProperties: true } }
         materials: { type: array, items: { type: object, additionalProperties: true } }
         topics: { type: object, additionalProperties: true }
