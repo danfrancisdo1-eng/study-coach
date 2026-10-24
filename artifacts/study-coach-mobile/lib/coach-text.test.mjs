@@ -29,3 +29,34 @@ test('a "Pop quiz:" line, or an older "Your turn: explain it back to me:" line, 
   assert.deepEqual(blocksOf('Your turn: explain it back to me: why does a cell swell?'), [{ kind: 'popquiz', spans: [{ text: 'Why does a cell swell?', bold: false }] }]);
   assert.equal(blocksOf('**Pop quiz:** what is osmosis?')[0].kind, 'popquiz');
 });
+
+// D-193: the report card in sections, each memory tip its own card.
+test('"### " opens a section and "#### " a tip card; lines go to the tip until the next one', async () => {
+  const { sectionsOf } = await import('./coach-text.ts');
+  const reply = [
+    '### 🎯 How you did', '**3 of 10.** Tough set.', 'Still shaky: polar curves',
+    '### 🧠 Memory tips',
+    'Tips for 2 of your 6 misses. Flashcards for the misses drills the rest.',
+    '#### p-test vs harmonic', '**p > 1** = converges', '**Clue words:** "1/n^p" → compare p with 1',
+    '#### r = 2cos θ', '**Picture it:** a circle sliding right',
+    '### 📈 Readiness', '> **Not yet.** A few more sets will show where you stand.',
+  ].join('\n');
+  const sections = sectionsOf(blocksOf(reply));
+  assert.deepEqual(sections.map((s) => s.title?.[0]?.text), ['🎯 How you did', '🧠 Memory tips', '📈 Readiness']);
+  const tips = sections[1].items.filter((i) => i.kind === 'tip').map((i) => i.tip);
+  assert.deepEqual(tips.map((t) => t.title[0].text), ['p-test vs harmonic', 'r = 2cos θ']);
+  assert.equal(tips[0].blocks.length, 2);
+  assert.equal(tips[1].blocks.length, 1);
+  // A line before the first tip stays in the section, above the cards.
+  assert.equal(sections[1].items[0].kind, 'block');
+  assert.equal(sections[2].items[0].block.kind, 'quote');
+});
+
+test('a reply without sections stays one untitled section, as before', async () => {
+  const { sectionsOf } = await import('./coach-text.ts');
+  const sections = sectionsOf(blocksOf('**Heading**\n- one\nplain'));
+  assert.equal(sections.length, 1);
+  assert.equal(sections[0].title, null);
+  assert.deepEqual(sections[0].items.map((i) => i.block.kind), ['heading', 'bullet', 'text']);
+  assert.equal(blocksOf('## Old heading')[0].kind, 'heading');
+});

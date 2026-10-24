@@ -16,7 +16,7 @@ import { AuroraBackground } from '@/components/AuroraBackground';
 import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
-import { blocksOf, type Span } from '@/lib/coach-text';
+import { blocksOf, sectionsOf, type Block, type Span } from '@/lib/coach-text';
 import { topicParts } from '@/lib/topic-label';
 import { daysLeft, daysLeftLabel } from '@/lib/syllabus';
 import { studyRequest } from '@/lib/course-actions';
@@ -398,9 +398,7 @@ export default function CoachHome() {
     const inline = (spans: Span[]) => spans.map((sp, k) => sp.bold
       ? <Text key={k} style={styles.bold}>{withLinks(sp.text)}</Text>
       : <React.Fragment key={k}>{withLinks(sp.text)}</React.Fragment>);
-    return (
-      <View style={styles.coachBlocks}>
-        {blocksOf(content).map((block, i) => {
+    const renderBlock = (block: Block, i: number) => {
           if (block.kind === 'heading') return <Text key={i} style={[styles.heading, i > 0 && styles.headingGap]} accessibilityRole="header">{block.spans[0]?.text}</Text>;
           if (block.kind === 'bullet') return (
             <View key={i} style={styles.bulletRow}><Text style={styles.body}>•</Text><Text style={[styles.body, styles.bulletText]}>{inline(block.spans)}</Text></View>
@@ -428,7 +426,23 @@ export default function CoachHome() {
             </View>
           );
           return <Text key={i} style={styles.body}>{inline(block.spans)}</Text>;
-        })}
+    };
+    // D-193 (Dan: "you can't tell where the readiness starts and ends ... each tip should be one
+    // concrete thought"): "### " sections get a divider and a coloured title; each "#### " tip is its own card.
+    const sections = sectionsOf(blocksOf(content));
+    return (
+      <View style={styles.coachBlocks}>
+        {sections.map((section, s) => (
+          <View key={s} style={[styles.coachSection, section.title && s > 0 && styles.coachSectionRule]} testID={section.title ? 'chat-section' : undefined}>
+            {section.title ? <Text style={styles.sectionTitle} accessibilityRole="header">{section.title.map((t) => t.text).join('')}</Text> : null}
+            {section.items.map((item, i) => item.kind === 'tip' ? (
+              <View key={i} style={styles.tipCard} testID="chat-tip">
+                <Text style={styles.tipTitle} accessibilityRole="header">{item.tip.title.map((t) => t.text).join('')}</Text>
+                {item.tip.blocks.map((b, k) => renderBlock(b, k))}
+              </View>
+            ) : renderBlock(item.block, i))}
+          </View>
+        ))}
       </View>
     );
   };
@@ -755,7 +769,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   popQuizTitle: { color: colors.navyText, fontSize: 15, fontWeight: '800', letterSpacing: 0.3 },
   popQuizText: { color: colors.navyText, fontSize: 16, lineHeight: 23 }, // Dan: plain text; the box is enough
   popQuizHint: { color: colors.navyText, fontSize: 13, opacity: 0.8 },
-  quoteRow: { borderLeftWidth: 3, borderLeftColor: colors.border, paddingLeft: 12, paddingVertical: 4, marginVertical: 4 },
+  quoteRow: { borderLeftWidth: 3, borderLeftColor: colors.primaryText, borderRadius: 10, backgroundColor: colors.secondary, paddingHorizontal: 12, paddingVertical: 10, marginVertical: 4 }, // D-193: a tinted box (readiness, the takeaway)
+  coachSection: { gap: 8 },
+  coachSectionRule: { marginTop: 10, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  sectionTitle: { color: colors.primaryText, fontSize: 13, lineHeight: 18, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
+  tipCard: { gap: 6, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, marginTop: 4 },
+  tipTitle: { color: colors.foreground, fontSize: 16, lineHeight: 22, fontWeight: '700' },
   bulletText: { flex: 1 },
   trickCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, padding: 11, borderRadius: 14, backgroundColor: colors.hookBg },
   trickText: { flex: 1, color: colors.hookText, fontSize: 13.5, lineHeight: 19.5 },

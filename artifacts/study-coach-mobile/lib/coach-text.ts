@@ -11,7 +11,16 @@ export type Block =
   | { kind: 'trick'; n: string; label: string | null; spans: Span[] }
   | { kind: 'quote'; spans: Span[] }
   | { kind: 'popquiz'; spans: Span[] }
+  /** D-193: "### 🎯 How you did" starts a section (a divider and a coloured title above it). */
+  | { kind: 'section'; spans: Span[] }
+  /** D-193: "#### Secrets User vs Officer" starts one memory tip, drawn as its own card. */
+  | { kind: 'tip'; spans: Span[] }
   | { kind: 'text'; spans: Span[] };
+
+/** A reply laid out in sections; a section holds plain blocks and tip cards. Blocks before the first section stay on top. */
+export type Tip = { title: Span[]; blocks: Block[] };
+export type SectionItem = { kind: 'block'; block: Block } | { kind: 'tip'; tip: Tip };
+export type Section = { title: Span[] | null; items: SectionItem[] };
 
 /** Splits "**bold** and plain" into spans; an unmatched ** stays as text. */
 export function spansOf(line: string): Span[] {
@@ -29,6 +38,11 @@ export function spansOf(line: string): Span[] {
 
 export function blocksOf(content: string): Block[] {
   return content.split(/\n+/).map((l) => l.trim()).filter(Boolean).map((line): Block => {
+    // D-193: sections and tip cards (checked before the generic "# heading").
+    const section = /^###\s+(.+)$/.exec(line);
+    if (section && !line.startsWith('####')) return { kind: 'section', spans: [{ text: section[1]!.replace(/\*\*/g, '').trim(), bold: true }] };
+    const tip = /^####\s+(.+)$/.exec(line);
+    if (tip) return { kind: 'tip', spans: [{ text: tip[1]!.replace(/\*\*/g, '').trim(), bold: true }] };
     const allBold = /^\*\*([^*]+)\*\*:?$/.exec(line) ?? /^#{1,4}\s+(.+)$/.exec(line);
     if (allBold) return { kind: 'heading', spans: [{ text: allBold[1]!.trim(), bold: true }] };
     // D-130: "> " marks the one highlighted takeaway (Dan's examples: "TensorRT = Race-Tuned Runtime").
@@ -50,4 +64,23 @@ export function blocksOf(content: string): Block[] {
     }
     return { kind: 'text', spans: spansOf(line) };
   });
+}
+
+/**
+ * Groups blocks into sections and tip cards (D-193, Dan: "you can't tell where the readiness starts
+ * and ends ... each tip should be one concrete thought, not run together"). A "### " line opens a
+ * section; inside it a "#### " line opens a tip card that holds the lines up to the next tip or
+ * section. Replies without sections come back as one untitled section, so older messages draw as before.
+ */
+export function sectionsOf(blocks: Block[]): Section[] {
+  const sections: Section[] = [{ title: null, items: [] }];
+  let tip: Tip | null = null;
+  for (const block of blocks) {
+    const current = sections[sections.length - 1]!;
+    if (block.kind === 'section') { tip = null; sections.push({ title: block.spans, items: [] }); continue; }
+    if (block.kind === 'tip') { tip = { title: block.spans, blocks: [] }; current.items.push({ kind: 'tip', tip }); continue; }
+    if (tip) tip.blocks.push(block);
+    else current.items.push({ kind: 'block', block });
+  }
+  return sections.filter((s, i) => i > 0 || s.items.length > 0);
 }
