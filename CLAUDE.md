@@ -21,7 +21,7 @@
 - artifacts/api-server — Express 5 API. This IS the AI proxy: the AI key lives only on the server. Keep Express; don't rewrite it in another framework.
 - lib/ — OpenAPI contract (lib/api-spec/openapi.yaml), Orval-generated client and Zod schemas, Drizzle/Postgres schema (lib/db), AI client (lib/integrations-openai-ai-server).
 - Auth: Clerk (Google + Sign in with Apple). Data: Postgres for account data; the web "classic workspace" uses browser IndexedDB only.
-- Backend currently runs on Replit (testing). Production hosting is not chosen yet.
+- Backend runs on Render: web service study-coach-api (https://study-coach-api-pskt.onrender.com), built from main. After merging server changes, check its Deploys page; if the merge commit isn't there, use Manual Deploy → Deploy latest commit. Replit is not used (only in the first week).
 - AI today: OpenAI through Replit AI Integrations. 4 chat-completion call sites (coach.ts, study.ts) + 1 audio transcription (coach.ts, gpt-4o-mini-transcribe).
 - AI target: Anthropic Claude for tutoring, quizzes, planning, and image/text extraction, behind a provider-agnostic module so models can be swapped. Model IDs come from server config/env, never hardcoded. The Claude API does not transcribe audio, so lecture transcription stays on a separate speech-to-text provider (to be decided).
 
