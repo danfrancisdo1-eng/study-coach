@@ -185,6 +185,8 @@ docs/AUDIT.md (audit + phased plan) · docs/SPEC.md (draft spec) · docs/DECISIO
 
 Prepared October 3, 2026. Read this before older Replit/export notes, which describe earlier states.
 
+**Out of date:** where this section says the backend, testing backend or AI runs on Replit, that is no longer true: the API server and database run on Render (see the table above). Only the sign-in app (Clerk) and possibly the web app may still depend on the old Replit project, so don't shut it down.
+
 ## Owner intent and working arrangement
 
 Develop and verify directly in Codex on the Mac. Use Replit for the existing backend/testing environment; do not delegate app development to its agent. Preserve the owner's working sign-in, AGENTIC AI course, and saved sessions. A separate Personal Max security app uses the PersonalMax Recovery QA simulator: do not reset, stop, or modify that simulator or its project.

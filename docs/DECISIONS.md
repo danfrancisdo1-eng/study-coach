@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-24 — D-190: The OneDrive button signs in to OneDrive directly
+- Dan: "build it". The OneDrive button opened Apple's Files picker, which shows OneDrive only when the OneDrive app is installed and switched on in Files; for most students it showed no OneDrive at all.
+- Now: tapping OneDrive opens Microsoft's sign-in page the first time (a browser sheet), then the student's own OneDrive inside the + sheet: folders first, then only the files the app can read (PDF, Word, PowerPoint, text, Markdown, photos), A–Z, with a search box, Back and Close. Tapping a file copies it to the phone and it goes through the normal upload (12 MB limit, big files split, notes, duplicate check). "Signed in as … · Disconnect" at the bottom. The Files button still opens Apple's picker.
+- Security: the Azure app "Study Coach" (registered 2026-10-03) as a public client with PKCE: no secret anywhere. Read-only (Files.Read, offline_access). Everything runs on the phone: the Microsoft refresh token is kept in the Keychain (expo-secure-store), the access token only in memory; neither reaches our server. No new dependency (expo-auth-session, expo-secure-store, expo-file-system were already in the app).
+- Needs, before it can work: Dan adds the redirect URI `study-coach-mobile://onedrive` in Azure (App registrations → Study Coach → Authentication → Add a platform → Mobile and desktop applications). Works only in TestFlight/App Store or a development build; in Expo Go it says so.
+- Not yet: Microsoft publisher verification (school/work accounts see an "unverified" warning, and some schools block outside apps); the web app keeps its file picker.
+- Build #94. Verified here: repo typecheck; `pnpm run test` 310/310 (new: lib/onedrive.test.mjs, 8 tests: read-only scopes, URLs and OData quoting, list filtering and order, size/type errors, token freshness and storage, download link, plain errors); iOS bundle exports. Not run here: the sign-in and file list on a phone (no device or Microsoft account in the cloud session).
+- **Decided by:** Dan.
+
 ## 2026-10-24 — D-188: College courses ask for the syllabus; exams show their countdown
 - Dan: "it's really important that with these college kids that we get the syllabus ... with the syllabus, we get the dates." For a certification exam "the equivalent is basically the date that they're taking the exam. And we already asked for that." Until now the app only named a syllabus as one example in a list.
 - After adding a college course, "What next?" opens with "Add your syllabus" ("Every quiz and exam date, and what's covered."), which lands on the course's upload card with "Start with your syllabus: a photo of it or the PDF." Exams keep "Add material".
