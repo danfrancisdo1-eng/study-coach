@@ -15,6 +15,7 @@ import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { orderPackages, packageLabel, paywallMode, paywallReason, paywallRows, paywallSegments, paywallState, savingLabel, trialLength, trialTerms } from '@/lib/premium-ui';
 import { PressScale } from '@/components/PressScale';
 import { TERMS_URL, buy, premiumPackages, purchasesAvailable, restore } from '@/lib/purchases';
+import { FOUNDER_QUOTE } from '@/lib/founder';
 
 /**
  * The paywall (D-090, D-153, SPEC §9, UX_PRINCIPLES "Paywall rules"). Two products on one screen,
@@ -162,6 +163,12 @@ export default function PremiumScreen() {
           </Pressable>
         ) : null}
 
+        {/* D-182: why this exists, in one line; the full story is a tap away. */}
+        <Pressable accessibilityRole="link" accessibilityHint="Opens the founder's story" onPress={() => router.push('/about')} style={styles.founder} testID="link-founder">
+          <Text style={styles.founderQuote}>“{FOUNDER_QUOTE}”</Text>
+          <Text style={styles.founderName}>Dan Francis, founder · Read the story ›</Text>
+        </Pressable>
+
         <Pressable accessibilityRole="button" disabled={!!busy} onPress={() => void restorePurchases()} style={({ pressed }) => [styles.secondary, pressed && styles.pressed]} testID="button-restore-purchases">
           {busy === 'restore' ? <ActivityIndicator color={colors.foreground} /> : <Text style={styles.secondaryText}>Restore Purchases</Text>}
         </Pressable>
@@ -206,6 +213,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   cardCheck: { position: 'absolute', right: 14, top: 18 },
   badge: { color: colors.primaryForeground, backgroundColor: colors.primary, fontSize: 12, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden' },
   trial: { color: colors.foreground, fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  founder: { gap: 4, paddingVertical: 12, paddingHorizontal: 4, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  founderQuote: { color: colors.foreground, fontSize: 15, lineHeight: 21, fontStyle: 'italic' },
+  founderName: { color: colors.primaryText, fontSize: 13, fontWeight: '600' },
   secondary: { minHeight: 48, justifyContent: 'center', alignItems: 'center', borderRadius: 14, borderWidth: 1, borderColor: colors.border },
   secondaryText: { color: colors.foreground, fontSize: 15, fontWeight: '600' },
   note: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20 },
