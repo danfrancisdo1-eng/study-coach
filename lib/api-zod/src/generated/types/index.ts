@@ -137,6 +137,7 @@ export * from './studyStateEnvelope';
 export * from './studyStateImport';
 export * from './studyStateMaterialsItem';
 export * from './studyStateReviewScheduleItem';
+export * from './studyStateSetSize';
 export * from './studyStateTopics';
 export * from './studyStateUpdate';
 export * from './studyWebsiteInput';

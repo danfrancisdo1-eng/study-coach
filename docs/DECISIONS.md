@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-24 — D-189: coach.v32: 10 or 20 per set, ask once for the syllabus, the exam countdown heads-up
+- Dan: set size: "I did 20s ... that was my sweet spot ... Let them choose." Syllabus: the coach should ask for it. Exams: "if the coach notices, hey, we only got 3 days left, and you're missing all this material ... we better get on the ball here."
+- **Questions per set:** Account has "Questions per set: 10 | 20" (saved on the account as `setSize`). The coach says the student's size everywhere ("Next 20", "100 a day, 20 at a time", "20 more toward today's 100"); "Next 10" or "Next 20" starts the day's next set at that size; a practice set the coach starts at the default size uses the student's; the daily-reps lines use it too.
+- **Syllabus:** a college course's chat tells the coach whether a syllabus is saved (lib/syllabus.ts, same check as the phone). With none, and the coach never having mentioned a syllabus in that conversation, the coach adds one line after its answer: "Do you have the syllabus? Add a photo or the PDF with the + button: it gives me every quiz and exam date." Once only. A date question with no syllabus: it says why it doesn't know and asks for it; never guesses.
+- **Countdown:** a certification exam 2–7 days away, on the student's first message that day: one encouraging opening line with the days left and the one or two areas to hit first (unpracticed guide sections or the weakest topics in the results), never "you might fail", no fake urgency; chips "Next N" and that area. The day-before review-PDF rule (v26) is unchanged. A course's chat also sees "(in N days)" after its exam date.
+- coach.v31 → **coach.v32** (`src/prompts/coach.v32.ts`); evals gain 5 cases (Next 20, the plan at 20, the syllabus ask, a date with no syllabus, the AI-103 heads-up). **Not merged until the coach evals pass on the Mac** (`pnpm --filter @workspace/api-server run eval -- --task coach --provider anthropic`); this cloud session has no AI key.
+- Build #92. Verified here: repo typecheck; `pnpm run test` 293/293 (new: coach-v32-inputs); mobile tests 124/124; iOS bundle exports; evals compile.
+- **Decided by:** Dan.
+
 ## 2026-10-24 — D-186: The welcome says drilling, not chatting; questions right after material
 - Dan: "Talk to your coach ... I don't want them to think, hey, just start talking to AI, when the most important thing in the whole app is taking questions, exam questions over and over and over ... sitting on the toilet, eating dinner, walking down the street." And "studying an hour a day [doesn't] work as well as studying for 2 minutes thirty times a day."
 - Welcome title: "Your material, turned into questions." Under it: "A few minutes, many times a day, beats an hour of cramming." (spaced practice). Step 3: "3rd Answer questions. Repeatedly." with "Quick sets of 10 or 20, anywhere. Whatever you miss comes back until it sticks." (the 10-or-20 choice is item 6, coming with the coach update). Was "A tutor that has already read your material" and "3rd Talk to your coach".

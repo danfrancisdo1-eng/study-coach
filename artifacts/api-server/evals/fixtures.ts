@@ -522,7 +522,7 @@ export const ocrCaseNames = ["respiration-notes", "syllabus-excerpt", "vocab-lis
 /** Chat-first home coach (prompts/coach.v1, SPEC §7). */
 export interface CoachCase {
   name: string;
-  courses: { id: string; name: string; kind?: "course" | "exam"; examDate?: string; materials: number; lectures: number; materialNames?: string[]; scopeExcerpt?: string; guideSections?: { name: string; weight: number | null }[]; guideMissing?: boolean; memoryRows?: number }[];
+  courses: { id: string; name: string; kind?: "course" | "exam"; examDate?: string; materials: number; lectures: number; materialNames?: string[]; scopeExcerpt?: string; guideSections?: { name: string; weight: number | null }[]; guideMissing?: boolean; memoryRows?: number; hasSyllabus?: boolean; daysLeft?: number }[];
   firstVisit: boolean;
   /** The course/exam selected on the home screen. */
   focusCourseId?: string;
@@ -560,6 +560,12 @@ export interface CoachCase {
   daily?: string;
   /** D-139: the student's first message in this chat today. */
   firstMessageToday?: boolean;
+  /** D-189 (coach.v32): questions per set the student chose. */
+  setSize?: number;
+  /** D-189: no syllabus saved in this college course and the coach has not asked yet. */
+  askSyllabus?: boolean;
+  /** D-189: the exam is 2–7 days away and this is the day's first message. */
+  examSoon?: { courseName: string; days: number };
 }
 
 const bioResults = `Sets and decks (3 total):
@@ -604,6 +610,59 @@ export const coachCases: CoachCase[] = [
     expectedActions: [],
     expectations: ["Gives the final exam date as Tuesday, December 1, 2026", "Says it is cumulative (heavier on the material after the midterm is fine)", "Says or implies it comes from their syllabus", "Does not say it cannot see the date or ask the student for the date"],
     maxWords: 90,
+  },
+  // coach.v32 (D-189): set size 10 or 20, ask once for a missing syllabus, the exam countdown heads-up.
+  {
+    name: "set size 20: Next 20 starts a daily set of 20 at once",
+    courses: [{ id: "micro", name: "ECON 301", materials: 3, lectures: 1, hasSyllabus: true }], firstVisit: false, focusCourseId: "micro", today: "2026-10-18", setSize: 20,
+    daily: "Daily reps (today is 2026-10-18 for the student): 40 of 100 questions done today, 31 right; today's sets of 20 cover all topics (nothing missed on the last study day).",
+    history: [{ role: "user", content: "make me a study plan" }, { role: "assistant", content: "Here's the plan: 100 questions a day, 20 at a time, whenever you have a minute." }],
+    message: "Next 20",
+    expectedActions: [{ type: "start_quiz", name: "ECON 301", kind: "practice", scope: "daily" }],
+    expectations: ["Starts right away in one short line; does not ask how many, practice or exam, nor which topic", "Says 20, never 10"],
+    maxWords: 25,
+  },
+  {
+    name: "set size 20: the study plan says 20 at a time and offers Next 20",
+    courses: [{ id: "aws", name: "AWS Solutions Architect Associate", kind: "exam", materials: 0, lectures: 0 }], firstVisit: false, focusCourseId: "aws", history: [], today: "2026-10-18", setSize: 20,
+    daily: "Daily reps (today is 2026-10-18 for the student): 0 of 100 questions done today, 0 right; today's sets of 20 cover all topics (nothing missed on the last study day).",
+    message: "how should I study for this?",
+    expectedActions: [], expectedSuggestions: ["Next 20"],
+    expectations: ["Gives the 100-a-day plan done 20 at a time (not 10 at a time)", "Names work-day places (lunch break, between meetings, commute)"],
+    maxWords: 120,
+  },
+  {
+    name: "no syllabus yet in a college course: answers, then asks for it once in one line",
+    courses: [{ id: "psy", name: "PSY 101", materials: 1, lectures: 0, materialNames: ["Chapter 2 notes"], hasSyllabus: false }], firstVisit: false, focusCourseId: "psy", history: [], today: "2026-10-18", askSyllabus: true,
+    uploads: [{ name: "Chapter 2 notes", text: "# Research methods\n- Correlation is not causation\n- Experiments have an independent and a dependent variable" }],
+    message: "what should I focus on in chapter 2?",
+    expectedActions: [],
+    expectations: ["Answers from the chapter 2 notes (research methods: correlation vs causation, independent/dependent variables)", "Adds one line asking for the syllabus (a photo or the PDF with the + button) and says it gives the quiz and exam dates", "Asks for the syllabus only once"],
+    maxWords: 110,
+  },
+  {
+    name: "a date question with no syllabus: says why it doesn't know, asks for the syllabus, never guesses",
+    courses: [{ id: "psy", name: "PSY 101", materials: 1, lectures: 0, materialNames: ["Chapter 2 notes"], hasSyllabus: false }], firstVisit: false, focusCourseId: "psy", today: "2026-10-18",
+    history: [{ role: "user", content: "what should I focus on in chapter 2?" }, { role: "assistant", content: "Correlation vs causation and the two kinds of variables. Do you have the syllabus? Add a photo or the PDF with the + button: it gives me every quiz and exam date." }],
+    uploads: [{ name: "Chapter 2 notes", text: "# Research methods\n- Correlation is not causation" }],
+    message: "when is my midterm?",
+    expectedActions: [],
+    expectations: ["Says it doesn't have the midterm date because the syllabus isn't uploaded", "Asks for the syllabus in one line", "Does not guess or invent a date"],
+    maxWords: 50,
+  },
+  {
+    name: "exam in 3 days, first message today: one encouraging heads-up naming what to hit first (AI-103)",
+    courses: [{ id: "ai103", name: "Microsoft AI-103", kind: "exam", examDate: "2026-10-21", daysLeft: 3, materials: 3, lectures: 0, guideSections: [
+      { name: "Plan and manage an Azure AI solution", weight: 27.5 }, { name: "Implement generative AI and agentic solutions", weight: 32.5 },
+      { name: "Implement computer vision solutions", weight: 12.5 }, { name: "Implement text analysis solutions", weight: 12.5 }, { name: "Implement information extraction solutions", weight: 12.5 },
+    ] }], firstVisit: false, focusCourseId: "ai103", today: "2026-10-18", firstMessageToday: true,
+    history: [{ role: "user", content: "thanks" }, { role: "assistant", content: "Anytime. Come back for your next 10." }],
+    results: "Sets and decks (3 total):\n- 2026-10-17 practice on Implement generative AI and agentic solutions: 8/10 (80%); missed: Agent tools\n- 2026-10-16 practice on Plan and manage an Azure AI solution: 9/10 (90%); missed: Key Vault\n- 2026-10-15 practice on Implement generative AI and agentic solutions: 7/10 (70%); missed: Prompt flow, RAG grounding, Content filters",
+    examSoon: { courseName: "Microsoft AI-103", days: 3 },
+    message: "hey",
+    expectedActions: [], expectedSuggestions: ["Next 10"],
+    expectations: ["Opens by saying the exam is in 3 days", "Names one or two areas to hit first, from the sections never practiced (computer vision, text analysis or information extraction)", "Encouraging; never says they might fail and uses no fake urgency", "Does not invent a score"],
+    maxWords: 70,
   },
   // coach.v29 (D-142): a review PDF request in a course chat: one line and the button, no review in the chat.
   {
