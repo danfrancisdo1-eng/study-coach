@@ -396,6 +396,7 @@ export default function CourseScreen() {
               aiConsent={state.aiConsent === true}
               busy={busy}
               savedMaterials={materials}
+              onStartQuestions={() => startWithCoach('practice', null)}
               onSave={async (additions) => { await persist({ materials: [...(Array.isArray(state.materials) ? state.materials : []), ...additions] }); }}
               onError={(problem) => setError(readable(problem))}
             />

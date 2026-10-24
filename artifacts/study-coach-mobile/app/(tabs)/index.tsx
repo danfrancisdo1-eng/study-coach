@@ -18,6 +18,7 @@ import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { blocksOf, type Span } from '@/lib/coach-text';
 import { topicParts } from '@/lib/topic-label';
+import { studyRequest } from '@/lib/course-actions';
 import { chipParts, hasValues } from '@/lib/chip-label';
 import { premiumCode } from '@/lib/premium-ui';
 import { ActionButton } from '@/components/ActionButton';
@@ -706,6 +707,8 @@ export default function CoachHome() {
                 busy={busy}
                 savedMaterials={materialsFrom(stateQuery.data?.state, intakeCourse.id)}
                 onSave={saveMaterial}
+                // D-186: straight into questions on this course once something is saved.
+                onStartQuestions={() => { const id = intakeCourse.id; setIntakeCourseId(null); selectCourse(id); handoffSentRef.current = null; router.setParams({ send: studyRequest('practice', null), courseId: id }); }}
                 onStatusChange={(status) => setIntakeBusy(status.uploading || status.saving)}
                 onError={(problem) => setError(readableError(problem))}
                 footer={() => (

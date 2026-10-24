@@ -8,6 +8,7 @@
 ### Done
 - **D-185:** big files split at chapters into parts of up to 90,000 characters, saved as separate uploads; storage-full keeps what fits and names the rest. Build #89.
 - Verified here: repo typecheck; `pnpm run test` 302/302; iOS bundle exports.
+- **D-186 (item 5):** welcome reworded for drilling ("Your material, turned into questions.", "A few minutes, many times a day, beats an hour of cramming.", "3rd Answer questions. Repeatedly."); "Start practice questions" after an upload is saved. Build #90. Verified: mobile typecheck, mobile tests 128/128, iOS bundle exports. UX checklist: 1 PASS (45-pt button), 2 PASS (one gold button on the welcome; the new button appears only after a save), 3 PASS (title, one line, three steps), 4 PASS, 5 N/A, 6 PASS, 7 PASS (muted token for the new line), 8 PASS (button labelled), 9 N/A.
 
 ### UX checklist (docs/UX_PRINCIPLES.md), code review only
 1. Tap targets: PASS (Save N parts and Discard are the existing 45-pt buttons). 2. One primary action: PASS (Save N parts). 3. Chunked: PASS (the preview lists parts by their first and last chapter instead of 200,000 characters of text). 4. Native patterns: PASS. 5. Progress: PASS (the existing reading bar). 6. Accent: unchanged. 7. Tokens: PASS (part rows use border and muted tokens). 8. Labels: PASS (each part row is text). 9. Paywall: N/A.
