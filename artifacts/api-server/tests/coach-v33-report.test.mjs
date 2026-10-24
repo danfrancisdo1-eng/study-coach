@@ -33,7 +33,7 @@ test('a college course gets course wording for readiness', () => {
 test('without report facts (the general chat, or any later reply): the one-line result as before', () => {
   const prompt = systemPrompt({ ...base, report: null });
   assert.ok(!prompt.includes('Report facts for the set'));
-  assert.match(prompt, /your first reply is one line about the result \(no repeat of the corrections\)\. With nothing missed/);
+  assert.match(prompt, /your first reply is exactly one line about the result \(no repeat of the corrections, no list of the missed concepts: the chips offer the tricks\)\. With nothing missed/);
 });
 
 test('personality and emoji rules are always there', () => {
