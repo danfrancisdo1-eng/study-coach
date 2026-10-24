@@ -566,6 +566,10 @@ export interface CoachCase {
   askSyllabus?: boolean;
   /** D-189: the exam is 2–7 days away and this is the day's first message. */
   examSoon?: { courseName: string; days: number };
+  /** D-192 (coach.v33): the report card's facts after a graded set (readiness.ts reportFactsText). */
+  report?: { text: string; isExam: boolean };
+  /** D-192: at most this many emojis in the reply (checked by code). */
+  maxEmojis?: number;
 }
 
 const bioResults = `Sets and decks (3 total):
@@ -1310,6 +1314,143 @@ export const coachCases: CoachCase[] = [
     expectedActions: [{ type: "start_quiz", name: "BIOL 114", kind: "exam", scope: "missed" }],
     expectations: ["Briefly confirms (one or two short sentences) that a set on the missed topics is coming"],
     maxWords: 40,
+  },
+
+  // coach.v33 (D-192): the report card after a graded set, the readiness line, a little personality and a few emojis.
+  {
+    name: "report card: improvement, two misses, exam Getting close with 12 days left (AI-103)",
+    courses: [{ id: "ai103", name: "Microsoft AI-103", kind: "exam", examDate: "2026-11-05", daysLeft: 12, materials: 3, lectures: 0, guideSections: [
+      { name: "Plan and manage an Azure AI solution", weight: 27.5 }, { name: "Implement generative AI and agentic solutions", weight: 32.5 },
+      { name: "Implement computer vision solutions", weight: 12.5 }, { name: "Implement text analysis solutions", weight: 12.5 }, { name: "Implement information extraction solutions", weight: 12.5 },
+    ] }], firstVisit: false, focusCourseId: "ai103", today: "2026-10-24",
+    history: [{ role: "user", content: "Give me a practice set on all topics" }, { role: "assistant", content: "Your 10-question set on all topics is starting now." }],
+    quiz: { courseName: "Microsoft AI-103", topic: "All topics", kind: "practice", answered: 10, total: 10, graded: { correct: 8, percent: 80, missed: [
+      { concept: "Plan and manage an Azure AI solution — Key Vault roles", prompt: "Which Key Vault role gives an agent least-privilege read access to secrets?", chose: "Key Vault Administrator", correct: "Key Vault Secrets User", explanation: "Secrets User can only read secret contents." },
+      { concept: "Implement generative AI and agentic solutions — grounding", prompt: "What keeps a chat agent's answers tied to company documents?", chose: "Raising the temperature", correct: "Retrieval-augmented generation over an index", explanation: "RAG retrieves passages and the model answers from them." },
+    ] } },
+    report: { isExam: true, text: [
+      "- This set: 8 of 10.",
+      "- The set before it on this course: 6 of 10 (2026-10-22).",
+      "- Exam readiness: Getting close. Sections (share of recent answers right): Plan and manage an Azure AI solution, 27.5% of the exam: 78% of 9 (solid); Implement generative AI and agentic solutions, 32.5% of the exam: 55% of 11; Implement computer vision solutions, 12.5% of the exam: 80% of 5 (solid); Implement text analysis solutions, 12.5% of the exam: 75% of 4 (solid); Implement information extraction solutions, 12.5% of the exam: untested.",
+      "- Work on next: Implement generative AI and agentic solutions; Implement information extraction solutions.",
+      "- Days to the exam: 12.",
+    ].join("\n") },
+    message: "I finished the set.",
+    expectedActions: [], expectedSuggestions: ["Memory tricks for the misses", "Flashcards for the misses", "Another set on everything", "Another set on the missed topics"],
+    expectations: [
+      "Opens with the result (8 of 10) and short, earned encouragement",
+      "Says it is up from 6 of 10 last time and calls that an improvement",
+      "Names the weak spots behind the two misses (Key Vault roles, grounding/RAG)",
+      "Gives one short memory trick for each of the two missed questions",
+      "Says exam readiness is Getting close (the app's level, not its own estimate) and why: generative AI and agentic solutions (about a third of the exam) is not solid yet and information extraction is untested",
+      "Gives one concrete next step that uses the 12 days left",
+      "Does not repeat the full corrections or explanations",
+    ],
+    maxWords: 190, maxLineWords: 30, maxEmojis: 5,
+  },
+  {
+    name: "report card: a perfect first set is praised, but readiness says untested sections keep it at Not yet (AZ-500)",
+    courses: [{ id: "az500", name: "Microsoft AZ-500", kind: "exam", materials: 2, lectures: 0, guideSections: [
+      { name: "Secure identity and access", weight: 17.5 }, { name: "Secure networking", weight: 22.5 }, { name: "Secure compute, storage, and databases", weight: 22.5 }, { name: "Secure Azure using Microsoft Defender for Cloud and Microsoft Sentinel", weight: 37.5 },
+    ] }], firstVisit: false, focusCourseId: "az500", today: "2026-10-24",
+    history: [{ role: "user", content: "Give me a practice set on Secure identity and access" }, { role: "assistant", content: "Your 10-question set on identity and access is starting now." }],
+    quiz: { courseName: "Microsoft AZ-500", topic: "Secure identity and access", kind: "practice", answered: 10, total: 10, graded: { correct: 10, percent: 100, missed: [] } },
+    report: { isExam: true, text: [
+      "- This set: 10 of 10.",
+      "- This is the student's first graded set on this course.",
+      "- Exam readiness: Not yet. Sections (share of recent answers right): Secure identity and access, 17.5% of the exam: 100% of 10 (solid); Secure networking, 22.5% of the exam: untested; Secure compute, storage, and databases, 22.5% of the exam: untested; Secure Azure using Microsoft Defender for Cloud and Microsoft Sentinel, 37.5% of the exam: untested.",
+      "- Work on next: Secure Azure using Microsoft Defender for Cloud and Microsoft Sentinel; Secure networking.",
+    ].join("\n") },
+    message: "I finished the set.",
+    expectedActions: [], expectedSuggestions: ["Another set on everything", "Harder questions", "Pick a new topic", "Flashcards on this topic"],
+    expectations: [
+      "Celebrates the perfect 10 of 10 warmly in a line",
+      "Has no progress comparison (it is the first set) and no memory tricks or weak-spot list (nothing was missed)",
+      "Says exam readiness is Not yet because the other sections are untested, not because of this set",
+      "Points to Defender for Cloud and Sentinel (the biggest section, 37.5%) as the next thing to practice",
+    ],
+    maxWords: 110, maxEmojis: 5,
+  },
+  {
+    name: "report card: a rough set and a drop is honest and kind, never 'great' (PSY 101)",
+    courses: [{ id: "psy", name: "PSY 101", materials: 3, lectures: 1, hasSyllabus: true }], firstVisit: false, focusCourseId: "psy", today: "2026-10-24",
+    history: [{ role: "user", content: "Give me a practice set on chapter 3" }, { role: "assistant", content: "Your 10-question set on chapter 3 is starting now." }],
+    quiz: { courseName: "PSY 101", topic: "Chapter 3", kind: "practice", answered: 10, total: 10, graded: { correct: 4, percent: 40, missed: [
+      { concept: "Neurons — myelin", prompt: "What does the myelin sheath do?", chose: "Stores neurotransmitters", correct: "Speeds up the signal along the axon", explanation: "Myelin insulates the axon so the signal jumps faster." },
+      { concept: "Neurons — synapse", prompt: "Where do neurotransmitters cross?", chose: "The axon hillock", correct: "The synaptic gap", explanation: "They cross the synapse between neurons." },
+      { concept: "Brain — hippocampus", prompt: "Which structure forms new memories?", chose: "Amygdala", correct: "Hippocampus", explanation: "The hippocampus builds new long-term memories." },
+      { concept: "Brain — amygdala", prompt: "Which structure processes fear?", chose: "Hippocampus", correct: "Amygdala", explanation: "The amygdala handles fear and emotion." },
+      { concept: "Neurons — action potential", prompt: "An action potential is...", chose: "Graded by stimulus size", correct: "All-or-none", explanation: "It fires fully or not at all." },
+      { concept: "Brain — cerebellum", prompt: "Balance and coordination are mainly the job of the...", chose: "Medulla", correct: "Cerebellum", explanation: "The cerebellum coordinates movement and balance." },
+    ] } },
+    report: { isExam: false, text: [
+      "- This set: 4 of 10.",
+      "- The set before it on this course: 7 of 10 (2026-10-21).",
+      "- Readiness for this course's tests: Not yet (based on the last 20 answers).",
+      "- Work on next: Brain — hippocampus; Neurons — myelin.",
+    ].join("\n") },
+    message: "I finished the set.",
+    expectedActions: [], expectedSuggestions: ["Memory tricks for the misses", "Flashcards for the misses", "Another set on everything", "Another set on the missed topics"],
+    expectations: [
+      "Gives 4 of 10 honestly with supportive words; never calls it great, nice or good",
+      "Mentions it is down from 7 of 10 without guilt or blame",
+      "Gives at most five one-line memory tricks for the misses and says the flashcards drill the rest",
+      "The hippocampus vs amygdala trick separates the two (memory vs fear)",
+      "Says it is not ready yet for the course's tests and gives one next step",
+    ],
+    maxWords: 200, maxLineWords: 22, maxEmojis: 5,
+  },
+  {
+    name: "report card: a course that is Ready says so with a check (BIOL 114)",
+    courses: [{ id: "bio", name: "BIOL 114", materials: 4, lectures: 2, hasSyllabus: true }], firstVisit: false, focusCourseId: "bio", today: "2026-10-24",
+    history: [{ role: "user", content: "Next 10" }, { role: "assistant", content: "10 more toward today's 100, starting now." }],
+    quiz: { courseName: "BIOL 114", topic: "All topics", kind: "practice", answered: 10, total: 10, graded: { correct: 10, percent: 100, missed: [] } },
+    report: { isExam: false, text: [
+      "- This set: 10 of 10.",
+      "- The set before it on this course: 9 of 10 (2026-10-23).",
+      "- Readiness for this course's tests: Ready (based on the last 30 answers).",
+    ].join("\n") },
+    message: "I finished the set.",
+    expectedActions: [], expectedSuggestions: ["Another set on everything", "Harder questions", "Pick a new topic", "Flashcards on this topic"],
+    expectations: [
+      "Celebrates 10 of 10 and notes it is up from 9 of 10",
+      "Says the student is ready for the course's tests (with a check mark)",
+      "Suggests keeping it fresh (a set a day or harder questions) rather than more cramming",
+    ],
+    maxWords: 90, maxEmojis: 5,
+  },
+  {
+    name: "report card: too few answers yet, so readiness waits for a few more sets (HIST 210)",
+    courses: [{ id: "hist", name: "HIST 210", materials: 2, lectures: 0, hasSyllabus: true }], firstVisit: false, focusCourseId: "hist", today: "2026-10-24",
+    history: [{ role: "user", content: "Give me a practice set on all topics" }, { role: "assistant", content: "Your 10-question set on all topics is starting now." }],
+    quiz: { courseName: "HIST 210", topic: "All topics", kind: "practice", answered: 10, total: 10, graded: { correct: 7, percent: 70, missed: [
+      { concept: "Reconstruction — 14th Amendment", prompt: "The 14th Amendment guaranteed...", chose: "Women's suffrage", correct: "Equal protection and citizenship", explanation: "It defined citizenship and equal protection." },
+      { concept: "Reconstruction — Compromise of 1877", prompt: "The Compromise of 1877 ended Reconstruction by...", chose: "Freeing the last enslaved people", correct: "Withdrawing federal troops from the South", explanation: "Troops left in exchange for Hayes's presidency." },
+      { concept: "Gilded Age — Pendleton Act", prompt: "The Pendleton Act created...", chose: "The income tax", correct: "A merit-based civil service", explanation: "Jobs went by exams, not patronage." },
+    ] } },
+    report: { isExam: false, text: [
+      "- This set: 7 of 10.",
+      "- This is the student's first graded set on this course.",
+      "- Readiness for this course's tests: Not yet (based on the last 10 answers; 20 are needed before it can say Ready or Getting close).",
+      "- Work on next: Reconstruction — 14th Amendment; Reconstruction — Compromise of 1877.",
+    ].join("\n") },
+    message: "I finished the set.",
+    expectedActions: [], expectedSuggestions: ["Memory tricks for the misses", "Flashcards for the misses"],
+    expectations: [
+      "Gives 7 of 10 with fitting encouragement and no progress comparison",
+      "Gives one memory trick per miss (14th Amendment, Compromise of 1877, Pendleton Act)",
+      "Says a few more sets will show where the student stands, instead of judging readiness from one set",
+    ],
+    maxWords: 160, maxLineWords: 22, maxEmojis: 5,
+  },
+  {
+    name: "personality outside the report: a teaching reply is warm, uses at most three emojis, none in the Pop quiz",
+    courses: [{ id: "bio", name: "BIOL 114", materials: 3, lectures: 1, hasSyllabus: true }], firstVisit: false, focusCourseId: "bio", today: "2026-10-24",
+    history: [{ role: "user", content: "I keep mixing up osmosis and diffusion" }, { role: "assistant", content: "Diffusion is any particle spreading out; osmosis is water moving across a membrane. Pop quiz: which one is water only?" }],
+    message: "osmosis is the water one! I think I get it now",
+    expectedActions: [],
+    expectations: ["Confirms the student is right with a short encouraging word", "Adds one short point that builds on it (hypertonic/hypotonic or a quick check), not a lecture", "Any emojis sit next to words and none are inside a quiz question or its options"],
+    maxWords: 90, maxEmojis: 3,
   },
 ];
 
