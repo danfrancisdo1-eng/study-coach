@@ -1,5 +1,20 @@
 # Progress
 
+## Session 23 — 2026-10-24 (Dan on the phone; Claude in the cloud) — the plan Dan approved, item 1 of 6
+
+### Approved plan (Dan: "everything ... I'm a go")
+1. Split big uploads by chapter (D-185, this branch). 2. Ask college students for the syllabus. 3. Exam countdown heads-up. 4. Practice sets, flashcards, memory tricks and the review sheet read the notes. 5. Welcome: "3rd Answer questions. Repeatedly." and a first-set nudge. 6. The student chooses 10 or 20 questions per set. Later: a shared exam-packet library (AI-103 first), moving uploads' full text to server-only storage (database change, needs Dan's OK), opt-in note sharing for college courses.
+
+### Done
+- **D-185:** big files split at chapters into parts of up to 90,000 characters, saved as separate uploads; storage-full keeps what fits and names the rest. Build #89.
+- Verified here: repo typecheck; `pnpm run test` 302/302; iOS bundle exports.
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (Save N parts and Discard are the existing 45-pt buttons). 2. One primary action: PASS (Save N parts). 3. Chunked: PASS (the preview lists parts by their first and last chapter instead of 200,000 characters of text). 4. Native patterns: PASS. 5. Progress: PASS (the existing reading bar). 6. Accent: unchanged. 7. Tokens: PASS (part rows use border and muted tokens). 8. Labels: PASS (each part row is text). 9. Paywall: N/A.
+
+### Needs real-iPhone check
+- Upload Dan's AI-103 packet to the AI-103 exam: 3 parts listed, Save 3 parts, three uploads on the course page; the coach then writes notes for each.
+
 ## Session 21 — 2026-10-23/24 (Dan reviewing build 15) — branch `feat/beta-round-3` → main (renumbered from D-181 to D-182 when merged after the Add-course fix)
 
 ### Done (D-182, one commit each)
