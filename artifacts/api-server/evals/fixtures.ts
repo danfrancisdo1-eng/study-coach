@@ -1330,6 +1330,7 @@ export const coachCases: CoachCase[] = [
     ] } },
     report: { isExam: true, text: [
       "- This set: 8 of 10.",
+      "- Missed questions: 2.",
       "- The set before it on this course: 6 of 10 (2026-10-22).",
       "- Exam readiness: Getting close. Sections (share of recent answers right): Plan and manage an Azure AI solution, 27.5% of the exam: 78% of 9 (solid); Implement generative AI and agentic solutions, 32.5% of the exam: 55% of 11; Implement computer vision solutions, 12.5% of the exam: 80% of 5 (solid); Implement text analysis solutions, 12.5% of the exam: 75% of 4 (solid); Implement information extraction solutions, 12.5% of the exam: untested.",
       "- Work on next: Implement generative AI and agentic solutions; Implement information extraction solutions.",
@@ -1357,6 +1358,7 @@ export const coachCases: CoachCase[] = [
     quiz: { courseName: "Microsoft AZ-500", topic: "Secure identity and access", kind: "practice", answered: 10, total: 10, graded: { correct: 10, percent: 100, missed: [] } },
     report: { isExam: true, text: [
       "- This set: 10 of 10.",
+      "- Missed questions: 0.",
       "- This is the student's first graded set on this course.",
       "- Exam readiness: Not yet. Sections (share of recent answers right): Secure identity and access, 17.5% of the exam: 100% of 10 (solid); Secure networking, 22.5% of the exam: untested; Secure compute, storage, and databases, 22.5% of the exam: untested; Secure Azure using Microsoft Defender for Cloud and Microsoft Sentinel, 37.5% of the exam: untested.",
       "- Work on next: Secure Azure using Microsoft Defender for Cloud and Microsoft Sentinel; Secure networking.",
@@ -1385,6 +1387,7 @@ export const coachCases: CoachCase[] = [
     ] } },
     report: { isExam: false, text: [
       "- This set: 4 of 10.",
+      "- Missed questions: 6, more than 5: tricks for 5 of them, then the line \"Flashcards for the misses drills the rest.\"",
       "- The set before it on this course: 7 of 10 (2026-10-21).",
       "- Readiness for this course's tests: Not yet (based on the last 20 answers).",
       "- Work on next: Brain — hippocampus; Neurons — myelin.",
@@ -1407,6 +1410,7 @@ export const coachCases: CoachCase[] = [
     quiz: { courseName: "BIOL 114", topic: "All topics", kind: "practice", answered: 10, total: 10, graded: { correct: 10, percent: 100, missed: [] } },
     report: { isExam: false, text: [
       "- This set: 10 of 10.",
+      "- Missed questions: 0.",
       "- The set before it on this course: 9 of 10 (2026-10-23).",
       "- Readiness for this course's tests: Ready (based on the last 30 answers).",
     ].join("\n") },
@@ -1430,6 +1434,7 @@ export const coachCases: CoachCase[] = [
     ] } },
     report: { isExam: false, text: [
       "- This set: 7 of 10.",
+      "- Missed questions: 3.",
       "- This is the student's first graded set on this course.",
       "- Readiness for this course's tests: Not yet (based on the last 10 answers; 20 are needed before it can say Ready or Getting close).",
       "- Work on next: Reconstruction — 14th Amendment; Reconstruction — Compromise of 1877.",

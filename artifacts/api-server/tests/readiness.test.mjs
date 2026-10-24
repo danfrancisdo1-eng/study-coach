@@ -74,6 +74,7 @@ test('the facts text: this set, the one before, readiness with sections, focus a
   ];
   const text = reportFactsText(reportFacts(events, guide, 12), true);
   assert.match(text, /This set: 7 of 9\./);
+  assert.match(text, /Missed questions: 2\./);
   assert.match(text, /The set before it on this course: 5 of 10 \(2026-10-22\)\./);
   assert.match(text, /Exam readiness: Getting close\./);
   assert.match(text, /Plan and manage, 20% of the exam: 46% of 13/);
@@ -85,4 +86,10 @@ test('the facts text: this set, the one before, readiness with sections, focus a
   assert.match(first, /first graded set on this course/);
   assert.match(first, /Readiness for this course's tests: Not yet \(based on the last 10 answers; 20 are needed/);
   assert.equal(levelWords('close'), 'Getting close');
+});
+
+test('more than 5 misses: the facts say so and name the flashcards line', () => {
+  const ev = set('2026-10-24T10:00:00Z', many('Agents', 4, 6));
+  const text = reportFactsText(reportFacts([ev], guide, null), true);
+  assert.match(text, /Missed questions: 6, more than 5: tricks for 5 of them, then the line "Flashcards for the misses drills the rest\."/);
 });
