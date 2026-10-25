@@ -13,7 +13,7 @@ import { useAnswerSounds } from '@/hooks/useAnswerSounds';
 import { AuroraBackground } from '@/components/AuroraBackground';
 import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
-import { SIGNED_OUT_ROUTE, signOutInOrder } from '@/lib/sign-out';
+import { ACCOUNT_DELETED_ROUTE, SIGNED_OUT_ROUTE, signOutInOrder } from '@/lib/sign-out';
 import { BUILD } from '@/constants/build';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { welcomeReplayKey } from '@/lib/welcome';
@@ -75,8 +75,8 @@ export default function AccountScreen() {
   if (isLoaded && !isSignedIn) return <Redirect href="/" />;
 
   // D-180: leave the tabs first, then drop the session (see lib/sign-out.ts). A failed sign-out says so and stays signed in.
-  const leaveAndSignOut = async () => {
-    const result = await signOutInOrder(() => router.replace(SIGNED_OUT_ROUTE), () => signOut());
+  const leaveAndSignOut = async (to: typeof SIGNED_OUT_ROUTE | typeof ACCOUNT_DELETED_ROUTE = SIGNED_OUT_ROUTE) => {
+    const result = await signOutInOrder(() => router.replace(to), () => signOut());
     if (result === 'failed') { router.replace('/account'); Alert.alert("Couldn't sign out", 'Check your connection and try again.'); }
   };
 
@@ -90,7 +90,7 @@ export default function AccountScreen() {
       if (userId) AsyncStorage.removeItem(`study-coach-focus:${userId}`).catch(() => {});
       queryClient.clear();
       if (!result.identityDeleted) Alert.alert('Your data is deleted', 'Your sign-in could not be removed automatically. Contact support and it will be finished by hand.');
-      await leaveAndSignOut();
+      await leaveAndSignOut(ACCOUNT_DELETED_ROUTE);
     } catch (problem) {
       setError(friendlyError(problem));
     }

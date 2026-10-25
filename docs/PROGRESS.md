@@ -1,5 +1,13 @@
 # Progress
 
+## Session 23j — 2026-10-25 — a deleted account starts fresh (D-199), branch `fix/delete-fresh-start`
+
+### Done
+- After Delete my account: the intro video, the tour, then sign-up (was: straight to sign-in). Build #105. Verified here: mobile typecheck; sign-out tests.
+
+### Needs real-iPhone check
+- Delete an account: the intro video plays, then the tour, then sign-up; a new account then sees the welcome in the chat.
+
 ## Session 23i — 2026-10-25 — beta round 5 (D-197, D-198), branch `fix/beta-round-5`
 
 ### Done

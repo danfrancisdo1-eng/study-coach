@@ -23,6 +23,13 @@ export async function signOutInOrder(leave: () => void, signOut: () => Promise<u
  */
 export const SIGNED_OUT_ROUTE = { pathname: '/(auth)/sign-in', params: { signingOut: '1' } } as const;
 
+/**
+ * Where a deleted account goes (D-199, Dan: "I just deleted an account and made a new one and it skipped the
+ * intro video and welcome tour"). Deleting is a fresh start, like a new install: the intro video, the tour,
+ * then sign-up. (The account and its sign-in are already gone server-side, so nothing can send it home.)
+ */
+export const ACCOUNT_DELETED_ROUTE = '/intro' as const;
+
 /** What the sign-in page shows: a spinner while a sign-out finishes, home when signed in, else the form. */
 export function signInLanding(isSignedIn: boolean | undefined, signingOut: boolean): 'wait' | 'home' | 'form' {
   if (isSignedIn) return signingOut ? 'wait' : 'home';

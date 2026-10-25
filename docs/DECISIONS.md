@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-25 — D-199: A deleted account starts fresh: intro video, tour, sign-up
+- Dan (build 23): "I just deleted an account and made a new one and it skipped the intro video and welcome tour."
+- Cause: account deletion used the sign-out path, which since D-191 goes straight to the sign-in page.
+- `lib/sign-out.ts` `ACCOUNT_DELETED_ROUTE` = `/intro`: after Delete my account the app plays the intro video, then the tour, then sign-up, like a new install. Sign out is unchanged (straight to sign-in). The new account's in-chat welcome shows as for any new account (its server state is new).
+- Build #105. **Decided by:** Dan.
+
 ## 2026-10-25 — D-198: Account screen: Delete my account under the plan, questions per set next, sign out last
 - Dan (build 23): "take the delete and put [it] up under the restore ... Because the delete's hidden ... If Apple won't like it, they'll reject it"; "move the ten or 20 questions up there, because you can't see them ... I don't care if they can't see sign out."
 - Order now: the plan card (See Premium, Restore Purchases, Manage subscription), Delete my account (still asks the student to type DELETE before anything happens), Questions per set, a divider, then Why I built this, the replays, Privacy policy, Answer sounds, Sign out.

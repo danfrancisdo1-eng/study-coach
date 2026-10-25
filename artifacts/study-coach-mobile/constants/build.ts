@@ -4,4 +4,4 @@
  * is running the version Claude Code just pushed. Format: date, a counter for that day, the
  * decision it belongs to.
  */
-export const BUILD = '2026-10-25 #104 · D-197/198 paywall monthly, account order';
+export const BUILD = '2026-10-25 #105 · D-199 delete starts fresh';
