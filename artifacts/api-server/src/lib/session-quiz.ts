@@ -5,7 +5,7 @@ import { studySources, studyText } from "./study-text";
 import { randomUUID } from "node:crypto";
 import { logger } from "./logger";
 import { complete } from "../ai";
-import * as sessionQuizPrompt from "../prompts/session-quiz.v10";
+import * as sessionQuizPrompt from "../prompts/session-quiz.v11";
 import * as quizCheckPrompt from "../prompts/quiz-check.v7";
 import { applyQuizCheck, explanationProblem, keyFromExplanation, numericKey, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
 import { shuffleOptions } from "./shuffle-options";

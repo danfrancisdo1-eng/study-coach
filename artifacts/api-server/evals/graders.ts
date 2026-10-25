@@ -9,6 +9,7 @@ import { parseUploadNotes } from "../src/lib/upload-notes";
 import { parseRoute, type Section } from "../src/lib/course-sections";
 import { parseFlagCheck } from "../src/lib/flag-check";
 import { hasPositionalOption } from "../src/lib/shuffle-options";
+import { isNearDuplicate } from "../src/lib/near-duplicate";
 import { parseExamGuideReply } from "../src/lib/exam-guide-parse";
 import { parseCoachReply } from "../src/routes/chatActions";
 import { revealsAnswer, validateCards } from "../src/lib/memory-cards";
@@ -123,7 +124,7 @@ export async function gradeClassicQuiz(input: { topic: string; count: number; so
   return { pass: notes.every((n) => n.includes("judged wrong")) && score >= 0.9, score, notes };
 }
 
-export async function gradeSessionQuiz(input: { topic: string; sources: Source[]; expectedCount: number; originalPrompts: string[]; requireFormats?: boolean }, text: string | null): Promise<Score> {
+export async function gradeSessionQuiz(input: { topic: string; sources: Source[]; expectedCount: number; originalPrompts: string[]; requireFormats?: boolean; retest?: boolean }, text: string | null): Promise<Score> {
   let questions: QuizQuestion[];
   try {
     const raw = parseJson(text) as { questions?: unknown };
@@ -139,6 +140,8 @@ export async function gradeSessionQuiz(input: { topic: string; sources: Source[]
   if (formatted > 2) notes.push(`${formatted} real-exam-format questions, at most two allowed`);
   const used = new Set(input.originalPrompts.map(normalize));
   questions.forEach((q, i) => { if (used.has(normalize(q.prompt))) notes.push(`q${i}: repeats an original prompt`); });
+  // D-196: the app drops a reworded original (isNearDuplicate); a retest that only rewords loses every question.
+  if (input.retest) questions.forEach((q, i) => { if (isNearDuplicate(normalize(q.prompt), input.originalPrompts.map(normalize))) notes.push(`q${i}: near-duplicate of an original prompt (the app would drop it)`); });
   // D-135: no leaked reasoning, no "closest to" answers.
   questions.forEach((q, i) => { const why = explanationProblem(String((q as { explanation?: unknown }).explanation ?? "")); if (why) notes.push(`q${i}: ${why}`); });
   const verdict = await judgeQuestions(input.topic, input.sources, questions);

@@ -70,7 +70,7 @@ test('results history reaches the coach and drives missed-scope sets', async (t)
   chat = await call('POST', '/study/chat', { content: 'Test me on the ones I missed', version: 0, courseId: 'chem' });
   assert.equal(chat.status, 200, JSON.stringify(chat.body));
   const writer = ai.requests.filter((r) => r.body.messages[0].content.includes('Create exactly')).at(-1).body.messages[0].content;
-  assert.match(writer, /Specifically test missed concepts: concept-0, concept-2/);
+  assert.match(writer, /This is a retest of concepts the student just missed: concept-0; concept-2\./);
   const retest = (await call('GET', `/study/sessions/${chat.body.messages.at(-1).actions[0].sessionId}`)).body;
   assert.equal(retest.quiz.mode, 'targeted');
   assert.equal(retest.courseId, 'bio');
