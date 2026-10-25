@@ -125,7 +125,7 @@ export default function AccountScreen() {
         </View>
         {/* D-184 (Dan): the story first, since it is nowhere else in the app; then the replays, privacy, sounds, sign out, delete. */}
         {/* D-182: the founder story. */}
-        {row('award', 'Why I built this', 'Two AI certifications, no AI background, this method', () => router.push('/about'), 'button-about')}
+        {row('award', 'Why I built this', 'Two AI certifications, self-taught, this method', () => router.push('/about'), 'button-about')}
         {/* D-150: Dan's intro video again; it comes back here. */}
         {row('film', 'Watch the intro', 'The short video from the first launch', () => router.push('/intro?replay=1'), 'button-replay-intro')}
         {/* The first-launch tour (D-049) plays once per phone; this replays it and comes back here. */}

@@ -14,5 +14,8 @@ test('the claims match the certificates: three days apart, September 2026', () =
   const days = FOUNDER_CREDENTIALS.map((c) => new Date(c.issued).getTime());
   assert.equal(Math.round(Math.abs(days[1] - days[0]) / 86_400_000), 2, 'Sep 28 and Sep 30: within three days');
   assert.match(FOUNDER_QUOTE, /three days/);
+  // D-195: self-taught with no formal training; never "no AI background" (Dan has one).
+  assert.match(FOUNDER_QUOTE, /self-taught/i);
+  assert.doesNotMatch([...FOUNDER_STORY, FOUNDER_QUOTE].join(' '), /no AI background|no coding background|AI engineer/i);
   assert.ok(FOUNDER_QUOTE.length <= 140, 'one or two lines on the paywall');
 });

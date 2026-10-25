@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-25 — D-195: Founder wording: self-taught, no formal training (not "no AI background")
+- Dan: "I do have AI background, but basically say no formal training in AI or coding. I was self-taught." / "No formal training or education."
+- `lib/founder.ts`: the story says "I had no formal training or education in AI or coding. I taught myself." (the "no experience as an AI engineer" clause is gone); the paywall quote is "Self-taught, no formal training: I passed two AI certifications in three days studying exactly this way. That's why I built RapidRecall."; the Account row reads "Two AI certifications, self-taught, this method". A test keeps "no AI background" out. The website and App Store text should match.
+- Build #103. **Decided by:** Dan.
+
 ## 2026-10-24 — D-194: Memory cards after a set, one at a time behind a button (memory-cards.v1, coach.v35)
 - Dan, with two prompt engineers ("RapidRecall AI — Memory Coach Prompt v1.1"), and his answers: cards shown one at a time behind a button (yes); the top 5 misses get cards; reminders ("nudges") saved only for now, not shown and no notifications (option a); earned encouragement allowed (yes).
 - **Server** (`lib/memory-cards.ts`, pure and unit-tested; `lib/memory-cards-job.ts`): after grading, a background job picks the top 5 misses (a concept missed in earlier sets first, then the heavier exam section, then set order), adds the matching paragraphs of the course's notes, and asks the memory coach (`prompts/memory-cards.v1.ts`, Sonnet, effort low, task `memory_cards`) for one card each: diagnosis (confusion, gap, sequence, mechanism, procedure, misread) → a technique that fits it → the card (one-line headline, why you missed it, the right answer, the memory tool, a 3–5 word cue, an optional picture, a lock-in question, 3 reminders, and a note when it thinks the answer key is wrong).

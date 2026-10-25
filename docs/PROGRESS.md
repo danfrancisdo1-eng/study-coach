@@ -1,5 +1,13 @@
 # Progress
 
+## Session 23g — 2026-10-25 — founder wording (D-195), branch `fix/founder-wording`
+
+### Done
+- "No AI background" → self-taught, no formal training or education in AI or coding: the About story, the paywall quote, the Account row. Build #103. Verified here: mobile typecheck; founder tests.
+
+### Needs real-iPhone check
+- Account → Why I built this, and the Premium screen quote, read the new wording.
+
 ## Session 23f — 2026-10-24 — memory cards (D-194), branch `feat/report-sections` (with D-193)
 
 ### Done
