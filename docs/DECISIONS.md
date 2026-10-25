@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-25 — D-201: Right answers are lean; the review shows only the misses; bigger set titles, one counter
+- Dan (build 23 screenshots): on a right answer "we don't need that up there because it was a correct answer ... We're trying to rapidly recall ... making the user waste their time on something they got right"; on the review "too small ... bigger ... all the wrong answers are the ones that need to be up there. All the green ones" (remove), "those down carrots I had no idea"; on the set card "It's too small. And the title, too."; the corner "9/12" disagreed with "Question 10 of 12".
+- A right answer in a practice set shows only the verdict ("Correct. Nice.") and Next, with a small "Why?" link that shows the explanation on tap. No "Remember it" box on right answers. A miss keeps the explanation and the trick, as before.
+- After grading, the review lists only the misses ("Your misses (N)", Fraunces 22), each a bordered card with the question and a clear "See why ›"; the first miss opens by itself. A perfect set says "Every one right. Nice." The green rows are gone.
+- The set's topic is a real title (new TYPE.setTitle, Fraunces 22) under a small "Practice" label, on the live card and the exam score card. The corner answered/total count is gone: "Question N of M" and the bar are the one counter (the bar's VoiceOver label still says how many are answered).
+- **Decided by:** Dan.
+
 ## 2026-10-25 — D-200: Every button squashes and ticks when tapped
 - Dan: "Why doesn't all of our buttons move and give haptic when pressed?" / "Yes. Go ahead. No buzzer but with haptics."
 - D-179's PressScale (squash on press, light haptic) was only on the main buttons, answer cards and course cards (9 screens); about 100 other tappable things (chips, Account rows, header icons, sign-in/up, flashcards, OneDrive, memory cards, lectures, review sheet, course page) used a plain Pressable that only dimmed.
