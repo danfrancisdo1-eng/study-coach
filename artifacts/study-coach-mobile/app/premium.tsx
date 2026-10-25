@@ -12,7 +12,7 @@ import { AuroraBackground } from '@/components/AuroraBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
-import { orderPackages, packageLabel, paywallMode, paywallReason, paywallRows, paywallSegments, paywallState, savingLabel, trialLength, trialTerms } from '@/lib/premium-ui';
+import { orderPackages, trialBadge, packageLabel, paywallMode, paywallReason, paywallRows, paywallSegments, paywallState, savingLabel, trialLength, trialTerms } from '@/lib/premium-ui';
 import { PressScale } from '@/components/PressScale';
 import { TERMS_URL, buy, premiumPackages, purchasesAvailable, restore } from '@/lib/purchases';
 import { FOUNDER_QUOTE } from '@/lib/founder';
@@ -138,12 +138,15 @@ export default function PremiumScreen() {
             {packages.map((pkg) => {
               const on = pkg.identifier === chosen.identifier;
               const period = pkg.packageType === 'ANNUAL' ? 'year' : 'month';
+              const free = trialBadge(trialLength(pkg.product.introPrice));
               return (
                 <Pressable key={pkg.identifier} accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={() => setSelected(pkg.identifier)} style={[styles.card, on && styles.cardOn]} testID={`card-${pkg.packageType.toLowerCase()}`}>
                   <View style={styles.cardHead}>
                     <Text style={styles.cardTitle}>{packageLabel(pkg.packageType)} · {pkg.product.priceString} a {period}</Text>
                     {pkg.packageType === 'ANNUAL' && badge ? <Text style={styles.badge}>{badge}</Text> : null}
                   </View>
+                  {/* D-197: the free week shows on the card itself, so it is clear how to get it. */}
+                  {free ? <Text style={styles.cardFree} testID={`text-free-${pkg.packageType.toLowerCase()}`}>{free}</Text> : null}
                   {on ? <Feather name="check-circle" size={20} color={colors.primaryText} style={styles.cardCheck} /> : null}
                 </Pressable>
               );
@@ -209,6 +212,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   cardOn: { borderWidth: 2, borderColor: colors.primaryText },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingRight: 28, flexWrap: 'wrap' },
   cardTitle: { color: colors.foreground, fontSize: 17, fontWeight: '700' },
+  cardFree: { color: colors.primaryText, fontSize: 14, lineHeight: 20, marginTop: 4, fontWeight: '600' },
   cardCaption: { color: colors.mutedForeground, fontSize: 14, lineHeight: 20, marginTop: 4 },
   cardCheck: { position: 'absolute', right: 14, top: 18 },
   badge: { color: colors.primaryForeground, backgroundColor: colors.primary, fontSize: 12, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden' },

@@ -123,7 +123,27 @@ export default function AccountScreen() {
           {!purchasesAvailable() ? <Text style={styles.caption}>Purchases aren't available right now.</Text> : null}
           {planNote ? <Text style={styles.caption} accessibilityRole="alert">{planNote}</Text> : null}
         </View>
-        {/* D-184 (Dan): the story first, since it is nowhere else in the app; then the replays, privacy, sounds, sign out, delete. */}
+        {/* D-198 (Dan, build 23: "the delete's hidden ... move it up under the restore"; "move the ten or 20 questions up there,
+            because you can't see them"): Delete my account right under the plan (Apple checks that it is easy to find; it
+            still asks for DELETE before anything happens), then questions per set; sign out goes last. */}
+        {row('trash-2', 'Delete my account', 'Removes your courses, sets, chats and sign-in. Cannot be undone.', () => { setError(''); setDeleteWord(''); setDeleteOpen(true); }, 'button-delete-account', true)}
+        <View style={styles.row} testID="row-set-size">
+          <Feather name="list" size={18} color={colors.mutedForeground} />
+          <View style={styles.rowCopy}>
+            <Text style={styles.rowName}>Questions per set</Text>
+            <Text style={styles.caption}>Quick sets of 10, or 20 at a time.</Text>
+          </View>
+          <View style={styles.segment} accessibilityRole="radiogroup" accessibilityLabel="Questions per set">
+            {([10, 20] as const).map((size) => (
+              <Pressable key={size} accessibilityRole="radio" accessibilityState={{ selected: setSize === size }} accessibilityLabel={`${size} questions`} disabled={putState.isPending || !stateQuery.data}
+                onPress={() => void chooseSetSize(size)} style={[styles.segmentItem, setSize === size && styles.segmentOn]} testID={`button-set-size-${size}`}>
+                <Text style={[styles.segmentText, setSize === size && styles.segmentTextOn]}>{size}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+        <View style={styles.divider} />
+        {/* D-184 (Dan): the story, since it is nowhere else in the app; then the replays, privacy, sounds, sign out. */}
         {/* D-182: the founder story. */}
         {row('award', 'Why I built this', 'Two AI certifications, self-taught, this method', () => router.push('/about'), 'button-about')}
         {/* D-150: Dan's intro video again; it comes back here. */}
@@ -144,24 +164,7 @@ export default function AccountScreen() {
           </View>
           <Switch value={answerSounds.enabled} onValueChange={answerSounds.setEnabled} trackColor={{ true: colors.primary }} testID="switch-answer-sounds" />
         </View>
-        <View style={styles.row} testID="row-set-size">
-          <Feather name="list" size={18} color={colors.mutedForeground} />
-          <View style={styles.rowCopy}>
-            <Text style={styles.rowName}>Questions per set</Text>
-            <Text style={styles.caption}>Quick sets of 10, or 20 at a time.</Text>
-          </View>
-          <View style={styles.segment} accessibilityRole="radiogroup" accessibilityLabel="Questions per set">
-            {([10, 20] as const).map((size) => (
-              <Pressable key={size} accessibilityRole="radio" accessibilityState={{ selected: setSize === size }} accessibilityLabel={`${size} questions`} disabled={putState.isPending || !stateQuery.data}
-                onPress={() => void chooseSetSize(size)} style={[styles.segmentItem, setSize === size && styles.segmentOn]} testID={`button-set-size-${size}`}>
-                <Text style={[styles.segmentText, setSize === size && styles.segmentTextOn]}>{size}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
         {row('log-out', 'Sign out', 'Back to the sign-in page', () => void leaveAndSignOut(), 'button-sign-out')}
-        <View style={styles.divider} />
-        {row('trash-2', 'Delete my account', 'Removes your courses, sets, chats and sign-in. Cannot be undone.', () => { setError(''); setDeleteWord(''); setDeleteOpen(true); }, 'button-delete-account', true)}
         {/* The account's id (D-095): Dan pastes it into OWNER_ACCOUNT_IDS on Render; press and hold to copy. Not a secret. */}
         {userId ? <Text selectable maxFontSizeMultiplier={1} style={styles.build} testID="text-account-id">Account ID: {userId}</Text> : null}
         {__DEV__ ? <Text maxFontSizeMultiplier={1} style={styles.build}>Build {BUILD}</Text> : null}
