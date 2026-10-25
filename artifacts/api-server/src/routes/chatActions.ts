@@ -17,7 +17,8 @@ export type CoachAction = {
   upload?: string;
 };
 export type CourseKind = "course" | "exam";
-export type CoachReply = { reply: string; suggestions: string[]; actions: CoachAction[] };
+/** D-203: "teaching" is the miss a reply teaches while the coach goes over a set's misses (0 otherwise). */
+export type CoachReply = { reply: string; suggestions: string[]; actions: CoachAction[]; teaching?: number };
 export type KnownCourse = { id: string; name: string; code?: string; kind?: CourseKind; examDate?: string; guideSections?: { name: string; weight: number | null }[]; guideMissing?: boolean; memoryRows?: number };
 
 export const MAX_REPLY_CHARS = 4000;
@@ -43,7 +44,7 @@ export function parseCoachReply(text: string | null): CoachReply | null {
     return null;
   }
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
-  const { reply, actions, suggestions } = value as { reply?: unknown; actions?: unknown; suggestions?: unknown };
+  const { reply, actions, suggestions, teaching } = value as { reply?: unknown; actions?: unknown; suggestions?: unknown; teaching?: unknown };
   if (typeof reply !== "string" || !reply.trim() || !Array.isArray(actions)) return null;
   const kept: CoachAction[] = [];
   for (const action of actions) {
@@ -66,7 +67,7 @@ export function parseCoachReply(text: string | null): CoachReply | null {
     .filter((s): s is string => typeof s === "string" && s.trim().length > 0)
     .map((s) => s.trim().slice(0, MAX_SUGGESTION_CHARS))
     .slice(0, MAX_SUGGESTIONS);
-  return { reply: reply.trim().slice(0, MAX_REPLY_CHARS), suggestions: chips, actions: kept };
+  return { reply: reply.trim().slice(0, MAX_REPLY_CHARS), suggestions: chips, actions: kept, ...(typeof teaching === "number" && Number.isInteger(teaching) && teaching > 0 ? { teaching } : {}) };
 }
 
 export type StartPlan =

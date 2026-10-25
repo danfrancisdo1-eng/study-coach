@@ -13,7 +13,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v35";
+import * as coachPrompt from "../prompts/coach.v36";
 import { daysUntil, isSyllabus, setSizeOf } from "../lib/syllabus";
 import { courseContext, NOTES_BLOCK, PLANNING } from "../lib/course-context";
 import { indexText, routedContext, sectionsOf, wordSearch } from "../lib/course-sections";
@@ -28,6 +28,8 @@ import { lookupExamGuide } from "../lib/exam-guide";
 import { saveExamGuide } from "../lib/exam-guide-state";
 import { eventsFrom, resultsHistoryText, weakConcepts } from "../lib/results-history";
 import { reportFacts, reportFactsText } from "../lib/readiness";
+import { LESSON_CHIPS, LESSON_START, currentLesson, lessonMisses, lessonOrder, lessonText, nextMiss, type LessonMeta, type LessonMiss, type PlanCard } from "../lib/lesson";
+import { TECHNIQUE_LABELS, memoryCardsView, missesOf } from "../lib/memory-cards";
 import { DAILY_SET, dailyLine, dailyReps, dailyText, firstMessageToday, localDay } from "../lib/daily-reps";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { excludedByReport, generateFlashcards, generateSessionQuiz, quizStatus, sourceChunks, sourceTextOf, type GenerateQuizInput, type Quiz, type QuizStatus, type Session, type StoredQuestion } from "../lib/session-quiz";
@@ -172,13 +174,38 @@ async function chatView(ownerId: string, courses: KnownCourse[], messages: HomeC
   const context = action ? quizContext(courses, action, await loadSession(ownerId, action.sessionId)) : null;
   const deckAction = latestDeckAction(messages);
   const deck = deckAction ? deckContext(courses, await loadSession(ownerId, deckAction.sessionId)) : null;
-  return { messages, version, activeQuiz: activeQuizView(action, context), activeDeck: activeDeckView(deckAction, deck) };
+  // D-203: the app-sent "Go over my misses" is not drawn, and the walk's bookkeeping stays on the server.
+  const shown = messages.filter((m) => !m.hidden).map(({ lesson: _lesson, hidden: _hidden, ...m }) => m);
+  return { messages: shown, version, activeQuiz: activeQuizView(action, context), activeDeck: activeDeckView(deckAction, deck) };
+}
+
+/** D-203: the graded set's memory cards (the walk's plan) once written, else null. */
+function readyCards(session: Session): PlanCard[] | null {
+  const record = session.memoryCards;
+  return record && record.status === "ready" && record.gradedAt === session.quiz?.grade?.gradedAt && record.cards.length
+    ? record.cards.map((card) => ({ ...card, techniqueLabel: TECHNIQUE_LABELS[card.technique] }))
+    : null;
+}
+
+/** D-203: at the start of the walk, wait a little for the memory cards if they are still being written (they are its plan). */
+async function settledCards(ownerId: string, session: Session, waitMs = 10_000): Promise<Session> {
+  let current = session;
+  const until = Date.now() + waitMs;
+  while (memoryCardsView(current, new Date())?.status === "writing" && Date.now() < until) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    current = (await loadSession(ownerId, session.id)) ?? current;
+  }
+  return current;
 }
 
 /** The app-written check-in that opens a new session: no AI call, built from what the server knows. */
-function sessionGreeting(courses: KnownCourse[], messages: HomeChatMessage[], quiz: coachPrompt.QuizContext | null, lastCourseId: string | null): { content: string; suggestions: string[] } | null {
+function sessionGreeting(courses: KnownCourse[], messages: HomeChatMessage[], quiz: coachPrompt.QuizContext | null, lastCourseId: string | null, lesson: LessonMeta | null = null): { content: string; suggestions: string[] } | null {
   if (!courses.length) return null; // first visit: the client shows the first-time greeting
   const course = courses.find((c) => c.id === lastCourseId) ?? courses[0]!;
+  // D-203: back in the middle of going over the misses: pick up where it stopped.
+  if (quiz?.graded && lesson) {
+    return { content: `Welcome back. We were going over the ones you missed on ${quiz.topic}: that was ${lesson.miss} of ${lesson.order.length}. Got that one, or want it again?`, suggestions: [...LESSON_CHIPS] };
+  }
   if (quiz && !quiz.graded) {
     return { content: `Welcome back. Your ${quiz.kind} set on ${quiz.topic} is waiting: ${quiz.answered} of ${quiz.total} answered. Pick up where you left off, or tell me what else you need.`, suggestions: [] };
   }
@@ -219,7 +246,7 @@ router.post("/study/chat/open", async (req, res): Promise<void> => {
   }
   const action = latestQuizAction(messages);
   const quiz = action ? quizContext(courses, action, await loadSession(ownerId, action.sessionId)) : null;
-  const greeting = sessionGreeting(courses, messages, quiz, lastCourseIdOf(messages));
+  const greeting = sessionGreeting(courses, messages, quiz, lastCourseIdOf(messages), action && quiz?.graded ? currentLesson(messages, action.sessionId) : null);
   if (!greeting) {
     res.json(await chatView(ownerId, courses, messages, row.version));
     return;
@@ -745,7 +772,21 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     ? reportFacts(courseEvents, threadSummary?.kind === "exam" && threadSummary.guideSections?.length ? threadSummary.guideSections : null, typeof threadSummary?.daysLeft === "number" ? threadSummary.daysLeft : null)
     : null;
   const report = facts ? { text: reportFactsText(facts, threadSummary?.kind === "exam"), isExam: threadSummary?.kind === "exam" } : null;
-  const coachSystem = () => coachPrompt.systemPrompt({ today, daily, firstMessageToday: firstToday, courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, setSize, askSyllabus, examSoon, report });
+  // D-203: going over the graded set's misses, one per reply. "Go over my misses" (the app sends it after the
+  // report card) starts it; it goes on while the newest coach message teaches one of them.
+  const gradedSession = quiz?.graded && lastQuizSession?.quiz?.grade ? lastQuizSession : null;
+  const previousLesson = gradedSession ? currentLesson(messages, gradedSession.id) : null;
+  let lessonState: { order: string[]; misses: LessonMiss[]; previous: number } | null = null;
+  if (gradedSession && (previousLesson || (content === LESSON_START && missesOf(gradedSession.quiz!.questions).length))) {
+    const session = previousLesson ? gradedSession : await settledCards(ownerId, gradedSession);
+    const cards = readyCards(session);
+    const order = previousLesson?.order ?? lessonOrder(session.quiz!.questions, cards);
+    const misses = lessonMisses(order, session.quiz!.questions, cards);
+    if (misses.length) lessonState = { order, misses, previous: previousLesson?.miss ?? 0 };
+    req.log.info({ sessionId: gradedSession.id, previous: lessonState?.previous ?? null, misses: misses.length, plans: misses.filter((m) => m.plan).length }, "Home chat: going over the misses");
+  }
+  const lesson = lessonState ? { text: lessonText(lessonState), previous: lessonState.previous, total: lessonState.misses.length } : null;
+  const coachSystem = () => coachPrompt.systemPrompt({ today, daily, firstMessageToday: firstToday, courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, setSize, askSyllabus, examSoon, report, lesson });
 
   let coach;
   if (timed) {
@@ -783,6 +824,16 @@ router.post("/study/chat", async (req, res): Promise<void> => {
 
   // D-136: nothing was missed in the latest graded set, so no chips about misses.
   if (quiz?.graded && quiz.graded.missed.length === 0) coach = { ...coach, suggestions: withoutMissChips(coach.suggestions) };
+  // D-203: the report card's one chip with misses starts the walk (the app sends it by itself).
+  if (content === FINISHED_SET && quiz?.graded && quiz.graded.missed.length > 0) coach = { ...coach, suggestions: [LESSON_START] };
+  // D-203: which miss this reply teaches; under a miss the chips are "Got it" / "Not yet". A set or deck started instead ends the walk.
+  let lessonMeta: LessonMeta | null = null;
+  if (lessonState && gradedSession) {
+    const movedOn = coach.actions.some((a) => a.type === "start_quiz" || a.type === "start_flashcards");
+    const miss = movedOn ? 0 : nextMiss(lessonState.previous, lessonState.misses.length, coach.teaching ?? 0);
+    lessonMeta = { sessionId: gradedSession.id, order: lessonState.order, miss };
+    if (miss > 0) coach = { ...coach, suggestions: [...LESSON_CHIPS] };
+  }
   const plan = planActions(courses, coach.actions);
   if (timed && threadId) plan.quiz = { courseId: threadId, topic: "All topics", count: timed.count, scope: "all", kind: "exam" };
   // D-139: "Next 10" always starts the day's next 10 here, whatever the reply said.
@@ -1054,8 +1105,8 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const now = new Date().toISOString();
   const next: HomeChatMessage[] = [
     ...messages,
-    { id: randomUUID(), role: "user" as const, content, at: now },
-    { id: randomUUID(), role: "assistant" as const, content: coach.reply, at: new Date().toISOString(), actions: done, ...(coach.suggestions.length ? { suggestions: coach.suggestions } : {}) },
+    { id: randomUUID(), role: "user" as const, content, at: now, ...(content === LESSON_START ? { hidden: true } : {}) },
+    { id: randomUUID(), role: "assistant" as const, content: coach.reply, at: new Date().toISOString(), actions: done, ...(coach.suggestions.length ? { suggestions: coach.suggestions } : {}), ...(lessonMeta ? { lesson: lessonMeta } : {}) },
   ].slice(-MAX_MESSAGES);
   let saved: { messages: HomeChatMessage[]; version: number } | undefined;
   if (!existing) {

@@ -73,7 +73,7 @@ test('the facts text: this set, the one before, readiness with sections, focus a
     set('2026-10-22T10:00:00Z', many('Plan and manage', 5, 5)),
   ];
   const text = reportFactsText(reportFacts(events, guide, 12), true);
-  assert.match(text, /This set: 7 of 9\./);
+  assert.match(text, /This set: 7 of 9 \(78%\)\./);
   assert.match(text, /Missed questions: 2\./);
   assert.match(text, /The set before it on this course: 5 of 10 \(2026-10-22\)\./);
   assert.match(text, /Exam readiness: Getting close\./);
@@ -82,14 +82,17 @@ test('the facts text: this set, the one before, readiness with sections, focus a
   assert.match(text, /Knowledge mining, 25% of the exam: untested/);
   assert.match(text, /Work on next: Knowledge mining; Plan and manage\./);
   assert.match(text, /Days to the exam: 12\./);
+  // D-203: the rule in numbers, so the coach can say what Ready takes.
+  assert.match(text, /What Ready takes: a set at 90% or better, with every section at 70% or better over its recent answers \(at least 3 answers each\)\./);
   const first = reportFactsText(reportFacts([events[1]], null, null), false);
   assert.match(first, /first graded set on this course/);
-  assert.match(first, /Readiness for this course's tests: Not yet \(based on the last 10 answers; 20 are needed/);
+  assert.match(first, /Readiness for this course's tests: Not yet \(50% right over the last 10 answers; 20 are needed/);
+  assert.match(first, /What Ready takes: a set at 90% or better, with 85% or better over the last 30 answers \(at least 20 answered\)\./);
   assert.equal(levelWords('close'), 'Getting close');
 });
 
 test('more than 5 misses: the facts say so and name the flashcards line', () => {
   const ev = set('2026-10-24T10:00:00Z', many('Agents', 4, 6));
   const text = reportFactsText(reportFacts([ev], guide, null), true);
-  assert.match(text, /Missed questions: 6\. Memory cards cover the 5 that matter most; Flashcards for the misses drills the rest\./);
+  assert.match(text, /Missed questions: 6\. The coach goes over the 5 that matter most, one at a time; Flashcards for the misses drills the rest\./);
 });

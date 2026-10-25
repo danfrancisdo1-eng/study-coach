@@ -407,9 +407,12 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   // D-192: emojis are counted by code (a pictograph, not a symbol like → or ·).
   const emojis = (parsed.reply.match(/\p{Extended_Pictographic}/gu) ?? []).length;
   if (testCase.maxEmojis !== undefined && emojis > testCase.maxEmojis) notes.push(`too many emojis: ${emojis} > ${testCase.maxEmojis}`);
+  // D-203: going over the misses: the miss number is checked by code, and a miss reads like talk (no titles, bullets or Pop quiz).
+  if (testCase.expectTeaching !== undefined && (parsed.teaching ?? 0) !== testCase.expectTeaching) notes.push(`wrong teaching: ${parsed.teaching ?? 0} != ${testCase.expectTeaching}`);
+  if (testCase.lesson && (/^#{2,}\s/m.test(parsed.reply) || /^\s*[-•]\s/m.test(parsed.reply) || /pop quiz/i.test(parsed.reply))) notes.push("format: a miss has a title, a bullet list or a Pop quiz");
   const verdict = await judge<{ expectations: { met: boolean; reason: string }[] }>(
     "You grade one reply from the AI study coach on an app's home chat, for students age 13+. Return exactly one verdict per expectation, in the same order. Check each expectation strictly.",
-    { courses: testCase.courses, history: testCase.history, latestQuestionSet: testCase.quiz ?? null, latestDeck: testCase.deck ?? null, resultsSoFar: testCase.results ?? null, reportFacts: testCase.report?.text ?? null, webFindings: testCase.webFindings ?? null, guideJustLookedUp: testCase.guideJustLookedUp ?? null, studentMessage: testCase.message, expectations: testCase.expectations, reply: parsed.reply, suggestions: parsed.suggestions, actionsTaken: parsed.actions },
+    { courses: testCase.courses, history: testCase.history, latestQuestionSet: testCase.quiz ?? null, latestDeck: testCase.deck ?? null, resultsSoFar: testCase.results ?? null, reportFacts: testCase.report?.text ?? null, missesBeingGoneOver: testCase.lesson ?? null, webFindings: testCase.webFindings ?? null, guideJustLookedUp: testCase.guideJustLookedUp ?? null, studentMessage: testCase.message, expectations: testCase.expectations, reply: parsed.reply, suggestions: parsed.suggestions, actionsTaken: parsed.actions },
     {
       type: "object", additionalProperties: false, required: ["expectations"],
       properties: { expectations: { type: "array", items: { type: "object", additionalProperties: false, required: ["met", "reason"], properties: { met: { type: "boolean" }, reason: { type: "string" } } } } },
@@ -419,7 +422,7 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   for (const [i, e] of verdicts.entries()) if (!e.met) notes.push(`not met: ${testCase.expectations[i]} (${e.reason.slice(0, 140)})`);
   const met = verdicts.filter((e) => e.met).length;
   const score = (met / testCase.expectations.length) * (actionsOk && chipsOk ? 1 : 0.5) * (tooLong ? 0.5 : 1);
-  return { pass: !notes.some((n) => n.startsWith("line too long") || n.startsWith("too many emojis")) && actionsOk && chipsOk && !tooLong && met === testCase.expectations.length, score, notes };
+  return { pass: !notes.some((n) => n.startsWith("line too long") || n.startsWith("too many emojis") || n.startsWith("wrong teaching") || n.startsWith("format:")) && actionsOk && chipsOk && !tooLong && met === testCase.expectations.length, score, notes };
 }
 
 export async function gradeReviewSheet(testCase: ReviewSheetCase, text: string | null): Promise<Score> {
