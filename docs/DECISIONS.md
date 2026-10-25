@@ -18,6 +18,7 @@ Newest first. Each entry: date, decision, why, who decided.
 - session-quiz.v11: on a retest (missed concepts given), questions spread across the missed concepts; a concept may get several, each from a different angle (a new scenario, in reverse, against the option it is confused with, "which is NOT"); never an original reworded. Every other set gets v10's text word for word (tested).
 - Safety net (routes/chat.ts `retestFallback`): when a retest's first part still comes back empty, it is written as a plain set on the missed concepts (they become the topic), so the student gets questions instead of an error. The rest of the set uses the same input.
 - Tests: an end-to-end test where the retest writer only rewords the last set (fails with the same 502 without the fix, passes with it); prompt tests for v11. Two older tests that matched v10's wording ("Specifically test missed concepts: …") now match v11's ("This is a retest of concepts the student just missed: …"). `pnpm run test`: 359 pass, 0 fail, 1 skipped (manual). Evals: two new session_quiz cases (AI-103 retest, 3 and 6 questions on 2 concepts) that fail on a near-duplicate of an original.
+- Evals on the Mac (session_quiz, session-quiz.v11): 10/10, including both new AI-103 retest cases.
 - **Decided by:** Dan ("OK").
 
 ## 2026-10-25 — D-195: Founder wording: self-taught, no formal training (not "no AI background")
