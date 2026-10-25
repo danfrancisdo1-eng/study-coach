@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
@@ -335,9 +336,9 @@ export default function CourseScreen() {
               <Text style={styles.caption}>Missed the last time they came up. Tap one for a practice set on it.</Text>
               <View style={styles.chips}>
                 {results.weak.map((concept) => (
-                  <Pressable key={concept} accessibilityRole="button" onPress={() => startWithCoach('practice', concept)} style={({ pressed }) => [styles.chip, pressed && styles.pressed]} testID="button-weak-topic">
+                  <PressScale key={concept} accessibilityRole="button" onPress={() => startWithCoach('practice', concept)} style={[styles.chip]} testID="button-weak-topic">
                     <Text style={styles.chipText}>{concept}</Text>
-                  </Pressable>
+                  </PressScale>
                 ))}
               </View>
             </View>
@@ -432,9 +433,9 @@ export default function CourseScreen() {
               <ActionButton label="Record" icon="mic" secondary onPress={() => router.push({ pathname: '/lectures/[courseId]', params: { courseId: courseId!, courseName: typeof course.name === 'string' ? course.name : '' } })} testID="button-lectures" />
             </View>
             {lectures.slice(0, 5).map((lecture) => (
-              <Pressable key={lecture.id} accessibilityRole="button" onPress={() => router.push({ pathname: '/lecture/[id]', params: { id: lecture.id } })} style={styles.lectureRow} testID={`row-lecture-${lecture.id}`}>
+              <PressScale scale={PRESS_SCALE.card} key={lecture.id} accessibilityRole="button" onPress={() => router.push({ pathname: '/lecture/[id]', params: { id: lecture.id } })} style={styles.lectureRow} testID={`row-lecture-${lecture.id}`}>
                 <Feather name="mic" size={15} color={colors.mutedForeground} /><Text style={styles.body} numberOfLines={1}>{lecture.title}</Text><Text style={styles.caption}>{lecture.status}</Text>
-              </Pressable>
+              </PressScale>
             ))}
             {!lectures.length ? <Text style={styles.caption}>No lectures yet.</Text> : null}
           </View>
@@ -457,10 +458,10 @@ export default function CourseScreen() {
           <ScreenHeader kicker={picker === 'hooks' ? 'Memory tips' : 'Flashcards'} title="On which topics?" right={<HeaderIconButton icon="x" label="Close" onPress={() => setPicker(null)} testID="button-close-picker" />} />
           <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
             {topics.map((topic) => (
-              <Pressable key={topic} accessibilityRole="button" onPress={() => { if (picker) startWithCoach(picker, topic === ALL_TOPICS ? null : topic); }} style={({ pressed }) => [styles.topicChoice, topic === ALL_TOPICS && styles.topicChoiceAll, pressed && styles.pressed]} testID="button-topic-choice">
+              <PressScale scale={PRESS_SCALE.card} key={topic} accessibilityRole="button" onPress={() => { if (picker) startWithCoach(picker, topic === ALL_TOPICS ? null : topic); }} style={[styles.topicChoice, topic === ALL_TOPICS && styles.topicChoiceAll]} testID="button-topic-choice">
                 <Feather name={topic === ALL_TOPICS ? 'layers' : 'bookmark'} size={16} color={topic === ALL_TOPICS ? colors.primaryForeground : colors.primaryText} />
                 <Text style={[styles.topicChoiceText, topic === ALL_TOPICS && styles.topicChoiceAllText]}>{topic}</Text>
-              </Pressable>
+              </PressScale>
             ))}
           </ScrollView>
         </View>
@@ -478,38 +479,38 @@ export default function CourseScreen() {
                 <Text style={styles.kicker}>Questions</Text>
                 <View style={styles.actions}>
                   {picks.questions.map((n) => (
-                    <Pressable key={n} accessibilityRole="button" accessibilityState={{ selected: chosenQ === n }} accessibilityLabel={`${n} questions`} onPress={() => setPickQ(n)}
+                    <PressScale key={n} accessibilityRole="button" accessibilityState={{ selected: chosenQ === n }} accessibilityLabel={`${n} questions`} onPress={() => setPickQ(n)}
                       style={[styles.pick, chosenQ === n && styles.pickOn]} testID={`button-pick-questions-${n}`}>
                       <Text style={[styles.pickText, chosenQ === n && styles.pickTextOn]}>{n}</Text>
-                    </Pressable>
+                    </PressScale>
                   ))}
                 </View>
                 <Text style={styles.kicker}>Minutes</Text>
                 <View style={styles.actions}>
                   {picks.minutes.map((n) => (
-                    <Pressable key={n} accessibilityRole="button" accessibilityState={{ selected: chosenM === n }} accessibilityLabel={`${n} minutes`} onPress={() => setPickM(n)}
+                    <PressScale key={n} accessibilityRole="button" accessibilityState={{ selected: chosenM === n }} accessibilityLabel={`${n} minutes`} onPress={() => setPickM(n)}
                       style={[styles.pick, chosenM === n && styles.pickOn]} testID={`button-pick-minutes-${n}`}>
                       <Text style={[styles.pickText, chosenM === n && styles.pickTextOn]}>{n}</Text>
-                    </Pressable>
+                    </PressScale>
                   ))}
                 </View>
                 <ActionButton label={chosenQ && chosenM ? `Start timed exam · ${chosenQ} questions · ${chosenM} min` : 'Pick questions and minutes'} icon="clock"
                   disabled={busy || !chosenQ || !chosenM} onPress={() => void startPicked()} testID="button-timed-start-picked" />
-                <Pressable accessibilityRole="button" onPress={() => { setTimedPicker(false); openEditor(); }} style={styles.textButtonRow} testID="button-timed-type">
+                <PressScale scale={PRESS_SCALE.card} accessibilityRole="button" onPress={() => { setTimedPicker(false); openEditor(); }} style={styles.textButtonRow} testID="button-timed-type">
                   <Text style={styles.link}>Other numbers…</Text>
-                </Pressable>
+                </PressScale>
               </View>
             ) : null}
             {choices.map((choice) => (
-              <Pressable key={choice.size} accessibilityRole="button" accessibilityLabel={`Start timed ${choice.label}`} onPress={() => startTimed(choice.size, choice.label)} style={({ pressed }) => [styles.topicChoice, choice.size === 'full' && styles.topicChoiceAll, pressed && styles.pressed]} testID={`button-timed-${choice.size}`}>
+              <PressScale scale={PRESS_SCALE.card} key={choice.size} accessibilityRole="button" accessibilityLabel={`Start timed ${choice.label}`} onPress={() => startTimed(choice.size, choice.label)} style={[styles.topicChoice, choice.size === 'full' && styles.topicChoiceAll]} testID={`button-timed-${choice.size}`}>
                 <Feather name="clock" size={16} color={choice.size === 'full' ? colors.primaryForeground : colors.primaryText} />
                 <Text style={[styles.topicChoiceText, choice.size === 'full' && styles.topicChoiceAllText]}>{choice.label}</Text>
-              </Pressable>
+              </PressScale>
             ))}
-            <Pressable accessibilityRole="button" onPress={() => startWithCoach('exam', null)} style={({ pressed }) => [styles.topicChoice, pressed && styles.pressed]} testID="button-timed-none">
+            <PressScale scale={PRESS_SCALE.card} accessibilityRole="button" onPress={() => startWithCoach('exam', null)} style={[styles.topicChoice]} testID="button-timed-none">
               <Feather name="edit-3" size={16} color={colors.primaryText} />
               <Text style={styles.topicChoiceText}>No timer: ask the coach for a set</Text>
-            </Pressable>
+            </PressScale>
           </ScrollView>
         </View>
       </Modal>

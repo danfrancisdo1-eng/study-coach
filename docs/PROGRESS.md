@@ -1,5 +1,17 @@
 # Progress
 
+## Session 23k — 2026-10-25 — every button squashes and ticks (D-200), branch `feat/press-feel`
+
+### Done
+- About 100 buttons, chips, rows and icons in 22 screens moved to PressScale; text links and tabs tick; the tick fires on tap, not first touch. Build #106.
+- Verified here: mobile typecheck; phone unit tests (150 pass); iOS bundle exports.
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (sizes unchanged). 2. One primary action: PASS (unchanged). 3. Chunked: N/A. 4. Native patterns: PASS (iOS-style press feedback; light impact haptic, no sound). 5. Progress: N/A. 6. One accent: PASS (unchanged). 7. Tokens; Dark Mode; Dynamic Type: PASS (no style changes besides the press). 8. Reduce Motion: PASS (dims instead of moving); labels unchanged. 9. Paywall: PASS (unchanged).
+
+### Needs real-iPhone check
+- Tap around: chips, Account rows, back/close icons, sign-in buttons, flashcard buttons, memory cards: each squashes and ticks; scrolling over buttons does not tick; Reduce Motion on: buttons dim, no movement.
+
 ## Session 23j — 2026-10-25 — a deleted account starts fresh (D-199), branch `fix/delete-fresh-start`
 
 ### Done

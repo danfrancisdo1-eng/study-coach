@@ -1,6 +1,7 @@
 import React from 'react';
 import { Platform, type ColorValue } from 'react-native';
 import { Tabs } from 'expo-router';
+import { tapHaptic } from '@/components/PressScale';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 
@@ -16,7 +17,7 @@ export default function TabLayout() {
   const colors = useColors();
   const icon = (name: React.ComponentProps<typeof Feather>['name']) => ({ color, size }: { color: ColorValue; size: number }) => <Feather name={name} size={size} color={color} />;
   return (
-    <Tabs screenOptions={{
+    <Tabs screenListeners={{ tabPress: () => tapHaptic() }} screenOptions={{
       headerShown: false,
       tabBarActiveTintColor: colors.primaryText,
       tabBarInactiveTintColor: colors.mutedForeground,

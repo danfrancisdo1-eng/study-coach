@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,7 +13,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 import { orderPackages, trialBadge, packageLabel, paywallMode, paywallReason, paywallRows, paywallSegments, paywallState, savingLabel, trialLength, trialTerms } from '@/lib/premium-ui';
-import { PressScale } from '@/components/PressScale';
+import { PRESS_SCALE, PressScale, withTap } from '@/components/PressScale';
 import { TERMS_URL, buy, premiumPackages, purchasesAvailable, restore } from '@/lib/purchases';
 import { FOUNDER_QUOTE } from '@/lib/founder';
 
@@ -140,7 +140,7 @@ export default function PremiumScreen() {
               const period = pkg.packageType === 'ANNUAL' ? 'year' : 'month';
               const free = trialBadge(trialLength(pkg.product.introPrice));
               return (
-                <Pressable key={pkg.identifier} accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={() => setSelected(pkg.identifier)} style={[styles.card, on && styles.cardOn]} testID={`card-${pkg.packageType.toLowerCase()}`}>
+                <PressScale scale={PRESS_SCALE.card} key={pkg.identifier} accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={() => setSelected(pkg.identifier)} style={[styles.card, on && styles.cardOn]} testID={`card-${pkg.packageType.toLowerCase()}`}>
                   <View style={styles.cardHead}>
                     <Text style={styles.cardTitle}>{packageLabel(pkg.packageType)} · {pkg.product.priceString} a {period}</Text>
                     {pkg.packageType === 'ANNUAL' && badge ? <Text style={styles.badge}>{badge}</Text> : null}
@@ -148,7 +148,7 @@ export default function PremiumScreen() {
                   {/* D-197: the free week shows on the card itself, so it is clear how to get it. */}
                   {free ? <Text style={styles.cardFree} testID={`text-free-${pkg.packageType.toLowerCase()}`}>{free}</Text> : null}
                   {on ? <Feather name="check-circle" size={20} color={colors.primaryText} style={styles.cardCheck} /> : null}
-                </Pressable>
+                </PressScale>
               );
             })}
             <PressScale gradient accessibilityRole="button" disabled={!!busy} onPress={() => void subscribe(chosen)} style={[styles.buy, !!busy && styles.disabled]} testID="button-buy">
@@ -161,26 +161,26 @@ export default function PremiumScreen() {
         {message ? <Text style={styles.success} accessibilityRole="alert" testID="status-premium-message">{message}</Text> : null}
         {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
         {state === 'error' ? (
-          <Pressable accessibilityRole="button" disabled={!!busy} onPress={() => setAttempt((n) => n + 1)} style={({ pressed }) => [styles.secondary, pressed && styles.pressed]} testID="button-retry-prices">
+          <PressScale accessibilityRole="button" disabled={!!busy} onPress={() => setAttempt((n) => n + 1)} style={[styles.secondary]} testID="button-retry-prices">
             <Text style={styles.secondaryText}>Try again</Text>
-          </Pressable>
+          </PressScale>
         ) : null}
 
         {/* D-182: why this exists, in one line; the full story is a tap away. */}
-        <Pressable accessibilityRole="link" accessibilityHint="Opens the founder's story" onPress={() => router.push('/about')} style={styles.founder} testID="link-founder">
+        <PressScale accessibilityRole="link" accessibilityHint="Opens the founder's story" onPress={() => router.push('/about')} style={styles.founder} testID="link-founder">
           <Text style={styles.founderQuote}>“{FOUNDER_QUOTE}”</Text>
           <Text style={styles.founderName}>Dan Francis, founder · Read the story ›</Text>
-        </Pressable>
+        </PressScale>
 
-        <Pressable accessibilityRole="button" disabled={!!busy} onPress={() => void restorePurchases()} style={({ pressed }) => [styles.secondary, pressed && styles.pressed]} testID="button-restore-purchases">
+        <PressScale accessibilityRole="button" disabled={!!busy} onPress={() => void restorePurchases()} style={[styles.secondary]} testID="button-restore-purchases">
           {busy === 'restore' ? <ActivityIndicator color={colors.foreground} /> : <Text style={styles.secondaryText}>Restore Purchases</Text>}
-        </Pressable>
+        </PressScale>
         <Text style={styles.terms}>{mode === 'exam'
           ? 'Payment is charged to your Apple ID. The exam pass is a one-time purchase for 60 days and does not renew.'
           : 'Payment is charged to your Apple ID. A subscription renews automatically unless you cancel at least 24 hours before the end of the current period; manage or cancel it in Settings › Apple ID › Subscriptions.'}</Text>
         <View style={styles.links}>
-          <Text style={styles.link} accessibilityRole="link" onPress={() => void Linking.openURL(TERMS_URL)}>Terms of Use</Text>
-          {PRIVACY_URL ? <Text style={styles.link} accessibilityRole="link" onPress={openPrivacy}>Privacy Policy</Text> : null}
+          <Text style={styles.link} accessibilityRole="link" onPress={withTap(() => void Linking.openURL(TERMS_URL))}>Terms of Use</Text>
+          {PRIVACY_URL ? <Text style={styles.link} accessibilityRole="link" onPress={withTap(openPrivacy)}>Privacy Policy</Text> : null}
         </View>
       </ScrollView>
     </View>

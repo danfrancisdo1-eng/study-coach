@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { PressScale } from '@/components/PressScale';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { NotesView } from '@/components/NotesView';
@@ -43,17 +44,17 @@ export function CourseManager({ courseName, materials, busy, onDeleteMaterial, o
         <View key={material.id}>
         <View style={styles.row} testID={`row-material-${material.id}`}>
           <Feather name="file-text" size={16} color={colors.mutedForeground} />
-          <Pressable style={{ flex: 1, minHeight: 44, justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel={`${open === material.id ? 'Hide' : 'Show'} notes for ${material.name}`}
+          <PressScale style={{ flex: 1, minHeight: 44, justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel={`${open === material.id ? 'Hide' : 'Show'} notes for ${material.name}`}
             onPress={() => setOpen(open === material.id ? null : material.id)} testID={`button-material-notes-${material.id}`}>
             <Text style={styles.name} numberOfLines={2}>{material.name}</Text>
             <Text style={styles.caption}>{open === material.id ? 'Hide notes' : material.notes ? 'Show notes' : 'Notes are being written'}</Text>
-          </Pressable>
-          <Pressable
+          </PressScale>
+          <PressScale
             accessibilityRole="button" accessibilityLabel={`Delete ${material.name}`} disabled={busy}
             onPress={() => confirmMaterial(material)} style={styles.smallButton} testID={`button-delete-material-${material.id}`}
           >
             <Text style={styles.danger}>Delete</Text>
-          </Pressable>
+          </PressScale>
         </View>
         {open === material.id ? (
           <View style={{ paddingLeft: 26, paddingBottom: 8, gap: 6 }}>
@@ -66,9 +67,9 @@ export function CourseManager({ courseName, materials, busy, onDeleteMaterial, o
 
       <View style={styles.separator} />
       {!confirming ? (
-        <Pressable accessibilityRole="button" onPress={() => { setTyped(''); setConfirming(true); }} disabled={busy} style={styles.smallButton} testID="button-delete-course">
+        <PressScale accessibilityRole="button" onPress={() => { setTyped(''); setConfirming(true); }} disabled={busy} style={styles.smallButton} testID="button-delete-course">
           <Text style={styles.danger}>Delete course…</Text>
-        </Pressable>
+        </PressScale>
       ) : (
         <View style={styles.confirm} testID="panel-confirm-delete-course">
           <Text style={styles.body}>
@@ -81,15 +82,15 @@ export function CourseManager({ courseName, materials, busy, onDeleteMaterial, o
             placeholderTextColor={colors.mutedForeground} accessibilityLabel={`Type ${confirmWord} to confirm`} style={styles.input} testID="input-confirm-course-name"
           />
           <View style={styles.buttons}>
-            <Pressable accessibilityRole="button" onPress={() => setConfirming(false)} style={styles.smallButton} testID="button-cancel-delete-course">
+            <PressScale accessibilityRole="button" onPress={() => setConfirming(false)} style={styles.smallButton} testID="button-cancel-delete-course">
               <Text style={styles.cancel}>Cancel</Text>
-            </Pressable>
-            <Pressable
+            </PressScale>
+            <PressScale
               accessibilityRole="button" accessibilityState={{ disabled: !matches || busy }} disabled={!matches || busy}
               onPress={() => void onDeleteCourse()} style={[styles.deleteButton, (!matches || busy) && styles.disabled]} testID="button-confirm-delete-course"
             >
               <Text style={styles.deleteText}>Delete course</Text>
-            </Pressable>
+            </PressScale>
           </View>
         </View>
       )}

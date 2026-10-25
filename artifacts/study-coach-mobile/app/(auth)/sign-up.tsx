@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { PRESS_SCALE, PressScale, withTap } from '@/components/PressScale';
 import { Link, Redirect, useRouter } from 'expo-router';
 import { useAuth, useSignUp } from '@clerk/expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -75,23 +76,23 @@ export default function SignUpScreen() {
         <>
           <Text style={[styles.label, { color: colors.foreground }]}>Email verification code</Text>
           <TextInput testID="input-sign-up-code" value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="one-time-code" style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} placeholder="Enter code" placeholderTextColor={colors.mutedForeground} />
-          <Pressable testID="button-sign-up-verify" accessibilityRole="button" disabled={busy || !code.trim()} onPress={() => void verify()} style={[styles.button, { backgroundColor: colors.primary }, (busy || !code.trim()) && styles.disabled]}>
+          <PressScale testID="button-sign-up-verify" accessibilityRole="button" disabled={busy || !code.trim()} onPress={() => void verify()} style={[styles.button, { backgroundColor: colors.primary }, (busy || !code.trim()) && styles.disabled]}>
             <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>{busy ? 'Verifying…' : 'Verify and create account'}</Text>
-          </Pressable>
-          <Pressable accessibilityRole="button" testID="button-resend-sign-up-code" onPress={() => void signUp.verifications.sendEmailCode()} style={styles.textButton}>
+          </PressScale>
+          <PressScale accessibilityRole="button" testID="button-resend-sign-up-code" onPress={() => void signUp.verifications.sendEmailCode()} style={styles.textButton}>
             <Text style={[styles.link, { color: colors.primaryText }]}>Send a new code</Text>
-          </Pressable>
+          </PressScale>
         </>
       ) : (
         <>
-          <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: ageOk }} accessibilityLabel="I am 13 or older" onPress={() => { setAgeOk((v) => !v); setAgeNudge(false); }} style={styles.checkRow} testID="checkbox-age">
+          <PressScale scale={PRESS_SCALE.card} accessibilityRole="checkbox" accessibilityState={{ checked: ageOk }} accessibilityLabel="I am 13 or older" onPress={() => { setAgeOk((v) => !v); setAgeNudge(false); }} style={styles.checkRow} testID="checkbox-age">
             <Feather name={ageOk ? 'check-square' : 'square'} size={22} color={ageOk ? colors.primaryText : ageNudge ? colors.destructive : colors.mutedForeground} />
             <Text style={[styles.checkText, { color: ageNudge ? colors.destructive : colors.foreground }]}>I'm 13 or older.</Text>
-          </Pressable>
+          </PressScale>
           {ageNudge ? <Text accessibilityRole="alert" style={[styles.caption, { color: colors.destructive }]} testID="status-age-nudge">Tick "I'm 13 or older" first.</Text> : null}
           <Text style={[styles.caption, { color: colors.mutedForeground }]}>
             RapidRecall AI is for people 13 and older. By creating an account you agree to the{' '}
-            {PRIVACY_URL ? <Text style={[styles.link, styles.captionLink, { color: colors.primaryText }]} accessibilityRole="link" onPress={openPrivacy} testID="link-privacy">privacy policy</Text> : 'privacy policy'}.
+            {PRIVACY_URL ? <Text style={[styles.link, styles.captionLink, { color: colors.primaryText }]} accessibilityRole="link" onPress={withTap(openPrivacy)} testID="link-privacy">privacy policy</Text> : 'privacy policy'}.
           </Text>
           <View>
             <SocialSignIn disabled={!ageOk} />
@@ -102,9 +103,9 @@ export default function SignUpScreen() {
           <Text style={[styles.label, { color: colors.foreground }]}>Password</Text>
           <TextInput testID="input-sign-up-password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} placeholder="Create a password" placeholderTextColor={colors.mutedForeground} />
           <View>
-          <Pressable testID="button-sign-up-submit" accessibilityRole="button" disabled={busy || !ageOk || !emailAddress.trim() || password.length < 8} onPress={() => void submit()} style={[styles.button, { backgroundColor: colors.primary }, (busy || !ageOk || !emailAddress.trim() || password.length < 8) && styles.disabled]}>
+          <PressScale testID="button-sign-up-submit" accessibilityRole="button" disabled={busy || !ageOk || !emailAddress.trim() || password.length < 8} onPress={() => void submit()} style={[styles.button, { backgroundColor: colors.primary }, (busy || !ageOk || !emailAddress.trim() || password.length < 8) && styles.disabled]}>
             <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>{busy ? 'Creating account…' : 'Create account'}</Text>
-          </Pressable>
+          </PressScale>
             {!ageOk ? <Pressable accessibilityRole="button" accessibilityLabel="Tick I'm 13 or older first" onPress={() => setAgeNudge(true)} style={StyleSheet.absoluteFill} testID="button-age-gate-submit" /> : null}
           </View>
           <Text style={[styles.caption, { color: colors.mutedForeground }]}>Use at least 8 characters. Email verification is required.</Text>

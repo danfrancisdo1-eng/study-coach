@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { ActionButton } from '@/components/ActionButton';
@@ -142,14 +143,14 @@ export function OneDrivePanel({ aiConsent, onPick, onClose }: {
     <View style={styles.panel} testID="panel-onedrive">
       <View style={styles.header}>
         {canGoBack ? (
-          <Pressable onPress={back} accessibilityRole="button" accessibilityLabel="Back" hitSlop={8} style={styles.iconButton} testID="button-onedrive-back">
+          <PressScale scale={PRESS_SCALE.icon} onPress={back} accessibilityRole="button" accessibilityLabel="Back" hitSlop={8} style={styles.iconButton} testID="button-onedrive-back">
             <Feather name="chevron-left" size={22} color={colors.foreground} />
-          </Pressable>
+          </PressScale>
         ) : <Feather name="cloud" size={18} color={colors.primaryText} style={styles.cloud} />}
         <Text style={styles.title} numberOfLines={1} accessibilityRole="header">{title}</Text>
-        <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close OneDrive" hitSlop={8} style={styles.iconButton} testID="button-onedrive-close">
+        <PressScale scale={PRESS_SCALE.icon} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close OneDrive" hitSlop={8} style={styles.iconButton} testID="button-onedrive-close">
           <Feather name="x" size={20} color={colors.mutedForeground} />
-        </Pressable>
+        </PressScale>
       </View>
 
       {phase === 'checking' ? <ActivityIndicator color={colors.primaryText} /> : null}
@@ -174,10 +175,10 @@ export function OneDrivePanel({ aiConsent, onPick, onClose }: {
               <Text style={[styles.muted, styles.empty]}>{searched ? 'No PDF, Word, PowerPoint, text or photo files match.' : 'No PDF, Word, PowerPoint, text or photo files here.'}</Text>
             ) : null}
             {!loading ? rows.map((row) => (
-              <Pressable
+              <PressScale scale={PRESS_SCALE.card}
                 key={row.id} onPress={() => void choose(row)} disabled={Boolean(downloading)}
                 accessibilityRole="button" accessibilityLabel={`${row.name}, ${row.kind === 'folder' ? 'folder' : 'file'}, ${rowDetail(row)}`}
-                style={({ pressed }) => [styles.row, pressed && styles.pressed]} testID="row-onedrive-item"
+                style={[styles.row]} testID="row-onedrive-item"
               >
                 <Feather name={row.kind === 'folder' ? 'folder' : isPhoto(row.name) ? 'image' : 'file-text'} size={20} color={row.kind === 'folder' ? colors.primaryText : colors.mutedForeground} />
                 <View style={styles.rowText}>
@@ -186,14 +187,14 @@ export function OneDrivePanel({ aiConsent, onPick, onClose }: {
                 </View>
                 {downloading === row.id ? <ActivityIndicator color={colors.primaryText} />
                   : row.kind === 'folder' ? <Feather name="chevron-right" size={18} color={colors.mutedForeground} /> : null}
-              </Pressable>
+              </PressScale>
             )) : null}
           </ScrollView>
           <View style={styles.footer}>
             <Text style={[styles.caption, styles.footerText]} numberOfLines={1}>{owner ? `Signed in as ${owner}` : 'Signed in to OneDrive'}</Text>
-            <Pressable onPress={() => void signOut()} accessibilityRole="button" accessibilityLabel="Disconnect OneDrive" hitSlop={10} style={styles.linkButton} testID="button-onedrive-disconnect">
+            <PressScale onPress={() => void signOut()} accessibilityRole="button" accessibilityLabel="Disconnect OneDrive" hitSlop={10} style={styles.linkButton} testID="button-onedrive-disconnect">
               <Text style={styles.link}>Disconnect</Text>
-            </Pressable>
+            </PressScale>
           </View>
         </View>
       ) : null}

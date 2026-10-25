@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, TextInput, View } from 'react-native';
+import { PressScale, withTap } from '@/components/PressScale';
 import { Link, Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth, useSignIn } from '@clerk/expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -97,30 +98,30 @@ export default function SignInScreen() {
         <>
           <Text style={[styles.label, { color: colors.foreground }]}>Email verification code</Text>
           <TextInput testID="input-sign-in-code" value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="one-time-code" style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} placeholder="Enter code" placeholderTextColor={colors.mutedForeground} />
-          <Pressable testID="button-sign-in-verify" accessibilityRole="button" disabled={busy || !code.trim()} onPress={() => void verify()} style={[styles.button, { backgroundColor: colors.primary }, (busy || !code.trim()) && styles.disabled]}>
+          <PressScale testID="button-sign-in-verify" accessibilityRole="button" disabled={busy || !code.trim()} onPress={() => void verify()} style={[styles.button, { backgroundColor: colors.primary }, (busy || !code.trim()) && styles.disabled]}>
             <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>{busy ? 'Verifying…' : 'Verify and sign in'}</Text>
-          </Pressable>
-          <Pressable accessibilityRole="button" testID="button-resend-sign-in-code" onPress={() => void signIn.mfa.sendEmailCode()} style={styles.textButton}>
+          </PressScale>
+          <PressScale accessibilityRole="button" testID="button-resend-sign-in-code" onPress={() => void signIn.mfa.sendEmailCode()} style={styles.textButton}>
             <Text style={[styles.link, { color: colors.primaryText }]}>Send a new code</Text>
-          </Pressable>
-          <Pressable accessibilityRole="button" onPress={() => { setMessage(''); void signIn.reset(); }} style={styles.textButton}>
+          </PressScale>
+          <PressScale accessibilityRole="button" onPress={() => { setMessage(''); void signIn.reset(); }} style={styles.textButton}>
             <Text style={[styles.link, { color: colors.mutedForeground }]}>Start over</Text>
-          </Pressable>
+          </PressScale>
         </>
       ) : (
         <>
           <Text style={[styles.caption, { color: colors.mutedForeground }]}>
             By continuing you confirm you're 13 or older and agree to the{' '}
-            {PRIVACY_URL ? <Text style={[styles.link, styles.captionLink, { color: colors.primaryText }]} accessibilityRole="link" onPress={openPrivacy} testID="link-privacy">privacy policy</Text> : 'privacy policy'}.
+            {PRIVACY_URL ? <Text style={[styles.link, styles.captionLink, { color: colors.primaryText }]} accessibilityRole="link" onPress={withTap(openPrivacy)} testID="link-privacy">privacy policy</Text> : 'privacy policy'}.
           </Text>
           <SocialSignIn />
           <Text style={[styles.label, { color: colors.foreground }]}>Email address</Text>
           <TextInput testID="input-sign-in-email" value={emailAddress} onChangeText={setEmailAddress} keyboardType="email-address" autoCapitalize="none" autoComplete="email" style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} placeholder="you@example.com" placeholderTextColor={colors.mutedForeground} />
           <Text style={[styles.label, { color: colors.foreground }]}>Password</Text>
           <TextInput testID="input-sign-in-password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} placeholder="Password" placeholderTextColor={colors.mutedForeground} />
-          <Pressable testID="button-sign-in-submit" accessibilityRole="button" disabled={busy || !emailAddress.trim() || !password} onPress={() => void submit()} style={[styles.button, { backgroundColor: colors.primary }, (busy || !emailAddress.trim() || !password) && styles.disabled]}>
+          <PressScale testID="button-sign-in-submit" accessibilityRole="button" disabled={busy || !emailAddress.trim() || !password} onPress={() => void submit()} style={[styles.button, { backgroundColor: colors.primary }, (busy || !emailAddress.trim() || !password) && styles.disabled]}>
             <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>{busy ? 'Signing in…' : 'Continue'}</Text>
-          </Pressable>
+          </PressScale>
           <View style={styles.linkRow}>
             <Text style={[styles.body, { color: colors.mutedForeground }]}>New to RapidRecall AI? </Text>
             <Link href="/(auth)/sign-up" testID="link-sign-up"><Text style={[styles.link, { color: colors.primaryText }]}>Create account</Text></Link>

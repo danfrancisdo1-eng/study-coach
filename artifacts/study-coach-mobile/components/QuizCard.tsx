@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import { PRESS_SCALE, PressScale } from '@/components/PressScale';
@@ -126,7 +126,7 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
   if (sessionQuery.isLoading) return <View style={styles.card}><ActivityIndicator color={colors.primaryText} /><CardText style={styles.muted}>Loading your questions…</CardText></View>;
   if (!session || !quiz) {
     return <View style={styles.card}><CardText style={styles.muted}>Couldn’t load this set.</CardText>
-      <Pressable accessibilityRole="button" onPress={() => void sessionQuery.refetch()} style={styles.secondaryButton} testID="button-retry-quiz"><CardText style={styles.secondaryText}>Retry</CardText></Pressable></View>;
+      <PressScale accessibilityRole="button" onPress={() => void sessionQuery.refetch()} style={styles.secondaryButton} testID="button-retry-quiz"><CardText style={styles.secondaryText}>Retry</CardText></PressScale></View>;
   }
 
   const questions = quiz.questions.filter(counts);
@@ -169,9 +169,9 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
       );
     }
     return (
-      <Pressable accessibilityRole="button" accessibilityLabel="Report this question" disabled={!!reportingId} onPress={() => report(question)} style={styles.reportLink} testID={`button-report-${question.id}`}>
+      <PressScale accessibilityRole="button" accessibilityLabel="Report this question" disabled={!!reportingId} onPress={() => report(question)} style={styles.reportLink} testID={`button-report-${question.id}`}>
         <CardText style={styles.reportLinkText}>Looks wrong?</CardText>
-      </Pressable>
+      </PressScale>
     );
   };
 
@@ -272,10 +272,10 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
         const here = (currentId ?? questions.find((x) => !x.answer)?.id) === q.id;
         const label = `Question ${i + 1}, ${answered ? 'answered' : 'not answered'}${marked ? ', marked for review' : ''}`;
         return (
-          <Pressable key={q.id} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: here }}
+          <PressScale key={q.id} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: here }}
             hitSlop={8} onPress={() => setCurrentId(q.id)} style={[styles.bubble, answered && styles.bubbleAnswered, marked && styles.bubbleMarked, here && styles.bubbleHere]} testID={`button-quiz-bubble-${i}`}>
             <CardText style={[styles.bubbleText, answered && styles.bubbleTextAnswered]}>{i + 1}</CardText>
-          </Pressable>
+          </PressScale>
         );
       })}
     </View>
@@ -303,9 +303,9 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
   const gradeBlock = allAnswered ? (
     <View style={styles.gradeBlock}>
       {marked.length ? <CardText style={styles.muted}>{marked.length} still marked for review. Grading counts the answers you have now.</CardText> : null}
-      <Pressable accessibilityRole="button" disabled={busy} onPress={() => void gradeNow()} style={[styles.primaryButton, busy && styles.disabled]} testID="button-quiz-grade">
+      <PressScale accessibilityRole="button" disabled={busy} onPress={() => void gradeNow()} style={[styles.primaryButton, busy && styles.disabled]} testID="button-quiz-grade">
         {busy ? <ActivityIndicator color={colors.primaryForeground} /> : <CardText style={styles.primaryText}>Grade exam</CardText>}
-      </Pressable>
+      </PressScale>
     </View>
   ) : null;
   if (!current) {
@@ -368,10 +368,10 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
         </PressScale>
       ))}
       {isExam ? (
-        <Pressable accessibilityRole="button" accessibilityState={{ selected: marks.has(current.id) }} onPress={() => toggleMark(current.id)} style={[styles.markButton, marks.has(current.id) && styles.markButtonOn]} testID="button-quiz-mark">
+        <PressScale accessibilityRole="button" accessibilityState={{ selected: marks.has(current.id) }} onPress={() => toggleMark(current.id)} style={[styles.markButton, marks.has(current.id) && styles.markButtonOn]} testID="button-quiz-mark">
           <Feather name="flag" size={15} color={marks.has(current.id) ? colors.wrong : colors.foreground} />
           <CardText style={[styles.markText, marks.has(current.id) && { color: colors.wrong }]}>{marks.has(current.id) ? 'Marked for review' : 'Mark for review'}</CardText>
-        </Pressable>
+        </PressScale>
       ) : null}
       {isExam ? gradeBlock : null}
       {busy && !allAnswered ? <ActivityIndicator color={colors.primaryText} /> : null}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,7 +13,7 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { AuroraBackground } from '@/components/AuroraBackground';
-import { PressScale } from '@/components/PressScale';
+import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { HeaderIconButton, HeaderTextButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { premiumCode } from '@/lib/premium-ui';
@@ -164,9 +164,9 @@ export default function CourseListScreen() {
           {error && !addOpen ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
           {rows.map((row) => (
             // One tap opens the course (D-065, usability finding 3: the row used to do two things). The course you open becomes the coach's course.
-            <Pressable key={row.id} accessibilityRole="button" accessibilityLabel={`Open ${row.name}`} accessibilityState={{ selected: row.id === focusId }}
+            <PressScale scale={PRESS_SCALE.card} key={row.id} accessibilityRole="button" accessibilityLabel={`Open ${row.name}`} accessibilityState={{ selected: row.id === focusId }}
               onPress={() => { setFocusId(row.id); if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, row.id).catch(() => {}); router.push({ pathname: '/course/[courseId]', params: { courseId: row.id } }); }}
-              style={({ pressed }) => [styles.row, row.id === focusId && styles.rowSelected, pressed && styles.pressed]} testID={`row-course-${row.id}`}>
+              style={[styles.row, row.id === focusId && styles.rowSelected]} testID={`row-course-${row.id}`}>
               <View style={styles.rowMain}>
                 <Feather name={row.kind === 'exam' ? 'award' : 'book'} size={16} color={row.id === focusId ? colors.primaryText : colors.mutedForeground} />
                 <View style={styles.rowCopy}>
@@ -175,7 +175,7 @@ export default function CourseListScreen() {
                 </View>
               </View>
               <View style={styles.rowOpen}><Feather name="chevron-right" size={18} color={colors.mutedForeground} /></View>
-            </Pressable>
+            </PressScale>
           ))}
           {!rows.length ? <Text style={styles.empty}>No courses yet. Add one here, or just tell the coach what you're studying.</Text> : null}
           {/* Sign out and Account used to sit here (D-079, D-080); both live on the Account tab now (D-164). */}
@@ -197,9 +197,9 @@ export default function CourseListScreen() {
               </Animated.View>
               <Animated.View entering={FadeInUp.delay(170).duration(260)}>
                 {/* D-191 (Dan): questions right away, with a warning that the syllabus or notes make them better. */}
-                <Pressable accessibilityRole="button" onPress={() => setQuestionsWarn(true)} style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]} testID="button-next-questions">
+                <PressScale accessibilityRole="button" onPress={() => setQuestionsWarn(true)} style={[styles.secondaryButton]} testID="button-next-questions">
                   <Text style={styles.secondaryButtonText}>Start practice questions</Text>
-                </Pressable>
+                </PressScale>
                 {questionsWarn ? (
                   <View style={styles.warnBox} testID="note-questions-without-material">
                     <View style={styles.warnHead}>
@@ -209,33 +209,33 @@ export default function CourseListScreen() {
                     <Text style={styles.warnText}>{justAdded.kind === 'course'
                       ? 'Upload your syllabus and notes first and the questions follow what your class actually covers. Without them, the coach writes from general knowledge of the subject.'
                       : 'Upload your study material first and the questions follow it. Without it, the coach writes from the official exam outline and general knowledge.'}</Text>
-                    <Pressable accessibilityRole="button" onPress={() => {
+                    <PressScale accessibilityRole="button" onPress={() => {
                       const { id } = justAdded;
                       setJustAdded(null); setAddOpen(false);
                       const go = () => router.navigate({ pathname: '/(tabs)', params: { send: studyRequest('practiceNoMaterial', null), courseId: id } });
                       // The coach screen reads its focus when it shows; set it first so the request goes to this course.
                       if (userId) AsyncStorage.setItem(`study-coach-focus:${userId}`, id).catch(() => {}).finally(go); else go();
-                    }} style={({ pressed }) => [styles.warnButton, pressed && styles.pressed]} testID="button-questions-anyway">
+                    }} style={[styles.warnButton]} testID="button-questions-anyway">
                       <Text style={styles.secondaryButtonText}>Start anyway</Text>
-                    </Pressable>
+                    </PressScale>
                   </View>
                 ) : null}
               </Animated.View>
               <Animated.View entering={FadeInUp.delay(260).duration(260)}>
                 {/* D-191 (Dan): straight to the new course's page. */}
-                <Pressable accessibilityRole="button" onPress={() => { const { id } = justAdded; setJustAdded(null); setAddOpen(false); router.push({ pathname: '/course/[courseId]', params: { courseId: id } }); }} style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]} testID="button-next-open-course">
+                <PressScale accessibilityRole="button" onPress={() => { const { id } = justAdded; setJustAdded(null); setAddOpen(false); router.push({ pathname: '/course/[courseId]', params: { courseId: id } }); }} style={[styles.secondaryButton]} testID="button-next-open-course">
                   <Text style={styles.secondaryButtonText} numberOfLines={2}>Go to {justAdded.name}</Text>
-                </Pressable>
+                </PressScale>
               </Animated.View>
               <Animated.View entering={FadeInUp.delay(350).duration(260)}>
-                <Pressable accessibilityRole="button" onPress={() => setJustAdded(null)} style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]} testID="button-next-another">
+                <PressScale accessibilityRole="button" onPress={() => setJustAdded(null)} style={[styles.secondaryButton]} testID="button-next-another">
                   <Text style={styles.secondaryButtonText}>Add another course</Text>
-                </Pressable>
+                </PressScale>
               </Animated.View>
               <Animated.View entering={FadeInUp.delay(440).duration(260)}>
-                <Pressable accessibilityRole="button" onPress={() => { setJustAdded(null); setAddOpen(false); }} style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]} testID="button-next-list">
+                <PressScale accessibilityRole="button" onPress={() => { setJustAdded(null); setAddOpen(false); }} style={[styles.secondaryButton]} testID="button-next-list">
                   <Text style={styles.secondaryButtonText}>Return to course list</Text>
-                </Pressable>
+                </PressScale>
               </Animated.View>
             </View>
           ) : (

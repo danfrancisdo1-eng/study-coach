@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import { PressScale, withTap } from '@/components/PressScale';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -59,7 +60,7 @@ export default function OnboardingScreen() {
       <LinearGradient colors={[colors.accent, colors.background, colors.background]} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
       <View style={styles.topBar}>
         {page > 0 && !last ? (
-          <Pressable accessibilityRole="button" onPress={skip} style={styles.skip} testID="button-onboarding-skip"><Text style={styles.skipText}>Skip</Text></Pressable>
+          <PressScale accessibilityRole="button" onPress={skip} style={styles.skip} testID="button-onboarding-skip"><Text style={styles.skipText}>Skip</Text></PressScale>
         ) : null}
       </View>
       <View style={styles.pages}>
@@ -74,13 +75,13 @@ export default function OnboardingScreen() {
       {page === 0 ? (
         <Text style={styles.agreement}>
           By continuing you agree to the{' '}
-          {PRIVACY_URL ? <Text style={styles.agreementLink} accessibilityRole="link" onPress={openPrivacy} testID="link-privacy">privacy policy</Text> : 'privacy policy'}
+          {PRIVACY_URL ? <Text style={styles.agreementLink} accessibilityRole="link" onPress={withTap(openPrivacy)} testID="link-privacy">privacy policy</Text> : 'privacy policy'}
           {' '}and confirm you are 13 or older.
         </Text>
       ) : null}
-      <Pressable accessibilityRole="button" onPress={next} style={({ pressed }) => [styles.button, pressed && styles.pressed]} testID="button-onboarding-next">
+      <PressScale accessibilityRole="button" onPress={next} style={[styles.button]} testID="button-onboarding-next">
         <Text style={styles.buttonText}>{current.button}</Text>
-      </Pressable>
+      </PressScale>
     </View>
   );
 }

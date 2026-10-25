@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import { PressScale } from '@/components/PressScale';
 import { Ionicons } from '@expo/vector-icons';
 import { useSSO } from '@clerk/expo';
 import * as AuthSession from 'expo-auth-session';
@@ -65,7 +66,7 @@ export function SocialSignIn({ disabled = false }: { disabled?: boolean }) {
     <View style={styles.container}>
       <View style={styles.row}>
         {(['apple', 'google'] as const).map((provider) => (
-          <Pressable
+          <PressScale
             key={provider}
             testID={`button-${provider}-sign-in`}
             accessibilityRole="button"
@@ -78,7 +79,7 @@ export function SocialSignIn({ disabled = false }: { disabled?: boolean }) {
             <Text style={[styles.buttonText, { color: colors.foreground }]}>
               {working === provider ? 'Opening…' : provider === 'apple' ? 'Apple' : 'Google'}
             </Text>
-          </Pressable>
+          </PressScale>
         ))}
       </View>
       {error ? <Text accessibilityRole="alert" testID="status-social-auth-error" style={[styles.error, { color: colors.destructive }]}>{error}</Text> : null}
