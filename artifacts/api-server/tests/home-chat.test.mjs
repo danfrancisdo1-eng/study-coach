@@ -215,7 +215,7 @@ test('home chat: practice and exam question sets', async (t) => {
   assert.equal(retest.kind, 'exam');
   assert.equal(retest.count, 5, '3 new + 2 earlier correct questions');
   const quizPrompt = ai.requests.filter((r) => r.body.messages[0].content.includes('Create exactly')).at(-1).body.messages[0].content;
-  assert.match(quizPrompt, /Specifically test missed concepts: concept-0, concept-2/);
+  assert.match(quizPrompt, /This is a retest of concepts the student just missed: concept-0; concept-2\./);
   session = (await call('GET', `/study/sessions/${retest.sessionId}`)).body;
   assert.equal(session.quiz.kind, 'exam');
   assert.equal(session.quiz.mode, 'targeted');

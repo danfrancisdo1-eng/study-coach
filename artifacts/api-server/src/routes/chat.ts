@@ -383,8 +383,16 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
   let quiz: Quiz | null = banked.length
     ? { mode: input.mode, kind: plan.kind, expectedCount: firstCount, questions: banked, sourceStatus: status, invalidItemCount: 0, grade: null }
     : null;
+  let setInput = input;
   if (!quiz) {
     try { quiz = await writeFirst(); } catch (error) { logger.warn({ error: error instanceof Error ? error.message.slice(0, 200) : "Unknown error" }, "Home chat: first part of a set failed; trying once more"); }
+    // D-196: a retest whose questions were all dropped as repeats of the last set is written as a plain set
+    // on the same ground (the missed concepts as its topic), so the student gets questions, not an error.
+    if (!quiz && missed.length) {
+      setInput = retestFallback(input, missed);
+      logger.warn({ missed: missed.length }, "Home chat: retest of the missed concepts came back empty; writing a plain set on them");
+      quiz = await generateSessionQuiz({ ...setInput, expectedCount: firstCount });
+    }
     if (!quiz) quiz = await writeFirst();
     if (!quiz) return null;
     void bankWritten(ownerId, plan.courseId, quiz.questions, sectionWeights);
@@ -401,9 +409,18 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
   await insertSession(ownerId, session);
   if (more) {
     const batches = timed ? timed.batches.slice(1) : splitCount(rest).map((count) => ({ section: null, count }));
-    void writeRestOfSet(ownerId, session.id, { ...input, expectedCount: rest, originalPrompts: [...originalPrompts, ...quiz.questions.map((q) => q.prompt)] }, carried, batches, Boolean(timed));
+    void writeRestOfSet(ownerId, session.id, { ...setInput, expectedCount: rest, originalPrompts: [...originalPrompts, ...quiz.questions.map((q) => q.prompt)] }, carried, batches, Boolean(timed));
   }
   return session;
+}
+
+/**
+ * D-196: the fallback for a retest that came back empty: the same set as a plain one, its topic the missed
+ * concepts (a generic "Missed concepts" topic says nothing to the writer), no missed-concept focus.
+ */
+export function retestFallback<T extends { topic: string; weakConcepts: string[]; mode: "diagnostic" | "targeted" }>(input: T, missed: string[]): T {
+  const topic = /missed/i.test(input.topic) || !input.topic.trim() ? missed.slice(0, 6).join("; ") : input.topic;
+  return { ...input, topic, weakConcepts: [], mode: "diagnostic" };
 }
 
 const ALL_TOPICS = /^all topics/i;

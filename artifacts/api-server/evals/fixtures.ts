@@ -112,6 +112,8 @@ export interface SessionQuizCase {
   weakConcepts: string[];
   /** D-147: a top-up batch: the topic's notes are used up. */
   stretch?: boolean;
+  /** D-196: a retest of missed concepts: no question may be a near-duplicate of an original prompt (the app's own check). */
+  retest?: boolean;
 }
 
 export const sessionQuizCases: SessionQuizCase[] = [
@@ -130,6 +132,28 @@ export const sessionQuizCases: SessionQuizCase[] = [
   {
     name: "targeted retest membranes", topic: "Membranes and transport", sources: membranes, expectedCount: 5,
     originalPrompts: ["What is osmosis?", "Which way does the sodium-potassium pump move sodium?"], weakConcepts: ["osmosis", "sodium-potassium pump"],
+  },
+  // D-196 (Dan's AI-103 "missed topics" set failed twice: every question was a reworded original): two missed
+  // concepts, more questions than concepts; each must be new, never the original reworded.
+  {
+    name: "retest of two missed concepts, 3 questions: new angles, no reworded originals (AI-103)", retest: true,
+    topic: "Missed concepts", sources: [], expectedCount: 3,
+    weakConcepts: ["Architect multi-agent solutions — model routing for cost and performance", "Develop multi-agent solutions in Azure — shared state stores"],
+    originalPrompts: [
+      "A company runs a multi-agent app where simple requests are sent to a large, expensive model. Which approach lowers cost without hurting quality on hard requests?",
+      "Several agents in an Azure solution need to read and update the same conversation context across turns. Where should that context be kept?",
+      "An orchestrator agent delegates tasks to specialist agents. Which pattern describes this design?",
+      "Which Azure service is used to deploy and manage the models that agents call?",
+    ],
+  },
+  {
+    name: "retest of two missed concepts, 6 questions: several per concept, each different (AI-103)", retest: true,
+    topic: "Missed concepts", sources: [], expectedCount: 6,
+    weakConcepts: ["Architect multi-agent solutions — model routing for cost and performance", "Develop multi-agent solutions in Azure — shared state stores"],
+    originalPrompts: [
+      "A company runs a multi-agent app where simple requests are sent to a large, expensive model. Which approach lowers cost without hurting quality on hard requests?",
+      "Several agents in an Azure solution need to read and update the same conversation context across turns. Where should that context be kept?",
+    ],
   },
   { name: "diagnostic leadership", topic: "Leadership theories", sources: leadership, expectedCount: 6, originalPrompts: [], weakConcepts: [] },
   // Only an outline uploaded: the set must test biology, never the outline (D-019).
