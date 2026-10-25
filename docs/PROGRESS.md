@@ -1,5 +1,17 @@
 # Progress
 
+## Session 23h — 2026-10-25 — missed-topics retest fix (D-196), branch `fix/missed-retest`
+
+### Done
+- "Another set on the missed topics" failed twice on AI-103 (every question dropped as a reworded repeat). session-quiz.v11 asks for new angles on a retest; a plain set on the missed concepts is the fallback. Server only: no phone build needed.
+- Verified here: typecheck; `pnpm run test`; the new end-to-end test fails with the old code (502) and passes with the fix.
+
+### Next / blockers
+- Dan runs `--task session_quiz` evals on the Mac, then merge; Render deploys.
+
+### Needs real-iPhone check
+- On AI-103 after a set with misses: "Another set on the missed topics" starts a set.
+
 ## Session 23g — 2026-10-25 — founder wording (D-195), branch `fix/founder-wording`
 
 ### Done

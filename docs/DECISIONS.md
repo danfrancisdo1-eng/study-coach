@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-25 — D-196: "Another set on the missed topics" no longer fails when the writer only rewords (session-quiz.v11)
+- Dan (build 23, AI-103): "Asked to have questions on just the ones I missed and it failed to load twice in a row" ("The coach could not write your questions just now").
+- Render log: the first part (3 questions) came back empty both times: 4 proposed → 0 valid (all dropped as near-duplicates of the last set), then 2 valid → 0 kept (both flagged as repeats). Cause: v10 told the writer to test only the 2 missed concepts, to give every question a different idea, and to avoid the original prompts; with 2 concepts it could only reword the originals.
+- session-quiz.v11: on a retest (missed concepts given), questions spread across the missed concepts; a concept may get several, each from a different angle (a new scenario, in reverse, against the option it is confused with, "which is NOT"); never an original reworded. Every other set gets v10's text word for word (tested).
+- Safety net (routes/chat.ts `retestFallback`): when a retest's first part still comes back empty, it is written as a plain set on the missed concepts (they become the topic), so the student gets questions instead of an error. The rest of the set uses the same input.
+- Tests: an end-to-end test where the retest writer only rewords the last set (fails with the same 502 without the fix, passes with it); prompt tests for v11. Evals: two new session_quiz cases (AI-103 retest, 3 and 6 questions on 2 concepts) that fail on a near-duplicate of an original.
+- **Decided by:** Dan ("OK").
+
 ## 2026-10-25 — D-195: Founder wording: self-taught, no formal training (not "no AI background")
 - Dan: "I do have AI background, but basically say no formal training in AI or coding. I was self-taught." / "No formal training or education."
 - `lib/founder.ts`: the story says "I had no formal training or education in AI or coding. I taught myself." (the "no experience as an AI engineer" clause is gone); the paywall quote is "Self-taught, no formal training: I passed two AI certifications in three days studying exactly this way. That's why I built RapidRecall."; the Account row reads "Two AI certifications, self-taught, this method". A test keeps "no AI background" out. The website and App Store text should match.
