@@ -1,5 +1,17 @@
 # Progress
 
+## Session 23i — 2026-10-25 — beta round 5 (D-197, D-198), branch `fix/beta-round-5`
+
+### Done
+- Paywall: Monthly first and picked by default; "1 week free" on each card that has the free trial (D-197).
+- Account: Delete my account right under the plan card, then Questions per set; Sign out last (D-198). Build #104.
+- Verified here: mobile typecheck; phone unit tests; iOS bundle exports.
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (unchanged rows and cards). 2. One primary action: PASS (one buy button; Delete stays a plain row, red, behind a typed confirmation). 3. Chunked: PASS. 4. Native patterns: PASS. 5. Progress: N/A. 6. One accent, not colour-only: PASS (the free-week line is words in the accent colour). 7. Tokens; Dark Mode; Dynamic Type: PASS (tokens only; the line wraps). 8. Labels: PASS (unchanged; the new line is plain text read with the card). 9. Paywall: PASS (price, period and renewal terms still shown; Restore Purchases and close unchanged; no pre-selected upsell: the cheaper plan is the default).
+
+### Needs real-iPhone check
+- Premium: Monthly is selected when it opens and shows "1 week free"; tapping Yearly switches the button and terms. Account: Delete my account and Questions per set are visible without scrolling.
 ## Session 23h — 2026-10-25 — missed-topics retest fix (D-196), branch `fix/missed-retest`
 
 ### Done

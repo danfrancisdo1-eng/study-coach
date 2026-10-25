@@ -2,6 +2,16 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-25 — D-198: Account screen: Delete my account under the plan, questions per set next, sign out last
+- Dan (build 23): "take the delete and put [it] up under the restore ... Because the delete's hidden ... If Apple won't like it, they'll reject it"; "move the ten or 20 questions up there, because you can't see them ... I don't care if they can't see sign out."
+- Order now: the plan card (See Premium, Restore Purchases, Manage subscription), Delete my account (still asks the student to type DELETE before anything happens), Questions per set, a divider, then Why I built this, the replays, Privacy policy, Answer sounds, Sign out.
+- Build #104. **Decided by:** Dan.
+
+## 2026-10-25 — D-197: Paywall: Monthly first and picked by default; the free week shows on the card
+- Dan (build 23): "need to leave it on default on monthly because it's currently on annual, and it doesn't make it apparent how to get the free week ... If they want to go up the yearly, that's fine."
+- `lib/premium-ui.ts` `orderPackages`: Monthly first (picked when the screen opens), then Yearly (still with its "Save N%" badge). Replaces D-153's "Yearly picked first".
+- Each plan card with a free trial from the store shows a line under its title ("1 week free", `trialBadge`); the button still reads "Start your free week" and the terms line under it is unchanged.
+- Build #104. **Decided by:** Dan.
 ## 2026-10-25 — D-196: "Another set on the missed topics" no longer fails when the writer only rewords (session-quiz.v11)
 - Dan (build 23, AI-103): "Asked to have questions on just the ones I missed and it failed to load twice in a row" ("The coach could not write your questions just now").
 - Render log: the first part (3 questions) came back empty both times: 4 proposed → 0 valid (all dropped as near-duplicates of the last set), then 2 valid → 0 kept (both flagged as repeats). Cause: v10 told the writer to test only the 2 missed concepts, to give every question a different idea, and to avoid the original prompts; with 2 concepts it could only reword the originals.
