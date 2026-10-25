@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { Feather } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetStudySessionQueryKey, useGetStudySession, useReviewFlashcard, type StudySession } from '@workspace/api-client-react';
@@ -44,7 +45,7 @@ export function FlashcardDeck({ sessionId, userId, onFinished, onError, onStepCh
   if (sessionQuery.isLoading) return <View style={styles.card}><ActivityIndicator color={colors.primaryText} /><Text style={styles.muted}>Loading your cards…</Text></View>;
   if (!session || !deck) {
     return <View style={styles.card}><Text style={styles.muted}>Couldn’t load this deck.</Text>
-      <Pressable accessibilityRole="button" onPress={() => void sessionQuery.refetch()} style={styles.secondaryButton} testID="button-retry-deck"><Text style={styles.secondaryText}>Retry</Text></Pressable></View>;
+      <PressScale accessibilityRole="button" onPress={() => void sessionQuery.refetch()} style={styles.secondaryButton} testID="button-retry-deck"><Text style={styles.secondaryText}>Retry</Text></PressScale></View>;
   }
 
   if (deck.completedAt || !current) {
@@ -72,7 +73,7 @@ export function FlashcardDeck({ sessionId, userId, onFinished, onError, onStepCh
   return (
     <View style={styles.card} testID="panel-deck-card">
       <Text style={styles.kicker}>Flashcards · Card {done + 1} of {total}{current.results.length ? ' · again' : ''}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={flipped ? 'Card back' : 'Tap to flip'} onPress={() => setFlipped((f) => !f)} style={[styles.face, flipped && styles.faceBack]} testID="button-flip-card">
+      <PressScale scale={PRESS_SCALE.card} accessibilityRole="button" accessibilityLabel={flipped ? 'Card back' : 'Tap to flip'} onPress={() => setFlipped((f) => !f)} style={[styles.face, flipped && styles.faceBack]} testID="button-flip-card">
         <Text style={styles.faceLabel}>{flipped ? 'Answer' : 'Tap to flip'}</Text>
         {/* D-130: the questions' font; each idea on its own line with room between. */}
         <View style={styles.faceLines}>
@@ -80,15 +81,15 @@ export function FlashcardDeck({ sessionId, userId, onFinished, onError, onStepCh
             <Text key={i} style={styles.faceText}>{spansOf(line).map((sp, k) => <Text key={k} style={sp.bold ? styles.faceBold : undefined}>{sp.text}</Text>)}</Text>
           ))}
         </View>
-      </Pressable>
+      </PressScale>
       {flipped ? (
         <View style={styles.row}>
-          <Pressable accessibilityRole="button" disabled={busy} onPress={() => void mark('again')} style={[styles.againButton, busy && styles.disabled]} testID="button-card-again">
+          <PressScale scale={PRESS_SCALE.card} accessibilityRole="button" disabled={busy} onPress={() => void mark('again')} style={[styles.againButton, busy && styles.disabled]} testID="button-card-again">
             <Feather name="rotate-ccw" size={16} color={colors.foreground} /><Text style={styles.againText}>Again</Text>
-          </Pressable>
-          <Pressable accessibilityRole="button" disabled={busy} onPress={() => void mark('got')} style={[styles.gotButton, busy && styles.disabled]} testID="button-card-got">
+          </PressScale>
+          <PressScale scale={PRESS_SCALE.card} accessibilityRole="button" disabled={busy} onPress={() => void mark('got')} style={[styles.gotButton, busy && styles.disabled]} testID="button-card-got">
             <Feather name="check" size={16} color={colors.primaryForeground} /><Text style={styles.gotText}>Got it</Text>
-          </Pressable>
+          </PressScale>
         </View>
       ) : <Text style={styles.caption}>Say the answer to yourself, then flip.</Text>}
     </View>

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeIn, FadeInUp, LinearTransition, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { PRESS_SCALE, PressScale } from '@/components/PressScale';
@@ -87,7 +87,7 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
     return (
       <View style={styles.card} testID="card-live-set-error">
         <CardText style={styles.muted}>Couldn’t load this set.</CardText>
-        <Pressable accessibilityRole="button" onPress={() => void sessionQuery.refetch()} style={styles.secondaryButton} testID="button-retry-live-set"><CardText style={styles.secondaryText}>Retry</CardText></Pressable>
+        <PressScale accessibilityRole="button" onPress={() => void sessionQuery.refetch()} style={styles.secondaryButton} testID="button-retry-live-set"><CardText style={styles.secondaryText}>Retry</CardText></PressScale>
       </View>
     );
   }
@@ -133,9 +133,9 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
       );
     }
     return (
-      <Pressable accessibilityRole="button" accessibilityLabel="Report this question" disabled={!!reportingId} onPress={() => report(question)} style={styles.reportLink} testID={`button-report-${question.id}`}>
+      <PressScale accessibilityRole="button" accessibilityLabel="Report this question" disabled={!!reportingId} onPress={() => report(question)} style={styles.reportLink} testID={`button-report-${question.id}`}>
         <CardText style={styles.reportLinkText}>Looks wrong?</CardText>
-      </Pressable>
+      </PressScale>
     );
   };
 
@@ -235,14 +235,14 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
         const position = questions.indexOf(q);
         return (
           <Animated.View key={q.id} entering={FadeIn.duration(220).delay(rowDelayMs(collapsed.indexOf(q)))} layout={LinearTransition.duration(220)}>
-            <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`Question ${position + 1}, ${result === 'correct' ? 'correct' : result === 'wrong' ? 'missed' : 'answered'}: ${q.concept}`}
-              onPress={() => setExpandedId(open ? null : q.id)} style={({ pressed }) => [styles.row, pressed && styles.pressed]} testID={`row-live-${position}`}>
+            <PressScale scale={PRESS_SCALE.card} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`Question ${position + 1}, ${result === 'correct' ? 'correct' : result === 'wrong' ? 'missed' : 'answered'}: ${q.concept}`}
+              onPress={() => setExpandedId(open ? null : q.id)} style={[styles.row]} testID={`row-live-${position}`}>
               <CardText style={styles.rowNumber}>{position + 1}</CardText>
               {/* D-171: a plain mark; ten red circles in a column read as punishment. The row's label still says correct or missed. */}
               <Feather name={result === 'correct' ? 'check' : result === 'wrong' ? 'x' : 'minus'} size={16} color={result === 'correct' ? colors.correct : result === 'wrong' ? colors.wrong : colors.mutedForeground} />
               <CardText numberOfLines={open ? undefined : 1} style={styles.rowText}>{q.concept || q.prompt}</CardText>
               <Feather name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
-            </Pressable>
+            </PressScale>
             {open ? <View style={styles.rowOpen}>{questionBlock(q, position, false)}{feedbackBlock(q)}</View> : null}
           </Animated.View>
         );

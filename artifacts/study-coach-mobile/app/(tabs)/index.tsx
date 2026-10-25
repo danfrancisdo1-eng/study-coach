@@ -13,7 +13,7 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { AuroraBackground } from '@/components/AuroraBackground';
-import { PRESS_SCALE, PressScale } from '@/components/PressScale';
+import { PRESS_SCALE, PressScale, withTap } from '@/components/PressScale';
 import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { blocksOf, sectionsOf, type Block, type Span } from '@/lib/coach-text';
@@ -397,7 +397,7 @@ export default function CoachHome() {
   // Links in a coach reply open in the browser (D-045 web-search answers carry their sources).
   const URL_PATTERN = /(https?:\/\/[^\s<>()"']+[^\s<>()"'.,;:!?])/g;
   const withLinks = (text: string) => text.split(URL_PATTERN).map((part, i) => URL_PATTERN.test(part) && i % 2 === 1
-    ? <Text key={i} style={styles.link} accessibilityRole="link" onPress={() => { Linking.openURL(part).catch(() => {}); }} testID="chat-link">{part}</Text>
+    ? <Text key={i} style={styles.link} accessibilityRole="link" onPress={withTap(() => { Linking.openURL(part).catch(() => {}); })} testID="chat-link">{part}</Text>
     : part);
   // Coach replies: blank line between paragraphs; "1. Label: trick" lines become their own
   // hook chips (same ⚡ style as the question hooks; Dan: tricks ran together as one paragraph).
@@ -413,12 +413,12 @@ export default function CoachHome() {
           );
           if (block.kind === 'popquiz') return (
             // D-131: the check question as its own card, so the eye stops on it (Dan: "my eyes would read past it").
-            <Pressable key={i} accessibilityRole="button" accessibilityLabel={`Pop Quiz: ${block.spans.map((s) => s.text).join('')}. Double tap to answer.`}
+            <PressScale key={i} accessibilityRole="button" accessibilityLabel={`Pop Quiz: ${block.spans.map((s) => s.text).join('')}. Double tap to answer.`}
               onPress={() => inputRef.current?.focus()} style={styles.popQuiz} testID="chat-pop-quiz">
               <View style={styles.popQuizHead}><Feather name="help-circle" size={16} color={colors.navyText} /><Text style={styles.popQuizTitle}>Pop Quiz</Text></View>
               <Text style={styles.popQuizText}>{inline(block.spans)}</Text>
               <Text style={styles.popQuizHint}>Type your answer below.</Text>
-            </Pressable>
+            </PressScale>
           );
           if (block.kind === 'quote') return (
             // D-130: the one takeaway to remember, set apart (Dan's examples).
@@ -469,7 +469,7 @@ export default function CoachHome() {
         return (
           <View style={column ? styles.choiceColumn : styles.chipRow}>
             {parts.map(({ text: chip, label, value }) => (
-              <Pressable key={chip} accessibilityRole="button" accessibilityLabel={value !== null ? `${label}, ${value}` : undefined} disabled={busy}
+              <PressScale scale={PRESS_SCALE.card} key={chip} accessibilityRole="button" accessibilityLabel={value !== null ? `${label}, ${value}` : undefined} disabled={busy}
                 onPress={() => (isMemoryTipsChip(chip) && cardsBar ? setCardsOpen(true)
                   : chip === SIM_EXAM_CHIP && focusCourse ? router.push({ pathname: '/course/[courseId]', params: { courseId: focusCourse.id, timed: '1' } })
                   : chip === REVIEW_CHIP && focusCourse ? router.push({ pathname: '/review/[courseId]', params: { courseId: focusCourse.id } }) : void sendText(chip))}
@@ -480,7 +480,7 @@ export default function CoachHome() {
                     <Text numberOfLines={1} style={[styles.suggestionText, styles.choiceValue]}>{value}</Text>
                   </>
                 ) : <Text numberOfLines={1} style={styles.suggestionText}>{label}</Text>}
-              </Pressable>
+              </PressScale>
             ))}
           </View>
         );
@@ -502,8 +502,8 @@ export default function CoachHome() {
         </View>
       ) : action.type === 'start_quiz' && action.sessionId && action.sessionId === liveSet?.sessionId ? (
         // The latest set: a compact card that opens it over the chat (in progress) or reopens its review (graded).
-        <Pressable key={`set-${action.sessionId}`} accessibilityRole="button" onPress={() => { if (activeQuiz?.sessionId !== action.sessionId) setGradedSessionId(action.sessionId!); setStudyOpen(true); }}
-          style={({ pressed }) => [styles.setCard, pressed && styles.pressed]} testID="card-set">
+        <PressScale scale={PRESS_SCALE.card} key={`set-${action.sessionId}`} accessibilityRole="button" onPress={() => { if (activeQuiz?.sessionId !== action.sessionId) setGradedSessionId(action.sessionId!); setStudyOpen(true); }}
+          style={[styles.setCard]} testID="card-set">
           <Feather name="edit-3" size={16} color={colors.primaryText} />
           <View style={styles.setCardCopy}>
             <Text style={styles.setCardTitle}>{action.kind === 'practice' ? 'Practice set' : 'Exam set'} · {topicParts(action.topic ?? '').title}</Text>
@@ -511,7 +511,7 @@ export default function CoachHome() {
             <Text style={styles.caption}>{activeQuiz?.sessionId === action.sessionId ? `${activeQuiz.answered} of ${activeQuiz.total} answered` : `${action.count ?? ''} questions · graded`}</Text>
           </View>
           <Text style={styles.openLinkText}>{activeQuiz?.sessionId === action.sessionId ? 'Open' : 'Review'}</Text>
-        </Pressable>
+        </PressScale>
       ) : (
         <View key={`${action.type}-${action.courseId}-${action.sessionId ?? ''}`} style={styles.actionChip}>
           <Feather name={action.type === 'create_course' ? 'plus-circle' : action.type === 'start_quiz' ? 'edit-3' : action.type === 'start_flashcards' ? 'layers' : action.type === 'lookup_exam_guide' || action.type === 'web_search' ? 'search' : 'play-circle'} size={14} color={colors.primaryText} />
@@ -524,9 +524,9 @@ export default function CoachHome() {
               : `Started a session: ${action.topic ?? ''}`}
           </Text>
           {action.type === 'start_session' && action.sessionId ? (
-            <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/(tabs)/courses', params: { openSession: action.sessionId } })} style={styles.openLink} testID="button-open-session">
+            <PressScale accessibilityRole="button" onPress={() => router.push({ pathname: '/(tabs)/courses', params: { openSession: action.sessionId } })} style={styles.openLink} testID="button-open-session">
               <Text style={styles.openLinkText}>Open</Text>
-            </Pressable>
+            </PressScale>
           ) : null}
         </View>
       ))}
@@ -552,9 +552,9 @@ export default function CoachHome() {
         <View style={styles.errorCard}>
           <Text style={styles.errorTitle}>Couldn’t load your chat</Text>
           <Text style={styles.body}>{readableError(loadError)}</Text>
-          <Pressable accessibilityRole="button" onPress={() => { void stateQuery.refetch(); void chatQuery.refetch(); }} style={styles.secondaryButton} testID="button-retry-chat">
+          <PressScale accessibilityRole="button" onPress={() => { void stateQuery.refetch(); void chatQuery.refetch(); }} style={styles.secondaryButton} testID="button-retry-chat">
             <Text style={styles.secondaryButtonText}>Retry</Text>
-          </Pressable>
+          </PressScale>
         </View>
       ) : !consented ? (
         <View style={styles.consentWrap}>
@@ -563,7 +563,7 @@ export default function CoachHome() {
             {AI_NOTICE.map((line) => (
               <View key={line.icon} style={styles.consentLine}><Feather name={line.icon} size={16} color={colors.mutedForeground} style={styles.consentIcon} /><Text style={[styles.body, styles.consentText]}>{line.text}</Text></View>
             ))}
-            {PRIVACY_URL ? <Text style={[styles.body, styles.link]} accessibilityRole="link" onPress={openPrivacy} testID="link-privacy">Read the privacy policy</Text> : null}
+            {PRIVACY_URL ? <Text style={[styles.body, styles.link]} accessibilityRole="link" onPress={withTap(openPrivacy)} testID="link-privacy">Read the privacy policy</Text> : null}
             <PressScale gradient accessibilityRole="button" disabled={busy} onPress={() => void giveConsent()} style={[styles.primaryButton, busy && styles.disabled]} testID="button-ai-consent">
               <Feather name="check" size={16} color={colors.primaryForeground} />
               <Text style={styles.primaryButtonText}>I understand and consent</Text>
@@ -598,9 +598,9 @@ export default function CoachHome() {
                       { label: 'Practice set', onPress: () => void sendText('Give me a practice set on the main topics') },
                       { label: 'Show the topics', onPress: () => void sendText(`Show me the topics for ${focusCourse.name}`) },
                     ].map((chip) => (
-                      <Pressable key={chip.label} accessibilityRole="button" accessibilityHint={chip.hint} disabled={busy} onPress={chip.onPress} style={[styles.suggestion, busy && styles.disabled]} testID="button-start-chip">
+                      <PressScale key={chip.label} accessibilityRole="button" accessibilityHint={chip.hint} disabled={busy} onPress={chip.onPress} style={[styles.suggestion, busy && styles.disabled]} testID="button-start-chip">
                         <Text style={styles.suggestionText}>{chip.label}</Text>
-                      </Pressable>
+                      </PressScale>
                     ))}
                   </View>
                 </>
@@ -609,9 +609,9 @@ export default function CoachHome() {
                   <Text style={styles.body}>Hey. Which course or certification exam are we working on?</Text>
                   {!courses.length ? (
                     <View style={styles.chipRow}>
-                      <Pressable accessibilityRole="button" disabled={busy} onPress={() => router.push({ pathname: '/course-list', params: { add: '1' } })} style={[styles.suggestion, busy && styles.disabled]} testID="button-start-chip">
+                      <PressScale accessibilityRole="button" disabled={busy} onPress={() => router.push({ pathname: '/course-list', params: { add: '1' } })} style={[styles.suggestion, busy && styles.disabled]} testID="button-start-chip">
                         <Text style={styles.suggestionText}>Add a course or exam</Text>
-                      </Pressable>
+                      </PressScale>
                     </View>
                   ) : null}
                 </>
@@ -629,13 +629,13 @@ export default function CoachHome() {
         />
         {/* The one frosted panel (D-048): the "Coach · <course>" strip, which the chat scrolls under. */}
         <GlassBar style={styles.focusGlass} onLayout={(e) => setStripHeight(Math.round(e.nativeEvent.layout.height))}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Courses and exams" accessibilityHint="Choose which course the coach works on, open a course, or add one" onPress={() => (courses.length ? openCourses() : router.navigate({ pathname: '/course-list', params: { add: '1' } }))} style={({ pressed }) => [styles.focusBar, pressed && styles.pressed]} testID="button-focus-course">
+          <PressScale scale={PRESS_SCALE.card} accessibilityRole="button" accessibilityLabel="Courses and exams" accessibilityHint="Choose which course the coach works on, open a course, or add one" onPress={() => (courses.length ? openCourses() : router.navigate({ pathname: '/course-list', params: { add: '1' } }))} style={[styles.focusBar]} testID="button-focus-course">
             <Text style={styles.kicker}>{focusCourse ? 'Studying' : 'Coach'}</Text>
             <Text numberOfLines={1} style={styles.focusText}>{focusCourse ? focusCourse.name : courses.length ? 'All courses' : 'Add a course or exam'}</Text>
             {/* D-188: an exam's countdown in place of the course count, so the date is always in view. */}
             <Text style={styles.focusCount} testID="text-focus-count">{focusCourse?.kind === 'exam' && daysLeft(focusCourse.examDate) !== null ? daysLeftLabel(daysLeft(focusCourse.examDate)!) : courses.length ? `${courses.length} ${courses.length === 1 ? 'course' : 'courses'}` : ''}</Text>
             <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-          </Pressable>
+          </PressScale>
         </GlassBar>
         </View>
       )}
@@ -643,20 +643,20 @@ export default function CoachHome() {
       {/* The active question set is docked above the composer, outside the chat scroll, so every
           new question, feedback or score starts at the top of the panel (not at the chat's end). */}
       {consented && !loading && !loadError && activeStudyId && !studyOpen ? (
-        <Pressable accessibilityRole="button" onPress={() => setStudyOpen(true)} style={styles.resumeBar} testID="button-resume-study">
+        <PressScale scale={PRESS_SCALE.card} accessibilityRole="button" onPress={() => setStudyOpen(true)} style={styles.resumeBar} testID="button-resume-study">
           <Feather name={activeDeck ? 'layers' : 'edit-3'} size={16} color={colors.primaryForeground} />
           <Text style={styles.resumeText}>
             {resumeLabel(activeDeck ? { kind: 'deck', done: activeDeck.done, total: activeDeck.total } : { kind: 'quiz', answered: activeQuiz?.answered ?? 0, total: activeQuiz?.total ?? 0 })}
           </Text>
           <Feather name="chevron-right" size={18} color={colors.primaryForeground} />
-        </Pressable>
+        </PressScale>
       ) : null}
       {consented && !loading && !loadError && !activeStudyId && cardsBar ? (
-        <Pressable accessibilityRole="button" accessibilityHint="Opens your memory cards, one at a time" onPress={() => setCardsOpen(true)} style={({ pressed }) => [styles.cardsBar, pressed && styles.pressed]} testID="button-memory-cards">
+        <PressScale scale={PRESS_SCALE.card} accessibilityRole="button" accessibilityHint="Opens your memory cards, one at a time" onPress={() => setCardsOpen(true)} style={[styles.cardsBar]} testID="button-memory-cards">
           {memoryCards?.status === 'writing' ? <ActivityIndicator size="small" color={colors.hookText} /> : <Text style={styles.cardsBarIcon} accessibilityElementsHidden importantForAccessibility="no">🧠</Text>}
           <Text style={styles.cardsBarText} numberOfLines={1}>{cardsBar}</Text>
           <Feather name="chevron-right" size={18} color={colors.hookText} />
-        </Pressable>
+        </PressScale>
       ) : null}
       {cardsSessionId && userId ? (
         <MemoryCardsSheet visible={cardsOpen} view={memoryCards} sessionId={cardsSessionId} userId={userId} seen={cardsSeen} onSeen={markCardsSeen} onClose={() => setCardsOpen(false)} />
@@ -689,9 +689,9 @@ export default function CoachHome() {
               ) : null}
               {(gradedSessionId && !activeQuiz && !deckSessionId) || (finishedDeckId && !activeDeck) ? (
                 <>
-                  <Pressable accessibilityRole="button" onPress={() => { setStudyOpen(false); setGradedSessionId(null); setFinishedDeckId(null); }} style={styles.backToChat} testID="button-done-study"><Text style={styles.backToChatText}>Back to chat</Text></Pressable>
+                  <PressScale accessibilityRole="button" onPress={() => { setStudyOpen(false); setGradedSessionId(null); setFinishedDeckId(null); }} style={styles.backToChat} testID="button-done-study"><Text style={styles.backToChatText}>Back to chat</Text></PressScale>
                   {/* Dan (D-059): the review ends with a way back to the course list. */}
-                  <Pressable accessibilityRole="button" onPress={() => { setStudyOpen(false); setGradedSessionId(null); setFinishedDeckId(null); openCourses(); }} style={styles.toCourses} testID="button-done-courses"><Text style={styles.toCoursesText}>Return to course list</Text></Pressable>
+                  <PressScale accessibilityRole="button" onPress={() => { setStudyOpen(false); setGradedSessionId(null); setFinishedDeckId(null); openCourses(); }} style={styles.toCourses} testID="button-done-courses"><Text style={styles.toCoursesText}>Return to course list</Text></PressScale>
                 </>
               ) : null}
             </ScrollView>
@@ -703,9 +703,9 @@ export default function CoachHome() {
         <View style={styles.composer}>
           {error ? <Text style={styles.errorText} testID="status-chat-error">{error}</Text> : null}
           <View style={styles.composerRow}>
-            <Pressable accessibilityLabel="Add material or record a lecture" accessibilityRole="button" onPress={openPlus} style={styles.plusButton} testID="button-materials-plus">
+            <PressScale scale={PRESS_SCALE.icon} accessibilityLabel="Add material or record a lecture" accessibilityRole="button" onPress={openPlus} style={styles.plusButton} testID="button-materials-plus">
               <Feather name="plus" size={22} color={colors.primaryForeground} />
-            </Pressable>
+            </PressScale>
             {/* The gold ring spins only while the coach is writing a reply or a set (D-048). */}
             <GlowRing active={send.isPending} radius={16} style={styles.inputRing}>
             <TextInput
@@ -732,10 +732,10 @@ export default function CoachHome() {
               {courses.length > 1 ? (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                   {courses.map((course) => (
-                    <Pressable key={course.id} accessibilityRole="button" accessibilityState={{ selected: course.id === intakeCourse.id }} disabled={intakeBusy}
+                    <PressScale key={course.id} accessibilityRole="button" accessibilityState={{ selected: course.id === intakeCourse.id }} disabled={intakeBusy}
                       onPress={() => setIntakeCourseId(course.id)} style={[styles.chip, course.id === intakeCourse.id && styles.chipSelected]} testID={`chip-course-${course.id}`}>
                       <Text style={[styles.chipText, course.id === intakeCourse.id && styles.chipTextSelected]}>{course.name}</Text>
-                    </Pressable>
+                    </PressScale>
                   ))}
                 </ScrollView>
               ) : null}

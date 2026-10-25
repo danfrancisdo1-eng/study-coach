@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -179,7 +179,7 @@ export default function LectureScreen() {
       {query.error ? (
         <View style={[styles.notice, styles.margin]} accessibilityRole="alert">
           <Text style={styles.body}>Couldn’t load this lecture.</Text>
-          <Pressable accessibilityRole="button" onPress={() => void query.refetch()} style={styles.textButton}><Text style={styles.link}>Try again</Text></Pressable>
+          <PressScale accessibilityRole="button" onPress={() => void query.refetch()} style={styles.textButton}><Text style={styles.link}>Try again</Text></PressScale>
         </View>
       ) : null}
 
@@ -209,7 +209,7 @@ export default function LectureScreen() {
                   label={progress < 1 ? `Uploading ${Math.round(progress * 100)}%` : `Transcribing · ${timeLeftText(elapsed, expected)}`} />;
               })()}
               <Text style={styles.body}>Long lectures can take a few minutes. Keep RapidRecall AI open.</Text>
-              <Pressable accessibilityRole="button" onPress={() => abort.current?.abort()} style={styles.textButton} testID="button-cancel-transcribe"><Text style={styles.link}>Cancel</Text></Pressable>
+              <PressScale accessibilityRole="button" onPress={() => abort.current?.abort()} style={styles.textButton} testID="button-cancel-transcribe"><Text style={styles.link}>Cancel</Text></PressScale>
             </View>
           ) : null}
 
@@ -229,9 +229,9 @@ export default function LectureScreen() {
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Transcript</Text>
                 {!editing ? (
-                  <Pressable accessibilityRole="button" accessibilityLabel="Edit transcript" onPress={() => setEditing(true)} style={styles.textButton} testID="button-edit-transcript"><Text style={styles.link}>{lecture.status === 'reviewed' ? 'Edit' : 'Edit text'}</Text></Pressable>
+                  <PressScale accessibilityRole="button" accessibilityLabel="Edit transcript" onPress={() => setEditing(true)} style={styles.textButton} testID="button-edit-transcript"><Text style={styles.link}>{lecture.status === 'reviewed' ? 'Edit' : 'Edit text'}</Text></PressScale>
                 ) : (
-                  <Pressable accessibilityRole="button" accessibilityLabel="Done editing" onPress={() => { Keyboard.dismiss(); setEditing(false); }} style={styles.textButton} testID="button-done-editing"><Text style={styles.link}>Done</Text></Pressable>
+                  <PressScale accessibilityRole="button" accessibilityLabel="Done editing" onPress={() => { Keyboard.dismiss(); setEditing(false); }} style={styles.textButton} testID="button-done-editing"><Text style={styles.link}>Done</Text></PressScale>
                 )}
               </View>
               {lecture.status === 'reviewed' && !editing ? <Text style={styles.caption}>Used as course material for tutoring and quizzes.</Text> : null}
@@ -251,13 +251,13 @@ export default function LectureScreen() {
 
           <View style={styles.dangerZone}>
             {hasAudio ? (
-              <Pressable accessibilityRole="button" onPress={confirmDeleteAudio} disabled={busy !== null} style={styles.textButton} testID="button-delete-audio">
+              <PressScale accessibilityRole="button" onPress={confirmDeleteAudio} disabled={busy !== null} style={styles.textButton} testID="button-delete-audio">
                 <Text style={styles.dangerLink}>Delete recording from this iPhone</Text>
-              </Pressable>
+              </PressScale>
             ) : null}
-            <Pressable accessibilityRole="button" onPress={confirmDeleteLecture} disabled={busy !== null} style={styles.textButton} testID="button-delete-lecture">
+            <PressScale accessibilityRole="button" onPress={confirmDeleteLecture} disabled={busy !== null} style={styles.textButton} testID="button-delete-lecture">
               <Text style={styles.dangerLink}>Delete lecture</Text>
-            </Pressable>
+            </PressScale>
           </View>
         </ScrollView>
       ) : null}

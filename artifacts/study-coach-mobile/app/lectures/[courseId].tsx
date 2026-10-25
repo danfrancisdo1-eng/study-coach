@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -14,7 +14,7 @@ import { createLecture, getListLecturesQueryKey, useListLectures, type LectureSu
 import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
 import { AuroraBackground } from '@/components/AuroraBackground';
-import { PressScale } from '@/components/PressScale';
+import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import {
   formatDuration, normalizedTitle, recordedSeconds, recordingLimitState, spokenDuration, type PendingRecording,
@@ -240,9 +240,9 @@ export default function CourseLecturesScreen() {
               </View>
             ))}
             {phase.kind === 'idle' ? (
-              <Pressable accessibilityRole="button" onPress={() => void uploadPending(pending)} style={styles.textButton} testID="button-retry-pending">
+              <PressScale accessibilityRole="button" onPress={() => void uploadPending(pending)} style={styles.textButton} testID="button-retry-pending">
                 <Text style={styles.link}>Try adding them now</Text>
-              </Pressable>
+              </PressScale>
             ) : null}
           </View>
         ) : null}
@@ -253,7 +253,7 @@ export default function CourseLecturesScreen() {
           {lectures.error ? (
             <View style={styles.notice} accessibilityRole="alert">
               <Text style={styles.body}>Couldn’t load your lectures.</Text>
-              <Pressable accessibilityRole="button" onPress={() => void lectures.refetch()} style={styles.textButton}><Text style={styles.link}>Try again</Text></Pressable>
+              <PressScale accessibilityRole="button" onPress={() => void lectures.refetch()} style={styles.textButton}><Text style={styles.link}>Try again</Text></PressScale>
             </View>
           ) : null}
           {!lectures.isLoading && !lectures.error && items.length === 0 && !pending.length ? (
@@ -263,11 +263,11 @@ export default function CourseLecturesScreen() {
             const status = STATUS_LABEL[item.status];
             const onPhone = Boolean(lectureAudio(item.id));
             return (
-              <Pressable
+              <PressScale scale={PRESS_SCALE.card}
                 key={item.id} accessibilityRole="button" disabled={recording}
                 accessibilityLabel={`${item.title}, ${spokenDuration(item.durationSeconds)}, ${status.label}`}
                 onPress={() => router.push({ pathname: '/lecture/[id]', params: { id: item.id, courseName: courseName ?? '' } })}
-                style={({ pressed }) => [styles.row, pressed && styles.pressed]} testID={`row-lecture-${item.id}`}
+                style={[styles.row]} testID={`row-lecture-${item.id}`}
               >
                 <Feather name={status.icon} size={18} color={item.status === 'reviewed' ? colors.accentForeground : colors.mutedForeground} />
                 <View style={styles.rowCopy}>
@@ -277,7 +277,7 @@ export default function CourseLecturesScreen() {
                   </Text>
                 </View>
                 <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-              </Pressable>
+              </PressScale>
             );
           })}
         </View>
@@ -292,11 +292,11 @@ export default function CourseLecturesScreen() {
           <>
             {!recording ? <Text style={styles.caption}>Only record where your instructor and classmates allow it.</Text> : null}
             {recording ? (
-              <Pressable accessibilityRole="button" accessibilityLabel={paused ? 'Resume recording' : 'Pause recording'} onPress={togglePause}
-                style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]} testID="button-pause-recording">
+              <PressScale accessibilityRole="button" accessibilityLabel={paused ? 'Resume recording' : 'Pause recording'} onPress={togglePause}
+                style={[styles.secondaryButton]} testID="button-pause-recording">
                 <Feather name={paused ? 'mic' : 'pause'} size={18} color={colors.foreground} />
                 <Text style={styles.secondaryText}>{paused ? 'Resume' : 'Pause'}</Text>
-              </Pressable>
+              </PressScale>
             ) : null}
             <PressScale gradient
               accessibilityRole="button" accessibilityLabel={recording ? 'Stop recording' : 'Record lecture'} disabled={busy}

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 
@@ -40,9 +41,9 @@ export function ScreenHeader({ title, kicker, subtitle, leading = 'none', onLead
   return (
     <View style={[styles.header, leading === 'none' && !mark && styles.headerFlush, divider && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }, style]} testID={testID}>
       {leading !== 'none' ? (
-        <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={leadingDisabled} onPress={onLeading} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]} testID={leadingTestID ?? (leading === 'close' ? 'button-close' : 'button-back')}>
+        <PressScale scale={PRESS_SCALE.icon} accessibilityRole="button" accessibilityLabel={label} disabled={leadingDisabled} onPress={onLeading} style={[styles.iconButton]} testID={leadingTestID ?? (leading === 'close' ? 'button-close' : 'button-back')}>
           <Feather name={icon} size={24} color={leadingDisabled ? colors.mutedForeground : colors.foreground} />
-        </Pressable>
+        </PressScale>
       ) : null}
       {mark}
       <View style={styles.copy}>
@@ -59,9 +60,9 @@ export function ScreenHeader({ title, kicker, subtitle, leading = 'none', onLead
 export function HeaderIconButton({ icon, label, onPress, disabled, testID }: { icon: React.ComponentProps<typeof Feather>['name']; label: string; onPress: () => void; disabled?: boolean; testID?: string }) {
   const colors = useColors();
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]} testID={testID}>
+    <PressScale scale={PRESS_SCALE.icon} accessibilityRole="button" accessibilityLabel={label} disabled={disabled} onPress={onPress} style={[styles.iconButton]} testID={testID}>
       <Feather name={icon} size={20} color={disabled ? colors.mutedForeground : colors.foreground} />
-    </Pressable>
+    </PressScale>
   );
 }
 
@@ -69,10 +70,10 @@ export function HeaderIconButton({ icon, label, onPress, disabled, testID }: { i
 export function HeaderTextButton({ icon, label, onPress, disabled, testID }: { icon?: React.ComponentProps<typeof Feather>['name']; label: string; onPress: () => void; disabled?: boolean; testID?: string }) {
   const colors = useColors();
   return (
-    <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.textButton, pressed && styles.pressed]} testID={testID}>
+    <PressScale accessibilityRole="button" disabled={disabled} onPress={onPress} style={[styles.textButton]} testID={testID}>
       {icon ? <Feather name={icon} size={16} color={colors.primaryText} /> : null}
       <Text style={[styles.textButtonLabel, { color: colors.primaryText }]}>{label}</Text>
-    </Pressable>
+    </PressScale>
   );
 }
 

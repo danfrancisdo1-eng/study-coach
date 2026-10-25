@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Linking, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { PRESS_SCALE, PressScale, withTap } from '@/components/PressScale';
 import { Redirect, router } from 'expo-router';
 import { useAuth, useClerk } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
@@ -97,14 +98,14 @@ export default function AccountScreen() {
   };
 
   const row = (icon: React.ComponentProps<typeof Feather>['name'], label: string, caption: string, onPress: () => void, testID: string, danger = false) => (
-    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.row, pressed && styles.pressed]} testID={testID}>
+    <PressScale scale={PRESS_SCALE.card} accessibilityRole="button" onPress={onPress} style={[styles.row]} testID={testID}>
       <Feather name={icon} size={18} color={danger ? colors.destructive : colors.mutedForeground} />
       <View style={styles.rowCopy}>
         <Text style={[styles.rowName, danger && { color: colors.destructive }]}>{label}</Text>
         <Text style={styles.caption}>{caption}</Text>
       </View>
       {danger ? null : <Feather name="chevron-right" size={18} color={colors.mutedForeground} />}
-    </Pressable>
+    </PressScale>
   );
 
   return (
@@ -115,10 +116,10 @@ export default function AccountScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 30 }]} onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 4)} scrollEventThrottle={32}>
         <View style={styles.planCard} testID="panel-plan">
           <Text style={styles.rowName}>{planLine(status)}</Text>
-          {status?.plan !== 'premium' ? <Pressable accessibilityRole="button" onPress={() => router.push('/premium')} style={({ pressed }) => [styles.planButton, pressed && styles.pressed]} testID="button-see-premium"><Text style={styles.planButtonText}>See Premium</Text></Pressable> : null}
+          {status?.plan !== 'premium' ? <PressScale accessibilityRole="button" onPress={() => router.push('/premium')} style={[styles.planButton]} testID="button-see-premium"><Text style={styles.planButtonText}>See Premium</Text></PressScale> : null}
           <View style={styles.planLinks}>
-            <Text style={styles.planLink} accessibilityRole="button" onPress={() => void restorePurchases()} testID="button-restore-purchases">{restoring ? 'Restoring…' : 'Restore Purchases'}</Text>
-            {status?.plan === 'premium' && status.source === 'revenuecat' ? <Text style={styles.planLink} accessibilityRole="link" onPress={() => void Linking.openURL(MANAGE_SUBSCRIPTIONS_URL)} testID="link-manage-subscription">Manage subscription</Text> : null}
+            <Text style={styles.planLink} accessibilityRole="button" onPress={withTap(() => void restorePurchases())} testID="button-restore-purchases">{restoring ? 'Restoring…' : 'Restore Purchases'}</Text>
+            {status?.plan === 'premium' && status.source === 'revenuecat' ? <Text style={styles.planLink} accessibilityRole="link" onPress={withTap(() => void Linking.openURL(MANAGE_SUBSCRIPTIONS_URL))} testID="link-manage-subscription">Manage subscription</Text> : null}
           </View>
           {!purchasesAvailable() ? <Text style={styles.caption}>Purchases aren't available right now.</Text> : null}
           {planNote ? <Text style={styles.caption} accessibilityRole="alert">{planNote}</Text> : null}
@@ -135,10 +136,10 @@ export default function AccountScreen() {
           </View>
           <View style={styles.segment} accessibilityRole="radiogroup" accessibilityLabel="Questions per set">
             {([10, 20] as const).map((size) => (
-              <Pressable key={size} accessibilityRole="radio" accessibilityState={{ selected: setSize === size }} accessibilityLabel={`${size} questions`} disabled={putState.isPending || !stateQuery.data}
+              <PressScale key={size} accessibilityRole="radio" accessibilityState={{ selected: setSize === size }} accessibilityLabel={`${size} questions`} disabled={putState.isPending || !stateQuery.data}
                 onPress={() => void chooseSetSize(size)} style={[styles.segmentItem, setSize === size && styles.segmentOn]} testID={`button-set-size-${size}`}>
                 <Text style={[styles.segmentText, setSize === size && styles.segmentTextOn]}>{size}</Text>
-              </Pressable>
+              </PressScale>
             ))}
           </View>
         </View>
@@ -178,9 +179,9 @@ export default function AccountScreen() {
             <Text style={styles.caption}>Type DELETE to confirm</Text>
             <TextInput value={deleteWord} onChangeText={setDeleteWord} autoCapitalize="characters" autoCorrect={false} placeholder="DELETE" placeholderTextColor={colors.mutedForeground} style={styles.input} accessibilityLabel="Type DELETE to confirm" testID="input-delete-word" autoFocus />
             {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
-            <Pressable accessibilityRole="button" disabled={deleteWord.trim() !== 'DELETE' || deleteAccount.isPending} onPress={() => void removeAccount()} style={[styles.primaryButton, { backgroundColor: colors.destructive }, (deleteWord.trim() !== 'DELETE' || deleteAccount.isPending) && styles.disabled]} testID="button-confirm-delete">
+            <PressScale accessibilityRole="button" disabled={deleteWord.trim() !== 'DELETE' || deleteAccount.isPending} onPress={() => void removeAccount()} style={[styles.primaryButton, { backgroundColor: colors.destructive }, (deleteWord.trim() !== 'DELETE' || deleteAccount.isPending) && styles.disabled]} testID="button-confirm-delete">
               <Text style={[styles.primaryButtonText, { color: '#ffffff' }]}>{deleteAccount.isPending ? 'Deleting…' : 'Delete everything'}</Text>
-            </Pressable>
+            </PressScale>
           </View>
         </KeyboardAvoidingView>
       </Modal>

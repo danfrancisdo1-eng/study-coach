@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -48,14 +49,14 @@ export default function IntroScreen() {
       <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} allowsPictureInPicture={false} />
       <Pressable style={StyleSheet.absoluteFill} onPress={toggleSound} accessibilityRole="button" accessibilityLabel={muted ? 'Turn the sound on' : 'Turn the sound off'} testID="button-intro-sound" />
       <View style={[styles.topBar, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
-        <Pressable onPress={toggleSound} style={styles.pill} accessibilityRole="button" accessibilityLabel={muted ? 'Turn the sound on' : 'Turn the sound off'}>
+        <PressScale scale={PRESS_SCALE.icon} onPress={toggleSound} style={styles.pill} accessibilityRole="button" accessibilityLabel={muted ? 'Turn the sound on' : 'Turn the sound off'}>
           <Feather name={muted ? 'volume-x' : 'volume-2'} size={18} color="#fff" />
           <Text style={styles.pillText}>{muted ? 'Unmute' : 'Mute'}</Text>
-        </Pressable>
-        <Pressable onPress={() => void leave()} style={styles.pill} accessibilityRole="button" testID="button-intro-skip">
+        </PressScale>
+        <PressScale scale={PRESS_SCALE.icon} onPress={() => void leave()} style={styles.pill} accessibilityRole="button" testID="button-intro-skip">
           <Text style={styles.pillText}>Skip</Text>
           <Feather name="chevron-right" size={18} color="#fff" />
-        </Pressable>
+        </PressScale>
       </View>
     </View>
   );

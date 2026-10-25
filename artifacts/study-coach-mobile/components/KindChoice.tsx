@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { PressScale } from '@/components/PressScale';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming, interpolateColor } from 'react-native-reanimated';
 import { useColors } from '@/hooks/useColors';
 
@@ -29,9 +30,9 @@ export function KindChoice({ value, onChange }: { value: CourseKindChoice | null
     const selected = value === kind;
     return (
       <Animated.View style={[styles.item, { backgroundColor: selected ? colors.primary : colors.card, borderColor: selected ? colors.primary : waiting && reduceMotion ? colors.primaryText : colors.border }, waiting && !reduceMotion ? animated : null]}>
-        <Pressable accessibilityRole="radio" accessibilityState={{ selected }} accessibilityLabel={label} onPress={() => onChange(kind)} style={styles.press} testID={`button-kind-${kind}`}>
+        <PressScale accessibilityRole="radio" accessibilityState={{ selected }} accessibilityLabel={label} onPress={() => onChange(kind)} style={styles.press} testID={`button-kind-${kind}`}>
           <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.text, { color: selected ? colors.primaryForeground : colors.foreground }]}>{label}</Text>
-        </Pressable>
+        </PressScale>
       </Animated.View>
     );
   };

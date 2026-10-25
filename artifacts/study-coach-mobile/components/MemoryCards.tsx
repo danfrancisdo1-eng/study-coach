@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
@@ -132,9 +133,9 @@ export function MemoryCardsSheet({ visible, view, sessionId, userId, seen, onSee
                     <Text style={styles.label}>Lock it in</Text>
                     <Text style={styles.prompt}>{card.lockIn.prompt}</Text>
                     {shown ? <Text style={styles.body} testID="text-lock-in-answer">{card.lockIn.answer}</Text> : (
-                      <Pressable accessibilityRole="button" accessibilityHint="Answer it in your head first" onPress={() => setShown(true)} style={({ pressed }) => [styles.showButton, pressed && styles.pressed]} testID="button-show-answer">
+                      <PressScale accessibilityRole="button" accessibilityHint="Answer it in your head first" onPress={() => setShown(true)} style={[styles.showButton]} testID="button-show-answer">
                         <Text style={styles.showText}>Show answer</Text>
-                      </Pressable>
+                      </PressScale>
                     )}
                   </View>
                 ) : null}
@@ -142,9 +143,9 @@ export function MemoryCardsSheet({ visible, view, sessionId, userId, seen, onSee
                   <View style={styles.concern} testID="card-key-concern">
                     <Text style={styles.caption}>The coach isn't sure this answer key is right: {card.keyConcern}</Text>
                     {rechecked[card.questionId] === 'sent' ? <Text style={styles.caption}>Re-check requested. It shows on the question in your set.</Text> : (
-                      <Pressable accessibilityRole="button" disabled={flag.isPending} onPress={() => void recheck()} style={styles.linkButton} testID="button-recheck-key">
+                      <PressScale accessibilityRole="button" disabled={flag.isPending} onPress={() => void recheck()} style={styles.linkButton} testID="button-recheck-key">
                         <Text style={styles.link}>{rechecked[card.questionId] === 'failed' ? "Couldn't send. Try again" : 'Ask for a re-check'}</Text>
-                      </Pressable>
+                      </PressScale>
                     )}
                   </View>
                 ) : null}
@@ -152,9 +153,9 @@ export function MemoryCardsSheet({ visible, view, sessionId, userId, seen, onSee
             </ScrollView>
             <View style={styles.footer}>
               {index > 0 ? (
-                <Pressable accessibilityRole="button" accessibilityLabel="Previous card" onPress={() => go(index - 1)} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]} testID="button-card-back">
+                <PressScale scale={PRESS_SCALE.icon} accessibilityRole="button" accessibilityLabel="Previous card" onPress={() => go(index - 1)} style={[styles.backButton]} testID="button-card-back">
                   <Feather name="chevron-left" size={22} color={colors.foreground} />
-                </Pressable>
+                </PressScale>
               ) : null}
               <View style={styles.flex}>
                 <ActionButton label={last ? 'Done' : 'Next card'} icon={last ? 'check' : 'arrow-right'} onPress={() => (last ? onClose() : go(index + 1))} testID={last ? 'button-cards-done' : 'button-card-next'} />

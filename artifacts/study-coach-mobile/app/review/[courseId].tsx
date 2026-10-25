@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { PressScale } from '@/components/PressScale';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@clerk/expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -121,17 +122,17 @@ export default function ReviewSheetScreen() {
       {error ? (
         <View style={[styles.content, styles.waiting]}>
           <Text style={styles.errorText} accessibilityRole="alert">{error}</Text>
-          {!sheet ? <Pressable accessibilityRole="button" onPress={() => void build()} style={styles.secondary} testID="button-retry-review"><Text style={styles.secondaryText}>Try again</Text></Pressable> : null}
+          {!sheet ? <PressScale accessibilityRole="button" onPress={() => void build()} style={styles.secondary} testID="button-retry-review"><Text style={styles.secondaryText}>Try again</Text></PressScale> : null}
         </View>
       ) : null}
       {pdfUri ? (
         <View style={[styles.footer, styles.footerRow, { paddingBottom: insets.bottom + 12 }]}>
-          <Pressable accessibilityRole="button" disabled={printing} onPress={() => void print()} style={({ pressed }) => [styles.secondary, styles.footerButton, pressed && styles.pressed, printing && styles.disabled]} testID="button-print-pdf">
+          <PressScale accessibilityRole="button" disabled={printing} onPress={() => void print()} style={[styles.secondary, styles.footerButton, printing && styles.disabled]} testID="button-print-pdf">
             <Feather name="printer" size={18} color={colors.foreground} /><Text style={styles.secondaryText}>Print</Text>
-          </Pressable>
-          <Pressable accessibilityRole="button" disabled={sharing} onPress={() => void share()} style={({ pressed }) => [styles.primary, styles.footerButton, pressed && styles.pressed, sharing && styles.disabled]} testID="button-share-pdf">
+          </PressScale>
+          <PressScale accessibilityRole="button" disabled={sharing} onPress={() => void share()} style={[styles.primary, styles.footerButton, sharing && styles.disabled]} testID="button-share-pdf">
             {sharing ? <ActivityIndicator color={colors.primaryForeground} /> : <><Feather name="share" size={18} color={colors.primaryForeground} /><Text style={styles.primaryText}>Save or share</Text></>}
-          </Pressable>
+          </PressScale>
         </View>
       ) : null}
     </View>

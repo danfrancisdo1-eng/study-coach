@@ -1,17 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Image,
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Keyboard,
-  Modal,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Image, ActivityIndicator, Alert, FlatList, Keyboard, Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { CourseManager, type ManagedMaterial } from '@/components/CourseManager';
 import { AuroraBackground } from '@/components/AuroraBackground';
@@ -126,9 +115,9 @@ function Header({ title, subtitle, onBack, onSignOut }: {
   return (
     <View style={styles.header}>
       {onBack ? (
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" testID="button-back-home" onPress={onBack} style={styles.iconButton}>
+        <PressScale scale={PRESS_SCALE.icon} accessibilityRole="button" accessibilityLabel="Back" testID="button-back-home" onPress={onBack} style={styles.iconButton}>
           <Feather name="arrow-left" size={19} color={colors.foreground} />
-        </Pressable>
+        </PressScale>
       ) : (
         <Image source={require('@/assets/images/app-icon.png')} style={styles.brandMark} accessibilityLabel="RapidRecall AI logo" />
       )}
@@ -136,9 +125,9 @@ function Header({ title, subtitle, onBack, onSignOut }: {
         <Text style={styles.brand}>RapidRecall AI</Text>
         <Text numberOfLines={1} style={styles.headerSub}>{subtitle || title}</Text>
       </View>
-      <Pressable accessibilityLabel="Sign out" accessibilityRole="button" testID="button-sign-out" onPress={onSignOut} style={styles.iconButton}>
+      <PressScale scale={PRESS_SCALE.icon} accessibilityLabel="Sign out" accessibilityRole="button" testID="button-sign-out" onPress={onSignOut} style={styles.iconButton}>
         <Feather name="log-out" size={18} color={colors.foreground} />
-      </Pressable>
+      </PressScale>
     </View>
   );
 }
@@ -806,10 +795,10 @@ function StudyCoach() {
         </View>
         {questions.map((question, index) => (
           <View key={question.id} style={[styles.card, selectedQuestionId === question.id && styles.currentQuestion, question.flag && styles.flaggedQuestion]} testID={`question-${question.id}`}>
-            <Pressable onPress={() => setSelectedQuestionId(question.id)} accessibilityRole="button" testID={`button-select-question-${question.id}`}>
+            <PressScale onPress={() => setSelectedQuestionId(question.id)} accessibilityRole="button" testID={`button-select-question-${question.id}`}>
               <Text style={styles.kicker}>QUESTION {index + 1} / {questions.length}</Text>
               <Text style={styles.cardTitle}>{question.prompt}</Text>
-            </Pressable>
+            </PressScale>
             {question.flag ? (
               <View style={styles.flagStatus} testID={`question-flag-status-${question.id}`}>
                 <Text style={styles.kicker}>{question.flag.kind === 'ambiguous' ? 'REPORTED AMBIGUOUS' : 'REPORTED INVALID'} · EXCLUDED</Text>
@@ -843,7 +832,7 @@ function StudyCoach() {
                     ['invalid', 'Invalid'],
                     ['ambiguous', 'Ambiguous or unclear'],
                   ] as const).map(([kind, label]) => (
-                    <Pressable
+                    <PressScale
                       key={kind}
                       accessibilityRole="radio"
                       accessibilityState={{ checked: flagKind === kind }}
@@ -853,7 +842,7 @@ function StudyCoach() {
                       testID={`button-flag-kind-${question.id}-${kind}`}
                     >
                       <Text style={styles.body}>{label}</Text>
-                    </Pressable>
+                    </PressScale>
                   ))}
                 </View>
                 <TextInput
@@ -890,7 +879,7 @@ function StudyCoach() {
               </View>
             ) : null}
             {question.options.map((option, optionIndex) => (
-              <Pressable
+              <PressScale
                 key={option.id}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: question.answer?.optionId === option.id }}
@@ -906,10 +895,10 @@ function StudyCoach() {
               >
                 <Text style={styles.optionLetter}>{String.fromCharCode(65 + optionIndex)}</Text>
                 <Text style={styles.optionText}>{option.text}</Text>
-              </Pressable>
+              </PressScale>
             ))}
             {question.answer ? (
-              <Pressable
+              <PressScale scale={PRESS_SCALE.card}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: question.answer.assisted }}
                 testID={`checkbox-assisted-${question.id}`}
@@ -919,7 +908,7 @@ function StudyCoach() {
               >
                 <Feather name={question.answer.assisted ? 'check-square' : 'square'} size={18} color={colors.primary} />
                 <Text style={styles.body}>Mark this answer as assisted</Text>
-              </Pressable>
+              </PressScale>
             ) : null}
           </View>
         ))}
@@ -955,12 +944,12 @@ function StudyCoach() {
       {sessions.slice(0, 8).map((item) => {
         const sessionCourse = courses.find((entry) => entry.id === item.courseId);
         return (
-          <Pressable
+          <PressScale scale={PRESS_SCALE.card}
             key={item.id}
             accessibilityRole="button"
             testID={`button-resume-session-${item.id}`}
             onPress={() => void resumeSession(item)}
-            style={({ pressed }) => [styles.sessionRow, pressed && styles.pressed]}
+            style={[styles.sessionRow]}
           >
             <View style={styles.sessionIcon}><Feather name={item.status === 'active' ? 'play' : 'check'} size={16} color={colors.primary} /></View>
             <View style={styles.sessionCopy}>
@@ -970,7 +959,7 @@ function StudyCoach() {
             <Text style={[styles.sessionStatus, { color: item.status === 'active' ? colors.primary : colors.accentForeground }]}>
               {item.status === 'active' ? 'Resume' : `${item.diagnosticScore ?? item.targetedScore ?? 'Review'}${typeof item.diagnosticScore === 'number' || typeof item.targetedScore === 'number' ? '%' : ''}`}
             </Text>
-          </Pressable>
+          </PressScale>
         );
       })}
     </View>
@@ -1028,16 +1017,16 @@ function StudyCoach() {
                   </View>
                 ) : courses.map((item) => (
                   <View key={item.id} style={[styles.courseRow, selectedCourseId === item.id && styles.courseSelected]} testID={`row-course-${item.id}`}>
-                    <Pressable accessibilityRole="radio" accessibilityState={{ checked: selectedCourseId === item.id }} testID={`button-select-course-${item.id}`} style={styles.coursePick} onPress={() => setSelectedCourseId(item.id)}>
+                    <PressScale scale={PRESS_SCALE.card} accessibilityRole="radio" accessibilityState={{ checked: selectedCourseId === item.id }} testID={`button-select-course-${item.id}`} style={styles.coursePick} onPress={() => setSelectedCourseId(item.id)}>
                       <View style={styles.courseBullet}><Feather name={selectedCourseId === item.id ? 'check-circle' : 'circle'} size={20} color={selectedCourseId === item.id ? colors.primary : colors.mutedForeground} /></View>
                       <View style={styles.sessionCopy}><Text style={styles.courseName}>{item.name}</Text>{item.code ? <Text style={styles.caption}>{item.code}</Text> : null}</View>
-                    </Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel={`Lectures for ${item.name}`} testID={`button-lectures-${item.id}`} onPress={() => router.push({ pathname: '/lectures/[courseId]', params: { courseId: item.id, courseName: item.name } })} style={styles.iconButton}>
+                    </PressScale>
+                    <PressScale scale={PRESS_SCALE.icon} accessibilityRole="button" accessibilityLabel={`Lectures for ${item.name}`} testID={`button-lectures-${item.id}`} onPress={() => router.push({ pathname: '/lectures/[courseId]', params: { courseId: item.id, courseName: item.name } })} style={styles.iconButton}>
                       <Feather name="mic" size={18} color={colors.foreground} />
-                    </Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel={`Edit ${item.name}`} testID={`button-edit-course-${item.id}`} onPress={() => { setEditingCourseId(item.id); setEditCourseName(item.name); }} style={styles.iconButton}>
+                    </PressScale>
+                    <PressScale scale={PRESS_SCALE.icon} accessibilityRole="button" accessibilityLabel={`Edit ${item.name}`} testID={`button-edit-course-${item.id}`} onPress={() => { setEditingCourseId(item.id); setEditCourseName(item.name); }} style={styles.iconButton}>
                       <Feather name="edit-2" size={16} color={colors.mutedForeground} />
-                    </Pressable>
+                    </PressScale>
                   </View>
                 ))}
                 {editingCourseId ? (
@@ -1063,7 +1052,7 @@ function StudyCoach() {
                 <View style={styles.consentCard} testID="panel-ai-consent">
                   <View style={styles.consentHeading}><Feather name="shield" size={19} color={colors.accentForeground} /><Text style={styles.cardTitle}>Your choice before AI</Text></View>
                   <Text style={styles.body}>RapidRecall AI sends the topic, your messages, selected course materials and your quiz answers to Anthropic Claude to teach, write practice and explain results; lecture recordings are transcribed by OpenAI. AI can make mistakes; check explanations. To withdraw, delete your account in Account.</Text>
-                  <Pressable
+                  <PressScale
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: savedState.aiConsent === true }}
                     testID="checkbox-ai-consent"
@@ -1073,7 +1062,7 @@ function StudyCoach() {
                   >
                     <Feather name={savedState.aiConsent === true ? 'check-square' : 'square'} size={21} color={colors.primary} />
                     <Text style={styles.body}>{savedState.aiConsent === true ? 'I consent to AI-assisted study' : 'I understand and consent to AI-assisted study'}</Text>
-                  </Pressable>
+                  </PressScale>
                 </View>
                 <View style={styles.startCard}>
                   <Text style={styles.kicker}>START A SESSION</Text>
@@ -1108,15 +1097,15 @@ function StudyCoach() {
         ) : null}
       />
       {view === 'session' && session ? <>
-        <Pressable accessibilityRole="button" accessibilityLabel="Add study materials" testID="button-materials-plus"
+        <PressScale accessibilityRole="button" accessibilityLabel="Add study materials" testID="button-materials-plus"
           onPress={() => setMaterialsOpen(true)} style={[styles.materialsPlus, { bottom: Math.max(insets.bottom, 16) + 12 }]}>
           <Feather name="plus" size={27} color={colors.background} />
-        </Pressable>
+        </PressScale>
         <Modal visible={materialsOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setMaterialsOpen(false)}>
           <KeyboardAvoidingView behavior="padding" style={[styles.page, { paddingTop: 20 }]}>
             <View style={styles.header}>
               <View style={styles.headerCopy}><Text style={styles.sectionTitle}>Add materials</Text><Text style={styles.caption}>{course?.name}</Text></View>
-              <Pressable accessibilityRole="button" accessibilityLabel="Close materials" onPress={() => setMaterialsOpen(false)} style={styles.iconButton}><Feather name="x" size={24} color={colors.foreground} /></Pressable>
+              <PressScale scale={PRESS_SCALE.icon} accessibilityRole="button" accessibilityLabel="Close materials" onPress={() => setMaterialsOpen(false)} style={styles.iconButton}><Feather name="x" size={24} color={colors.foreground} /></PressScale>
             </View>
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
               {renderMaterialExtractionControls(false)}

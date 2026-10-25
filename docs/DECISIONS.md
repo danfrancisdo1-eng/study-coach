@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-25 — D-200: Every button squashes and ticks when tapped
+- Dan: "Why doesn't all of our buttons move and give haptic when pressed?" / "Yes. Go ahead. No buzzer but with haptics."
+- D-179's PressScale (squash on press, light haptic) was only on the main buttons, answer cards and course cards (9 screens); about 100 other tappable things (chips, Account rows, header icons, sign-in/up, flashcards, OneDrive, memory cards, lectures, review sheet, course page) used a plain Pressable that only dimmed.
+- Now every tappable control is a PressScale: buttons and chips squash to 0.96, rows, cards and bars to 0.98 (big rows don't jump), small icons to 0.92. Text links inside sentences (privacy policy, terms, Restore Purchases, chat links) and the tab bar tick too (`withTap`, `tapHaptic`). Haptics only; no sounds.
+- The tick now fires when the tap lands (on press), not on first touch, so starting a scroll on a button never ticks. Answer cards keep their own right/wrong pattern; the squash still starts on touch.
+- Left plain on purpose: full-screen tap areas (intro video sound, the "tick 13+ first" covers, the dimmed area behind the study sheet), the chat bubble's press-and-hold to report, and the crash screen. Reduce Motion: controls dim instead of moving, as before.
+- Build #106. **Decided by:** Dan.
+
 ## 2026-10-25 — D-199: A deleted account starts fresh: intro video, tour, sign-up
 - Dan (build 23): "I just deleted an account and made a new one and it skipped the intro video and welcome tour."
 - Cause: account deletion used the sign-out path, which since D-191 goes straight to the sign-in page.
