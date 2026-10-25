@@ -300,7 +300,7 @@ export default function CourseScreen() {
               <ActionButton fill label="Ask the coach" icon="message-circle" secondary onPress={talkToCoach} testID="button-action-chat" />
               <ActionButton fill label="Simulated exam" icon="clock" secondary onPress={() => (isExam ? setTimedPicker(true) : startWithCoach('exam', null))} testID="button-action-exam" />
               <ActionButton fill label="Flashcards" icon="layers" secondary onPress={() => setPicker('flashcards')} testID="button-action-flashcards" />
-              <ActionButton fill label="Memory tricks" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
+              <ActionButton fill label="Memory tips" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
               <ActionButton fill label="Outline" icon="list" secondary onPress={() => startWithCoach('outline', null)} testID="button-action-outline" />
               <ActionButton fill label="Review PDF" icon="file-text" secondary onPress={() => router.push({ pathname: '/review/[courseId]', params: { courseId: courseId! } })} testID="button-action-review-sheet" />
               {/* D-155 (Dan): only while the course has no material; once something is uploaded the other actions use it. */}
@@ -454,7 +454,7 @@ export default function CourseScreen() {
       {/* "Which topics?" for flashcards and hooks (D-058): the exam guide's sections, the topics already tested, or all. */}
       <Modal visible={picker !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setPicker(null)}>
         <View style={[styles.screen, { paddingTop: 20 }]}>
-          <ScreenHeader kicker={picker === 'hooks' ? 'Memory tricks' : 'Flashcards'} title="On which topics?" right={<HeaderIconButton icon="x" label="Close" onPress={() => setPicker(null)} testID="button-close-picker" />} />
+          <ScreenHeader kicker={picker === 'hooks' ? 'Memory tips' : 'Flashcards'} title="On which topics?" right={<HeaderIconButton icon="x" label="Close" onPress={() => setPicker(null)} testID="button-close-picker" />} />
           <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
             {topics.map((topic) => (
               <Pressable key={topic} accessibilityRole="button" onPress={() => { if (picker) startWithCoach(picker, topic === ALL_TOPICS ? null : topic); }} style={({ pressed }) => [styles.topicChoice, topic === ALL_TOPICS && styles.topicChoiceAll, pressed && styles.pressed]} testID="button-topic-choice">

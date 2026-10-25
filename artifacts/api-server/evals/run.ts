@@ -17,7 +17,7 @@ import * as tutorPrompt from "../src/prompts/tutor.v3";
 import * as sessionQuizPrompt from "../src/prompts/session-quiz.v10";
 import * as quizCheckPrompt from "../src/prompts/quiz-check.v7";
 import * as imageOcrPrompt from "../src/prompts/image-ocr.v1";
-import * as coachPrompt from "../src/prompts/coach.v33";
+import * as coachPrompt from "../src/prompts/coach.v35";
 import * as courseNotesPrompt from "../src/prompts/course-notes.v1";
 import * as uploadNotesPrompt from "../src/prompts/upload-notes.v1";
 import * as lectureNotesPrompt from "../src/prompts/lecture-notes.v1";
@@ -30,9 +30,10 @@ import * as examGuidePrompt from "../src/prompts/exam-guide.v2";
 import * as memorySheetPrompt from "../src/prompts/memory-sheet.v2";
 import * as reviewSheetPrompt from "../src/prompts/review-sheet.v3";
 import * as flagCheckPrompt from "../src/prompts/flag-check.v1";
+import * as memoryCardsPrompt from "../src/prompts/memory-cards.v1";
 import { taskConfig, type AiTask } from "../src/ai/tasks";
-import { classicQuizCases, coachCases, courseNotesCases, uploadNotesCases, courseRouterCases, routerCourseDocs, examGuideCases, flagCheckCases, flashcardsCases, memorySheetCases, reviewSheetCases, ocrCaseNames, planCases, quizCheckCases, sessionQuizCases, syllabusCases, tutorCases, webLookupCases, type Source } from "./fixtures";
-import { gradeClassicQuiz, gradeCoach, gradeCourseNotes, gradeUploadNotes, gradeCourseRouter, gradeExamGuide, gradeFlagCheck, gradeFlashcards, gradeMemorySheet, gradeOcr, gradePlan, gradeQuizCheck, gradeReviewSheet, gradeSessionQuiz, gradeSyllabus, gradeTutor, gradeWebLookup, type Score } from "./graders";
+import { classicQuizCases, coachCases, courseNotesCases, uploadNotesCases, courseRouterCases, routerCourseDocs, examGuideCases, flagCheckCases, flashcardsCases, memorySheetCases, memoryCardsCases, reviewSheetCases, ocrCaseNames, planCases, quizCheckCases, sessionQuizCases, syllabusCases, tutorCases, webLookupCases, type Source } from "./fixtures";
+import { gradeClassicQuiz, gradeCoach, gradeCourseNotes, gradeUploadNotes, gradeCourseRouter, gradeExamGuide, gradeFlagCheck, gradeFlashcards, gradeMemorySheet, gradeMemoryCards, gradeOcr, gradePlan, gradeQuizCheck, gradeReviewSheet, gradeSessionQuiz, gradeSyllabus, gradeTutor, gradeWebLookup, type Score } from "./graders";
 
 const evalDir = path.resolve(process.argv[1] ? path.dirname(process.argv[1]) : ".", "..");
 const serverDir = path.resolve(evalDir, "..");
@@ -49,7 +50,7 @@ const option = (name: string) => args.flatMap((a, i) => (a === `--${name}` && ar
 const dryRun = args.includes("--dry-run");
 const providerArg = option("provider")[0] ?? "both";
 const providers = providerArg === "both" ? ["openai", "anthropic"] : [providerArg];
-const allTasks: AiTask[] = ["syllabus", "classic_quiz", "exam_plan", "session_quiz", "tutor", "image_ocr", "coach", "flashcards", "exam_guide", "memory_sheet", "quiz_check", "flag_check", "web_lookup", "review_sheet", "course_notes", "upload_notes", "course_router"];
+const allTasks: AiTask[] = ["syllabus", "classic_quiz", "exam_plan", "session_quiz", "tutor", "image_ocr", "coach", "flashcards", "exam_guide", "memory_sheet", "quiz_check", "flag_check", "web_lookup", "review_sheet", "course_notes", "upload_notes", "course_router", "memory_cards"];
 const tasks = option("task").length ? (option("task") as AiTask[]) : allTasks;
 
 // USD per million tokens (input, output). Unknown models show no cost.
@@ -182,6 +183,11 @@ async function main() {
       run: () => complete("memory_sheet", { system: memorySheetPrompt.systemPrompt({ courseName: c.courseName, existingTerms: c.existingTerms }), messages: [{ role: "user", content: JSON.stringify({ items: c.items }) }] }),
       grade: (text) => gradeMemorySheet(c, text),
     });
+    if (tasks.includes("memory_cards")) for (const c of memoryCardsCases) jobs.push({
+      task: "memory_cards", name: c.name,
+      run: () => complete("memory_cards", { system: memoryCardsPrompt.systemPrompt({ courseName: c.courseName, kind: c.kind, recentTechniques: c.recentTechniques }), messages: [{ role: "user", content: JSON.stringify({ misses: c.misses, courseNotes: c.courseNotes }) }] }),
+      grade: (text) => gradeMemoryCards(c, text),
+    });
     if (tasks.includes("review_sheet")) for (const c of reviewSheetCases) jobs.push({
       task: "review_sheet", name: c.name,
       run: () => complete("review_sheet", { system: reviewSheetPrompt.systemPrompt({ courseName: c.courseName, kind: c.kind, today, sections: c.sections, guideUrl: c.guideUrl, examFacts: c.examFacts }), messages: [{ role: "user", content: JSON.stringify(c.input) }], webSearch: { maxUses: 10 }, timeoutMs: 300_000 }),
@@ -246,7 +252,7 @@ async function main() {
   const outDir = path.join(evalDir, "results");
   mkdirSync(outDir, { recursive: true });
   const file = path.join(outDir, `${new Date().toISOString().replace(/[:.]/g, "-")}.json`);
-  writeFileSync(file, JSON.stringify({ today, providers, tasks, prompts: { syllabus: syllabusPrompt.version, classicQuiz: classicQuizPrompt.version, examPlan: examPlanPrompt.version, tutor: tutorPrompt.version, sessionQuiz: sessionQuizPrompt.version, imageOcr: imageOcrPrompt.version, coach: coachPrompt.version, flashcards: flashcardsPrompt.version, examGuide: examGuidePrompt.version, memorySheet: memorySheetPrompt.version, quizCheck: quizCheckPrompt.version, flagCheck: flagCheckPrompt.version, webLookup: webLookupPrompt.version, reviewSheet: reviewSheetPrompt.version }, results }, null, 2));
+  writeFileSync(file, JSON.stringify({ today, providers, tasks, prompts: { syllabus: syllabusPrompt.version, classicQuiz: classicQuizPrompt.version, examPlan: examPlanPrompt.version, tutor: tutorPrompt.version, sessionQuiz: sessionQuizPrompt.version, imageOcr: imageOcrPrompt.version, coach: coachPrompt.version, flashcards: flashcardsPrompt.version, examGuide: examGuidePrompt.version, memorySheet: memorySheetPrompt.version, memoryCards: memoryCardsPrompt.version, quizCheck: quizCheckPrompt.version, flagCheck: flagCheckPrompt.version, webLookup: webLookupPrompt.version, reviewSheet: reviewSheetPrompt.version }, results }, null, 2));
   console.log(`\nFull results: ${path.relative(process.cwd(), file)} (judge model: ${process.env.EVAL_JUDGE_MODEL || "claude-opus-5-5"}; judge cost not included)`);
 }
 

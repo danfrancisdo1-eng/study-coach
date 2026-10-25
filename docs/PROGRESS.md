@@ -1,5 +1,33 @@
 # Progress
 
+## Session 23f — 2026-10-24 — memory cards (D-194), branch `feat/report-sections` (with D-193)
+
+### Done
+- After a graded set, the memory coach writes one card per top miss (at most 5) in the background: diagnosis → technique → tool, a cue, a lock-in question, 3 saved reminders. The app shows a bar above the chat box and opens the cards one at a time. coach.v35: the report card no longer writes tips, it points to the cards. Build #102.
+- Fixed while building: a report right after grading would have collided with the cards save ("Session changed on another device"); the cards are now written without bumping the session version.
+- Verified here: repo typecheck; `pnpm run test`; new unit tests (memory cards server 9, phone 3, coach-v35 3) and an end-to-end test (grade → writing → cards, a report during the write, a perfect set gets none); iOS bundle exports.
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (bar 48 pt high; Show answer, Next card, Back, Ask for a re-check all ≥44 pt; Next/Done full-width at the bottom). 2. One primary action: PASS (Next card / Done). 3. Chunked: PASS (one card at a time, "1 of 5"). 4. Native patterns: PASS (page sheet, swipe down or the chevron to close). 5. Progress: PASS ("2 of 5 done" on the bar, reopens at the next unseen card). 6. One accent, not colour-only: PASS (the bar uses the amber memory-hook colours with words; the tool box is the existing hook box). 7. Tokens; Dark Mode; Dynamic Type: PASS (theme tokens only; text wraps; the card scrolls). 8. Labels; Reduce Motion: PASS (buttons labelled, the bar's emoji hidden from VoiceOver, the card fade is off with Reduce Motion). 9. Paywall: N/A.
+
+### Next / blockers
+- Dan runs the evals on the Mac for this branch (coach + memory_cards), then merge on his OK and build.
+- Later: show or schedule the reminders (needs a notifications dependency, ask first); images for "Picture it".
+
+### Needs real-iPhone check
+- Finish a set with misses: the report card ends with the cards line; the bar shows "Writing your memory cards…" then "N memory cards for your misses"; cards one at a time with Show answer, Next card, Done; closing and reopening resumes; "Memory tips for the misses" opens the cards. A perfect set: no bar.
+
+## Session 23e — 2026-10-24 — report card sections and tip cards (D-193), branch `feat/report-sections`
+
+### Done
+- The report card and the Memory tips reply come in sections (divider, coloured title) with each tip its own card; "tricks" are "tips". coach.v34. Build #101.
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only + rendered preview
+1. Tap targets: N/A. 2. One primary action: PASS (unchanged chips). 3. Chunked: PASS (four titled sections; tips as separate cards, at most 3; bold only on key terms). 4. Native patterns: PASS. 5. Progress: PASS (How you did, Readiness). 6. One accent, not colour-only: PASS (section titles are words in the accent colour). 7. Tokens; Dark Mode; Dynamic Type: PASS (tokens only; text wraps inside cards). 8. Labels: PASS (section and tip titles are headers for VoiceOver). 9. Paywall: N/A.
+
+### Needs real-iPhone check
+- Finish a set with misses: the four sections, three tip cards, readiness box; "Memory tips for the misses" gives the same cards.
+
 ## Session 23d — 2026-10-24 — report card, readiness, personality (D-192), branch `feat/report-card` (on top of `feat/coach-v32`)
 
 ### Done

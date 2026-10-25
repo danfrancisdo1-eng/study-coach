@@ -13,7 +13,7 @@ export function studyRequest(action: StudyAction, topic: string | null): string 
     case 'practice': return `Give me a practice set on ${scope}`;
     case 'exam': return `Give me a simulated exam on ${scope}`;
     case 'flashcards': return `Flashcards on ${scope}`;
-    case 'hooks': return `Give me memory tricks (hooks) for ${scope}`;
+    case 'hooks': return `Give me memory tips for ${scope}`;
     case 'outline': return 'Show me the outline of topics for this course';
     case 'practiceNoMaterial': return `Give me a practice set on ${scope} from your own knowledge of this course; I have not uploaded material yet`;
   }

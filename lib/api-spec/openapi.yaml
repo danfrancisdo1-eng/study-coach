@@ -885,6 +885,43 @@ components:
             targeted: { oneOf: [{ $ref: "#/components/schemas/StudyScore" }, { type: "null" }] }
         reviewSchedule: { type: array, items: { type: object, additionalProperties: true } }
         flashcards: { oneOf: [{ $ref: "#/components/schemas/StudyFlashcardDeck" }, { type: "null" }] }
+        memoryCards:
+          description: "D-194: memory cards for the graded set's top misses; null when nothing was missed or the set is not graded."
+          oneOf: [{ $ref: "#/components/schemas/StudyMemoryCards" }, { type: "null" }]
+    StudyMemoryCards:
+      type: object
+      required: [gradedAt, status, setNote, cards]
+      properties:
+        gradedAt: { type: string, format: date-time }
+        status: { type: string, enum: [writing, ready, failed] }
+        setNote: { type: string }
+        cards:
+          type: array
+          items: { $ref: "#/components/schemas/StudyMemoryCard" }
+    StudyMemoryCard:
+      type: object
+      required: [questionId, concept, diagnosis, technique, techniqueLabel, headline, whyYouMissed, correctAnswer, memoryTool, recallCue, visualCue, lockIn, keyConcern]
+      properties:
+        questionId: { type: string }
+        concept: { type: string }
+        diagnosis: { type: string, enum: [CONFUSION, GAP, SEQUENCE, MECHANISM, PROCEDURE, MISREAD] }
+        technique: { type: string, enum: [contrast_pair, keyword_image, acronym_acrostic, chunking, story_chain, visual_scene, why_chain, analogy, worked_step, trap_flag, mini_palace] }
+        techniqueLabel: { type: string }
+        headline: { type: string }
+        whyYouMissed: { type: string }
+        correctAnswer: { type: string }
+        memoryTool: { type: string }
+        recallCue: { type: string }
+        visualCue: { type: [string, "null"] }
+        lockIn:
+          oneOf:
+            - type: object
+              required: [prompt, answer]
+              properties:
+                prompt: { type: string }
+                answer: { type: string }
+            - { type: "null" }
+        keyConcern: { type: [string, "null"] }
     CourseResults:
       type: object
       required: [topics, concepts, weak, sets]

@@ -3,7 +3,7 @@ import { recordResults } from "../lib/bank-store";
 import { aiOwner } from "../lib/ai-owner";
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { getAuth } from "@clerk/express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { createInflateRaw } from "node:zlib";
 import { Worker } from "node:worker_threads";
 import JSZip from "jszip";
@@ -27,6 +27,7 @@ import { readPublicPage } from "../lib/public-page";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { notesForExtraction } from "../lib/upload-notes-writer";
 import { rememberMisses } from "../lib/memory-sheet";
+import { writeMemoryCards } from "../lib/memory-cards-job";
 import { parseFlagCheck } from "../lib/flag-check";
 import * as flagCheckPrompt from "../prompts/flag-check.v1";
 import {
@@ -836,10 +837,12 @@ export async function getSession(id: string, ownerId: string): Promise<Session |
 
 export async function saveSession(session: Session, ownerId: string): Promise<boolean> {
   const expectedVersion = session._version ?? 1;
-  const { _version, ...storedSession } = session;
+  const { _version, memoryCards: _memoryCards, ...storedSession } = session;
+  // D-194: the memory cards are written by their own background job without a version bump, so a
+  // report or any other save meanwhile never conflicts with it; every save keeps the stored cards.
   const updated = await db.update(studySessionsTable)
     .set({
-      session: storedSession as unknown as Record<string, unknown>,
+      session: sql`jsonb_set(${JSON.stringify(storedSession)}::jsonb, '{memoryCards}', coalesce(${studySessionsTable.session} -> 'memoryCards', 'null'::jsonb))`,
       version: expectedVersion + 1,
       updatedAt: new Date(),
     })
@@ -1440,6 +1443,8 @@ router.post("/study/sessions/:id/grade", async (req, res): Promise<void> => {
   }
   res.json(safeSession(session));
   rememberMisses(owner(req), session, req.log);
+  // D-194: one memory card per top miss, written in the background; the app polls the session.
+  writeMemoryCards(owner(req), session, req.log);
   // D-145: each answered question's result goes back to the course's question bank.
   if (session.quiz) void recordResults(owner(req), session.courseId, session.quiz.questions).catch((error) => req.log.warn({ error: error instanceof Error ? error.message.slice(0, 200) : "Unknown error" }, "Question bank: results not recorded"));
 });

@@ -814,7 +814,30 @@ export const CreateStudySessionResponse = zod.object({
   "concept": zod.string(),
   "results": zod.array(zod.enum(['got', 'again']))
 }))
-}),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "memoryCards": zod.union([zod.object({
+  "gradedAt": zod.coerce.date(),
+  "status": zod.enum(['writing', 'ready', 'failed']),
+  "setNote": zod.string(),
+  "cards": zod.array(zod.object({
+  "questionId": zod.string(),
+  "concept": zod.string(),
+  "diagnosis": zod.enum(['CONFUSION', 'GAP', 'SEQUENCE', 'MECHANISM', 'PROCEDURE', 'MISREAD']),
+  "technique": zod.enum(['contrast_pair', 'keyword_image', 'acronym_acrostic', 'chunking', 'story_chain', 'visual_scene', 'why_chain', 'analogy', 'worked_step', 'trap_flag', 'mini_palace']),
+  "techniqueLabel": zod.string(),
+  "headline": zod.string(),
+  "whyYouMissed": zod.string(),
+  "correctAnswer": zod.string(),
+  "memoryTool": zod.string(),
+  "recallCue": zod.string(),
+  "visualCue": zod.string().nullable(),
+  "lockIn": zod.union([zod.object({
+  "prompt": zod.string(),
+  "answer": zod.string()
+}),zod.null()]),
+  "keyConcern": zod.string().nullable()
+}))
+}),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 
@@ -1083,7 +1106,30 @@ export const GetStudySessionResponse = zod.object({
   "concept": zod.string(),
   "results": zod.array(zod.enum(['got', 'again']))
 }))
-}),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "memoryCards": zod.union([zod.object({
+  "gradedAt": zod.coerce.date(),
+  "status": zod.enum(['writing', 'ready', 'failed']),
+  "setNote": zod.string(),
+  "cards": zod.array(zod.object({
+  "questionId": zod.string(),
+  "concept": zod.string(),
+  "diagnosis": zod.enum(['CONFUSION', 'GAP', 'SEQUENCE', 'MECHANISM', 'PROCEDURE', 'MISREAD']),
+  "technique": zod.enum(['contrast_pair', 'keyword_image', 'acronym_acrostic', 'chunking', 'story_chain', 'visual_scene', 'why_chain', 'analogy', 'worked_step', 'trap_flag', 'mini_palace']),
+  "techniqueLabel": zod.string(),
+  "headline": zod.string(),
+  "whyYouMissed": zod.string(),
+  "correctAnswer": zod.string(),
+  "memoryTool": zod.string(),
+  "recallCue": zod.string(),
+  "visualCue": zod.string().nullable(),
+  "lockIn": zod.union([zod.object({
+  "prompt": zod.string(),
+  "answer": zod.string()
+}),zod.null()]),
+  "keyConcern": zod.string().nullable()
+}))
+}),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 
@@ -1718,7 +1764,30 @@ export const CheckInStudySessionResponse = zod.object({
   "concept": zod.string(),
   "results": zod.array(zod.enum(['got', 'again']))
 }))
-}),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "memoryCards": zod.union([zod.object({
+  "gradedAt": zod.coerce.date(),
+  "status": zod.enum(['writing', 'ready', 'failed']),
+  "setNote": zod.string(),
+  "cards": zod.array(zod.object({
+  "questionId": zod.string(),
+  "concept": zod.string(),
+  "diagnosis": zod.enum(['CONFUSION', 'GAP', 'SEQUENCE', 'MECHANISM', 'PROCEDURE', 'MISREAD']),
+  "technique": zod.enum(['contrast_pair', 'keyword_image', 'acronym_acrostic', 'chunking', 'story_chain', 'visual_scene', 'why_chain', 'analogy', 'worked_step', 'trap_flag', 'mini_palace']),
+  "techniqueLabel": zod.string(),
+  "headline": zod.string(),
+  "whyYouMissed": zod.string(),
+  "correctAnswer": zod.string(),
+  "memoryTool": zod.string(),
+  "recallCue": zod.string(),
+  "visualCue": zod.string().nullable(),
+  "lockIn": zod.union([zod.object({
+  "prompt": zod.string(),
+  "answer": zod.string()
+}),zod.null()]),
+  "keyConcern": zod.string().nullable()
+}))
+}),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 
@@ -1958,7 +2027,30 @@ export const SendStudyMessageResponse = zod.object({
   "concept": zod.string(),
   "results": zod.array(zod.enum(['got', 'again']))
 }))
-}),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "memoryCards": zod.union([zod.object({
+  "gradedAt": zod.coerce.date(),
+  "status": zod.enum(['writing', 'ready', 'failed']),
+  "setNote": zod.string(),
+  "cards": zod.array(zod.object({
+  "questionId": zod.string(),
+  "concept": zod.string(),
+  "diagnosis": zod.enum(['CONFUSION', 'GAP', 'SEQUENCE', 'MECHANISM', 'PROCEDURE', 'MISREAD']),
+  "technique": zod.enum(['contrast_pair', 'keyword_image', 'acronym_acrostic', 'chunking', 'story_chain', 'visual_scene', 'why_chain', 'analogy', 'worked_step', 'trap_flag', 'mini_palace']),
+  "techniqueLabel": zod.string(),
+  "headline": zod.string(),
+  "whyYouMissed": zod.string(),
+  "correctAnswer": zod.string(),
+  "memoryTool": zod.string(),
+  "recallCue": zod.string(),
+  "visualCue": zod.string().nullable(),
+  "lockIn": zod.union([zod.object({
+  "prompt": zod.string(),
+  "answer": zod.string()
+}),zod.null()]),
+  "keyConcern": zod.string().nullable()
+}))
+}),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 
@@ -2194,7 +2286,30 @@ export const GenerateStudyQuizResponse = zod.object({
   "concept": zod.string(),
   "results": zod.array(zod.enum(['got', 'again']))
 }))
-}),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "memoryCards": zod.union([zod.object({
+  "gradedAt": zod.coerce.date(),
+  "status": zod.enum(['writing', 'ready', 'failed']),
+  "setNote": zod.string(),
+  "cards": zod.array(zod.object({
+  "questionId": zod.string(),
+  "concept": zod.string(),
+  "diagnosis": zod.enum(['CONFUSION', 'GAP', 'SEQUENCE', 'MECHANISM', 'PROCEDURE', 'MISREAD']),
+  "technique": zod.enum(['contrast_pair', 'keyword_image', 'acronym_acrostic', 'chunking', 'story_chain', 'visual_scene', 'why_chain', 'analogy', 'worked_step', 'trap_flag', 'mini_palace']),
+  "techniqueLabel": zod.string(),
+  "headline": zod.string(),
+  "whyYouMissed": zod.string(),
+  "correctAnswer": zod.string(),
+  "memoryTool": zod.string(),
+  "recallCue": zod.string(),
+  "visualCue": zod.string().nullable(),
+  "lockIn": zod.union([zod.object({
+  "prompt": zod.string(),
+  "answer": zod.string()
+}),zod.null()]),
+  "keyConcern": zod.string().nullable()
+}))
+}),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 
@@ -2431,7 +2546,30 @@ export const SaveStudyAnswerResponse = zod.object({
   "concept": zod.string(),
   "results": zod.array(zod.enum(['got', 'again']))
 }))
-}),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "memoryCards": zod.union([zod.object({
+  "gradedAt": zod.coerce.date(),
+  "status": zod.enum(['writing', 'ready', 'failed']),
+  "setNote": zod.string(),
+  "cards": zod.array(zod.object({
+  "questionId": zod.string(),
+  "concept": zod.string(),
+  "diagnosis": zod.enum(['CONFUSION', 'GAP', 'SEQUENCE', 'MECHANISM', 'PROCEDURE', 'MISREAD']),
+  "technique": zod.enum(['contrast_pair', 'keyword_image', 'acronym_acrostic', 'chunking', 'story_chain', 'visual_scene', 'why_chain', 'analogy', 'worked_step', 'trap_flag', 'mini_palace']),
+  "techniqueLabel": zod.string(),
+  "headline": zod.string(),
+  "whyYouMissed": zod.string(),
+  "correctAnswer": zod.string(),
+  "memoryTool": zod.string(),
+  "recallCue": zod.string(),
+  "visualCue": zod.string().nullable(),
+  "lockIn": zod.union([zod.object({
+  "prompt": zod.string(),
+  "answer": zod.string()
+}),zod.null()]),
+  "keyConcern": zod.string().nullable()
+}))
+}),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 
@@ -2673,7 +2811,30 @@ export const FlagStudyQuestionResponse = zod.object({
   "concept": zod.string(),
   "results": zod.array(zod.enum(['got', 'again']))
 }))
-}),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "memoryCards": zod.union([zod.object({
+  "gradedAt": zod.coerce.date(),
+  "status": zod.enum(['writing', 'ready', 'failed']),
+  "setNote": zod.string(),
+  "cards": zod.array(zod.object({
+  "questionId": zod.string(),
+  "concept": zod.string(),
+  "diagnosis": zod.enum(['CONFUSION', 'GAP', 'SEQUENCE', 'MECHANISM', 'PROCEDURE', 'MISREAD']),
+  "technique": zod.enum(['contrast_pair', 'keyword_image', 'acronym_acrostic', 'chunking', 'story_chain', 'visual_scene', 'why_chain', 'analogy', 'worked_step', 'trap_flag', 'mini_palace']),
+  "techniqueLabel": zod.string(),
+  "headline": zod.string(),
+  "whyYouMissed": zod.string(),
+  "correctAnswer": zod.string(),
+  "memoryTool": zod.string(),
+  "recallCue": zod.string(),
+  "visualCue": zod.string().nullable(),
+  "lockIn": zod.union([zod.object({
+  "prompt": zod.string(),
+  "answer": zod.string()
+}),zod.null()]),
+  "keyConcern": zod.string().nullable()
+}))
+}),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 
@@ -2909,7 +3070,30 @@ export const ReviewFlashcardResponse = zod.object({
   "concept": zod.string(),
   "results": zod.array(zod.enum(['got', 'again']))
 }))
-}),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "memoryCards": zod.union([zod.object({
+  "gradedAt": zod.coerce.date(),
+  "status": zod.enum(['writing', 'ready', 'failed']),
+  "setNote": zod.string(),
+  "cards": zod.array(zod.object({
+  "questionId": zod.string(),
+  "concept": zod.string(),
+  "diagnosis": zod.enum(['CONFUSION', 'GAP', 'SEQUENCE', 'MECHANISM', 'PROCEDURE', 'MISREAD']),
+  "technique": zod.enum(['contrast_pair', 'keyword_image', 'acronym_acrostic', 'chunking', 'story_chain', 'visual_scene', 'why_chain', 'analogy', 'worked_step', 'trap_flag', 'mini_palace']),
+  "techniqueLabel": zod.string(),
+  "headline": zod.string(),
+  "whyYouMissed": zod.string(),
+  "correctAnswer": zod.string(),
+  "memoryTool": zod.string(),
+  "recallCue": zod.string(),
+  "visualCue": zod.string().nullable(),
+  "lockIn": zod.union([zod.object({
+  "prompt": zod.string(),
+  "answer": zod.string()
+}),zod.null()]),
+  "keyConcern": zod.string().nullable()
+}))
+}),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 
@@ -3140,7 +3324,30 @@ export const GradeStudyQuizResponse = zod.object({
   "concept": zod.string(),
   "results": zod.array(zod.enum(['got', 'again']))
 }))
-}),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "memoryCards": zod.union([zod.object({
+  "gradedAt": zod.coerce.date(),
+  "status": zod.enum(['writing', 'ready', 'failed']),
+  "setNote": zod.string(),
+  "cards": zod.array(zod.object({
+  "questionId": zod.string(),
+  "concept": zod.string(),
+  "diagnosis": zod.enum(['CONFUSION', 'GAP', 'SEQUENCE', 'MECHANISM', 'PROCEDURE', 'MISREAD']),
+  "technique": zod.enum(['contrast_pair', 'keyword_image', 'acronym_acrostic', 'chunking', 'story_chain', 'visual_scene', 'why_chain', 'analogy', 'worked_step', 'trap_flag', 'mini_palace']),
+  "techniqueLabel": zod.string(),
+  "headline": zod.string(),
+  "whyYouMissed": zod.string(),
+  "correctAnswer": zod.string(),
+  "memoryTool": zod.string(),
+  "recallCue": zod.string(),
+  "visualCue": zod.string().nullable(),
+  "lockIn": zod.union([zod.object({
+  "prompt": zod.string(),
+  "answer": zod.string()
+}),zod.null()]),
+  "keyConcern": zod.string().nullable()
+}))
+}),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
 
 

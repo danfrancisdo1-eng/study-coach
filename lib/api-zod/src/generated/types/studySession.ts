@@ -7,6 +7,7 @@
  */
 import type { StudyCheckInResult } from './studyCheckInResult';
 import type { StudyFlashcardDeck } from './studyFlashcardDeck';
+import type { StudyMemoryCards } from './studyMemoryCards';
 import type { StudyQuiz } from './studyQuiz';
 import type { StudySessionMessagesItem } from './studySessionMessagesItem';
 import type { StudySessionReviewScheduleItem } from './studySessionReviewScheduleItem';
@@ -31,4 +32,6 @@ export interface StudySession {
   scores: StudySessionScores;
   reviewSchedule: StudySessionReviewScheduleItem[];
   flashcards?: StudyFlashcardDeck | null;
+  /** D-194: memory cards for the graded set's top misses; null when nothing was missed or the set is not graded. */
+  memoryCards?: StudyMemoryCards | null;
 }

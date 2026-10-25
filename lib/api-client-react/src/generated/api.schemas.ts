@@ -586,6 +586,74 @@ export interface StudyFlashcardDeck {
   cards: StudyFlashcardDeckCardsItem[];
 }
 
+export type StudyMemoryCardsStatus = typeof StudyMemoryCardsStatus[keyof typeof StudyMemoryCardsStatus];
+
+
+export const StudyMemoryCardsStatus = {
+  writing: 'writing',
+  ready: 'ready',
+  failed: 'failed',
+} as const;
+
+export type StudyMemoryCardDiagnosis = typeof StudyMemoryCardDiagnosis[keyof typeof StudyMemoryCardDiagnosis];
+
+
+export const StudyMemoryCardDiagnosis = {
+  CONFUSION: 'CONFUSION',
+  GAP: 'GAP',
+  SEQUENCE: 'SEQUENCE',
+  MECHANISM: 'MECHANISM',
+  PROCEDURE: 'PROCEDURE',
+  MISREAD: 'MISREAD',
+} as const;
+
+export type StudyMemoryCardTechnique = typeof StudyMemoryCardTechnique[keyof typeof StudyMemoryCardTechnique];
+
+
+export const StudyMemoryCardTechnique = {
+  contrast_pair: 'contrast_pair',
+  keyword_image: 'keyword_image',
+  acronym_acrostic: 'acronym_acrostic',
+  chunking: 'chunking',
+  story_chain: 'story_chain',
+  visual_scene: 'visual_scene',
+  why_chain: 'why_chain',
+  analogy: 'analogy',
+  worked_step: 'worked_step',
+  trap_flag: 'trap_flag',
+  mini_palace: 'mini_palace',
+} as const;
+
+export type StudyMemoryCardLockIn = {
+  prompt: string;
+  answer: string;
+} | null;
+
+export interface StudyMemoryCard {
+  questionId: string;
+  concept: string;
+  diagnosis: StudyMemoryCardDiagnosis;
+  technique: StudyMemoryCardTechnique;
+  techniqueLabel: string;
+  headline: string;
+  whyYouMissed: string;
+  correctAnswer: string;
+  memoryTool: string;
+  recallCue: string;
+  /** @nullable */
+  visualCue: string | null;
+  lockIn: StudyMemoryCardLockIn;
+  /** @nullable */
+  keyConcern: string | null;
+}
+
+export interface StudyMemoryCards {
+  gradedAt: string;
+  status: StudyMemoryCardsStatus;
+  setNote: string;
+  cards: StudyMemoryCard[];
+}
+
 /**
  * Public session payload. Never includes correct option IDs, answer indices, or grading keys.
  */
@@ -604,6 +672,8 @@ export interface StudySession {
   scores: StudySessionScores;
   reviewSchedule: StudySessionReviewScheduleItem[];
   flashcards?: StudyFlashcardDeck | null;
+  /** D-194: memory cards for the graded set's top misses; null when nothing was missed or the set is not graded. */
+  memoryCards?: StudyMemoryCards | null;
 }
 
 export type CourseResultsTopicsItem = {

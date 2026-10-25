@@ -91,5 +91,5 @@ test('the facts text: this set, the one before, readiness with sections, focus a
 test('more than 5 misses: the facts say so and name the flashcards line', () => {
   const ev = set('2026-10-24T10:00:00Z', many('Agents', 4, 6));
   const text = reportFactsText(reportFacts([ev], guide, null), true);
-  assert.match(text, /Missed questions: 6, more than 5: tricks for 5 of them, then the line "Flashcards for the misses drills the rest\."/);
+  assert.match(text, /Missed questions: 6\. Memory cards cover the 5 that matter most; Flashcards for the misses drills the rest\./);
 });

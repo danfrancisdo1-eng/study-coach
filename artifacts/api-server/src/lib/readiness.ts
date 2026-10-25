@@ -122,8 +122,8 @@ export function reportFactsText(facts: ReportFacts, isExam: boolean): string {
   const day = (at: string) => at.slice(0, 10);
   const missed = facts.thisSet.total - facts.thisSet.correct;
   const lines = [`- This set: ${facts.thisSet.correct} of ${facts.thisSet.total}.`];
-  // Counted here, not by the coach (eval round 2: with 6 misses it skipped the flashcards line).
-  lines.push(missed > 5 ? `- Missed questions: ${missed}, more than 5: tricks for 5 of them, then the line "Flashcards for the misses drills the rest."` : `- Missed questions: ${missed}.`);
+  // D-194: the memory cards cover the top 5 misses; the report card no longer writes tips itself.
+  lines.push(`- Missed questions: ${missed}.${missed > 5 ? " Memory cards cover the 5 that matter most; Flashcards for the misses drills the rest." : ""}`);
   lines.push(facts.previous
     ? `- The set before it on this course: ${facts.previous.correct} of ${facts.previous.total} (${day(facts.previous.at)}).`
     : "- This is the student's first graded set on this course.");
