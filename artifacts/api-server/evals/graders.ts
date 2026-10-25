@@ -589,7 +589,7 @@ export async function gradeMemoryCards(testCase: MemoryCardsCase, text: string |
       expectations: { type: "array", items: { type: "object", additionalProperties: false, required: ["met", "reason"], properties: { met: { type: "boolean" }, reason: { type: "string" } } } },
     } },
   );
-  for (const [i, v] of raw.cards.map((_, i) => verdict.cards[i] ?? { ok: false, reason: "no verdict" }).entries()) if (!v.ok) notes.push(`card ${i + 1} weak: ${v.reason.slice(0, 160)}`);
+  for (const [i, v] of raw.cards.map((_, i) => verdict.cards[i] ?? { ok: false, reason: "no verdict" }).entries()) if (!v.ok) notes.push(`card ${i + 1} weak: ${v.reason.slice(0, 400)}`);
   for (const [i, e] of testCase.expectations.entries()) {
     const v = verdict.expectations[i];
     if (!v?.met) notes.push(`expectation not met: ${e.slice(0, 80)}${v ? ` (${v.reason.slice(0, 120)})` : ""}`);

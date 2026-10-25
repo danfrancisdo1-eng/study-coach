@@ -12,6 +12,7 @@ Newest first. Each entry: date, decision, why, who decided.
 - **coach.v35**: the report card no longer writes tips; "How you did" ends with "Your memory cards for these are just below the chat." "Memory tips" asked in the chat keeps the v34 tip cards. The report facts' "Missed questions" line no longer asks for tips.
 - Not built (on purpose): showing or scheduling the reminders (needs a notifications dependency; ask first), images for "Picture it".
 - Evals: new `memory_cards` task (9 cases: confusion, gap, a NOT question, a procedure slip, the class's own mnemonic from the notes, a repeat miss that must change technique, an instruction hidden in a question, a wrong key, a weak set of 5); the coach's report cases now expect no tips and the cards line.
+- Eval round 1 on the Mac (coach 74/76, memory_cards 5/9), fixed before release, so memory-cards.v1 and coach.v35 were edited in place (neither has shipped): headlines aimed at 6–10 words with an example; the named technique must match what the tool does (one line per technique); every sentence of a tool must be true; reminders never name the answer, not even as one of two choices; a perfect set's report line is warm, not "Perfect." alone. Left as is: "memory tricks on a certification exam" (the judge wanted OCR grouped with the other vision tasks; that reply's layout is unchanged since v34).
 - Build #102. **Decided by:** Dan.
 
 ## 2026-10-24 — D-193: The report card in sections; each memory tip its own card; "tips", not "tricks" (coach.v34)
