@@ -2,6 +2,17 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-25 — D-198: Account screen: Delete my account under the plan, questions per set next, sign out last
+- Dan (build 23): "take the delete and put [it] up under the restore ... Because the delete's hidden ... If Apple won't like it, they'll reject it"; "move the ten or 20 questions up there, because you can't see them ... I don't care if they can't see sign out."
+- Order now: the plan card (See Premium, Restore Purchases, Manage subscription), Delete my account (still asks the student to type DELETE before anything happens), Questions per set, a divider, then Why I built this, the replays, Privacy policy, Answer sounds, Sign out.
+- Build #104. **Decided by:** Dan.
+
+## 2026-10-25 — D-197: Paywall: Monthly first and picked by default; the free week shows on the card
+- Dan (build 23): "need to leave it on default on monthly because it's currently on annual, and it doesn't make it apparent how to get the free week ... If they want to go up the yearly, that's fine."
+- `lib/premium-ui.ts` `orderPackages`: Monthly first (picked when the screen opens), then Yearly (still with its "Save N%" badge). Replaces D-153's "Yearly picked first".
+- Each plan card with a free trial from the store shows a line under its title ("1 week free", `trialBadge`); the button still reads "Start your free week" and the terms line under it is unchanged.
+- Build #104. **Decided by:** Dan.
+
 ## 2026-10-25 — D-195: Founder wording: self-taught, no formal training (not "no AI background")
 - Dan: "I do have AI background, but basically say no formal training in AI or coding. I was self-taught." / "No formal training or education."
 - `lib/founder.ts`: the story says "I had no formal training or education in AI or coding. I taught myself." (the "no experience as an AI engineer" clause is gone); the paywall quote is "Self-taught, no formal training: I passed two AI certifications in three days studying exactly this way. That's why I built RapidRecall."; the Account row reads "Two AI certifications, self-taught, this method". A test keeps "no AI background" out. The website and App Store text should match.

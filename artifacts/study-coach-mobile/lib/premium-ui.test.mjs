@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { orderPackages, packageLabel, paywallReason, planLine, premiumCode } from './premium-ui.ts';
+import { orderPackages, packageLabel, paywallReason, planLine, premiumCode, trialBadge } from './premium-ui.ts';
 
 test('only a 402 with a plan code opens the paywall (D-090)', () => {
   assert.equal(premiumCode({ status: 402, data: { error: 'x', code: 'daily_limit' } }), 'daily_limit');
@@ -19,9 +19,11 @@ test('the plan line on the Account page', () => {
   assert.equal(planLine({ plan: 'premium', source: 'revenuecat', expiresAt: new Date(2026, 10, 12, 12).toISOString() }), 'Premium · renews Nov 12, 2026');
 });
 
-test('packages: yearly first, labelled plainly; paywall reasons', () => {
-  const sorted = orderPackages([{ packageType: 'MONTHLY' }, { packageType: 'ANNUAL' }]);
-  assert.deepEqual(sorted.map((p) => p.packageType), ['ANNUAL', 'MONTHLY']);
+test('packages: monthly first (picked by default, D-197), labelled plainly; paywall reasons', () => {
+  const sorted = orderPackages([{ packageType: 'ANNUAL' }, { packageType: 'MONTHLY' }]);
+  assert.deepEqual(sorted.map((p) => p.packageType), ['MONTHLY', 'ANNUAL']);
+  assert.equal(trialBadge('1 week'), '1 week free');
+  assert.equal(trialBadge(null), null);
   assert.equal(packageLabel('ANNUAL'), 'Yearly');
   assert.equal(packageLabel('MONTHLY'), 'Monthly');
   assert.match(paywallReason('daily_limit'), /today/);

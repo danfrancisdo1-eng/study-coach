@@ -33,9 +33,12 @@ export function planLine(status: { plan: 'free' | 'trial' | 'premium'; source: s
   return 'Free plan · 1 course';
 }
 
-/** Yearly first (the better deal), then monthly; anything else after. */
+/**
+ * Monthly first and picked by default, then yearly; anything else after. D-197 (Dan, build 23): with Yearly
+ * picked first "it doesn't make it apparent how to get the free week"; a student who wants yearly taps it.
+ */
 export function orderPackages<T extends { packageType: string }>(packages: T[]): T[] {
-  const rank = (t: string) => (t === 'ANNUAL' ? 0 : t === 'MONTHLY' ? 1 : 2);
+  const rank = (t: string) => (t === 'MONTHLY' ? 0 : t === 'ANNUAL' ? 1 : 2);
   return [...packages].sort((a, b) => rank(a.packageType) - rank(b.packageType));
 }
 
@@ -73,6 +76,11 @@ export function trialTerms(price: string, period: 'month' | 'year', trial: strin
   return trial
     ? `Free for ${trial}, then ${price} a ${period}. Cancel in Settings at least 24 hours before the free ${trial} ends and you pay nothing.`
     : `${price} a ${period}. Renews automatically; cancel any time in Settings.`;
+}
+
+/** The card's free-trial line ("1 week free"), or null when the product has no free trial. */
+export function trialBadge(trial: string | null): string | null {
+  return trial ? `${trial} free` : null;
 }
 
 /** The free trial's length as the store reports it ("7 days", "1 week", "1 month"), or null without a free trial. */
