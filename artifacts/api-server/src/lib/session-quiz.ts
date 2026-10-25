@@ -5,9 +5,9 @@ import { studySources, studyText } from "./study-text";
 import { randomUUID } from "node:crypto";
 import { logger } from "./logger";
 import { complete } from "../ai";
-import * as sessionQuizPrompt from "../prompts/session-quiz.v11";
+import * as sessionQuizPrompt from "../prompts/session-quiz.v12";
 import * as quizCheckPrompt from "../prompts/quiz-check.v7";
-import { applyQuizCheck, explanationProblem, keyFromExplanation, numericKey, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
+import { applyQuizCheck, explanationProblem, giveawayKey, keyFromExplanation, numericKey, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
 import { shuffleOptions } from "./shuffle-options";
 import * as flashcardsPrompt from "../prompts/flashcards.v3";
 
@@ -363,6 +363,8 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
   const screened: ProposedQuestion[] = [];
   for (const q of valid) {
     if (explanationProblem(q.explanation)) { invalidItemCount += 1; continue; }
+    // D-202: the key stands out by length (a sentence among short terms): dropped and topped up like any other.
+    if (giveawayKey(q)) { invalidItemCount += 1; continue; }
     // D-137: the worked numbers decide when they clearly point at one option (or at none).
     const byNumber = numericKey(q);
     if (byNumber === "drop") { invalidItemCount += 1; continue; }

@@ -3,7 +3,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
 import type { MemoryCardsCase, CourseRouterCase, UploadNotesCase, CourseNotesCase, ReviewSheetCase, CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase, WebLookupCase } from "./fixtures";
-import { explanationProblem, parseQuizCheck } from "../src/lib/quiz-check";
+import { explanationProblem, giveawayKey, parseQuizCheck } from "../src/lib/quiz-check";
 import { parseNotesReply } from "../src/lib/course-notes";
 import { parseUploadNotes } from "../src/lib/upload-notes";
 import { parseRoute, type Section } from "../src/lib/course-sections";
@@ -124,7 +124,7 @@ export async function gradeClassicQuiz(input: { topic: string; count: number; so
   return { pass: notes.every((n) => n.includes("judged wrong")) && score >= 0.9, score, notes };
 }
 
-export async function gradeSessionQuiz(input: { topic: string; sources: Source[]; expectedCount: number; originalPrompts: string[]; requireFormats?: boolean; retest?: boolean }, text: string | null): Promise<Score> {
+export async function gradeSessionQuiz(input: { topic: string; sources: Source[]; expectedCount: number; originalPrompts: string[]; requireFormats?: boolean; retest?: boolean; requireNot?: boolean }, text: string | null): Promise<Score> {
   let questions: QuizQuestion[];
   try {
     const raw = parseJson(text) as { questions?: unknown };
@@ -142,6 +142,9 @@ export async function gradeSessionQuiz(input: { topic: string; sources: Source[]
   questions.forEach((q, i) => { if (used.has(normalize(q.prompt))) notes.push(`q${i}: repeats an original prompt`); });
   // D-196: the app drops a reworded original (isNearDuplicate); a retest that only rewords loses every question.
   if (input.retest) questions.forEach((q, i) => { if (isNearDuplicate(normalize(q.prompt), input.originalPrompts.map(normalize))) notes.push(`q${i}: near-duplicate of an original prompt (the app would drop it)`); });
+  // D-202: the key never stands out by length (the app drops such a question: giveawayKey).
+  questions.forEach((q, i) => { if (Array.isArray(q.options) && giveawayKey({ options: q.options.map(String), answerIndex: Number((q as { answerIndex?: unknown }).answerIndex) })) notes.push(`q${i}: the key is much longer than every other option (gives the answer away)`); });
+  if (input.requireNot && !questions.some((q) => /\b(NOT|EXCEPT)\b/.test(String(q.prompt)))) notes.push('no "which is NOT" / EXCEPT question');
   // D-135: no leaked reasoning, no "closest to" answers.
   questions.forEach((q, i) => { const why = explanationProblem(String((q as { explanation?: unknown }).explanation ?? "")); if (why) notes.push(`q${i}: ${why}`); });
   const verdict = await judgeQuestions(input.topic, input.sources, questions);

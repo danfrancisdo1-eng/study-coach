@@ -206,20 +206,21 @@ test('home chat: practice and exam question sets', async (t) => {
   assert.match(system, /\[concept-0\] Q: Set 1 question 1\? \| chose: B0 \| correct: A0/);
   assert.match(system, /\[concept-2\] Q: Set 1 question 3\? \| chose: A2 \| correct: C2/);
 
-  // "Missed topics" set: exam kind, targeted on the missed concepts, plus up to 2 earlier correct questions.
+  // "Missed topics" set: exam kind, targeted on the missed concepts, exactly the count asked (D-202: no earlier correct questions carried).
   quizCount = 3;
   coach = { reply: 'Here comes a set on what you missed.', suggestions: [], actions: [{ type: 'start_quiz', name: 'BIOL 114', topic: 'cells', count: 3, kind: 'exam', scope: 'missed' }] };
   chat = await call('POST', '/study/chat', { content: 'Another set on the missed topics', version: 4 });
   assert.equal(chat.status, 200, JSON.stringify(chat.body));
   const retest = chat.body.messages.at(-1).actions[0];
   assert.equal(retest.kind, 'exam');
-  assert.equal(retest.count, 5, '3 new + 2 earlier correct questions');
+  assert.equal(retest.count, 3, 'exactly the 3 asked, no earlier correct questions');
   const quizPrompt = ai.requests.filter((r) => r.body.messages[0].content.includes('Create exactly')).at(-1).body.messages[0].content;
   assert.match(quizPrompt, /This is a retest of concepts the student just missed: concept-0; concept-2\./);
   session = (await call('GET', `/study/sessions/${retest.sessionId}`)).body;
   assert.equal(session.quiz.kind, 'exam');
   assert.equal(session.quiz.mode, 'targeted');
-  assert.equal(session.quiz.questions.length, 5);
+  assert.equal(session.quiz.questions.length, 3);
+  assert.ok(session.quiz.questions.every((q) => !/^Set 1 /.test(q.prompt)), 'no question from the last set');
   const e0 = session.quiz.questions[0];
   session = (await call('PUT', `/study/sessions/${retest.sessionId}/answers`, { questionId: e0.id, optionId: e0.options[0].id, assisted: false })).body;
   assert.equal(session.quiz.questions[0].feedback, undefined, 'exam: no feedback until graded');
