@@ -13,7 +13,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v36";
+import * as coachPrompt from "../prompts/coach.v37";
 import { daysUntil, isSyllabus, setSizeOf } from "../lib/syllabus";
 import { courseContext, NOTES_BLOCK, PLANNING } from "../lib/course-context";
 import { indexText, routedContext, sectionsOf, wordSearch } from "../lib/course-sections";
