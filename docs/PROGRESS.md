@@ -1,5 +1,13 @@
 # Progress
 
+## Session 23p — 2026-10-26 — answer sounds come back (D-205), branch `fix/answer-sounds`
+
+### Done
+- `lib/feedback-sounds.ts`: the audio mode is set again each time a set opens (clips load once). Verified here: mobile typecheck; phone unit tests. Not reproducible without an iPhone.
+
+### Needs real-iPhone check
+- Ringer on, Answer sounds on: a right answer plays the cha-ching, a wrong one the buzzer. Also after watching the intro video and after recording a lecture.
+
 ## Session 23n — 2026-10-25 — the coach goes over your misses (D-203), branch `feat/coach-teaches-misses`
 
 ### Done

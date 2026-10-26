@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-26 — D-205: Answer sounds set the phone's audio up again every time a set opens
+- Dan on build 28: "the sound effects are gone on the answers. No buzz or ch-Ching"; "I'm not on silent, and the switch isn't off. The answer sounds are on."
+- The clips and the audio mode were set up once per visit. The intro video (now also after Delete my account, D-199) and lecture recording change the phone's audio session (recording sends sound to the earpiece), and the answer sounds stayed on that changed session. Now the audio mode (follow the silent switch, mix with other audio, no recording) is set again each time a set opens; the clips still load once. Not reproducible here (no iPhone); needs the real-iPhone check.
+- **Decided by:** Dan (report); fix by Claude Code.
+
 ## 2026-10-25 — D-203: The coach goes over your misses in the chat, one at a time (coach.v36)
 - Dan on build 23: "no human knows what a memory card is"; "Hey, you got this wrong. Hey, this is a way to remember this one. And then do you think you have it now? ... if they say yes, then you move on to the next question you got wrong"; "I kind of want the person to think there's a real teacher right there"; "give them a few shot prompt example ... I don't want rigid answers"; "call it coaches evaluation, not like how you did. Have that title slide in ... that'll actually give the AI time to respond"; "why is that bold?"; "you should put down the what they got, 80%, 90% ... and you need to get a 90% or better ... to be ready"; "This replaces memory tips."
 - **Report card (coach.v36):** the first section is "🎯 Coach's evaluation" (score with its percent); "📈 Exam readiness" gives the verdict with only the verdict words bold, where the student stands in numbers (the sections not solid yet, or the course's share right), what Ready takes (a set at 90%+, every section at 70%+; a course 85%+ over 30 answers) and "Here's what we need to do". readiness.ts adds the percent, the course's share right and a "What Ready takes" fact line. No memory-cards line.

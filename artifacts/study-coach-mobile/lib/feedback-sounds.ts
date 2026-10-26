@@ -16,21 +16,30 @@ import type { AnswerKind } from '@/lib/answer-feedback';
 let players: Record<AnswerKind, AudioPlayer> | null = null;
 let preparing: Promise<void> | null = null;
 
-/** Load both clips and set the audio mode. Safe to call many times; it runs once. */
+/**
+ * Set the audio mode and load both clips. Called each time a set opens: the clips load once, but the
+ * audio mode is set again every time (D-205, Dan on build 28: "the sound effects are gone on the
+ * answers"), because the intro video and lecture recording change the phone's audio session and it
+ * stayed that way for the rest of the visit (recording, for one, sends sound to the earpiece).
+ */
 export function prepareFeedbackSounds(): Promise<void> {
   if (Platform.OS === 'web') return Promise.resolve();
   if (preparing) return preparing;
   preparing = (async () => {
     try {
-      await setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' });
-      players = {
-        correct: createAudioPlayer(require('../assets/sounds/right.wav')),
-        wrong: createAudioPlayer(require('../assets/sounds/wrong.wav')),
-      };
-      players.correct.volume = 0.85;
-      players.wrong.volume = 0.6;
+      await setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers', allowsRecording: false });
+      if (!players) {
+        players = {
+          correct: createAudioPlayer(require('../assets/sounds/right.wav')),
+          wrong: createAudioPlayer(require('../assets/sounds/wrong.wav')),
+        };
+        players.correct.volume = 0.85;
+        players.wrong.volume = 0.6;
+      }
     } catch {
       players = null; // No sound on this device; the haptic and the mark still happen.
+    } finally {
+      preparing = null; // the next set sets the audio mode again
     }
   })();
   return preparing;
@@ -39,7 +48,8 @@ export function prepareFeedbackSounds(): Promise<void> {
 /** Play the clip for the answer; a failure is silent. */
 export async function playFeedbackSound(kind: AnswerKind): Promise<void> {
   try {
-    await prepareFeedbackSounds();
+    if (preparing) await preparing;
+    else if (!players) await prepareFeedbackSounds();
     const player = players?.[kind];
     if (!player) return;
     await player.seekTo(0);
