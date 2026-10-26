@@ -60,22 +60,18 @@ export function sectionTallies(questions: readonly QuestionLike[]): { concept: s
 }
 
 /**
- * The review after grading (D-201, Dan: "all the wrong answers are the ones that need to be up
- * there", the green ones go): only the missed questions, in set order. Questions still open
- * (an exam answer not judged) are left out too.
+ * Whether the study sheet shows "Back to chat" / "Return to course list" under a finished set or deck.
+ * D-207 (Dan, build 29: "after finishing questions there was no way out"): the chat's activeQuiz still
+ * names the set until the coach's streamed report card is saved, and that report waits while the sheet
+ * is open, so the buttons also show while the active set is the one just graded.
  */
-export function reviewMisses<T extends QuestionLike>(answered: readonly T[]): T[] {
-  return answered.filter((q) => rowResult(q) === 'wrong');
-}
-
-/**
- * Which miss is open in the review: the one the student opened, else the first miss (D-201: the
- * first one opens by itself so the student sees what a miss holds). `chosen` is undefined until
- * the student taps a miss; null means they closed it.
- */
-export function openMissId(misses: readonly { id: string }[], chosen: string | null | undefined): string | null {
-  if (chosen === undefined) return misses[0]?.id ?? null;
-  return chosen;
+export function showStudyDone(state: {
+  gradedSessionId: string | null; activeQuizId: string | null; deckSessionId: string | null;
+  finishedDeckId: string | null; activeDeckId: string | null;
+}): boolean {
+  const setDone = !!state.gradedSessionId && !state.deckSessionId && (!state.activeQuizId || state.activeQuizId === state.gradedSessionId);
+  const deckDone = !!state.finishedDeckId && (!state.activeDeckId || state.activeDeckId === state.finishedDeckId);
+  return setDone || deckDone;
 }
 
 /**

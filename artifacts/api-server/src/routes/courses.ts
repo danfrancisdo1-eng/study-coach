@@ -17,6 +17,7 @@ import { reviewedLectureMaterials } from "../lib/lecture-materials";
 import { rowsFromState } from "../lib/memory-sheet";
 import { activeFor, consume, enforced, planFor, refund } from "../lib/premium-store";
 import { limitMessage } from "../lib/premium";
+import { AI_CONSENT_REQUIRED } from "../lib/consent";
 
 const router: IRouter = Router();
 router.use("/study/courses", requireStudyAuth);
@@ -74,7 +75,7 @@ router.post("/study/courses/:courseId/review-sheet", async (req, res): Promise<v
   const ownerId = owner(req);
   const state = (await db.select({ state: studyStatesTable.state }).from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1))[0]?.state as JsonObject | undefined;
   if (!isObject(state) || state.aiConsent !== true) {
-    res.status(403).json({ error: "Persist explicit AI consent in study state (aiConsent: true) before using AI coaching." });
+    res.status(403).json(AI_CONSENT_REQUIRED);
     return;
   }
   const courses = list(state.courses).filter(isObject);
@@ -211,7 +212,7 @@ router.post("/study/courses/:courseId/exam-guide", async (req, res): Promise<voi
   const rows = await db.select({ state: studyStatesTable.state }).from(studyStatesTable).where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
   const state = isObject(rows[0]?.state) ? rows[0]!.state as JsonObject : null;
   if (!state || state.aiConsent !== true) {
-    res.status(403).json({ error: "Persist explicit AI consent in study state (aiConsent: true) before using AI coaching." });
+    res.status(403).json(AI_CONSENT_REQUIRED);
     return;
   }
   const course = list(state.courses).find((c): c is JsonObject => isObject(c) && c.id === courseId);

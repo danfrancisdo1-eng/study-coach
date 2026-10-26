@@ -22,6 +22,9 @@ if (Number.isNaN(port) || port <= 0) {
 // the repo alike. A failed migration rolls back and exits, so a bad deploy never serves.
 const migrationsDir = process.env["DB_MIGRATIONS_DIR"] ?? path.resolve(globalThis.__dirname ?? ".", "../../../lib/db/migrations");
 
+/** Longer than a hosting proxy usually keeps an idle connection open (60 s). */
+const KEEP_ALIVE_MS = 65_000;
+
 async function main(): Promise<void> {
   if (process.env["SKIP_MIGRATIONS"] === "1") {
     // Tests that run the server without a database. Never set in production.
@@ -30,7 +33,7 @@ async function main(): Promise<void> {
     const result = await applyMigrations({ connectionString: process.env["DATABASE_URL"] ?? "", migrationsDir, log: (message) => logger.info(message) });
     logger.info({ applied: result.applied, alreadyApplied: result.alreadyApplied }, "Migrations checked");
   }
-  app.listen(port, (err) => {
+  const server = app.listen(port, (err) => {
     if (err) {
       logger.error({ err }, "Error listening on port");
       process.exit(1);
@@ -38,6 +41,11 @@ async function main(): Promise<void> {
 
     logger.info({ port }, "Server listening");
   });
+  // D-208: Node closes an idle kept-alive connection after 5 s, sooner than the hosting proxy in front of it, which can
+  // then send a request down a connection that is closing ("No connection right now" on the phone,
+  // fine on a second tap). Keep idle connections longer than the proxy does.
+  server.keepAliveTimeout = KEEP_ALIVE_MS;
+  server.headersTimeout = KEEP_ALIVE_MS + 1_000;
 }
 
 main().catch((err: unknown) => {

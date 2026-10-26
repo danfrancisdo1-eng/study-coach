@@ -40,6 +40,7 @@ import { newUploadsWithoutCourse } from "../lib/course-materials";
 
 import { addsCourseBeyondPlan, examFreeLeft, limitMessage } from "../lib/premium";
 import { activeFor, consume, enforced, examQuestionsServed, planFor, refund } from "../lib/premium-store";
+import { AI_CONSENT_REQUIRED } from "../lib/consent";
 
 /**
  * Premium gate for one AI use on a course (D-090, only with PREMIUM_LIMITS=on): the course must
@@ -1080,7 +1081,7 @@ async function persistSessionReviews(ownerId: string, session: Session): Promise
 async function requireConsent(res: Response, ownerId: string): Promise<JsonObject | null> {
   const state = await accountState(ownerId);
   if (!state || state.aiConsent !== true) {
-    res.status(403).json({ error: "Persist explicit AI consent in study state (aiConsent: true) before using AI coaching." });
+    res.status(403).json(AI_CONSENT_REQUIRED);
     return null;
   }
   return state;

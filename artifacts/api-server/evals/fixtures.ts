@@ -605,7 +605,11 @@ export interface CoachCase {
   expectTeaching?: number;
   /** D-204 (coach.v37): the walk's layout, checked by code: "first" opens with the Your misses title, "miss" teaches a
    * miss, both with one thought per paragraph and exactly one Memory hack; "none" (wrap-up, moving on) has neither title. */
-  walkFormat?: "first" | "miss" | "none";
+  walkFormat?: "first" | "miss" | "none" | "wrap";
+  /** D-209 (coach.v38): the report card's facts on the turn that answers the last miss (the wrap-up writes readiness). */
+  readiness?: { text: string; isExam: boolean };
+  /** D-209: a report card with misses has no readiness section (it comes after the last miss); checked by code. */
+  noReadinessSection?: boolean;
 }
 
 const bioResults = `Sets and decks (3 total):
@@ -1224,7 +1228,7 @@ export const coachCases: CoachCase[] = [
     message: "I finished the set.",
     expectedActions: [], expectedSuggestions: ["Go over my misses"],
     expectations: ["One line about the result (7 of 10), no repeat of the corrections", "Does not list the missed concepts or write tips (the coach goes over the misses next)", "The only suggestion is 'Go over my misses'"],
-    maxWords: 40,
+    maxWords: 40, noReadinessSection: true,
   },
   // coach.v18 (D-102): a PDF review sheet exists; the coach points to it.
   {
@@ -1354,7 +1358,7 @@ export const coachCases: CoachCase[] = [
 
   // coach.v33 (D-192): the report card after a graded set, the readiness line, a little personality and a few emojis.
   {
-    name: "report card: improvement, two misses, exam Getting close with 12 days left (AI-103)",
+    name: "report card with misses: only the evaluation, readiness waits for the end of the misses (AI-103)",
     courses: [{ id: "ai103", name: "Microsoft AI-103", kind: "exam", examDate: "2026-11-05", daysLeft: 12, materials: 3, lectures: 0, guideSections: [
       { name: "Plan and manage an Azure AI solution", weight: 27.5 }, { name: "Implement generative AI and agentic solutions", weight: 32.5 },
       { name: "Implement computer vision solutions", weight: 12.5 }, { name: "Implement text analysis solutions", weight: 12.5 }, { name: "Implement information extraction solutions", weight: 12.5 },
@@ -1380,14 +1384,10 @@ export const coachCases: CoachCase[] = [
       "Says it is up from 6 of 10 last time and calls that an improvement",
       "Names the weak spots behind the two misses (Key Vault roles, grounding/RAG)",
       "Writes no memory tips and no '#### ' tip cards, and never mentions memory cards",
-      "Uses the sections in order: '### 🎯 Coach's evaluation', '### 📈 Exam readiness' (verdict on a '> ' line), and no Memory tips section",
-      "Says exam readiness is Getting close (the app's level, not its own estimate) and gives the numbers: generative AI and agentic solutions (about a third of the exam) is at 55% and information extraction is untested",
-      "Says what Ready takes in numbers (90% or better on a set, every section at 70% or better)",
-      "In the readiness box only the verdict words are bold, not the whole line",
-      "Gives one concrete next step ('Here's what we need to do' or close) that uses the 12 days left",
+      "Has exactly one section, '### 🎯 Coach's evaluation': no readiness section, no readiness verdict (Getting close), no section percentages and no what-Ready-takes line (readiness comes after going over the misses)",
       "Does not repeat the full corrections or explanations",
     ],
-    maxWords: 200, maxLineWords: 30, maxEmojis: 5,
+    maxWords: 90, maxLineWords: 30, maxEmojis: 3, noReadinessSection: true,
   },
   {
     name: "report card: a perfect first set is praised, but readiness says untested sections keep it at Not yet (AZ-500)",
@@ -1415,7 +1415,7 @@ export const coachCases: CoachCase[] = [
     maxWords: 140, maxEmojis: 5,
   },
   {
-    name: "report card: a rough set and a drop is honest and kind, never 'great' (PSY 101)",
+    name: "report card with misses: a rough set and a drop is honest and kind, never 'great', readiness later (PSY 101)",
     courses: [{ id: "psy", name: "PSY 101", materials: 3, lectures: 1, hasSyllabus: true }], firstVisit: false, focusCourseId: "psy", today: "2026-10-24",
     history: [{ role: "user", content: "Give me a practice set on chapter 3" }, { role: "assistant", content: "Your 10-question set on chapter 3 is starting now." }],
     quiz: { courseName: "PSY 101", topic: "Chapter 3", kind: "practice", answered: 10, total: 10, graded: { correct: 4, percent: 40, missed: [
@@ -1440,9 +1440,9 @@ export const coachCases: CoachCase[] = [
       "Gives 4 of 10 (40%) honestly with supportive words; never calls it great, nice or good",
       "Mentions it is down from 7 of 10 without guilt or blame",
       "Writes no memory tips and no '#### ' tip cards, and never mentions memory cards",
-      "Says it is not ready yet for the course's tests, says the student is at 55% over the last 20 answers and what Ready takes (90% on a set, 85% overall), and gives one next step",
+      "Has only the Coach's evaluation section: no readiness section, no readiness verdict, no 55% figure and no what-Ready-takes line (readiness comes after going over the misses)",
     ],
-    maxWords: 200, maxLineWords: 24, maxEmojis: 5,
+    maxWords: 90, maxLineWords: 24, maxEmojis: 3, noReadinessSection: true,
   },
   {
     name: "report card: a course that is Ready says so with a check (BIOL 114)",
@@ -1466,7 +1466,7 @@ export const coachCases: CoachCase[] = [
     maxWords: 120, maxEmojis: 5,
   },
   {
-    name: "report card: too few answers yet, so readiness waits for a few more sets (HIST 210)",
+    name: "report card with misses, first set: only the evaluation, no progress line (HIST 210)",
     courses: [{ id: "hist", name: "HIST 210", materials: 2, lectures: 0, hasSyllabus: true }], firstVisit: false, focusCourseId: "hist", today: "2026-10-24",
     history: [{ role: "user", content: "Give me a practice set on all topics" }, { role: "assistant", content: "Your 10-question set on all topics is starting now." }],
     quiz: { courseName: "HIST 210", topic: "All topics", kind: "practice", answered: 10, total: 10, graded: { correct: 7, percent: 70, missed: [
@@ -1487,9 +1487,9 @@ export const coachCases: CoachCase[] = [
     expectations: [
       "Gives 7 of 10 with fitting encouragement and no progress comparison",
       "Writes no memory tips and no '#### ' tip cards, and never mentions memory cards",
-      "Says a few more sets will show where the student stands, instead of judging readiness from one set",
+      "Has only the Coach's evaluation section: nothing about readiness yet (readiness comes after going over the misses)",
     ],
-    maxWords: 200, maxLineWords: 24, maxEmojis: 5,
+    maxWords: 90, maxLineWords: 24, maxEmojis: 3, noReadinessSection: true,
   },
   // coach.v36 (D-203): after the report card, the coach goes over the misses in the chat, one per reply.
   ...lessonCases(),
@@ -1670,7 +1670,17 @@ function lessonCases(): CoachCase[] {
     "2. Q: What keeps a chat agent's answers tied to company documents? | they chose: Raising the temperature | right answer: Retrieval-augmented generation over an index | why: RAG retrieves passages and the model answers from them. | the plan: why it was tempting: Temperature is the setting people hear about most, so it feels like the knob that controls answers.; the one thing to remember: Grounding means fetching the documents first.; a way to remember it (Think of it like): RAG is an open-book exam: the model looks up the page before it answers. Temperature only changes how creative it sounds.",
     "3. Q: Which feature reads the serial numbers printed on parts in a photo? | they chose: Image classification | right answer: OCR (the Read API) | why: OCR extracts printed or handwritten text from images.",
   ].join("\n");
-  const reportCard = "### 🎯 Coach's evaluation\n- **7 of 10 (70%).** Solid set.\n- **Still shaky:** Key Vault roles, grounding, OCR.\n### 📈 Exam readiness\n> ⚠️ **Getting close.** Generative AI isn't solid yet.\n- Here's what we need to do: one extra set a day on generative AI.";
+  // D-209 (coach.v38): with misses the report card is only the evaluation; readiness comes in the wrap-up.
+  const reportCard = "### 🎯 Coach's evaluation\n- **7 of 10 (70%).** Solid set.\n- **Still shaky:** Key Vault roles, grounding, OCR.";
+  const readiness = { isExam: true, text: [
+    "- This set: 7 of 10 (70%).",
+    "- Missed questions: 3.",
+    "- The set before it on this course: 5 of 10 (2026-10-22).",
+    "- Exam readiness: Getting close. Sections (share of recent answers right): Plan and manage an Azure AI solution, 27.5% of the exam: 78% of 9 (solid); Implement generative AI and agentic solutions, 32.5% of the exam: 55% of 11; Implement computer vision solutions, 12.5% of the exam: 80% of 5 (solid); Implement text analysis solutions, 12.5% of the exam: 75% of 4 (solid); Implement information extraction solutions, 12.5% of the exam: untested.",
+    "- What Ready takes: a set at 90% or better, with every section at 70% or better over its recent answers (at least 3 answers each).",
+    "- Work on next: Implement generative AI and agentic solutions; Implement information extraction solutions.",
+    "- Days to the exam: 12.",
+  ].join("\n") };
   // D-204 (coach.v37): one thought per paragraph, a Your misses title on the first, a Memory hack on each miss.
   const teachMiss1 = "### 🔁 Your misses\n\nLet's go through the ones you missed, one at a time.\n\nFirst up: the Key Vault one.\n\nThe answer was **Key Vault Secrets User**. You picked Administrator, which sounds like the safe, official choice.\n\n### 🧠 Memory hack\n\n**Side by side.** Think of the vault as an apartment building: the Administrator is the manager with every key, the Secrets User is a tenant who can only open their own mailbox.\n\nLeast privilege means the mailbox key.\n\nGot it?";
   const teachMiss2 = "Nice.\n\nNext one: keeping a chat agent tied to company documents.\n\nThe answer was **retrieval-augmented generation**. You picked raising the temperature, the setting people hear about most.\n\n### 🧠 Memory hack\n\n**Think of it like.** An open-book exam: the model looks up the page before it answers. Temperature only changes how creative it sounds.\n\nMake sense?";
@@ -1747,17 +1757,20 @@ function lessonCases(): CoachCase[] {
       maxWords: 130,
     },
     {
-      ...base, name: "going over the misses: after the last one, a short wrap-up with the next step",
-      history: [{ role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }, { role: "user", content: "Got it" }, { role: "assistant", content: teachMiss2 }, { role: "user", content: "Got it" }, { role: "assistant", content: teachMiss3 }],
-      lesson: { text, previous: 3, total: 3 }, expectTeaching: 0, walkFormat: "none",
+      ...base, name: "going over the misses: after the last one, the wrap-up, then Exam readiness",
+      history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }, { role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }, { role: "user", content: "Got it" }, { role: "assistant", content: teachMiss2 }, { role: "user", content: "Got it" }, { role: "assistant", content: teachMiss3 }],
+      lesson: { text, previous: 3, total: 3 }, readiness, expectTeaching: 0, walkFormat: "wrap",
       message: "yes",
       expectedActions: [], expectedSuggestions: ["Another set on the missed topics", "Another set on everything", "Flashcards for the misses"],
       expectations: [
-        "Says that was the last one, with short earned encouragement",
-        "Gives one concrete next step starting with 'Next step:' (a set on just those topics, or generative AI)",
-        "Teaches no new miss and invents no new question",
+        "Opens with one line that that was the last one, with short earned encouragement, before any title",
+        "Then a '### 📈 Exam readiness' section whose verdict is Getting close (the app's level) on a '> ' line, with only the verdict words bold",
+        "Gives the numbers from the facts: generative AI and agentic solutions (about a third of the exam) is at 55% and information extraction is untested",
+        "Says what Ready takes in numbers (90% or better on a set, every section at 70% or better)",
+        "Gives exactly one concrete step ('Here's what we need to do' or close) on named topics that uses the 12 days left; no separate 'Next step:' line",
+        "Teaches no new miss, has no Memory hack and invents no new question",
       ],
-      maxWords: 60,
+      maxWords: 130, maxLineWords: 30, maxEmojis: 3,
     },
     {
       ...base, name: "going over the misses: asking for a new set ends the walk and starts it",

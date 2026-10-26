@@ -31,7 +31,7 @@ test('the coach goes over the misses one per reply after the report card', async
     if (system.includes('Your last reply taught miss 1 of 2')) return last === 'Not yet'
       ? { reply: 'Another angle on the first one. Make sense?', suggestions: [], actions: [], teaching: 1 }
       : { reply: 'Nice. Next one. Got it?', suggestions: [], actions: [], teaching: 2 };
-    if (system.includes('Your last reply taught miss 2, the last one')) return { reply: "That was the last one. Next step: a set on just those.", suggestions: ['Another set on the missed topics', 'Another set on everything', 'Flashcards for the misses'], actions: [], teaching: 0 };
+    if (system.includes('Your last reply taught miss 2, the last one')) return { reply: "That was the last one. Nice work.\n\n### 📈 Readiness\n> **Not ready yet.** A few more sets.", suggestions: ['Another set on the missed topics', 'Another set on everything', 'Flashcards for the misses'], actions: [], teaching: 0 };
     return { reply: 'Hello.', suggestions: [], actions: [], teaching: 0 };
   };
   const ai = await startAiStub(t, async (request) => {
@@ -79,12 +79,17 @@ test('the coach goes over the misses one per reply after the report card', async
   chat = await say('I finished the set.', chat.version);
   assert.deepEqual(chat.messages.at(-1).suggestions, ['Go over my misses']);
   assert.ok(!coachPrompts().at(-1).includes('Going over the misses (D-203)'));
+  // D-209: with misses the report card is the evaluation only; readiness waits for the end of the walk.
+  assert.ok(coachPrompts().at(-1).includes('No readiness section in this report card'));
+  assert.ok(coachPrompts().at(-1).includes('- This set: 2 of 4 (50%).'), 'the evaluation still gets the facts');
+  const wrapRules = 'Then, now that the misses are done, where they stand';
 
   // "Go over my misses": not drawn; the first miss is the cards' first (concept-2), with its plan.
   chat = await say('Go over my misses', chat.version);
   assert.ok(!chat.messages.some((m) => m.content === 'Go over my misses'), 'the app-sent message is not shown');
   assert.ok(chat.messages.every((m) => !('lesson' in m) && !('hidden' in m)), 'the bookkeeping stays on the server');
   assert.equal(chat.messages.at(-1).content, 'First one. Got it?');
+  assert.ok(!coachPrompts().at(-1).includes(wrapRules), 'no readiness facts before the last miss');
   assert.deepEqual(chat.messages.at(-1).suggestions, ['Got it', 'Not yet']);
   let prompt = coachPrompts().at(-1);
   assert.match(prompt, /1\. Q: How does the cell divide in lesson case 2\? \| they chose: C2 \| right answer: A2 .*the plan: why it was tempting: Tempting concept-2\./);
@@ -108,10 +113,14 @@ test('the coach goes over the misses one per reply after the report card', async
   assert.equal(chat.messages.at(-1).content, 'Nice. Next one. Got it?');
   prompt = coachPrompts().at(-1);
   assert.match(prompt, /Your last reply taught miss 1 of 2/);
+  assert.ok(!prompt.includes(wrapRules), 'no readiness facts while a miss is still ahead');
 
-  // After the last one: the wrap-up keeps the coach's chips, and the walk is over.
+  // After the last one: the wrap-up gets the readiness facts and writes readiness; it keeps the coach's chips, and the walk is over.
   chat = await say('yes', chat.version);
-  assert.equal(chat.messages.at(-1).content, 'That was the last one. Next step: a set on just those.');
+  prompt = coachPrompts().at(-1);
+  assert.ok(prompt.includes(wrapRules), 'the wrap-up writes readiness');
+  assert.match(prompt, /now that the misses are done[^]*- This set: 2 of 4 \(50%\)\.[^]*- What Ready takes:[^]*### 📈 Readiness/);
+  assert.equal(chat.messages.at(-1).content, 'That was the last one. Nice work.\n\n### 📈 Readiness\n> **Not ready yet.** A few more sets.');
   assert.deepEqual(chat.messages.at(-1).suggestions, ['Another set on the missed topics', 'Another set on everything', 'Flashcards for the misses']);
   chat = await say('thanks', chat.version);
   assert.ok(!coachPrompts().at(-1).includes('Going over the misses (D-203)'), 'no walk after the wrap-up');

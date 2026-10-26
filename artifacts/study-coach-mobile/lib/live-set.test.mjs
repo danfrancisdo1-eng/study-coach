@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { conceptTallies, feedbackDetail, liveScrollOffset, openMissId, reviewMisses, liveSetAction, resumeLabel, rowResult, scoreLine, sectionOf, sectionTallies } from './live-set.ts';
+import { conceptTallies, feedbackDetail, liveScrollOffset, liveSetAction, resumeLabel, rowResult, scoreLine, sectionOf, sectionTallies, showStudyDone } from './live-set.ts';
 
 test('the live set is the latest start_quiz action with a session, whichever message holds it', () => {
   assert.equal(liveSetAction([]), null);
@@ -68,18 +68,16 @@ test('the Resume strip never names a question past the end (D-174)', () => {
   assert.equal(resumeLabel({ kind: 'deck', done: 4, total: 12 }), 'Resume flashcards: 4 of 12 done');
 });
 
-test('D-201: the review keeps only the misses, in set order', () => {
-  const rows = [{ id: '1', ...q('a', 'x', 'x') }, { id: '2', ...q('b', 'y', 'x') }, { id: '3', ...q('c') }, { id: '4', ...q('d', 'z', 'w') }];
-  assert.deepEqual(reviewMisses(rows).map((r) => r.id), ['2', '4']);
-  assert.deepEqual(reviewMisses([{ id: '1', ...q('a', 'x', 'x') }]), [], 'a perfect set has no review rows');
-});
-
-test('D-201: the first miss opens by itself until the student picks or closes one', () => {
-  const misses = [{ id: 'a' }, { id: 'b' }];
-  assert.equal(openMissId(misses, undefined), 'a');
-  assert.equal(openMissId(misses, 'b'), 'b');
-  assert.equal(openMissId(misses, null), null, 'closed by the student stays closed');
-  assert.equal(openMissId([], undefined), null);
+test('D-207: Back to chat shows after a set even while the report card is still on its way', () => {
+  const none = { gradedSessionId: null, activeQuizId: null, deckSessionId: null, finishedDeckId: null, activeDeckId: null };
+  assert.equal(showStudyDone(none), false, 'nothing finished');
+  assert.equal(showStudyDone({ ...none, gradedSessionId: 's1', activeQuizId: 's1' }), true, 'graded, the chat still names the set');
+  assert.equal(showStudyDone({ ...none, gradedSessionId: 's1' }), true, 'graded, report saved');
+  assert.equal(showStudyDone({ ...none, gradedSessionId: 's1', activeQuizId: 's2' }), false, 'a new set is live');
+  assert.equal(showStudyDone({ ...none, activeQuizId: 's1' }), false, 'mid-set');
+  assert.equal(showStudyDone({ ...none, gradedSessionId: 's1', deckSessionId: 'd1', activeDeckId: 'd1' }), false, 'a deck is open');
+  assert.equal(showStudyDone({ ...none, finishedDeckId: 'd1', deckSessionId: 'd1', activeDeckId: 'd1' }), true, 'deck finished, reply on its way');
+  assert.equal(showStudyDone({ ...none, finishedDeckId: 'd1', deckSessionId: 'd1' }), true, 'deck finished');
 });
 
 test('D-201: a right answer is lean (Why? link, no trick); a miss shows everything', () => {
