@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { conceptTallies, liveScrollOffset, liveSetAction, resumeLabel, rowResult, scoreLine, sectionOf, sectionTallies } from './live-set.ts';
+import { conceptTallies, feedbackDetail, liveScrollOffset, openMissId, reviewMisses, liveSetAction, resumeLabel, rowResult, scoreLine, sectionOf, sectionTallies } from './live-set.ts';
 
 test('the live set is the latest start_quiz action with a session, whichever message holds it', () => {
   assert.equal(liveSetAction([]), null);
@@ -66,4 +66,24 @@ test('the Resume strip never names a question past the end (D-174)', () => {
   assert.equal(resumeLabel({ kind: 'quiz', answered: 11, total: 10 }), 'Grade your set: 10 of 10 answered');
   assert.equal(resumeLabel({ kind: 'quiz', answered: 0, total: 0 }), 'Resume set: question 1 of 0');
   assert.equal(resumeLabel({ kind: 'deck', done: 4, total: 12 }), 'Resume flashcards: 4 of 12 done');
+});
+
+test('D-201: the review keeps only the misses, in set order', () => {
+  const rows = [{ id: '1', ...q('a', 'x', 'x') }, { id: '2', ...q('b', 'y', 'x') }, { id: '3', ...q('c') }, { id: '4', ...q('d', 'z', 'w') }];
+  assert.deepEqual(reviewMisses(rows).map((r) => r.id), ['2', '4']);
+  assert.deepEqual(reviewMisses([{ id: '1', ...q('a', 'x', 'x') }]), [], 'a perfect set has no review rows');
+});
+
+test('D-201: the first miss opens by itself until the student picks or closes one', () => {
+  const misses = [{ id: 'a' }, { id: 'b' }];
+  assert.equal(openMissId(misses, undefined), 'a');
+  assert.equal(openMissId(misses, 'b'), 'b');
+  assert.equal(openMissId(misses, null), null, 'closed by the student stays closed');
+  assert.equal(openMissId([], undefined), null);
+});
+
+test('D-201: a right answer is lean (Why? link, no trick); a miss shows everything', () => {
+  assert.deepEqual(feedbackDetail({ right: true, whyOpen: false }), { explanation: false, hook: false, whyLink: true });
+  assert.deepEqual(feedbackDetail({ right: true, whyOpen: true }), { explanation: true, hook: false, whyLink: false });
+  assert.deepEqual(feedbackDetail({ right: false, whyOpen: false }), { explanation: true, hook: true, whyLink: false });
 });

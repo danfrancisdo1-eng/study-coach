@@ -59,6 +59,35 @@ export function sectionTallies(questions: readonly QuestionLike[]): { concept: s
   return conceptTallies(questions.map((q) => (sectioned ? { ...q, concept: sectionOf(q.concept) } : q)));
 }
 
+/**
+ * The review after grading (D-201, Dan: "all the wrong answers are the ones that need to be up
+ * there", the green ones go): only the missed questions, in set order. Questions still open
+ * (an exam answer not judged) are left out too.
+ */
+export function reviewMisses<T extends QuestionLike>(answered: readonly T[]): T[] {
+  return answered.filter((q) => rowResult(q) === 'wrong');
+}
+
+/**
+ * Which miss is open in the review: the one the student opened, else the first miss (D-201: the
+ * first one opens by itself so the student sees what a miss holds). `chosen` is undefined until
+ * the student taps a miss; null means they closed it.
+ */
+export function openMissId(misses: readonly { id: string }[], chosen: string | null | undefined): string | null {
+  if (chosen === undefined) return misses[0]?.id ?? null;
+  return chosen;
+}
+
+/**
+ * How much feedback an answered question shows (D-201, Dan: "we don't need that up there because it
+ * was a correct answer ... we're trying to rapidly recall"): a right answer gets the verdict and a
+ * small "Why?" link (the explanation only on tap, never the memory trick); a miss gets everything.
+ */
+export function feedbackDetail({ right, whyOpen }: { right: boolean; whyOpen: boolean }): { explanation: boolean; hook: boolean; whyLink: boolean } {
+  if (!right) return { explanation: true, hook: true, whyLink: false };
+  return { explanation: whyOpen, hook: false, whyLink: !whyOpen };
+}
+
 /** One short line under the score. */
 export function scoreLine(percent: number): string {
   if (percent >= 90) return 'Strong. The remaining misses are the ones worth drilling.';

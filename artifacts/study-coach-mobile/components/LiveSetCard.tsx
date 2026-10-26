@@ -25,7 +25,7 @@ import { useCountUp } from '@/hooks/useCountUp';
 import { writtenProgress } from '@/lib/progress';
 import { FONT, TYPE } from '@/constants/type';
 import { topicParts } from '@/lib/topic-label';
-import { rowResult, scoreLine, sectionTallies } from '@/lib/live-set';
+import { feedbackDetail, openMissId, reviewMisses, scoreLine, sectionTallies } from '@/lib/live-set';
 
 /**
  * A practice set as one live card in the chat (D-051/D-053, Dan: "one live card at a time").
@@ -58,7 +58,9 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
   const grade = useGradeStudyQuiz();
   const flag = useFlagStudyQuestion();
   const [reviewingId, setReviewingId] = useState<string | null>(null); // the question whose feedback is live
-  const [expandedId, setExpandedId] = useState<string | null>(null); // a collapsed row opened again
+  // D-201: the miss open in the review; undefined until the student taps one (the first opens by itself).
+  const [expandedId, setExpandedId] = useState<string | null | undefined>(undefined);
+  const [whyOpenIds, setWhyOpenIds] = useState<string[]>([]); // D-201: right answers whose "Why?" was tapped
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [justAnsweredId, setJustAnsweredId] = useState<string | null>(null); // D-172: the answer whose mark is rising
   const reportedStep = useRef<string | null>(null);
@@ -140,11 +142,11 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
   };
 
   // The question with its options; after an answer the chosen and the correct options are marked.
-  const questionBlock = (question: StudyQuizQuestionsItem, position: number, answerable: boolean) => {
+  const questionBlock = (question: StudyQuizQuestionsItem, position: number, answerable: boolean, showKicker = true) => {
     const feedback = question.feedback ?? null;
     return (
       <View style={styles.question}>
-        <CardText style={styles.kicker}>Question {position + 1} of {total}{question.concept ? ` · ${question.concept}` : ''}</CardText>
+        {showKicker ? <CardText style={styles.kicker}>Question {position + 1} of {total}{question.concept ? ` · ${question.concept}` : ''}</CardText> : null}
         <CardText style={styles.prompt}>{question.prompt}</CardText>
         {question.options.map((option, i) => {
           const chosen = feedback ? feedback.selectedOptionId === option.id : false;
@@ -181,14 +183,23 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
     const judged = questions.filter((q) => q.feedback);
     const position = judged.indexOf(question);
     const streak = rightStreak(judged.map((q) => q.feedback!.selectedOptionId === q.feedback!.correctOptionId), position);
+    // D-201: a right answer is lean (verdict + "Why?"); a miss keeps the explanation and the trick.
+    const detail = feedbackDetail({ right: correct, whyOpen: whyOpenIds.includes(question.id) });
     return (
       <View style={styles.feedback}>
         {/* Grok's feedback layout (Dan: "match it", D-063): a tinted panel headed by the verdict, then the trick as its own card. */}
         <View style={[styles.verdictPanel, correct ? styles.verdictPanelRight : styles.verdictPanelWrong]} testID={correct ? 'panel-verdict-right' : 'panel-verdict-wrong'}>
-          <CardText style={[styles.verdictTitle, { color: correct ? colors.correct : colors.wrong }]}>{verdictLine({ right: correct, streak, position })}</CardText>
-          <CardText style={styles.body}>{feedback.explanation}</CardText>
+          <View style={styles.verdictRow}>
+            <CardText style={[styles.verdictTitle, styles.flex, { color: correct ? colors.correct : colors.wrong }]}>{verdictLine({ right: correct, streak, position })}</CardText>
+            {detail.whyLink && feedback.explanation ? (
+              <PressScale accessibilityRole="button" accessibilityLabel="Why is this right?" onPress={() => setWhyOpenIds((ids) => [...ids, question.id])} style={styles.whyLink} testID={`button-why-${question.id}`}>
+                <CardText style={styles.whyText}>Why?</CardText>
+              </PressScale>
+            ) : null}
+          </View>
+          {detail.explanation ? <CardText style={styles.body} testID="text-explanation">{feedback.explanation}</CardText> : null}
         </View>
-        {feedback.hook ? (
+        {detail.hook && feedback.hook ? (
           <View style={styles.hook}>
             <View style={styles.hookHead}><Feather name="zap" size={14} color={colors.hookText} /><CardText style={styles.hookKicker}>Remember it</CardText></View>
             <CardText style={styles.hookText}>{feedback.hook}</CardText>
@@ -224,26 +235,31 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
     } catch (problem) { onError(problem); }
   };
 
-  // The review (D-059): after grading, every answered question as one line, under the score; tap to reopen one.
-  const collapsed = quiz.grade ? answered : [];
-  const rows = collapsed.length ? (
+  // The review (D-059, D-201): after grading, only the misses, each a card with a clear "See why";
+  // the first opens by itself. The right answers are left out (Dan: "the green ones" go).
+  const misses = quiz.grade ? reviewMisses(answered) : [];
+  const openId = openMissId(misses, expandedId);
+  const rows = quiz.grade && answered.length ? (
     <View style={styles.rows} testID="rows-live-set">
-      <CardText style={styles.kicker}>Review</CardText>
-      {collapsed.map((q) => {
-        const result = rowResult(q);
-        const open = expandedId === q.id;
+      <CardText style={styles.reviewTitle} accessibilityRole="header">{misses.length ? `Your misses (${misses.length})` : 'Every one right. Nice.'}</CardText>
+      {misses.map((q, i) => {
+        const open = openId === q.id;
         const position = questions.indexOf(q);
         return (
-          <Animated.View key={q.id} entering={FadeIn.duration(220).delay(rowDelayMs(collapsed.indexOf(q)))} layout={LinearTransition.duration(220)}>
-            <PressScale scale={PRESS_SCALE.card} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`Question ${position + 1}, ${result === 'correct' ? 'correct' : result === 'wrong' ? 'missed' : 'answered'}: ${q.concept}`}
-              onPress={() => setExpandedId(open ? null : q.id)} style={[styles.row]} testID={`row-live-${position}`}>
-              <CardText style={styles.rowNumber}>{position + 1}</CardText>
-              {/* D-171: a plain mark; ten red circles in a column read as punishment. The row's label still says correct or missed. */}
-              <Feather name={result === 'correct' ? 'check' : result === 'wrong' ? 'x' : 'minus'} size={16} color={result === 'correct' ? colors.correct : result === 'wrong' ? colors.wrong : colors.mutedForeground} />
-              <CardText numberOfLines={open ? undefined : 1} style={styles.rowText}>{q.concept || q.prompt}</CardText>
-              <Feather name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+          <Animated.View key={q.id} entering={FadeIn.duration(220).delay(rowDelayMs(i))} layout={LinearTransition.duration(220)} style={styles.missCard}>
+            <PressScale scale={PRESS_SCALE.card} accessibilityRole="button" accessibilityState={{ expanded: open }}
+              accessibilityLabel={`Missed question ${position + 1}: ${q.concept || q.prompt}. ${open ? 'Hide' : 'See why'}`}
+              onPress={() => setExpandedId(open ? null : q.id)} style={styles.missHead} testID={`row-live-${position}`}>
+              <View style={styles.missHeadCopy}>
+                <CardText style={styles.missKicker}>Question {position + 1}{q.concept ? ` · ${q.concept}` : ''}</CardText>
+                {open ? null : <CardText numberOfLines={2} style={styles.missPrompt}>{q.prompt}</CardText>}
+                <View style={styles.seeWhy}>
+                  <CardText style={styles.seeWhyText}>{open ? 'Hide' : 'See why'}</CardText>
+                  <Feather name={open ? 'chevron-up' : 'chevron-right'} size={18} color={colors.primaryText} />
+                </View>
+              </View>
             </PressScale>
-            {open ? <View style={styles.rowOpen}>{questionBlock(q, position, false)}{feedbackBlock(q)}</View> : null}
+            {open ? <View style={styles.rowOpen}>{questionBlock(q, position, false, false)}{feedbackBlock(q)}</View> : null}
           </Animated.View>
         );
       })}
@@ -322,14 +338,16 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
       <View style={styles.head}>
         {/* D-130: "All topics" with each section on its own line, not one long capitalised run.
             D-191: title and sections stack in one column beside the count; in one row they ran off the card. */}
+        {/* D-201: the topic is a real title (Dan: "the title's too small"). The corner "9/12" is gone:
+            it counted answers while the question said "Question 10 of 12"; the question line and the bar are the one counter. */}
         <View style={styles.headCopy}>
-          <CardText style={styles.kicker}>Practice · {topicParts(session.topic).title}</CardText>
+          <CardText style={styles.kicker}>Practice</CardText>
+          <CardText style={styles.setTitle} accessibilityRole="header">{topicParts(session.topic).title}</CardText>
           {topicParts(session.topic).sections.map((section) => <CardText key={section} style={styles.sectionLine}>{section}</CardText>)}
         </View>
-        {!quiz.grade ? <CardText style={styles.headCount} accessibilityLabel={`${answered.length} of ${total} answered`}>{answered.length}/{total}</CardText> : null}
       </View>
       {!quiz.grade ? (
-        <View style={styles.progressTrack} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: total, now: answered.length }}>
+        <View style={styles.progressTrack} accessibilityRole="progressbar" accessibilityLabel={`${answered.length} of ${total} answered`} accessibilityValue={{ min: 0, max: total, now: answered.length }}>
           <View style={[styles.progressFill, { width: `${total ? Math.round((answered.length / total) * 100) : 0}%` }]} />
         </View>
       ) : null}
@@ -392,15 +410,25 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   headCopy: { flex: 1, gap: 2 },
   sectionLine: { ...TYPE.small, color: colors.mutedForeground },
   kicker: { ...TYPE.kicker, color: colors.mutedForeground, flexShrink: 1 },
-  headCount: { ...TYPE.small, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  setTitle: { ...TYPE.setTitle, color: colors.foreground },
   progressTrack: { height: 5, borderRadius: 3, backgroundColor: colors.secondary, overflow: 'hidden' },
   progressFill: { height: 5, backgroundColor: colors.primary },
   progressFillPartial: { backgroundColor: colors.primaryText },
-  rows: { gap: 2 },
-  row: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
-  rowNumber: { ...TYPE.small, width: 22, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  rowText: { ...TYPE.small, flex: 1, color: colors.foreground },
-  rowOpen: { gap: 12, paddingBottom: 10 },
+  // D-201: the review is the misses as cards, a bigger heading and text, a clear "See why".
+  rows: { gap: 10 },
+  reviewTitle: { ...TYPE.setTitle, color: colors.foreground },
+  missCard: { borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.background, paddingHorizontal: 14, paddingVertical: 4 },
+  missHead: { minHeight: 44, paddingVertical: 8 },
+  missHeadCopy: { gap: 6 },
+  missKicker: { ...TYPE.smallSemi, color: colors.wrong },
+  missPrompt: { ...TYPE.bodySemi, color: colors.foreground },
+  seeWhy: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  seeWhyText: { ...TYPE.bodySemi, color: colors.primaryText },
+  rowOpen: { gap: 12, paddingBottom: 12 },
+  verdictRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  flex: { flex: 1 },
+  whyLink: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'flex-end', marginVertical: -12 },
+  whyText: { ...TYPE.smallSemi, color: colors.primaryText, textDecorationLine: 'underline' },
   live: { gap: 14 },
   question: { gap: 10 },
   prompt: { ...TYPE.prompt, color: colors.foreground },

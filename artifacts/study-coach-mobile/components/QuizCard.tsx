@@ -201,8 +201,10 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
         {/* D-179: the score card is frosted glass over the aurora. */}
         <GlassFill />
         <Confetti sessionId={sessionId} perfect={isPerfect(quiz.grade)} />
-        {/* D-130: "All topics" with each section on its own line, not one long capitalised run. */}
-        <CardText style={styles.kicker}>{kindLabel} · {topicParts(session.topic).title}</CardText>
+        {/* D-130: "All topics" with each section on its own line, not one long capitalised run.
+            D-201: the topic is a real title on the score card (Dan: "the title's too small"). */}
+        <CardText style={styles.kicker}>{kindLabel}</CardText>
+        <CardText style={styles.setTitle} accessibilityRole="header">{topicParts(session.topic).title}</CardText>
         {topicParts(session.topic).sections.map((section) => <CardText key={section} style={styles.sectionLine}>{section}</CardText>)}
         <View style={styles.scoreRow} accessible accessibilityLabel={`Score: ${quiz.grade.correct} of ${quiz.grade.limitMinutes ? quiz.grade.answered + quiz.grade.unanswered : quiz.grade.answered}`}><CardText style={styles.score}>{shownCorrect}</CardText><CardText style={styles.scoreOf}> / {quiz.grade.limitMinutes ? quiz.grade.answered + quiz.grade.unanswered : quiz.grade.answered}</CardText></View>
         {/* Dan (2026-10-12): "20% on the questions you answered" read like 20% missed. Say the score plainly. */}
@@ -391,6 +393,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 16, gap: 12 },
   sectionLine: { ...TYPE.small, color: colors.mutedForeground },
   kicker: { ...TYPE.kicker, color: colors.mutedForeground },
+  setTitle: { ...TYPE.setTitle, color: colors.foreground },
   prompt: { ...TYPE.prompt, color: colors.foreground },
   body: { ...TYPE.body, color: colors.foreground },
   muted: { ...TYPE.small, color: colors.mutedForeground },
