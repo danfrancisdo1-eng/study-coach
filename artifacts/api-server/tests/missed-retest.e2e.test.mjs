@@ -64,10 +64,12 @@ test('a retest that only rewords the last set falls back to a plain set on the m
   chat = await call('POST', '/study/chat', { content: 'Another set on the missed topics', version: 1, courseId: 'ai103' });
   assert.equal(chat.status, 200, JSON.stringify(chat.body));
   const retest = (await call('GET', `/study/sessions/${chat.body.messages.at(-1).actions[0].sessionId}`)).body;
-  assert.ok(retest.quiz.questions.length >= 2, `got ${retest.quiz.questions.length} questions`);
-  // The two missed questions never come back as they were (1–2 right answers are carried over on purpose, SPEC §6 step 7).
-  assert.ok(retest.quiz.questions.every((q) => !q.prompt.startsWith(STEMS[0]) && !q.prompt.startsWith(STEMS[1])), 'no repeat of a missed question');
-  assert.ok(retest.quiz.questions.some((q) => fresh.some((f) => f.prompt === q.prompt)), 'fresh questions from the fallback');
+  // D-202 (Dan: "how did it come up with 12 questions?"): exactly the count asked, only the misses,
+  // no right answers carried over from the last set.
+  assert.equal(retest.quiz.questions.length, 4, `got ${retest.quiz.questions.length} questions`);
+  assert.equal(retest.quiz.expectedCount, 4);
+  assert.ok(retest.quiz.questions.every((q) => !STEMS.some((stem) => q.prompt.startsWith(stem))), 'no question from the last set, right or missed');
+  assert.ok(retest.quiz.questions.every((q) => fresh.some((f) => f.prompt === q.prompt)), 'all fresh questions from the fallback');
 
   // The writer saw the retest wording first (v11), then the plain fallback on the missed concepts.
   const writers = ai.requests.map((r) => r.body.messages[0].content).filter((c) => c.includes('Create exactly')).slice(1);
