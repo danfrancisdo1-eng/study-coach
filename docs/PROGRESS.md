@@ -1,5 +1,17 @@
 # Progress
 
+## Session 23r — 2026-10-26 — readiness comes after going over the misses (D-209), branch `feat/coach-v38-readiness-last`
+
+### Done
+- coach.v38: with misses the report card is only Coach's evaluation; Exam readiness is written in the wrap-up after the last miss. No misses: unchanged. The server passes the readiness facts on the turn that answers the last miss.
+- Verified here: `pnpm run typecheck` (all packages), `pnpm test` (405 tests: 404 pass, 1 skipped as before), evals build (`node evals/build.mjs`). New: tests/coach-v38-order.test.mjs; lesson.e2e.test.mjs checks the report card prompt has no readiness section and only the wrap-up turn carries the readiness facts.
+
+### Next
+- Dan runs the coach evals for v38 on his Mac (command in the PR).
+
+### Needs real-iPhone check
+- Finish a set with misses: the evaluation only, then Your misses; after Got it on the last miss: "That was the last one", then Exam readiness types out under its title, then the three chips. A perfect set: evaluation and readiness together, as before.
+
 ## Session 23q — 2026-10-26 — the coach types it out (D-206), branch `feat/stream-coach`
 
 ### Done
