@@ -22,6 +22,12 @@ Newest first. Each entry: date, decision, why, who decided.
 - **Phone, the coach's typed-out reply (D-206):** a dropped stream is sent once more; what the first try showed is cleared and the reply types out again. If the retry gets a 409 (the first try got through and was saved, so the chat moved on), the chat is reloaded with no error and the message is not put back in the box. An answer from the server (a limit, an error) is never retried.
 - **Decided by:** Dan.
 
+## 2026-10-26 — D-210: "Turn on the AI coach first" in plain words
+- A beta tester added the NJ Real Estate License exam from the welcome screen before agreeing to the AI notice; looking up the exam showed the server's developer sentence "Persist explicit AI consent in study state (aiConsent: true) before using AI coaching."
+- Every AI route that needs the agreement now answers (403) "Turn on the AI coach first: go to the Coach tab and tap “I understand and consent”." with `code: "ai_consent_required"` (lib/consent.ts, one copy). Server only: live after the Render deploy, no phone build needed.
+- Next (mock first): asking for the agreement right on the course screen when an AI button is tapped there. Dan: "whatever you recommend".
+- **Decided by:** Dan (via Claude Code's recommendation).
+
 ## 2026-10-26 — D-206: The coach's reply types out while it is written (the report card and going over the misses)
 - Dan on build 28: "When the coach is thinking then finishes it spits out at once an entire paragraph and buttons ... Cant it print one letter at a time as fast as its thinking"; then, on the mock he approved: "have the text stream under all three of those titles ... is it possible to stream it slower at 400WPM"; "when it kicks over to the review of the misses in the chat, it pops you at the end of the chat. So you don't even see the coach's evaluation"; titles slide in, they are not typed.
 - **Server:** POST /study/chat/stream (in openapi.yaml): the same request as POST /study/chat; when the coach starts writing, the reply text goes out as server-sent "delta" events (pulled out of the coach's JSON as it streams, lib/reply-stream.ts), then one "done" event with the saved chat, or one "error" event. Anything stopped before the first word answers as plain JSON with the usual status. The AI module streams on Anthropic (`onText`); other providers hand over the whole text at once.

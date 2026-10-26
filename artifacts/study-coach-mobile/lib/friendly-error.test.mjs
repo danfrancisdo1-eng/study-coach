@@ -30,3 +30,8 @@ test('a sign-in token failure while offline shows the plain sentence, never the 
   assert.equal(friendlyError(clerk), MESSAGES.network);
   assert.equal(friendlyError(new Error('Bad thing at https://example.com/x')), MESSAGES.generic);
 });
+
+test('D-210: the "turn on the AI coach first" answer reaches the student as written', () => {
+  const error = 'Turn on the AI coach first: go to the Coach tab and tap “I understand and consent”.';
+  assert.equal(friendlyError({ status: 403, data: { error, code: 'ai_consent_required' } }), error);
+});
