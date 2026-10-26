@@ -75,7 +75,10 @@ test('exam-guide route: exams only, consent required, guide saved on the exam, f
     const text = await res.text();
     return { status: res.status, body: text ? JSON.parse(text) : null };
   };
-  assert.equal((await call('user_nc', 'POST', '/study/courses/pmp/exam-guide')).status, 403);
+  const noConsent = await call('user_nc', 'POST', '/study/courses/pmp/exam-guide');
+  assert.equal(noConsent.status, 403);
+  // D-210: the student reads how to turn the coach on, not a developer's sentence.
+  assert.deepEqual(noConsent.body, { error: 'Turn on the AI coach first: go to the Coach tab and tap “I understand and consent”.', code: 'ai_consent_required' });
   assert.equal((await call('user_e', 'POST', '/study/courses/bio/exam-guide')).status, 400);
   assert.equal((await call('user_e', 'POST', '/study/courses/nope/exam-guide')).status, 404);
   assert.equal(ai.requests.length, 0, 'nothing sent to the AI before the checks pass');

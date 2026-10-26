@@ -44,6 +44,7 @@ import { withoutNearDuplicates } from "../lib/near-duplicate";
 import { giveawayKey } from "../lib/quiz-check";
 import { bankFillCount, pickFromBank, promptKey } from "../lib/question-bank";
 import { addToBank, fromBank, loadBank, markServed } from "../lib/bank-store";
+import { AI_CONSENT_REQUIRED } from "../lib/consent";
 
 const router: IRouter = Router();
 router.use("/study/chat", requireStudyAuth);
@@ -664,7 +665,7 @@ async function sendChatBody(req: Request, reply: (status: number, body: unknown)
     .where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
   const state = stateRows[0]?.state;
   if (!isObject(state) || state.aiConsent !== true) {
-    reply(403, { error: "Persist explicit AI consent in study state (aiConsent: true) before using AI coaching." });
+    reply(403, AI_CONSENT_REQUIRED);
     return;
   }
   // The thread is the focused course's (D-038); an unknown or missing courseId means the general thread.

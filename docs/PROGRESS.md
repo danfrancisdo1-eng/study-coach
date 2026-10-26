@@ -1,5 +1,13 @@
 # Progress
 
+## Session 23u — 2026-10-26 — "Turn on the AI coach first" in plain words (D-210), branch `fix/consent-wording`
+
+### Done
+- The 403 for AI features used before the AI agreement now reads as a student instruction, with a code for the app (lib/consent.ts; study.ts, chat.ts, courses.ts). Verified here: see the PR.
+
+### Next
+- Mock: the agreement asked right on the course screen when an AI button is tapped before it.
+
 ## Session 23q — 2026-10-26 — the coach types it out (D-206), branch `feat/stream-coach`
 
 ### Done
