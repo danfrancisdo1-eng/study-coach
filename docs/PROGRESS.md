@@ -44,6 +44,18 @@
 ### Next
 - Mock: the agreement asked right on the course screen when an AI button is tapped before it.
 
+## Session 23v — 2026-10-26 — the AI agreement asked on the course screen (D-211), branch `feat/consent-on-course-screen`
+
+### Done
+- Consent sheet on the course screen for every AI button; shared notice and saving (lib/ai-consent.ts) with the Coach tab. Mock approved first.
+- Verified here: see the PR (typecheck, phone unit tests incl. lib/ai-consent.test.mjs, iOS bundle export). Not run in a simulator (none here).
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (consent 52 pt, Not now 44 pt, in the thumb zone at the bottom). 2. One primary action: PASS (one filled button). 3. Chunked: PASS (one reason line, three notice lines). 4. Native patterns: PASS (bottom sheet with a grabber, tap above to close). 5. Progress / resume: PASS (the tapped action carries on after agreeing). 6. One accent: PASS. 7. Tokens; Dark Mode; Dynamic Type: PASS (theme tokens; text scales). 8. Reduce Motion / labels: PASS (Reanimated slide follows Reduce Motion; header role, the shade reads "Not now"). 9. Paywall: N/A.
+
+### Needs real-iPhone check
+- A new account that skips the agreement: add an exam, open it, tap Look up. The sheet slides up; I understand and consent → "Searching for the official guide…" → the guide. Not now → nothing sent, no error. Practice questions from the sheet goes to the chat and starts the set.
+
 ## Session 23q — 2026-10-26 — the coach types it out (D-206), branch `feat/stream-coach`
 
 ### Done
