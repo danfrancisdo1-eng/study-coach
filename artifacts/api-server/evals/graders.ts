@@ -1,6 +1,7 @@
 // Scoring for each eval task. Deterministic checks first (format, counts, dates, quotes);
 // a Claude judge only for things code can't check (answer-key correctness, tutoring quality).
 import Anthropic from "@anthropic-ai/sdk";
+import { walkFormatProblems } from "./walk-format";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
 import type { MemoryCardsCase, CourseRouterCase, UploadNotesCase, CourseNotesCase, ReviewSheetCase, CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase, WebLookupCase } from "./fixtures";
 import { explanationProblem, giveawayKey, parseQuizCheck } from "../src/lib/quiz-check";
@@ -412,7 +413,7 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   if (testCase.maxEmojis !== undefined && emojis > testCase.maxEmojis) notes.push(`too many emojis: ${emojis} > ${testCase.maxEmojis}`);
   // D-203: going over the misses: the miss number is checked by code, and a miss reads like talk (no titles, bullets or Pop quiz).
   if (testCase.expectTeaching !== undefined && (parsed.teaching ?? 0) !== testCase.expectTeaching) notes.push(`wrong teaching: ${parsed.teaching ?? 0} != ${testCase.expectTeaching}`);
-  if (testCase.lesson && (/^#{2,}\s/m.test(parsed.reply) || /^\s*[-•]\s/m.test(parsed.reply) || /pop quiz/i.test(parsed.reply))) notes.push("format: a miss has a title, a bullet list or a Pop quiz");
+  if (testCase.lesson) for (const problem of walkFormatProblems(parsed.reply, testCase.walkFormat ?? "miss")) notes.push(`format: ${problem}`);
   const verdict = await judge<{ expectations: { met: boolean; reason: string }[] }>(
     "You grade one reply from the AI study coach on an app's home chat, for students age 13+. Return exactly one verdict per expectation, in the same order. Check each expectation strictly.",
     { courses: testCase.courses, history: testCase.history, latestQuestionSet: testCase.quiz ?? null, latestDeck: testCase.deck ?? null, resultsSoFar: testCase.results ?? null, reportFacts: testCase.report?.text ?? null, missesBeingGoneOver: testCase.lesson ?? null, webFindings: testCase.webFindings ?? null, guideJustLookedUp: testCase.guideJustLookedUp ?? null, studentMessage: testCase.message, expectations: testCase.expectations, reply: parsed.reply, suggestions: parsed.suggestions, actionsTaken: parsed.actions },
