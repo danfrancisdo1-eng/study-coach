@@ -20,7 +20,7 @@ import { blocksOf, sectionsOf, type Block, type Span } from '@/lib/coach-text';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { EvaluationPlaceholder, SectionBody, SectionTitle, ThinkingDots } from '@/components/ReportReveal';
 import { EVALUATION_TITLE, LESSON_START, revealPlan, shouldStartLesson, visibleChips, type RevealStep } from '@/lib/lesson-chat';
-import { closeOpenBold, paceStep, pinnedOffset, streamable } from '@/lib/chat-stream';
+import { AlreadySent, closeOpenBold, paceStep, pinnedOffset, sendWithRetry, streamable } from '@/lib/chat-stream';
 import { streamChatMessage } from '@/lib/coach-stream';
 import { topicParts } from '@/lib/topic-label';
 import { daysLeft, daysLeftLabel } from '@/lib/syllabus';
@@ -425,11 +425,22 @@ export default function CoachHome() {
         if (!auto) { setDraft(''); Keyboard.dismiss(); }
         setLive({ user: content === LESSON_START ? null : content, received: '', shown: 0, done: null, anchorId: content === LESSON_START ? lastMessage?.id ?? null : null, auto: !!auto, draft: auto ? '' : sentDraft });
         try {
-          const result = await streamChatMessage(data, (piece) => setLive((l) => (l ? { ...l, received: l.received + piece } : l)));
+          // D-208: a dropped connection is retried once, starting the reply over.
+          const result = await sendWithRetry(
+            () => streamChatMessage(data, (piece) => setLive((l) => (l ? { ...l, received: l.received + piece } : l))),
+            () => setLive((l) => (l ? { ...l, received: '', shown: 0 } : l)),
+          );
           setLive((l) => (l ? { ...l, done: result } : l));
           return;
         } catch (problem) {
           setLive(null);
+          if (problem instanceof AlreadySent) {
+            // The first try got through and was saved: show the saved chat, no error, the draft stays sent.
+            await queryClient.invalidateQueries({ queryKey: chatKey });
+            const saved = queryClient.getQueryData<HomeChat>(chatKey);
+            if (saved) await afterReply(saved, auto);
+            return;
+          }
           if (!auto) setDraft(sentDraft); // never lose what the student typed
           // A server without the streamed route yet (an older deploy): send it the usual way.
           if ((problem as { status?: number }).status !== 404) throw problem;

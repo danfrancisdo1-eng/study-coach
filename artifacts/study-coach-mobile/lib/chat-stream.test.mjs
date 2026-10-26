@@ -65,3 +65,26 @@ test('closeOpenBold: a bold opened mid-stream is closed on its line', async () =
   assert.equal(closeOpenBold('**Done.** ok\nnext **a'), '**Done.** ok\nnext **a**');
   assert.equal(closeOpenBold('plain'), 'plain');
 });
+
+test('D-208: a dropped stream is sent once more; a 409 then means the first got through', async () => {
+  const { AlreadySent, isNetworkFailure, sendWithRetry } = await import('./chat-stream.ts');
+  const noWait = async () => {};
+  assert.equal(isNetworkFailure(new TypeError('Network request failed')), true);
+  assert.equal(isNetworkFailure({ status: 0 }), true);
+  assert.equal(isNetworkFailure({ status: 502 }), false);
+
+  let calls = 0; let cleared = 0;
+  const ok = await sendWithRetry(async () => { calls += 1; if (calls === 1) throw new Error('fetch failed: lost'); return 'chat'; }, () => { cleared += 1; }, noWait);
+  assert.deepEqual([ok, calls, cleared], ['chat', 2, 1], 'one retry, the first try cleared');
+
+  calls = 0;
+  await assert.rejects(sendWithRetry(async () => { calls += 1; throw { status: 429 }; }, () => {}, noWait), (e) => e.status === 429);
+  assert.equal(calls, 1, 'an answer from the server (limit, error) is not retried');
+
+  calls = 0;
+  await assert.rejects(sendWithRetry(async () => { calls += 1; throw calls === 1 ? { status: 0 } : { status: 409 }; }, () => {}, noWait), (e) => e instanceof AlreadySent);
+
+  calls = 0;
+  await assert.rejects(sendWithRetry(async () => { calls += 1; throw new TypeError('x'); }, () => {}, noWait), (e) => e instanceof TypeError);
+  assert.equal(calls, 2, 'never more than one retry');
+});

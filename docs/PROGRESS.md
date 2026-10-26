@@ -1,5 +1,15 @@
 # Progress
 
+## Session 23t — 2026-10-26 — a dropped connection is retried once (D-208), branch `fix/connection-retry`
+
+### Done
+- Server keeps idle connections 65 s (was Node's 5 s). API client retries once on a dropped connection for GET/HEAD/PUT/DELETE. The streamed coach reply retries once; a 409 on the retry reloads the chat quietly.
+- Verified here: see the PR (typecheck, tests, iOS bundle export). New tests: lib/custom-fetch-retry.test.mjs, the retry case in lib/chat-stream.test.mjs, the keep-alive check in coach-auth.test.mjs (fails on the old server, passes now).
+
+### Needs real-iPhone check
+- Use the app normally after leaving it idle for a minute or two: no "No connection right now" on the first tap, answer taps register the first time. Airplane mode on: an error line still shows after the one retry, nothing lost.
+- Needs the Render deploy for the server half.
+
 ## Session 23q — 2026-10-26 — the coach types it out (D-206), branch `feat/stream-coach`
 
 ### Done

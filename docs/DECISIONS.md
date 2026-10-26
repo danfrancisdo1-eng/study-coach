@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-26 — D-208: A dropped connection is retried once, quietly
+- Dan on build 29: a "No connection right now" error and an answer tap that did nothing; both worked on a second tap.
+- **Server:** Node closed an idle kept-alive connection after 5 s, sooner than the hosting proxy in front of it, which could then send the next request down a connection that was closing. Idle connections now stay open 65 s (headers timeout 66 s). A test checks the server announces it.
+- **Phone, API client:** a request that fails before any answer (no HTTP status) is sent once more after 0.6 s when it is safe to repeat: GET, HEAD, PUT, DELETE (saving an answer is a PUT). A POST is never repeated by the client; a cancelled request is not either.
+- **Phone, the coach's typed-out reply (D-206):** a dropped stream is sent once more; what the first try showed is cleared and the reply types out again. If the retry gets a 409 (the first try got through and was saved, so the chat moved on), the chat is reloaded with no error and the message is not put back in the box. An answer from the server (a limit, an error) is never retried.
+- **Decided by:** Dan.
+
 ## 2026-10-26 — D-206: The coach's reply types out while it is written (the report card and going over the misses)
 - Dan on build 28: "When the coach is thinking then finishes it spits out at once an entire paragraph and buttons ... Cant it print one letter at a time as fast as its thinking"; then, on the mock he approved: "have the text stream under all three of those titles ... is it possible to stream it slower at 400WPM"; "when it kicks over to the review of the misses in the chat, it pops you at the end of the chat. So you don't even see the coach's evaluation"; titles slide in, they are not typed.
 - **Server:** POST /study/chat/stream (in openapi.yaml): the same request as POST /study/chat; when the coach starts writing, the reply text goes out as server-sent "delta" events (pulled out of the coach's JSON as it streams, lib/reply-stream.ts), then one "done" event with the saved chat, or one "error" event. Anything stopped before the first word answers as plain JSON with the usual status. The AI module streams on Anthropic (`onText`); other providers hand over the whole text at once.
