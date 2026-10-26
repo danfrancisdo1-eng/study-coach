@@ -1,5 +1,13 @@
 # Progress
 
+## Session 23p — 2026-10-26 — answer sounds come back (D-205), branch `fix/answer-sounds`
+
+### Done
+- `lib/feedback-sounds.ts`: the audio mode is set again each time a set opens (clips load once). Verified here: mobile typecheck; phone unit tests. Not reproducible without an iPhone.
+
+### Needs real-iPhone check
+- Ringer on, Answer sounds on: a right answer plays the cha-ching, a wrong one the buzzer. Also after watching the intro video and after recording a lecture.
+
 ## Session 23o — 2026-10-26 — misses broken into lines, a Your misses title and a Memory hack (D-204), branch `feat/coach-v37-walk-format`
 
 ### Done
@@ -23,6 +31,7 @@
 
 ### Needs real-iPhone check
 - Finish a set with misses: "Coach's evaluation" slides in with dots while the coach writes, then the text; after a pause "Exam readiness" slides in, then its text; then the first miss arrives by itself. "Got it" moves on, "Not yet" explains again, typing a question works. Leave mid-walk, come back after 30 min: the greeting offers to pick it up. Reduce Motion on: no sliding. The readiness box is not all bold. No memory cards bar.
+
 ## Session 23m — 2026-10-25 — missed-topics sets are only the misses; no giveaway options (D-202), branch `fix/missed-only-fair-options`
 
 ### Done
@@ -35,6 +44,7 @@
 
 ### Needs real-iPhone check
 - After a set with misses, "Another set on the missed topics" with 10 asked: 10 questions, all on what was missed. Answer options of a question look alike in length.
+
 ## Session 23l — 2026-10-25 — lean right answers, misses-only review, bigger titles (D-201), branch `fix/beta-round-6-phone`
 
 ### Done
@@ -91,6 +101,7 @@
 
 ### Needs real-iPhone check
 - Premium: Monthly is selected when it opens and shows "1 week free"; tapping Yearly switches the button and terms. Account: Delete my account and Questions per set are visible without scrolling.
+
 ## Session 23h — 2026-10-25 — missed-topics retest fix (D-196), branch `fix/missed-retest`
 
 ### Done
