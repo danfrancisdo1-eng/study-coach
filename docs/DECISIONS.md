@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-26 — D-207: The practice score card no longer lists the misses; Back to chat shows right after a set
+- Dan on build 29: "it's still reviewing the wrong answers inside the score sheet ... the coach was going to do them individually"; "after finishing questions there was no way out".
+- **Score card:** the practice card keeps the score, its line and the By section bars; the "Your misses (N)" cards with "See why" are gone (the coach goes over the misses one at a time in the chat, D-203). The exam score sheet keeps its "Questions you missed" list for now: it is the only place to report a bad exam question (CLAUDE.md §6), since an exam shows no feedback while it runs.
+- **Back to chat:** the "Back to chat" and "Return to course list" buttons under a finished set waited for the chat to stop naming the set, which only happens once the coach's report card is saved; since D-206 that report types out only after the sheet is closed, so the buttons never came. They now show as soon as the set is graded (or a deck finished) (lib/live-set.ts `showStudyDone`, with tests).
+- **Sounds (build 29):** the missing cha-ching and buzzer were the phone's media volume at zero in Control Center (the ringer was up); not an app bug. D-205 stays; it is harmless.
+- Build #109. **Decided by:** Dan.
+
 ## 2026-10-26 — D-209: Readiness comes after going over the misses (coach.v38)
 - Dan on build 29: "Let's switch it though. Let's go through the misses with the coach then have the readiness come up." Mock v7 (https://claude.ai/artifact/1FgZBDcjY8MCjtkKf7RLNm), approved: Coach's evaluation → Your misses → Exam readiness.
 - **coach.v38:** with misses, the report card is only "### 🎯 Coach's evaluation" (score with its percent, progress, Still shaky); its one chip stays "Go over my misses". The walk is unchanged until the wrap-up after the last miss: one line that that was the last one (earned encouragement), then the "### 📈 Exam readiness" (or "### 📈 Readiness") section with the same rules the report card used (the verdict box with only the verdict bold, where they stand in numbers, what Ready takes, "Here's what we need to do" with one concrete step; "not judged yet" under 20 answers), then the three after-set chips. Its "Here's what we need to do" replaces the old "Next step:" line. With no misses the report card is unchanged (evaluation, then readiness). The readiness rules are one function in the prompt, used in both places.

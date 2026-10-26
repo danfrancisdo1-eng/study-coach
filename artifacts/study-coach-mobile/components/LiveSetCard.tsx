@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
-import Animated, { FadeIn, FadeInUp, LinearTransition, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
+import Animated, { FadeInUp, LinearTransition, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { useQueryClient } from '@tanstack/react-query';
@@ -20,19 +20,20 @@ import { Bone, SkeletonGroup } from '@/components/Skeleton';
 import { ProgressBar } from '@/components/ProgressBar';
 import { StatRow } from '@/components/StatRow';
 import { masteryIsStrong, masteryLabel, masteryShare, masteryValue } from '@/lib/mastery';
-import { barDelayMs, rowDelayMs } from '@/lib/count-up';
+import { barDelayMs } from '@/lib/count-up';
 import { useCountUp } from '@/hooks/useCountUp';
 import { writtenProgress } from '@/lib/progress';
 import { FONT, TYPE } from '@/constants/type';
 import { topicParts } from '@/lib/topic-label';
-import { feedbackDetail, openMissId, reviewMisses, scoreLine, sectionTallies } from '@/lib/live-set';
+import { feedbackDetail, scoreLine, sectionTallies } from '@/lib/live-set';
 
 /**
  * A practice set as one live card in the chat (D-051/D-053, Dan: "one live card at a time").
  * It sits under the coach message that started the set and stays there as the thread's
  * history. One question is live at a time: tap an option, the verdict, explanation and
  * memory trick land under it, Next brings the following question. After grading, the score
- * with bars per exam section, then the review: every question as one line (tap to reopen).
+ * with bars per exam section. The misses are not listed here (D-207, Dan: the coach goes over
+ * them one at a time in the chat).
  * While the rest of a
  * two-part set is still being written (D-052) the card polls and shows a skeleton for the
  * next question. Grade is offered when every question is in and answered; the score, a
@@ -58,8 +59,6 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
   const grade = useGradeStudyQuiz();
   const flag = useFlagStudyQuestion();
   const [reviewingId, setReviewingId] = useState<string | null>(null); // the question whose feedback is live
-  // D-201: the miss open in the review; undefined until the student taps one (the first opens by itself).
-  const [expandedId, setExpandedId] = useState<string | null | undefined>(undefined);
   const [whyOpenIds, setWhyOpenIds] = useState<string[]>([]); // D-201: right answers whose "Why?" was tapped
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [justAnsweredId, setJustAnsweredId] = useState<string | null>(null); // D-172: the answer whose mark is rising
@@ -235,37 +234,6 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
     } catch (problem) { onError(problem); }
   };
 
-  // The review (D-059, D-201): after grading, only the misses, each a card with a clear "See why";
-  // the first opens by itself. The right answers are left out (Dan: "the green ones" go).
-  const misses = quiz.grade ? reviewMisses(answered) : [];
-  const openId = openMissId(misses, expandedId);
-  const rows = quiz.grade && answered.length ? (
-    <View style={styles.rows} testID="rows-live-set">
-      <CardText style={styles.reviewTitle} accessibilityRole="header">{misses.length ? `Your misses (${misses.length})` : 'Every one right. Nice.'}</CardText>
-      {misses.map((q, i) => {
-        const open = openId === q.id;
-        const position = questions.indexOf(q);
-        return (
-          <Animated.View key={q.id} entering={FadeIn.duration(220).delay(rowDelayMs(i))} layout={LinearTransition.duration(220)} style={styles.missCard}>
-            <PressScale scale={PRESS_SCALE.card} accessibilityRole="button" accessibilityState={{ expanded: open }}
-              accessibilityLabel={`Missed question ${position + 1}: ${q.concept || q.prompt}. ${open ? 'Hide' : 'See why'}`}
-              onPress={() => setExpandedId(open ? null : q.id)} style={styles.missHead} testID={`row-live-${position}`}>
-              <View style={styles.missHeadCopy}>
-                <CardText style={styles.missKicker}>Question {position + 1}{q.concept ? ` · ${q.concept}` : ''}</CardText>
-                {open ? null : <CardText numberOfLines={2} style={styles.missPrompt}>{q.prompt}</CardText>}
-                <View style={styles.seeWhy}>
-                  <CardText style={styles.seeWhyText}>{open ? 'Hide' : 'See why'}</CardText>
-                  <Feather name={open ? 'chevron-up' : 'chevron-right'} size={18} color={colors.primaryText} />
-                </View>
-              </View>
-            </PressScale>
-            {open ? <View style={styles.rowOpen}>{questionBlock(q, position, false, false)}{feedbackBlock(q)}</View> : null}
-          </Animated.View>
-        );
-      })}
-    </View>
-  ) : null;
-
   let live: React.ReactNode;
   if (quiz.grade) {
     const percent = quiz.grade.percent;
@@ -352,7 +320,6 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
         </View>
       ) : null}
       {live}
-      {rows}
     </Animated.View>
   );
 }
@@ -414,17 +381,6 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   progressTrack: { height: 5, borderRadius: 3, backgroundColor: colors.secondary, overflow: 'hidden' },
   progressFill: { height: 5, backgroundColor: colors.primary },
   progressFillPartial: { backgroundColor: colors.primaryText },
-  // D-201: the review is the misses as cards, a bigger heading and text, a clear "See why".
-  rows: { gap: 10 },
-  reviewTitle: { ...TYPE.setTitle, color: colors.foreground },
-  missCard: { borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.background, paddingHorizontal: 14, paddingVertical: 4 },
-  missHead: { minHeight: 44, paddingVertical: 8 },
-  missHeadCopy: { gap: 6 },
-  missKicker: { ...TYPE.smallSemi, color: colors.wrong },
-  missPrompt: { ...TYPE.bodySemi, color: colors.foreground },
-  seeWhy: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  seeWhyText: { ...TYPE.bodySemi, color: colors.primaryText },
-  rowOpen: { gap: 12, paddingBottom: 12 },
   verdictRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   flex: { flex: 1 },
   whyLink: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'flex-end', marginVertical: -12 },
