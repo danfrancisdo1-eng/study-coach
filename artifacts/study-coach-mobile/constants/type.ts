@@ -34,6 +34,8 @@ export const TYPE = {
   title: { fontFamily: FONT.serif, fontSize: 36, lineHeight: 42, letterSpacing: -0.8 },
   /** A section heading on the card, Fraunces. */
   heading: { fontFamily: FONT.serif, fontSize: 28, lineHeight: 34, letterSpacing: -0.5 },
+  /** D-201 (Dan: "It's too small. And the title, too."): a set's topic and the review heading, Fraunces 22. */
+  setTitle: { fontFamily: FONT.serif, fontSize: 22, lineHeight: 28, letterSpacing: -0.3 },
   /** The score: 48, with the "/20" beside it at 30. */
   score: { fontFamily: FONT.serif, fontSize: 48, lineHeight: 54, letterSpacing: -1 },
   scoreOf: { fontFamily: FONT.serif, fontSize: 30, lineHeight: 54, letterSpacing: -0.5 },

@@ -14,6 +14,41 @@
 
 ### Needs real-iPhone check
 - Finish a set with misses: "Coach's evaluation" slides in with dots while the coach writes, then the text; after a pause "Exam readiness" slides in, then its text; then the first miss arrives by itself. "Got it" moves on, "Not yet" explains again, typing a question works. Leave mid-walk, come back after 30 min: the greeting offers to pick it up. Reduce Motion on: no sliding. The readiness box is not all bold. No memory cards bar.
+## Session 23m — 2026-10-25 — missed-topics sets are only the misses; no giveaway options (D-202), branch `fix/missed-only-fair-options`
+
+### Done
+- "Another set on the missed topics" asks for N and gets exactly N, all on the missed concepts (no right answers carried from the last set).
+- session-quiz.v12: options the same form and length; NOT/EXCEPT questions written the same way. A code check drops a question whose key is much longer than every other option (topped up); banked questions that fail it are skipped.
+- Verified here: `pnpm run typecheck`; `pnpm test` 365 pass, 0 fail, 1 skipped (as before); `node evals/build.mjs` builds. Server only: no phone build needed.
+
+### Next / blockers
+- Dan runs the session_quiz evals on the Mac (needs the Anthropic key), then merge; Render deploys.
+
+### Needs real-iPhone check
+- After a set with misses, "Another set on the missed topics" with 10 asked: 10 questions, all on what was missed. Answer options of a question look alike in length.
+## Session 23l — 2026-10-25 — lean right answers, misses-only review, bigger titles (D-201), branch `fix/beta-round-6-phone`
+
+### Done
+- Practice set: a right answer shows the verdict, Next and a small "Why?" (explanation on tap), no "Remember it" box; a miss is unchanged.
+- After grading: the review is "Your misses (N)" as bigger cards with "See why ›", the first open by itself; no green rows; a perfect set says "Every one right. Nice."
+- The set's topic is a 22-pt title on the live card and the exam score card; the corner "9/12" count is gone (one counter: "Question N of M" plus the bar).
+- Verified here: `pnpm run typecheck` passes; `pnpm test` 363 pass, 0 fail, 1 skipped (3 new tests in lib/live-set.test.mjs); `pnpm exec expo export --platform ios` builds (8.6 MB hbc).
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets >= 44 pt, primary action in thumb zone: PASS ("Why?" and each miss card are 44 pt; Next unchanged at the bottom of the card).
+2. One primary action; choices grouped: PASS (Next stays the only primary; "Why?" is a small text link).
+3. Content chunked: PASS (right answers lose the extra text; the review is one miss card at a time, the first open).
+4. Native iOS patterns and icons: PASS (Feather chevrons, a header-role title, disclosure with "See why ›" / "Hide").
+5. Progress shown: PASS (one counter instead of two that disagreed).
+6. One accent, not colour-only: PASS (misses say "Your misses" and "Question N" in text; the red kicker is not the only signal).
+7. Theme tokens, Dark Mode, Dynamic Type: PASS (TYPE.setTitle and colors tokens only; the card keeps its fixed reference sizes as before, D-053).
+8. Contrast, labels, Reduce Motion: PASS (labels on "Why?" and each miss card with expanded state; the existing FadeIn/Layout animations are reanimated's, which follow Reduce Motion).
+9. Paywall: N/A.
+
+### Needs real-iPhone check
+- Practice set: answer one right: only "Correct. ..." and Next, tap "Why?" shows the explanation; answer one wrong: explanation and the yellow trick as before.
+- Grade: "Your misses (N)" with the first miss open; tap another: it opens; no green rows; a 10/10 set says "Every one right. Nice."
+- The topic title reads bigger; no "9/12" in the corner while answering.
 
 ## Session 23k — 2026-10-25 — every button squashes and ticks (D-200), branch `feat/press-feel`
 

@@ -114,6 +114,8 @@ export interface SessionQuizCase {
   stretch?: boolean;
   /** D-196: a retest of missed concepts: no question may be a near-duplicate of an original prompt (the app's own check). */
   retest?: boolean;
+  /** D-202: the set must include a "which is NOT" / EXCEPT question (its options written the same way). */
+  requireNot?: boolean;
 }
 
 export const sessionQuizCases: SessionQuizCase[] = [
@@ -129,6 +131,9 @@ export const sessionQuizCases: SessionQuizCase[] = [
     ],
   },
   { name: "diagnostic respiration", topic: "Cellular respiration", sources: respiration, expectedCount: 8, originalPrompts: [], weakConcepts: [] },
+  // D-202 (Dan's Krebs "which is NOT" question: the key was a sentence among short terms like "H2O"): the
+  // options are the same form and length; no key much longer than every distractor.
+  { name: "Krebs cycle with a NOT question: options never give the answer away", topic: "Krebs cycle: what it makes and where (include one \"Which is NOT a product of the Krebs cycle?\" question)", sources: respiration, expectedCount: 6, originalPrompts: [], weakConcepts: [], requireNot: true },
   {
     name: "targeted retest membranes", topic: "Membranes and transport", sources: membranes, expectedCount: 5,
     originalPrompts: ["What is osmosis?", "Which way does the sodium-potassium pump move sodium?"], weakConcepts: ["osmosis", "sodium-potassium pump"],
