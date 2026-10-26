@@ -1,5 +1,19 @@
 # Progress
 
+## Session 23s — 2026-10-26 — score card without the misses list, Back to chat after a set (D-207), branch `fix/score-sheet-and-back-to-chat`
+
+### Done
+- Practice score card: the "Your misses" list is gone (score, line and By section bars stay). The exam sheet keeps its list (only place to report a bad exam question).
+- Back to chat / Return to course list show as soon as a set is graded or a deck finished (`showStudyDone`). Build #109.
+- Sounds on build 29: the phone's media volume was at zero; no app change.
+- Verified here: see the PR (typecheck, phone unit tests, iOS bundle export).
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (buttons unchanged). 2. One primary action: PASS (Back to chat is the one main button again). 3. Chunked: PASS (less on the score card). 4. Native patterns: PASS. 5. Progress / resume: PASS (the walk resumes in the chat). 6. One accent: PASS. 7. Tokens; Dark Mode; Dynamic Type: PASS (styles removed only). 8. Reduce Motion / VoiceOver: PASS (no new motion). 9. Paywall: N/A.
+
+### Needs real-iPhone check
+- Finish a practice set with misses: the score card shows the score and bars only, with Back to chat and Return to course list under it right away. Back to chat: the evaluation types out, then the misses.
+
 ## Session 23q — 2026-10-26 — the coach types it out (D-206), branch `feat/stream-coach`
 
 ### Done

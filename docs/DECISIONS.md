@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-26 — D-207: The practice score card no longer lists the misses; Back to chat shows right after a set
+- Dan on build 29: "it's still reviewing the wrong answers inside the score sheet ... the coach was going to do them individually"; "after finishing questions there was no way out".
+- **Score card:** the practice card keeps the score, its line and the By section bars; the "Your misses (N)" cards with "See why" are gone (the coach goes over the misses one at a time in the chat, D-203). The exam score sheet keeps its "Questions you missed" list for now: it is the only place to report a bad exam question (CLAUDE.md §6), since an exam shows no feedback while it runs.
+- **Back to chat:** the "Back to chat" and "Return to course list" buttons under a finished set waited for the chat to stop naming the set, which only happens once the coach's report card is saved; since D-206 that report types out only after the sheet is closed, so the buttons never came. They now show as soon as the set is graded (or a deck finished) (lib/live-set.ts `showStudyDone`, with tests).
+- **Sounds (build 29):** the missing cha-ching and buzzer were the phone's media volume at zero in Control Center (the ringer was up); not an app bug. D-205 stays; it is harmless.
+- Build #109. **Decided by:** Dan.
+
 ## 2026-10-26 — D-206: The coach's reply types out while it is written (the report card and going over the misses)
 - Dan on build 28: "When the coach is thinking then finishes it spits out at once an entire paragraph and buttons ... Cant it print one letter at a time as fast as its thinking"; then, on the mock he approved: "have the text stream under all three of those titles ... is it possible to stream it slower at 400WPM"; "when it kicks over to the review of the misses in the chat, it pops you at the end of the chat. So you don't even see the coach's evaluation"; titles slide in, they are not typed.
 - **Server:** POST /study/chat/stream (in openapi.yaml): the same request as POST /study/chat; when the coach starts writing, the reply text goes out as server-sent "delta" events (pulled out of the coach's JSON as it streams, lib/reply-stream.ts), then one "done" event with the saved chat, or one "error" event. Anything stopped before the first word answers as plain JSON with the usual status. The AI module streams on Anthropic (`onText`); other providers hand over the whole text at once.
