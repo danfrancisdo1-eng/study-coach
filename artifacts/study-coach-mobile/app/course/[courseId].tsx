@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import {
   deleteCourse, getGetCourseResultsQueryKey, getGetStudyStateQueryKey, getListLecturesQueryKey, getListStudySessionsQueryKey, useGetCourseResults, useGetStudyState, useListLectures, useListStudySessions, useLookupExamGuide, usePutStudyState, useSaveExamFacts,
-  getGetPremiumStatusQueryKey, useGetPremiumStatus,
+  getGetPremiumStatusQueryKey, useGetPremiumStatus, lookupExamGuide,
 } from '@workspace/api-client-react';
 import { goBack } from '@/lib/nav';
 import { useColors } from '@/hooks/useColors';
@@ -27,6 +27,8 @@ import { MaterialIntake, type SavedMaterial } from '@/components/MaterialIntake'
 import { isSyllabus, nextDated } from '@/lib/syllabus';
 import { CourseSkeleton } from '@/components/Skeleton';
 import { ALL_TOPICS, NO_MATERIAL_NOTE_KEY, studyRequest, topicChoices, type StudyAction } from '@/lib/course-actions';
+import { ConsentSheet } from '@/components/ConsentSheet';
+import { consentedState, examsWithoutGuide } from '@/lib/ai-consent';
 
 /**
  * One course or exam (SPEC §7 course list layer, D-023, D-058): the actions row (add material,
@@ -82,12 +84,16 @@ export default function CourseScreen() {
   const [factPassing, setFactPassing] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  // D-211: an AI button tapped before the AI agreement asks for it here, then carries on.
+  const [consentAsk, setConsentAsk] = useState<{ reason: string; run: () => void; guide: boolean } | null>(null);
+  const [consentBusy, setConsentBusy] = useState(false);
+  const [consentError, setConsentError] = useState('');
 
   // A guide saved before the lookup read the exam's numbers is refreshed once, without asking (D-118; Dan: why make the person ask?).
   const autoLookedUp = useRef<string | null>(null);
   const rawCourse = (Array.isArray(record(stateQuery.data?.state).courses) ? (record(stateQuery.data?.state).courses as unknown[]).map(record) : []).find((c) => c.id === courseId);
   useEffect(() => {
-    if (!courseId || autoLookedUp.current === courseId || lookupGuide.isPending || !needsFactsLookup(rawCourse)) return;
+    if (!courseId || autoLookedUp.current === courseId || lookupGuide.isPending || !needsFactsLookup(rawCourse) || record(stateQuery.data?.state).aiConsent !== true) return;
     autoLookedUp.current = courseId;
     lookupGuide.mutateAsync({ courseId })
       .then(() => queryClient.invalidateQueries({ queryKey: stateKey }))
@@ -226,6 +232,33 @@ export default function CourseScreen() {
     setNoMaterialNote(true);
   };
 
+  // D-211: AI work waits for the AI agreement. Without it, the consent sheet asks first, then the tap carries on.
+  const COACH_REASON = 'The coach uses AI. Say OK once and it works everywhere in the app.';
+  const GUIDE_REASON = 'Looking up this exam uses AI. Say OK once and the coach works everywhere in the app.';
+  const withConsent = (run: () => void, reason = COACH_REASON, guide = false) => () => {
+    if (state.aiConsent === true) { run(); return; }
+    setConsentError('');
+    setConsentAsk({ reason, run, guide });
+  };
+  const agreeToAi = async () => {
+    const ask = consentAsk;
+    const previous = stateQuery.data;
+    if (!ask || consentBusy) return;
+    if (!previous) { setConsentError('Your account is still loading. Try again in a moment.'); return; }
+    setConsentBusy(true); setConsentError('');
+    try {
+      const result = await putState.mutateAsync({ data: { state: consentedState(previous.state, new Date().toISOString()), version: previous.version } });
+      queryClient.setQueryData(stateKey, result);
+      // Exams added before the agreement look up their official guide now (as the Coach tab does).
+      for (const id of examsWithoutGuide(result.state)) {
+        if (ask.guide && id === courseId) continue;
+        void lookupExamGuide(id).then(() => queryClient.invalidateQueries({ queryKey: stateKey })).catch(() => {});
+      }
+      setConsentAsk(null);
+      ask.run();
+    } catch (problem) { setConsentError(readable(problem)); } finally { setConsentBusy(false); }
+  };
+
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <AuroraBackground />
@@ -297,15 +330,15 @@ export default function CourseScreen() {
             </View>
             <Text style={styles.kicker}>Study with the coach</Text>
             <View style={styles.grid}>
-              <ActionButton fill label="Practice questions" icon="edit-3" secondary={materials.length === 0 && lectures.length === 0} onPress={() => startWithCoach('practice', null)} testID="button-action-practice" />
-              <ActionButton fill label="Ask the coach" icon="message-circle" secondary onPress={talkToCoach} testID="button-action-chat" />
-              <ActionButton fill label="Simulated exam" icon="clock" secondary onPress={() => (isExam ? setTimedPicker(true) : startWithCoach('exam', null))} testID="button-action-exam" />
-              <ActionButton fill label="Flashcards" icon="layers" secondary onPress={() => setPicker('flashcards')} testID="button-action-flashcards" />
-              <ActionButton fill label="Memory tips" icon="zap" secondary onPress={() => setPicker('hooks')} testID="button-action-hooks" />
-              <ActionButton fill label="Outline" icon="list" secondary onPress={() => startWithCoach('outline', null)} testID="button-action-outline" />
-              <ActionButton fill label="Review PDF" icon="file-text" secondary onPress={() => router.push({ pathname: '/review/[courseId]', params: { courseId: courseId! } })} testID="button-action-review-sheet" />
+              <ActionButton fill label="Practice questions" icon="edit-3" secondary={materials.length === 0 && lectures.length === 0} onPress={withConsent(() => startWithCoach('practice', null))} testID="button-action-practice" />
+              <ActionButton fill label="Ask the coach" icon="message-circle" secondary onPress={withConsent(talkToCoach)} testID="button-action-chat" />
+              <ActionButton fill label="Simulated exam" icon="clock" secondary onPress={withConsent(() => (isExam ? setTimedPicker(true) : startWithCoach('exam', null)))} testID="button-action-exam" />
+              <ActionButton fill label="Flashcards" icon="layers" secondary onPress={withConsent(() => setPicker('flashcards'))} testID="button-action-flashcards" />
+              <ActionButton fill label="Memory tips" icon="zap" secondary onPress={withConsent(() => setPicker('hooks'))} testID="button-action-hooks" />
+              <ActionButton fill label="Outline" icon="list" secondary onPress={withConsent(() => startWithCoach('outline', null))} testID="button-action-outline" />
+              <ActionButton fill label="Review PDF" icon="file-text" secondary onPress={withConsent(() => router.push({ pathname: '/review/[courseId]', params: { courseId: courseId! } }))} testID="button-action-review-sheet" />
               {/* D-155 (Dan): only while the course has no material; once something is uploaded the other actions use it. */}
-              {materials.length === 0 && lectures.length === 0 ? <ActionButton fill label={"Questions\nwithout material"} icon="help-circle" secondary onPress={() => void questionsWithoutMaterial()} testID="button-action-no-material" /> : null}
+              {materials.length === 0 && lectures.length === 0 ? <ActionButton fill label={"Questions\nwithout material"} icon="help-circle" secondary onPress={withConsent(() => void questionsWithoutMaterial())} testID="button-action-no-material" /> : null}
             </View>
             {noMaterialNote ? (
               <View style={styles.noteRow} testID="note-no-material">
@@ -313,7 +346,6 @@ export default function CourseScreen() {
                 <ActionButton label="Proceed" icon="arrow-right" onPress={() => void questionsWithoutMaterial()} testID="button-no-material-proceed" />
               </View>
             ) : null}
-            {state.aiConsent !== true ? <Text style={styles.caption}>The coach needs your AI consent first; it asks on the coach screen.</Text> : null}
           </View>
 
           <View style={styles.card} testID="panel-topic-history">
@@ -349,7 +381,7 @@ export default function CourseScreen() {
             <View style={styles.card} testID="panel-exam-guide">
               <View style={styles.rowBetween}>
                 <Text style={styles.kicker}>Official exam guide</Text>
-                <ActionButton label={guide ? 'Refresh' : 'Look up'} icon="refresh-cw" secondary disabled={busy} onPress={() => void refreshGuide()} testID="button-refresh-guide" />
+                <ActionButton label={guide ? 'Refresh' : 'Look up'} icon="refresh-cw" secondary disabled={busy} onPress={withConsent(() => void refreshGuide(), GUIDE_REASON, true)} testID="button-refresh-guide" />
               </View>
               {realExamLine(facts) ? <Text style={styles.body} testID="text-real-exam">{realExamLine(facts)}</Text> : null}
               {!lookupGuide.isPending && guide && (!facts.questionCount || !facts.durationMinutes) ? <Text style={styles.caption} testID="text-exam-facts-missing">The official page didn't give the {!facts.questionCount && !facts.durationMinutes ? 'number of questions or the time limit' : !facts.questionCount ? 'number of questions' : 'time limit'}. Tap the pencil above to type {!facts.questionCount && !facts.durationMinutes ? 'them' : 'it'} in.</Text> : null}
@@ -453,6 +485,8 @@ export default function CourseScreen() {
       )}
 
       {/* "Which topics?" for flashcards and hooks (D-058): the exam guide's sections, the topics already tested, or all. */}
+      <ConsentSheet visible={consentAsk !== null} reason={consentAsk?.reason ?? ''} busy={consentBusy} error={consentError}
+        onAgree={() => void agreeToAi()} onClose={() => { if (!consentBusy) setConsentAsk(null); }} />
       <Modal visible={picker !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setPicker(null)}>
         <View style={[styles.screen, { paddingTop: 20 }]}>
           <ScreenHeader kicker={picker === 'hooks' ? 'Memory tips' : 'Flashcards'} title="On which topics?" right={<HeaderIconButton icon="x" label="Close" onPress={() => setPicker(null)} testID="button-close-picker" />} />

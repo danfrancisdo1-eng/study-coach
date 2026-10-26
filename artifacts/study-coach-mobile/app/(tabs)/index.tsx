@@ -33,6 +33,7 @@ import { defaultIntakeCourse, type IntakeCourse } from '@/lib/intake-course';
 import { QuizCard } from '@/components/QuizCard';
 import { FlashcardDeck } from '@/components/FlashcardDeck';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
+import { AI_NOTICE, consentedState } from '@/lib/ai-consent';
 import { Welcome } from '@/components/Welcome';
 import { composerPlaceholder, replayOnOpen, shouldShowWelcome, welcomeAsk, welcomeReplayKey, withWelcomeSeen } from '@/lib/welcome';
 import { GlassBar } from '@/components/GlassBar';
@@ -58,12 +59,6 @@ const REVIEW_CHIP = 'Review sheet (PDF)'; // D-139: opens the course's review sh
  * opens it, sits between the header and the chat so the chat keeps the screen.
  */
 
-// Three short lines instead of one paragraph (review finding 27, D-082); the family-member line is gone with that feature.
-const AI_NOTICE: { icon: React.ComponentProps<typeof Feather>['name']; text: string }[] = [
-  { icon: 'send', text: 'Your messages, course names, chosen course material and quiz answers go to Anthropic Claude to coach you. Lecture recordings are transcribed by OpenAI.' },
-  { icon: 'alert-circle', text: 'AI can make mistakes. Press and hold any coach reply to report it.' },
-  { icon: 'refresh-cw', text: 'To withdraw, delete your account in Account (the coach needs AI to work).' },
-];
 
 // Plain sentences only, never a stack trace (D-065, usability review finding 2). A 409 already refetched the chat, so it says so.
 const readableError = (problem: unknown): string => friendlyError(problem);
@@ -341,10 +336,8 @@ export default function CoachHome() {
     setError('');
     try {
       const previous = stateQuery.data;
-      const state: Record<string, unknown> = { aiConsent: true, courses: [], materials: [], ...(previous?.state ?? {}) };
-      // The 13+ attestation happened at sign-up (checkbox) or sign-in (SSO line); record when the account first passed it (D-046).
-      const ageConfirmedAt = typeof state.ageConfirmedAt === 'string' ? state.ageConfirmedAt : new Date().toISOString();
-      const result = await putState.mutateAsync({ data: { state: { ...state, aiConsent: true, ageConfirmedAt }, version: previous?.version ?? 0 } });
+      // The 13+ attestation happened at sign-up (checkbox) or sign-in (SSO line); consentedState records when the account first passed it (D-046).
+      const result = await putState.mutateAsync({ data: { state: consentedState(previous?.state, new Date().toISOString()), version: previous?.version ?? 0 } });
       queryClient.setQueryData([...getGetStudyStateQueryKey(), userId], result);
       // An exam added before consent (welcome → Add) could not look up its guide yet; do it now.
       for (const course of coursesFrom(result.state)) if (course.kind === 'exam' && !course.guide) void fetchGuide(course.id);
