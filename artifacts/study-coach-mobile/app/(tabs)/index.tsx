@@ -17,8 +17,9 @@ import { PRESS_SCALE, PressScale, withTap } from '@/components/PressScale';
 import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { blocksOf, sectionsOf, type Block, type Span } from '@/lib/coach-text';
-import { MemoryCardsSheet, useCardsSeen, useMemoryCards } from '@/components/MemoryCards';
-import { cardsBarLabel, isMemoryTipsChip } from '@/lib/memory-cards';
+import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
+import { EvaluationPlaceholder, SectionBody, SectionTitle, ThinkingDots } from '@/components/ReportReveal';
+import { EVALUATION_TITLE, LESSON_START, revealPlan, shouldStartLesson, visibleChips, type RevealStep } from '@/lib/lesson-chat';
 import { topicParts } from '@/lib/topic-label';
 import { daysLeft, daysLeftLabel } from '@/lib/syllabus';
 import { studyRequest } from '@/lib/course-actions';
@@ -207,13 +208,32 @@ export default function CoachHome() {
   const baseChips = lastMessage?.role === 'assistant' && !activeQuiz && !activeDeck ? (lastMessage.suggestions ?? []) : [];
   // D-130 (Dan: "No option for exam or simul"): after a graded set on a certification exam, the
   // after-set chips also offer the timed Simulated exam (opens the course's timed sheet).
-  const chips = focusCourse?.kind === 'exam' && baseChips.includes('Another set on everything') && !baseChips.includes(SIM_EXAM_CHIP) ? [...baseChips, SIM_EXAM_CHIP] : baseChips;
-  // D-194: the latest graded set's memory cards, behind a bar above the chat box (one card at a time).
-  const cardsSessionId = liveSet && activeQuiz?.sessionId !== liveSet.sessionId ? liveSet.sessionId : null;
-  const memoryCards = useMemoryCards(cardsSessionId, userId);
-  const [cardsSeen, markCardsSeen] = useCardsSeen(userId, cardsSessionId);
-  const [cardsOpen, setCardsOpen] = useState(false);
-  const cardsBar = cardsBarLabel(memoryCards, cardsSeen);
+  // D-203: "Go over my misses" is sent by the app itself; its chip shows only if that failed.
+  const [lessonFailedFor, setLessonFailedFor] = useState<string | null>(null);
+  const chips = visibleChips(focusCourse?.kind === 'exam' && baseChips.includes('Another set on everything') && !baseChips.includes(SIM_EXAM_CHIP) ? [...baseChips, SIM_EXAM_CHIP] : baseChips, lastMessage?.id, lessonFailedFor);
+  // D-203: messages that arrive while the screen is open come in (the report card's sections one after
+  // another; other replies fade in); what was already there when the thread loaded is drawn as is.
+  const reduceMotion = useReducedMotion();
+  const seenRef = useRef<{ thread: string | null; ids: Set<string> } | null>(null);
+  if (chatQuery.data && (!seenRef.current || seenRef.current.thread !== (focusCourseId ?? null))) {
+    seenRef.current = { thread: focusCourseId ?? null, ids: new Set(chatQuery.data.messages.map((m) => m.id)) };
+  }
+  const revealsRef = useRef(new Map<string, { at: number; steps: RevealStep[] | null }>());
+  const titleShownForRef = useRef<string | null>(null); // the report card whose first title showed while it was written
+  /** A new message's reveal, fixed when it first draws; null once it is over (or for older messages). */
+  const revealOf = (id: string, titledSections: number): { fresh: boolean; steps: RevealStep[] | null } => {
+    if (!seenRef.current || seenRef.current.ids.has(id)) return { fresh: false, steps: null };
+    let reveal = revealsRef.current.get(id);
+    if (!reveal) {
+      reveal = { at: Date.now(), steps: titledSections ? revealPlan(titledSections, titleShownForRef.current === id, reduceMotion) : null };
+      revealsRef.current.set(id, reveal);
+    }
+    const last = reveal.steps?.at(-1);
+    const over = Date.now() - reveal.at > (last ? last.body + 600 : 600);
+    return { fresh: !over, steps: over ? null : reveal.steps };
+  };
+  // D-203: the report card asks for the walk through the misses: send it right away, once (the draft stays).
+  const lessonTriedRef = useRef<string | null>(null);
 
   // The list is inverted (newest message first in the data, drawn at the bottom), so it
   // opens at the newest message with no scroll arithmetic; scrollToEnd kept landing short.
@@ -244,7 +264,7 @@ export default function CoachHome() {
   };
 
   // The course screen's handoff (D-058) goes out once the chat is loaded, consented and on that course. Before the early returns: hooks keep their order.
-  const sendTextRef = useRef<(text: string, timed?: TimedSize) => Promise<void>>(async () => {});
+  const sendTextRef = useRef<(text: string, timed?: TimedSize, auto?: { lessonFor: string }) => Promise<void>>(async () => {});
   // D-182: a question asked under the welcome before consent goes out as soon as consent is given; the draft stays in the box until it is sent.
   useEffect(() => {
     if (!pendingAsk || !consented || stateQuery.isLoading || chatQuery.isLoading) return;
@@ -263,6 +283,12 @@ export default function CoachHome() {
     const timed = (['full', '10', '20', '40'] as const).find((size) => size === handoffTimed);
     void sendTextRef.current(handoff, timed);
   });
+
+  useEffect(() => {
+    if (busy || !consented || !shouldStartLesson(lastMessage, lessonTriedRef.current)) return;
+    lessonTriedRef.current = lastMessage!.id;
+    void sendTextRef.current(LESSON_START, undefined, { lessonFor: lastMessage!.id });
+  }, [lastMessage?.id, busy, consented]);
 
   if (!isLoaded) return null;
   if (!isSignedIn) return <Redirect href="/" />;
@@ -326,17 +352,19 @@ export default function CoachHome() {
     ]);
   };
 
-  const sendText = async (text: string, timed?: TimedSize) => {
+  const sendText = async (text: string, timed?: TimedSize, auto?: { lessonFor: string }) => {
     const content = text.trim();
     if (!content || busy || !consented) return;
     setError('');
     try {
       const result: HomeChat = await send.mutateAsync({ data: { content, version, utcOffsetMinutes: -new Date().getTimezoneOffset(), ...(focusCourseId ? { courseId: focusCourseId } : {}), ...(timed ? { timedExam: { size: timed } } : {}) } });
+      // D-203: the report card's first title was already on screen while it was written; it does not slide in twice.
+      if (content === FINISHED_SET_MESSAGE) titleShownForRef.current = result.messages[result.messages.length - 1]?.id ?? null;
       queryClient.setQueryData(chatKey, result);
       if (result.activeQuiz) { setGradedSessionId(null); setFinishedDeckId(null); } // a new set replaces the old cards
       if (result.activeDeck) { setFinishedDeckId(null); setGradedSessionId(null); }
-      setDraft('');
-      Keyboard.dismiss();
+      // An app-sent message (D-203) leaves whatever the student is typing alone.
+      if (!auto) { setDraft(''); Keyboard.dismiss(); }
       const last = result.messages[result.messages.length - 1];
       const actions = last?.actions ?? [];
       if (actions.some((a) => a.type === 'create_course' || a.type === 'lookup_exam_guide')) {
@@ -350,6 +378,7 @@ export default function CoachHome() {
       const status = (problem as { status?: number }).status;
       if (status === 409) await queryClient.invalidateQueries({ queryKey: chatKey });
       setError(readableError(problem));
+      if (auto) setLessonFailedFor(auto.lessonFor); // the "Go over my misses" chip appears to tap
       // The plan stopped it (D-090): the sentence stays under the chat, the draft stays in the box, the paywall opens.
       const code = premiumCode(problem);
       if (code) router.push({ pathname: '/premium', params: { reason: code, ...(focusCourseId ? { courseId: focusCourseId } : {}) } });
@@ -401,7 +430,7 @@ export default function CoachHome() {
     : part);
   // Coach replies: blank line between paragraphs; "1. Label: trick" lines become their own
   // hook chips (same ⚡ style as the question hooks; Dan: tricks ran together as one paragraph).
-  const renderCoachText = (content: string) => {
+  const renderCoachText = (content: string, messageId?: string) => {
     // D-098: headings bold with room above them, bullets, inline **bold** (lib/coach-text.ts).
     const inline = (spans: Span[]) => spans.map((sp, k) => sp.bold
       ? <Text key={k} style={styles.bold}>{withLinks(sp.text)}</Text>
@@ -421,8 +450,8 @@ export default function CoachHome() {
             </PressScale>
           );
           if (block.kind === 'quote') return (
-            // D-130: the one takeaway to remember, set apart (Dan's examples).
-            <View key={i} style={styles.quoteRow} testID="chat-takeaway"><Text style={[styles.body, styles.bold]}>{inline(block.spans)}</Text></View>
+            // D-130: the one takeaway to remember, set apart (Dan's examples). D-203 (Dan: "why is that bold?"): only its **bold** words are bold.
+            <View key={i} style={styles.quoteRow} testID="chat-takeaway"><Text style={styles.body}>{inline(block.spans)}</Text></View>
           );
           if (block.kind === 'trick') return (
             <View key={i} style={styles.trickCard} testID="chat-trick">
@@ -438,28 +467,39 @@ export default function CoachHome() {
     // D-193 (Dan: "you can't tell where the readiness starts and ends ... each tip should be one
     // concrete thought"): "### " sections get a divider and a coloured title; each "#### " tip is its own card.
     const sections = sectionsOf(blocksOf(content));
+    // D-203: a new report card comes in section by section (title slides in, a line draws, dots, then the text).
+    const titled = sections.filter((section) => section.title);
+    const steps = messageId ? revealOf(messageId, titled.length).steps : null;
+    const stepOf = (section: (typeof sections)[number]) => (steps && section.title ? steps[titled.indexOf(section)] ?? null : null);
     return (
       <View style={styles.coachBlocks}>
         {sections.map((section, s) => (
           <View key={s} style={[styles.coachSection, section.title && s > 0 && styles.coachSectionRule]} testID={section.title ? 'chat-section' : undefined}>
-            {section.title ? <Text style={styles.sectionTitle} accessibilityRole="header">{section.title.map((t) => t.text).join('')}</Text> : null}
-            {section.items.map((item, i) => item.kind === 'tip' ? (
-              <View key={i} style={styles.tipCard} testID="chat-tip">
-                <Text style={styles.tipTitle} accessibilityRole="header">{item.tip.title.map((t) => t.text).join('')}</Text>
-                {item.tip.blocks.map((b, k) => renderBlock(b, k))}
+            {section.title ? <SectionTitle title={section.title.map((t) => t.text).join('')} step={stepOf(section)} textStyle={styles.sectionTitle} /> : null}
+            <SectionBody step={stepOf(section)}>
+              <View style={styles.coachSection}>
+                {section.items.map((item, i) => item.kind === 'tip' ? (
+                  <View key={i} style={styles.tipCard} testID="chat-tip">
+                    <Text style={styles.tipTitle} accessibilityRole="header">{item.tip.title.map((t) => t.text).join('')}</Text>
+                    {item.tip.blocks.map((b, k) => renderBlock(b, k))}
+                  </View>
+                ) : renderBlock(item.block, i))}
               </View>
-            ) : renderBlock(item.block, i))}
+            </SectionBody>
           </View>
         ))}
       </View>
     );
   };
 
+  // D-203: the number of titled sections ("### ") in a coach reply, so its reveal is planned once with the right count.
+  const titledCount = (item: HomeChatMessage) => (item.role === 'assistant' ? sectionsOf(blocksOf(item.content)).filter((section) => section.title).length : 0);
   const renderMessage = ({ item }: { item: HomeChatMessage }) => (
-    <View onLayout={(e) => placeNewest(item.id, e.nativeEvent.layout.height)}>
+    // D-203: a new reply without sections fades in (a report card's sections come in on their own).
+    <Animated.View entering={titledCount(item) === 0 && revealOf(item.id, 0).fresh ? FadeIn.duration(reduceMotion ? 150 : 320) : undefined} onLayout={(e) => placeNewest(item.id, e.nativeEvent.layout.height)}>
     {item.sessionStart ? <View style={styles.sessionDivider}><View style={styles.sessionLine} /><Text style={styles.sessionLabel}>New session</Text><View style={styles.sessionLine} /></View> : null}
     <Pressable onLongPress={item.role === 'assistant' ? () => reportMessage(item) : undefined} delayLongPress={450} accessibilityHint={item.role === 'assistant' ? 'Press and hold to report this reply' : undefined} style={[styles.turn, item.role === 'user' ? styles.userTurn : styles.coachTurn]} testID={`chat-turn-${item.role}`}>
-      {item.role === 'assistant' ? renderCoachText(item.content) : <Text style={styles.body}>{item.content}</Text>}
+      {item.role === 'assistant' ? renderCoachText(item.content, item.id) : <Text style={styles.body}>{item.content}</Text>}
       {item.reported ? <View style={styles.reportedRow} testID="chat-reported"><Feather name="flag" size={12} color={colors.mutedForeground} /><Text style={styles.caption}>Reported for review</Text></View> : null}
       {item.id === lastMessage?.id && chips.length ? (() => {
         // D-166: section chips ("<name> · 27.5%") draw as full-width rows, one line each, the weight in its own
@@ -470,8 +510,7 @@ export default function CoachHome() {
           <View style={column ? styles.choiceColumn : styles.chipRow}>
             {parts.map(({ text: chip, label, value }) => (
               <PressScale scale={PRESS_SCALE.card} key={chip} accessibilityRole="button" accessibilityLabel={value !== null ? `${label}, ${value}` : undefined} disabled={busy}
-                onPress={() => (isMemoryTipsChip(chip) && cardsBar ? setCardsOpen(true)
-                  : chip === SIM_EXAM_CHIP && focusCourse ? router.push({ pathname: '/course/[courseId]', params: { courseId: focusCourse.id, timed: '1' } })
+                onPress={() => (chip === SIM_EXAM_CHIP && focusCourse ? router.push({ pathname: '/course/[courseId]', params: { courseId: focusCourse.id, timed: '1' } })
                   : chip === REVIEW_CHIP && focusCourse ? router.push({ pathname: '/review/[courseId]', params: { courseId: focusCourse.id } }) : void sendText(chip))}
                 style={[value !== null ? styles.choiceRow : styles.suggestion, column && value === null && styles.choicePill, busy && styles.disabled]} testID={chip === SIM_EXAM_CHIP ? 'button-suggestion-simulated' : chip === REVIEW_CHIP ? 'button-suggestion-review' : value !== null ? 'button-choice' : 'button-suggestion'}>
                 {value !== null ? (
@@ -531,7 +570,7 @@ export default function CoachHome() {
         </View>
       ))}
     </Pressable>
-    </View>
+    </Animated.View>
   );
 
   const loading = stateQuery.isLoading || chatQuery.isLoading;
@@ -621,6 +660,10 @@ export default function CoachHome() {
           ListHeaderComponent={busy ? (() => {
             // D-126, D-191: a filling bar while a set's first questions or a deck are written; dots for a chat.
             const wait = send.isPending ? waitFor(send.variables?.data.content) : null;
+            const sending = send.isPending ? send.variables?.data.content : null;
+            // D-203: while the report card is written, its first title comes in and waits with the dots; the next miss waits with dots.
+            if (sending === FINISHED_SET_MESSAGE) return <EvaluationPlaceholder title={EVALUATION_TITLE} textStyle={styles.sectionTitle} />;
+            if (sending === LESSON_START) return <View style={styles.busyRow}><ThinkingDots testID="lesson-thinking" /></View>;
             return wait
               ? <View style={styles.busyRow}><ProgressBar fraction={estimate(sendElapsed, wait.expectedMs)} label={wait.label} testID="progress-first-questions" /></View>
               : <View style={styles.busyRow}><ActivityIndicator color={colors.primaryText} size="small" /><Text style={styles.caption}>Coach is thinking…</Text></View>;
@@ -650,16 +693,6 @@ export default function CoachHome() {
           </Text>
           <Feather name="chevron-right" size={18} color={colors.primaryForeground} />
         </PressScale>
-      ) : null}
-      {consented && !loading && !loadError && !activeStudyId && cardsBar ? (
-        <PressScale scale={PRESS_SCALE.card} accessibilityRole="button" accessibilityHint="Opens your memory cards, one at a time" onPress={() => setCardsOpen(true)} style={[styles.cardsBar]} testID="button-memory-cards">
-          {memoryCards?.status === 'writing' ? <ActivityIndicator size="small" color={colors.hookText} /> : <Text style={styles.cardsBarIcon} accessibilityElementsHidden importantForAccessibility="no">🧠</Text>}
-          <Text style={styles.cardsBarText} numberOfLines={1}>{cardsBar}</Text>
-          <Feather name="chevron-right" size={18} color={colors.hookText} />
-        </PressScale>
-      ) : null}
-      {cardsSessionId && userId ? (
-        <MemoryCardsSheet visible={cardsOpen} view={memoryCards} sessionId={cardsSessionId} userId={userId} seen={cardsSeen} onSeen={markCardsSeen} onClose={() => setCardsOpen(false)} />
       ) : null}
       {/* The set or deck over the chat (D-059): a dimmed thread behind, a sheet that fills the screen, Back to chat on top. */}
       <Modal visible={studyOpen && Boolean(quizSessionId || deckSessionId) && Boolean(userId)} transparent animationType="fade" onRequestClose={() => setStudyOpen(false)}>
@@ -822,9 +855,6 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   setCardTitle: { color: colors.foreground, fontSize: 14.5, fontWeight: '700' },
   resumeBar: { marginHorizontal: 14, marginBottom: 6, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, borderRadius: 14, backgroundColor: colors.primary },
   resumeText: { flex: 1, color: colors.primaryForeground, fontSize: 15, fontWeight: '700' },
-  cardsBar: { marginHorizontal: 14, marginBottom: 6, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, borderRadius: 14, backgroundColor: colors.hookBg, borderWidth: 1, borderColor: colors.chipBorder },
-  cardsBarIcon: { fontSize: 18 },
-  cardsBarText: { flex: 1, color: colors.hookText, fontSize: 15, fontWeight: '700' },
   backToChat: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary, marginTop: 4 },
   backToChatText: { color: colors.primaryForeground, fontSize: 17, fontWeight: '700' },
   toCourses: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },

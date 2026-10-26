@@ -25,6 +25,10 @@ export type HomeChatMessage = {
   suggestions?: string[];
   /** App-written greeting that opens a new study session (SPEC §7: "resume where you left off"). */
   sessionStart?: boolean;
+  /** D-203: sent by the app for the student ("Go over my misses"); kept for the coach, not drawn. */
+  hidden?: boolean;
+  /** D-203: while the coach goes over a graded set's misses: the set, the misses in order, and the one this reply teaches (0 = none). */
+  lesson?: { sessionId: string; order: string[]; miss: number };
 };
 
 // One row per account: the chat-first home conversation (SPEC §7). Kept out of

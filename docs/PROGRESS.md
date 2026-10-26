@@ -1,5 +1,19 @@
 # Progress
 
+## Session 23n — 2026-10-25 — the coach goes over your misses (D-203), branch `feat/coach-teaches-misses`
+
+### Done
+- coach.v36: "Coach's evaluation", readiness in numbers with what Ready takes and only the verdict bold, and the miss-by-miss walk with "Got it" / "Not yet" (lib/lesson.ts, routes/chat.ts, readiness.ts). The phone sends "Go over my misses" by itself, shows the report card's titles sliding in with a drawn line and dots, and no longer has the memory cards bar. Build #107.
+- Verified here: `pnpm run typecheck` passes; `pnpm test` (see the PR for the count); new tests: lesson.test.mjs (5), coach-v36-lesson.test.mjs (5), lesson.e2e.test.mjs (the whole walk against the real server with a stub AI: report chip, hidden start, Not yet stays, a greeting picks it up, Got it moves on, wrap-up ends it), lesson-chat.test.mjs (4, phone); readiness tests updated; `expo export --platform ios` builds (8.6 MB hbc). Evals build; not run here (needs Dan's key).
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (chips unchanged, 44 pt). 2. One primary action: PASS (two chips per miss). 3. Chunked: PASS (one miss per reply, sections come in one at a time). 4. Native patterns: PASS (chat replies, typing dots). 5. Progress / resume: PASS (the greeting picks up the walk). 6. One accent: PASS (the title line uses the accent once). 7. Tokens; Dark Mode; Dynamic Type: PASS (theme tokens; text sizes unchanged). 8. Reduce Motion: PASS (fades only, still dots); labels: the dots read "Coach is thinking". 9. Paywall: N/A (each walk reply counts as a message under the existing limit).
+
+### Next
+- Dan runs the coach evals on the Mac (command in the PR), then merges, builds #107.
+
+### Needs real-iPhone check
+- Finish a set with misses: "Coach's evaluation" slides in with dots while the coach writes, then the text; after a pause "Exam readiness" slides in, then its text; then the first miss arrives by itself. "Got it" moves on, "Not yet" explains again, typing a question works. Leave mid-walk, come back after 30 min: the greeting offers to pick it up. Reduce Motion on: no sliding. The readiness box is not all bold. No memory cards bar.
 ## Session 23m — 2026-10-25 — missed-topics sets are only the misses; no giveaway options (D-202), branch `fix/missed-only-fair-options`
 
 ### Done

@@ -78,6 +78,8 @@ export const coachSchema = object({
       upload: string,
     }),
   },
+  // D-203 (coach.v36): the number of the miss this reply teaches while going over a graded set's misses, else 0.
+  teaching: { type: "integer" },
 });
 
 export const flashcardsSchema = object({

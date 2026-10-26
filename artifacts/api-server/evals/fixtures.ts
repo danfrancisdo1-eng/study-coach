@@ -599,6 +599,10 @@ export interface CoachCase {
   report?: { text: string; isExam: boolean };
   /** D-192: at most this many emojis in the reply (checked by code). */
   maxEmojis?: number;
+  /** D-203 (coach.v36): going over the misses (lib/lesson.ts lessonText), with the miss the last reply taught (0 = start). */
+  lesson?: { text: string; previous: number; total: number };
+  /** D-203: the "teaching" number the reply must give (checked by code). */
+  expectTeaching?: number;
 }
 
 const bioResults = `Sets and decks (3 total):
@@ -1215,8 +1219,8 @@ export const coachCases: CoachCase[] = [
       { concept: "Membrane structure", prompt: "What makes the bilayer selectively permeable?", chose: "cholesterol only", correct: "the hydrophobic core plus transport proteins", explanation: "Nonpolar molecules pass; polar/charged ones need proteins." },
     ] } },
     message: "I finished the set.",
-    expectedActions: [], expectedSuggestions: ["Memory tips for the misses", "Flashcards for the misses", "Another set on everything", "Another set on the missed topics"],
-    expectations: ["One line about the result (7 of 10), no repeat of the corrections", "Offers the four choices as suggestions"],
+    expectedActions: [], expectedSuggestions: ["Go over my misses"],
+    expectations: ["One line about the result (7 of 10), no repeat of the corrections", "Does not list the missed concepts or write tips (the coach goes over the misses next)", "The only suggestion is 'Go over my misses'"],
     maxWords: 40,
   },
   // coach.v18 (D-102): a PDF review sheet exists; the coach points to it.
@@ -1358,23 +1362,26 @@ export const coachCases: CoachCase[] = [
       { concept: "Implement generative AI and agentic solutions — grounding", prompt: "What keeps a chat agent's answers tied to company documents?", chose: "Raising the temperature", correct: "Retrieval-augmented generation over an index", explanation: "RAG retrieves passages and the model answers from them." },
     ] } },
     report: { isExam: true, text: [
-      "- This set: 8 of 10.",
+      "- This set: 8 of 10 (80%).",
       "- Missed questions: 2.",
       "- The set before it on this course: 6 of 10 (2026-10-22).",
       "- Exam readiness: Getting close. Sections (share of recent answers right): Plan and manage an Azure AI solution, 27.5% of the exam: 78% of 9 (solid); Implement generative AI and agentic solutions, 32.5% of the exam: 55% of 11; Implement computer vision solutions, 12.5% of the exam: 80% of 5 (solid); Implement text analysis solutions, 12.5% of the exam: 75% of 4 (solid); Implement information extraction solutions, 12.5% of the exam: untested.",
+      "- What Ready takes: a set at 90% or better, with every section at 70% or better over its recent answers (at least 3 answers each).",
       "- Work on next: Implement generative AI and agentic solutions; Implement information extraction solutions.",
       "- Days to the exam: 12.",
     ].join("\n") },
     message: "I finished the set.",
-    expectedActions: [], expectedSuggestions: ["Memory tips for the misses", "Flashcards for the misses", "Another set on everything", "Another set on the missed topics"],
+    expectedActions: [], expectedSuggestions: ["Go over my misses"],
     expectations: [
-      "Opens with the result (8 of 10) and short, earned encouragement",
+      "Opens with the result (8 of 10 and 80%) and short, earned encouragement",
       "Says it is up from 6 of 10 last time and calls that an improvement",
       "Names the weak spots behind the two misses (Key Vault roles, grounding/RAG)",
-      "Writes no memory tips and no '#### ' tip cards; the last line of 'How you did' says the memory cards for these are just below the chat",
-      "Uses the sections in order: '### 🎯 How you did', '### 📈 Exam readiness' (verdict on a '> ' line), and no Memory tips section",
-      "Says exam readiness is Getting close (the app's level, not its own estimate) and why: generative AI and agentic solutions (about a third of the exam) is not solid yet and information extraction is untested",
-      "Gives one concrete next step that uses the 12 days left",
+      "Writes no memory tips and no '#### ' tip cards, and never mentions memory cards",
+      "Uses the sections in order: '### 🎯 Coach's evaluation', '### 📈 Exam readiness' (verdict on a '> ' line), and no Memory tips section",
+      "Says exam readiness is Getting close (the app's level, not its own estimate) and gives the numbers: generative AI and agentic solutions (about a third of the exam) is at 55% and information extraction is untested",
+      "Says what Ready takes in numbers (90% or better on a set, every section at 70% or better)",
+      "In the readiness box only the verdict words are bold, not the whole line",
+      "Gives one concrete next step ('Here's what we need to do' or close) that uses the 12 days left",
       "Does not repeat the full corrections or explanations",
     ],
     maxWords: 200, maxLineWords: 30, maxEmojis: 5,
@@ -1387,10 +1394,11 @@ export const coachCases: CoachCase[] = [
     history: [{ role: "user", content: "Give me a practice set on Secure identity and access" }, { role: "assistant", content: "Your 10-question set on identity and access is starting now." }],
     quiz: { courseName: "Microsoft AZ-500", topic: "Secure identity and access", kind: "practice", answered: 10, total: 10, graded: { correct: 10, percent: 100, missed: [] } },
     report: { isExam: true, text: [
-      "- This set: 10 of 10.",
+      "- This set: 10 of 10 (100%).",
       "- Missed questions: 0.",
       "- This is the student's first graded set on this course.",
       "- Exam readiness: Not yet. Sections (share of recent answers right): Secure identity and access, 17.5% of the exam: 100% of 10 (solid); Secure networking, 22.5% of the exam: untested; Secure compute, storage, and databases, 22.5% of the exam: untested; Secure Azure using Microsoft Defender for Cloud and Microsoft Sentinel, 37.5% of the exam: untested.",
+      "- What Ready takes: a set at 90% or better, with every section at 70% or better over its recent answers (at least 3 answers each).",
       "- Work on next: Secure Azure using Microsoft Defender for Cloud and Microsoft Sentinel; Secure networking.",
     ].join("\n") },
     message: "I finished the set.",
@@ -1416,19 +1424,20 @@ export const coachCases: CoachCase[] = [
       { concept: "Brain — cerebellum", prompt: "Balance and coordination are mainly the job of the...", chose: "Medulla", correct: "Cerebellum", explanation: "The cerebellum coordinates movement and balance." },
     ] } },
     report: { isExam: false, text: [
-      "- This set: 4 of 10.",
-      "- Missed questions: 6. Memory cards cover the 5 that matter most; Flashcards for the misses drills the rest.",
+      "- This set: 4 of 10 (40%).",
+      "- Missed questions: 6. The coach goes over the 5 that matter most, one at a time; Flashcards for the misses drills the rest.",
       "- The set before it on this course: 7 of 10 (2026-10-21).",
-      "- Readiness for this course's tests: Not yet (based on the last 20 answers).",
+      "- Readiness for this course's tests: Not yet (55% right over the last 20 answers).",
+      "- What Ready takes: a set at 90% or better, with 85% or better over the last 30 answers (at least 20 answered).",
       "- Work on next: Brain — hippocampus; Neurons — myelin.",
     ].join("\n") },
     message: "I finished the set.",
-    expectedActions: [], expectedSuggestions: ["Memory tips for the misses", "Flashcards for the misses", "Another set on everything", "Another set on the missed topics"],
+    expectedActions: [], expectedSuggestions: ["Go over my misses"],
     expectations: [
-      "Gives 4 of 10 honestly with supportive words; never calls it great, nice or good",
+      "Gives 4 of 10 (40%) honestly with supportive words; never calls it great, nice or good",
       "Mentions it is down from 7 of 10 without guilt or blame",
-      "Writes no memory tips and no '#### ' tip cards; the last line of 'How you did' says the memory cards for these are just below the chat",
-      "Says it is not ready yet for the course's tests and gives one next step",
+      "Writes no memory tips and no '#### ' tip cards, and never mentions memory cards",
+      "Says it is not ready yet for the course's tests, says the student is at 55% over the last 20 answers and what Ready takes (90% on a set, 85% overall), and gives one next step",
     ],
     maxWords: 200, maxLineWords: 24, maxEmojis: 5,
   },
@@ -1438,10 +1447,11 @@ export const coachCases: CoachCase[] = [
     history: [{ role: "user", content: "Next 10" }, { role: "assistant", content: "10 more toward today's 100, starting now." }],
     quiz: { courseName: "BIOL 114", topic: "All topics", kind: "practice", answered: 10, total: 10, graded: { correct: 10, percent: 100, missed: [] } },
     report: { isExam: false, text: [
-      "- This set: 10 of 10.",
+      "- This set: 10 of 10 (100%).",
       "- Missed questions: 0.",
       "- The set before it on this course: 9 of 10 (2026-10-23).",
-      "- Readiness for this course's tests: Ready (based on the last 30 answers).",
+      "- Readiness for this course's tests: Ready (93% right over the last 30 answers).",
+      "- What Ready takes: a set at 90% or better, with 85% or better over the last 30 answers (at least 20 answered).",
     ].join("\n") },
     message: "I finished the set.",
     expectedActions: [], expectedSuggestions: ["Another set on everything", "Harder questions", "Pick a new topic", "Flashcards on this topic"],
@@ -1462,21 +1472,24 @@ export const coachCases: CoachCase[] = [
       { concept: "Gilded Age — Pendleton Act", prompt: "The Pendleton Act created...", chose: "The income tax", correct: "A merit-based civil service", explanation: "Jobs went by exams, not patronage." },
     ] } },
     report: { isExam: false, text: [
-      "- This set: 7 of 10.",
+      "- This set: 7 of 10 (70%).",
       "- Missed questions: 3.",
       "- This is the student's first graded set on this course.",
-      "- Readiness for this course's tests: Not yet (based on the last 10 answers; 20 are needed before it can say Ready or Getting close).",
+      "- Readiness for this course's tests: not judged yet (70% right over the 10 answers so far; 20 are needed before it can say Ready, Getting close or Not yet).",
+      "- What Ready takes: a set at 90% or better, with 85% or better over the last 30 answers (at least 20 answered).",
       "- Work on next: Reconstruction — 14th Amendment; Reconstruction — Compromise of 1877.",
     ].join("\n") },
     message: "I finished the set.",
-    expectedActions: [], expectedSuggestions: ["Memory tips for the misses", "Flashcards for the misses"],
+    expectedActions: [], expectedSuggestions: ["Go over my misses"],
     expectations: [
       "Gives 7 of 10 with fitting encouragement and no progress comparison",
-      "Writes no memory tips and no '#### ' tip cards; the last line of 'How you did' says the memory cards for these are just below the chat",
+      "Writes no memory tips and no '#### ' tip cards, and never mentions memory cards",
       "Says a few more sets will show where the student stands, instead of judging readiness from one set",
     ],
     maxWords: 200, maxLineWords: 24, maxEmojis: 5,
   },
+  // coach.v36 (D-203): after the report card, the coach goes over the misses in the chat, one per reply.
+  ...lessonCases(),
   {
     name: "personality outside the report: a teaching reply is warm, uses at most three emojis, none in the Pop quiz",
     courses: [{ id: "bio", name: "BIOL 114", materials: 3, lectures: 1, hasSyllabus: true }], firstVisit: false, focusCourseId: "bio", today: "2026-10-24",
@@ -1637,3 +1650,115 @@ export const memoryCardsCases: MemoryCardsCase[] = [
     expectations: ["Five cards, one per miss, in the given order", "The set note does not call a weak set great; any encouragement is earned and specific", "The techniques are not all the same"],
   },
 ];
+
+// D-203 (coach.v36): going over the misses one at a time, like a teacher (Dan: "Hey, you got this wrong ... this is a
+// way to remember this one ... do you think you have it now?"). Three AI-103 misses; the first two have the memory
+// coach's plan, the third has none yet (the coach writes its own trick).
+function lessonCases(): CoachCase[] {
+  const course = { id: "ai103", name: "Microsoft AI-103", kind: "exam" as const, examDate: "2026-11-05", daysLeft: 12, materials: 3, lectures: 0 };
+  const missed = [
+    { concept: "Plan and manage an Azure AI solution — Key Vault roles", prompt: "Which Key Vault role gives an agent least-privilege read access to secrets?", chose: "Key Vault Administrator", correct: "Key Vault Secrets User", explanation: "Secrets User can only read secret contents." },
+    { concept: "Implement generative AI and agentic solutions — grounding", prompt: "What keeps a chat agent's answers tied to company documents?", chose: "Raising the temperature", correct: "Retrieval-augmented generation over an index", explanation: "RAG retrieves passages and the model answers from them." },
+    { concept: "Implement computer vision solutions — OCR", prompt: "Which feature reads the serial numbers printed on parts in a photo?", chose: "Image classification", correct: "OCR (the Read API)", explanation: "OCR extracts printed or handwritten text from images." },
+  ];
+  const quiz = { courseName: "Microsoft AI-103", topic: "All topics", kind: "practice" as const, answered: 10, total: 10, graded: { correct: 7, percent: 70, missed } };
+  const text = [
+    "1. Q: Which Key Vault role gives an agent least-privilege read access to secrets? | they chose: Key Vault Administrator | right answer: Key Vault Secrets User | why: Secrets User can only read secret contents. | the plan: why it was tempting: Administrator sounds like the safe, official choice for anything in Key Vault.; the one thing to remember: Secrets User reads; Administrator runs the whole vault.; a way to remember it (Side by side): Administrator is the building manager with every key; Secrets User is the tenant who can only open their own mailbox. Least privilege means give the mailbox key, not the master key.",
+    "2. Q: What keeps a chat agent's answers tied to company documents? | they chose: Raising the temperature | right answer: Retrieval-augmented generation over an index | why: RAG retrieves passages and the model answers from them. | the plan: why it was tempting: Temperature is the setting people hear about most, so it feels like the knob that controls answers.; the one thing to remember: Grounding means fetching the documents first.; a way to remember it (Think of it like): RAG is an open-book exam: the model looks up the page before it answers. Temperature only changes how creative it sounds.",
+    "3. Q: Which feature reads the serial numbers printed on parts in a photo? | they chose: Image classification | right answer: OCR (the Read API) | why: OCR extracts printed or handwritten text from images.",
+  ].join("\n");
+  const reportCard = "### 🎯 Coach's evaluation\n- **7 of 10 (70%).** Solid set.\n- **Still shaky:** Key Vault roles, grounding, OCR.\n### 📈 Exam readiness\n> ⚠️ **Getting close.** Generative AI isn't solid yet.\n- Here's what we need to do: one extra set a day on generative AI.";
+  const teachMiss1 = "Let's go through the ones you missed, one at a time. First up, the Key Vault one. The answer was **Key Vault Secrets User**. You picked Administrator, which sounds like the safe, official choice. But think of the vault as an apartment building: the Administrator is the manager with every key, the Secrets User is a tenant who can only open their own mailbox. Least privilege means the mailbox key. Got it?";
+  const teachMiss3 = "Nice. Last one: reading the serial numbers on parts in a photo. The answer was **OCR (the Read API)**. You picked image classification, but that only says what the whole photo is, not what's written on it. OCR literally reads the letters, like it's reading a page. Text in a picture? Think 'Read'. Does that click?";
+  const base = { courses: [course], firstVisit: false, focusCourseId: "ai103", today: "2026-10-24", quiz, maxEmojis: 1 };
+  return [
+    {
+      ...base, name: "going over the misses: the walk opens on the first miss only, like a teacher, and asks if they've got it",
+      history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }],
+      lesson: { text, previous: 0, total: 3 }, expectTeaching: 1,
+      message: "Go over my misses",
+      expectedActions: [], expectedSuggestions: ["Got it", "Not yet"],
+      expectations: [
+        "Opens with one short bridge line about going through the misses one at a time",
+        "Teaches only the first miss (the Key Vault role); never starts on the second or third",
+        "Says the right answer (Key Vault Secrets User), why Administrator was tempting, and one way to remember it (using the plan's picture is right), in natural spoken sentences rather than pasted notes",
+        "Ends with a short natural check such as 'Got it?' or 'Make sense?'",
+        "Reads like a teacher talking, warm and direct, not a template or a card",
+      ],
+      maxWords: 110,
+    },
+    {
+      ...base, name: "going over the misses: 'not really' gets the same miss again from a new angle",
+      history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }, { role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }],
+      lesson: { text, previous: 1, total: 3 }, expectTeaching: 1,
+      message: "not really",
+      expectedActions: [], expectedSuggestions: ["Got it", "Not yet"],
+      expectations: [
+        "Stays on the Key Vault miss; does not move on to grounding/RAG",
+        "Explains it again from a different angle (a new picture or simpler words), not the apartment-building sentences again",
+        "Is kind about it (no 'as I said'), and ends with a short check",
+      ],
+      maxWords: 100,
+    },
+    {
+      ...base, name: "going over the misses: 'yeah got it' moves on to the second miss",
+      history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }, { role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }],
+      lesson: { text, previous: 1, total: 3 }, expectTeaching: 2,
+      message: "yeah got it",
+      expectedActions: [], expectedSuggestions: ["Got it", "Not yet"],
+      expectations: [
+        "Starts with one short warm word, then teaches the second miss (grounding with retrieval-augmented generation) and only that one",
+        "Says the right answer, why raising the temperature was tempting, and one way to remember it (e.g. an open-book exam)",
+        "Ends with a short natural check",
+      ],
+      maxWords: 110,
+    },
+    {
+      ...base, name: "going over the misses: a question about the current miss is answered, and the walk stays on it",
+      history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }, { role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }],
+      lesson: { text, previous: 1, total: 3 }, expectTeaching: 1,
+      message: "but wouldn't administrator also be able to read the secrets? why is it wrong",
+      expectedActions: [], expectedSuggestions: ["Got it", "Not yet"],
+      expectations: [
+        "Answers the question directly: yes, Administrator could, but it can do far more, and least privilege means the smallest role that does the job",
+        "Stays on the Key Vault miss and ends with a short check",
+      ],
+      maxWords: 100,
+    },
+    {
+      ...base, name: "going over the misses: the last miss has no plan, so the coach writes its own true trick",
+      history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }, { role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }, { role: "user", content: "Got it" }, { role: "assistant", content: "Nice. Next one: keeping a chat agent tied to company documents. The answer was **retrieval-augmented generation**. Temperature only changes how creative it sounds; RAG is an open-book exam. Make sense?" }],
+      lesson: { text, previous: 2, total: 3 }, expectTeaching: 3,
+      message: "Got it",
+      expectedActions: [], expectedSuggestions: ["Got it", "Not yet"],
+      expectations: [
+        "Teaches the third miss (OCR / the Read API for text in a photo) and only that one",
+        "Gives a way to remember it that is true (OCR reads text; image classification labels the whole picture)",
+        "Ends with a short natural check",
+      ],
+      maxWords: 110,
+    },
+    {
+      ...base, name: "going over the misses: after the last one, a short wrap-up with the next step",
+      history: [{ role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }, { role: "user", content: "Got it" }, { role: "assistant", content: "Nice. Next one: grounding. The answer was **retrieval-augmented generation**: an open-book exam. Make sense?" }, { role: "user", content: "Got it" }, { role: "assistant", content: teachMiss3 }],
+      lesson: { text, previous: 3, total: 3 }, expectTeaching: 0,
+      message: "yes",
+      expectedActions: [], expectedSuggestions: ["Another set on the missed topics", "Another set on everything", "Flashcards for the misses"],
+      expectations: [
+        "Says that was the last one, with short earned encouragement",
+        "Gives one concrete next step starting with 'Next step:' (a set on just those topics, or generative AI)",
+        "Teaches no new miss and invents no new question",
+      ],
+      maxWords: 60,
+    },
+    {
+      ...base, name: "going over the misses: asking for a new set ends the walk and starts it",
+      history: [{ role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }],
+      lesson: { text, previous: 1, total: 3 }, expectTeaching: 0,
+      message: "actually let's skip this, give me another set on everything",
+      expectedActions: [{ type: "start_quiz", name: "Microsoft AI-103", kind: "practice" }],
+      expectations: ["Starts the set right away in one short line, without going over more misses"],
+      maxWords: 40,
+    },
+  ];
+}
