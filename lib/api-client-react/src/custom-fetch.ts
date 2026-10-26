@@ -332,6 +332,34 @@ async function parseSuccessBody(
   }
 }
 
+/**
+ * D-208 (Dan, build 29: "No connection right now" and an answer tap that did nothing, both fine on a
+ * second tap): a request that fails before any response (a dropped or stale connection) is sent once
+ * more after a short pause, for requests that are safe to repeat (GET, HEAD, PUT, DELETE: saving an
+ * answer is a PUT). A POST is never repeated here; a cancelled request is not either.
+ */
+export const RETRY_METHODS = new Set(["GET", "HEAD", "PUT", "DELETE"]);
+export const RETRY_DELAY_MS = 600;
+
+export function shouldRetry(method: string, error: unknown, signal?: AbortSignal | null): boolean {
+  if (!RETRY_METHODS.has(method)) return false;
+  if (signal?.aborted) return false;
+  if ((error as { name?: unknown })?.name === "AbortError") return false;
+  return error instanceof TypeError;
+}
+
+async function fetchWithRetry(input: RequestInfo | URL, init: RequestInit & { method: string }): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (error) {
+    // A Request's body can be read only once; the generated client passes a URL string and a string body.
+    if (!shouldRetry(init.method, error, init.signal) || isRequest(input)) throw error;
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+    if (init.signal?.aborted) throw error;
+    return fetch(input, init);
+  }
+}
+
 export async function customFetch<T = unknown>(
   input: RequestInfo | URL,
   options: CustomFetchOptions = {},
@@ -370,7 +398,7 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  const response = await fetchWithRetry(input, { ...init, method, headers });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

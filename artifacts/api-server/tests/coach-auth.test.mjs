@@ -61,6 +61,12 @@ test('coach AI routes reject signed-out requests without calling the AI provider
   const base = `http://127.0.0.1:${apiPort}`;
   await waitForHealth(base, child);
 
+  // D-208: idle connections stay open longer than the hosting proxy keeps them (Node's default is 5 s).
+  const agent = new http.Agent({ keepAlive: true });
+  const health = await new Promise((resolve, reject) => http.get(`${base}/api/healthz`, { agent }, (res) => { res.resume(); resolve(res); }).on('error', reject));
+  agent.destroy();
+  assert.match(String(health.headers['keep-alive'] ?? ''), /timeout=65\b/, 'kept-alive connections last 65 s');
+
   const bodies = {
     analyze: { course: 'Biology', filename: 'syllabus.txt', text: 'Midterm exam on 2026-10-15.' },
     quiz: { course: 'Biology', topic: 'Cells', count: 3, materials: 'Cells are the basic unit of life.' },

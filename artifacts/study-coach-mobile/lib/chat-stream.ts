@@ -88,3 +88,43 @@ export function closeOpenBold(text: string): string {
   const lines = text.split('\n');
   return lines.map((line) => ((line.match(/\*\*/g) ?? []).length % 2 ? `${line}**` : line)).join('\n');
 }
+
+/** D-208: the pause before a streamed message is sent again after its connection dropped. */
+export const STREAM_RETRY_MS = 600;
+
+/** A failure with no answer from the server (a dropped connection, a cut stream): no HTTP status. */
+export function isNetworkFailure(error: unknown): boolean {
+  const status = (error as { status?: unknown })?.status;
+  return !(typeof status === 'number' && status > 0);
+}
+
+/** The retry found the message already saved by the first try (409): the chat is refetched, no error shown. */
+export class AlreadySent extends Error {
+  readonly status = 409;
+  constructor() { super('Already sent'); }
+}
+
+/**
+ * D-208 (Dan, build 29: "No connection right now", fine on a second tap): a streamed message whose
+ * connection drops is sent once more after a short pause; `onRetry` clears what the first try showed.
+ * A 409 on the second try means the first one got through and was saved (the chat moved on): AlreadySent.
+ */
+export async function sendWithRetry<T>(
+  send: () => Promise<T>,
+  onRetry: () => void,
+  wait: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+): Promise<T> {
+  try {
+    return await send();
+  } catch (error) {
+    if (!isNetworkFailure(error)) throw error;
+    onRetry();
+    await wait(STREAM_RETRY_MS);
+    try {
+      return await send();
+    } catch (again) {
+      if ((again as { status?: unknown })?.status === 409) throw new AlreadySent();
+      throw again;
+    }
+  }
+}
