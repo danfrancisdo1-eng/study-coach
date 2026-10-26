@@ -38,6 +38,7 @@ import { logger } from "../lib/logger";
 import { activeFor, consume, enforced, examQuestionsServed, planFor, refund } from "../lib/premium-store";
 import { examFreeLeft, limitMessage } from "../lib/premium";
 import { withoutNearDuplicates } from "../lib/near-duplicate";
+import { giveawayKey } from "../lib/quiz-check";
 import { bankFillCount, pickFromBank, promptKey } from "../lib/question-bank";
 import { addToBank, fromBank, loadBank, markServed } from "../lib/bank-store";
 
@@ -50,9 +51,8 @@ const DEFAULT_SESSION_MINUTES = 20;
 // A new study session starts when the app opens and the last message is older than this
 // (SPEC §7 "resume where you left off"; the original guide's once-per-session check-in).
 const SESSION_GAP_MS = Number(process.env.HOME_CHAT_SESSION_GAP_MINUTES ?? "30") * 60_000;
-const OLD_MATERIAL_QUESTIONS = 2;
 const UNDO_CHIP = "Undo that"; // under a course-notes update (D-123)
-const SHEET_TOPIC = /memory sheet/i; // "Quiz me from my memory sheet": the sheet is the only source (D-025) // "missed topics" sets add 1–2 questions from earlier material (SPEC §6 step 7)
+const SHEET_TOPIC = /memory sheet/i; // "Quiz me from my memory sheet": the sheet is the only source (D-025)
 
 type JsonObject = Record<string, unknown>;
 const isObject = (value: unknown): value is JsonObject => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -365,11 +365,8 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
     originalPrompts, weakConcepts: missed, sourceText: sourceTextOf(chunks), status,
     ...(sectionWeights?.length && !missed.length ? { sectionWeights } : {}),
   };
-  // "Missed topics" sets carry 1–2 questions from the earlier set that were answered correctly (SPEC §6 step 7); they go last.
-  const carried: StoredQuestion[] = missed.length && previousQuiz && plan.scope !== "daily"
-    ? previousQuiz.questions.filter((q) => q.answers.length && q.answers.at(-1)?.optionId === q.correctOptionId).slice(0, OLD_MATERIAL_QUESTIONS)
-      .map((q) => ({ ...q, id: randomUUID(), answers: [], feedback: undefined, flag: undefined, invalid: undefined }))
-    : [];
+  // D-202 (Dan: "how did it come up with 12 questions?"): a "missed topics" set is only the missed
+  // concepts, exactly the count asked; it no longer carries 1–2 right answers from the last set.
   // D-145: an all-topics, missed or daily set comes from the course's question bank (checked once,
   // exact size, no repeats); what the bank lacks is written as before. A topic set is always written.
   const banked = bankOn() && !timed && (ALL_TOPICS.test(plan.topic) || missed.length)
@@ -399,17 +396,16 @@ async function startQuiz(ownerId: string, state: JsonObject, plan: QuizPlan & { 
   }
   const rest = plan.count - firstCount;
   const missing = firstCount - quiz.questions.length; // dropped by the checks: topped up below
-  quiz.expectedCount = plan.count + carried.length;
+  quiz.expectedCount = plan.count;
   const more = rest > 0 || missing > 0;
   if (more) quiz.writing = { startedAt: new Date().toISOString() };
-  else quiz.questions.push(...carried);
   // The clock starts once the first questions are in hand.
   if (timed) quiz.timer = newTimer(timed.minutes);
   session.quiz = quiz;
   await insertSession(ownerId, session);
   if (more) {
     const batches = timed ? timed.batches.slice(1) : splitCount(rest).map((count) => ({ section: null, count }));
-    void writeRestOfSet(ownerId, session.id, { ...setInput, expectedCount: rest, originalPrompts: [...originalPrompts, ...quiz.questions.map((q) => q.prompt)] }, carried, batches, Boolean(timed));
+    void writeRestOfSet(ownerId, session.id, { ...setInput, expectedCount: rest, originalPrompts: [...originalPrompts, ...quiz.questions.map((q) => q.prompt)] }, batches, Boolean(timed));
   }
   return session;
 }
@@ -430,7 +426,9 @@ const bankOn = () => process.env.QUESTION_BANK !== "0";
 /** D-145: the banked questions for a set (marked served), or none when the bank cannot start it (fewer than the first part). */
 async function bankPicks(ownerId: string, courseId: string, count: number, focus: string[], originalPrompts: string[], sectionWeights?: { name: string; weight: number | null }[]): Promise<StoredQuestion[]> {
   try {
-    const picks = pickFromBank(await loadBank(ownerId, courseId), { count, focus, exclude: new Set(originalPrompts.map(promptKey)), now: new Date(), ...(sectionWeights?.length ? { sectionWeights } : {}) });
+    // D-202: banked questions written before the length check never come back with a giveaway key.
+    const fair = (await loadBank(ownerId, courseId)).filter(({ question: q }) => !giveawayKey({ options: q.options.map((o) => o.text), answerIndex: q.options.findIndex((o) => o.id === q.correctOptionId) }));
+    const picks = pickFromBank(fair, { count, focus, exclude: new Set(originalPrompts.map(promptKey)), now: new Date(), ...(sectionWeights?.length ? { sectionWeights } : {}) });
     if (picks.length < Math.min(count, FIRST_PART)) return [];
     await markServed(picks.map((p) => p.id));
     return picks.map(fromBank);
@@ -507,7 +505,7 @@ async function bankWritten(ownerId: string, courseId: string, questions: StoredQ
  * The student may be answering meanwhile, so each save retries on a version race. Whatever is
  * still missing at the end counts as invalid.
  */
-async function writeRestOfSet(ownerId: string, sessionId: string, input: GenerateQuizInput, carried: StoredQuestion[], planned: Batch[], timed = false): Promise<void> {
+async function writeRestOfSet(ownerId: string, sessionId: string, input: GenerateQuizInput, planned: Batch[], timed = false): Promise<void> {
   const log = logger.child({ ownerId, sessionId });
   const prompts = [...input.originalPrompts];
   const queue: (Batch & { topUp?: boolean })[] = [...planned];
@@ -536,15 +534,14 @@ async function writeRestOfSet(ownerId: string, sessionId: string, input: Generat
       if (!session || !quiz || !quiz.writing) return; // deleted with its course, or already finished
       if (quiz.grade) { log.warn("Home chat: part of the set arrived after grading; dropped"); return; }
       // Each batch was written separately: drop anything that repeats a question already in the set (D-097).
-      const room = Math.max(0, quiz.expectedCount - carried.length - quiz.questions.length);
+      const room = Math.max(0, quiz.expectedCount - quiz.questions.length);
       const fresh = withoutNearDuplicates(added, quiz.questions.map((q) => q.prompt)).slice(0, room);
       quiz.questions.push(...fresh);
       void bankWritten(ownerId, input.courseId, fresh, timed ? undefined : input.sectionWeights);
       quiz.writing = { ...quiz.writing, lastPartAt: new Date().toISOString() }; // D-140: still arriving
-      shortBy = Math.max(0, quiz.expectedCount - carried.length - quiz.questions.length);
+      shortBy = Math.max(0, quiz.expectedCount - quiz.questions.length);
       finished = !queue.length && (shortBy === 0 || topUps >= TOP_UPS);
       if (finished) {
-        quiz.questions.push(...withoutNearDuplicates(carried, quiz.questions.map((q) => q.prompt)));
         quiz.invalidItemCount = shortBy;
         quiz.writing = null;
       }

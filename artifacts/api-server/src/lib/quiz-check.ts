@@ -82,3 +82,16 @@ export function numericKey(q: ProposedQuestion): number | "drop" | null {
   if (others.length === 1) return others[0]!;
   return others.length === 0 && optionNumbers.every((n) => n.length > 0) ? "drop" : null;
 }
+
+// D-202 (Dan's Krebs "which is NOT" question: the key was a full sentence, the others short like
+// "H2O", so the options gave the answer away): the key may not stand out by length.
+export const GIVEAWAY_RATIO = 1.8;
+export const GIVEAWAY_GAP = 25;
+/** True when the keyed option is much longer than every other option (over 1.8× the longest and 25+ characters more). */
+export function giveawayKey(q: Pick<ProposedQuestion, "options" | "answerIndex">): boolean {
+  const key = q.options[q.answerIndex]?.trim().length ?? 0;
+  const others = q.options.filter((_, i) => i !== q.answerIndex).map((o) => o.trim().length);
+  if (!others.length) return false;
+  const longest = Math.max(...others);
+  return key > longest * GIVEAWAY_RATIO && key - longest >= GIVEAWAY_GAP;
+}

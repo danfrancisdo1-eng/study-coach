@@ -1,5 +1,18 @@
 # Progress
 
+## Session 23m — 2026-10-25 — missed-topics sets are only the misses; no giveaway options (D-202), branch `fix/missed-only-fair-options`
+
+### Done
+- "Another set on the missed topics" asks for N and gets exactly N, all on the missed concepts (no right answers carried from the last set).
+- session-quiz.v12: options the same form and length; NOT/EXCEPT questions written the same way. A code check drops a question whose key is much longer than every other option (topped up); banked questions that fail it are skipped.
+- Verified here: `pnpm run typecheck`; `pnpm test` 365 pass, 0 fail, 1 skipped (as before); `node evals/build.mjs` builds. Server only: no phone build needed.
+
+### Next / blockers
+- Dan runs the session_quiz evals on the Mac (needs the Anthropic key), then merge; Render deploys.
+
+### Needs real-iPhone check
+- After a set with misses, "Another set on the missed topics" with 10 asked: 10 questions, all on what was missed. Answer options of a question look alike in length.
+
 ## Session 23k — 2026-10-25 — every button squashes and ticks (D-200), branch `feat/press-feel`
 
 ### Done

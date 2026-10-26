@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-25 — D-202: A missed-topics set is only the misses; the options never give the answer away
+- Dan (build 23): "how did it come up with 12 questions? ... when the person asks for another 10 on just the ones I missed, that they're just the ones they miss. It's not just the two extra and then new 10." A "missed topics" set no longer carries 1–2 right answers from the last set (SPEC §6 step 7 changed): it is only the missed concepts, exactly the count asked. `OLD_MATERIAL_QUESTIONS` and the carried questions are gone from routes/chat.ts.
+- Dan (build 23, a Krebs "which is NOT" question): the key was a full sentence while the others were short terms like "H2O", so the options gave the answer away. session-quiz.v12: all options of a question are the same form and about the same length, the key is never the longest or most detailed by habit, and a NOT/EXCEPT question writes its true statements and its false one the same way. Otherwise v11's text.
+- Code check (`giveawayKey`, lib/quiz-check.ts): a question whose key is over 1.8× longer than every other option and 25+ characters longer is dropped and topped up like any other dropped question (D-133); questions already in the course's question bank that fail it are never served.
+- Evals: every session_quiz case now fails a giveaway key; a new Krebs "NOT" case. Server only: no phone build needed. Evals round 1 (Dan's Mac): session_quiz 10/11, one scenario question on the guide-weighted certification set had a much longer key (the code check would have dropped and refilled it). v12 (unshipped) now adds: scenario distractors get the same detail and qualifiers, and a last check before replying shortens a key that is clearly longer than every other option. **Decided by:** Dan.
+
 ## 2026-10-25 — D-200: Every button squashes and ticks when tapped
 - Dan: "Why doesn't all of our buttons move and give haptic when pressed?" / "Yes. Go ahead. No buzzer but with haptics."
 - D-179's PressScale (squash on press, light haptic) was only on the main buttons, answer cards and course cards (9 screens); about 100 other tappable things (chips, Account rows, header icons, sign-in/up, flashcards, OneDrive, memory cards, lectures, review sheet, course page) used a plain Pressable that only dimmed.
