@@ -1676,7 +1676,7 @@ function lessonCases(): CoachCase[] {
       expectations: [
         "Opens with one short bridge line about going through the misses one at a time",
         "Teaches only the first miss (the Key Vault role); never starts on the second or third",
-        "Says the right answer (Key Vault Secrets User), why Administrator was tempting, and one way to remember it (the plan's idea in its own words, not quoted word for word)",
+        "Says the right answer (Key Vault Secrets User), why Administrator was tempting, and one way to remember it (using the plan's picture is right), in natural spoken sentences rather than pasted notes",
         "Ends with a short natural check such as 'Got it?' or 'Make sense?'",
         "Reads like a teacher talking, warm and direct, not a template or a card",
       ],
