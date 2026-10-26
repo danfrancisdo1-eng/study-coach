@@ -60,3 +60,10 @@ test('a reply without sections stays one untitled section, as before', async () 
   assert.deepEqual(sections[0].items.map((i) => i.block.kind), ['heading', 'bullet', 'text']);
   assert.equal(blocksOf('## Old heading')[0].kind, 'heading');
 });
+
+test('a blank line starts a new thought (D-206): the block after it is spaced; titles are not', () => {
+  const blocks = blocksOf('Nice.\n\nNext one: the severity question.\nThe answer was **0, 2, 4, 6**.\n\n### 🧠 Memory hack\n\n**Number pattern.** Even numbers.\n\nMake sense?');
+  assert.deepEqual(blocks.map((b) => [b.kind, b.spaced === true]), [
+    ['text', false], ['text', true], ['text', false], ['section', false], ['text', true], ['text', true],
+  ]);
+});

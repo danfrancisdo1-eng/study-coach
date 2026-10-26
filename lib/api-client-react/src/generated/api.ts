@@ -2500,6 +2500,95 @@ export const useSendHomeChatMessage = <TError = ErrorType<void>,
       return useMutation(getSendHomeChatMessageMutationOptions(options));
     }
 
+export const getStreamHomeChatMessageUrl = () => {
+
+
+
+
+  return `/api/study/chat/stream`
+}
+
+/**
+ * Same input and outcome as POST /study/chat. When the coach starts writing, the response is text/event-stream: "delta" events ({"text": string}) carry the reply text as it is written, then exactly one "done" event carries the updated conversation (the HomeChat body POST /study/chat returns) or one "error" event ({"status": integer, "error": string, "code"?: string}). A request stopped before the coach writes anything answers as plain JSON with the same statuses as POST /study/chat.
+ * @summary Send a message to the coach and receive its reply text while it is written (D-206)
+ */
+export const streamHomeChatMessage = async (homeChatInput: HomeChatInput, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<string>(getStreamHomeChatMessageUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(homeChatInput)
+  }
+);}
+
+
+
+
+
+export const getStreamHomeChatMessageMutationKey = () => ['streamHomeChatMessage'] as const;
+
+export const getStreamHomeChatMessageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof streamHomeChatMessage>>, TError,StreamHomeChatMessageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof streamHomeChatMessage>>, TError,StreamHomeChatMessageMutationVariables, TContext> => {
+
+const mutationKey = getStreamHomeChatMessageMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof streamHomeChatMessage>>, StreamHomeChatMessageMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  streamHomeChatMessage(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StreamHomeChatMessageMutationResult = NonNullable<Awaited<ReturnType<typeof streamHomeChatMessage>>>
+    export type StreamHomeChatMessageMutationBody = BodyType<HomeChatInput>
+    export type StreamHomeChatMessageMutationError = ErrorType<void>
+    export type StreamHomeChatMessageMutationVariables = {data: BodyType<HomeChatInput>}
+
+    /**
+ * @summary Send a message to the coach and receive its reply text while it is written (D-206)
+ */
+export const useStreamHomeChatMessage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof streamHomeChatMessage>>, TError,StreamHomeChatMessageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof streamHomeChatMessage>>,
+        TError,
+        StreamHomeChatMessageMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStreamHomeChatMessageMutationOptions(options));
+    }
+
 export const getOpenHomeChatUrl = () => {
 
 

@@ -8,7 +8,7 @@ import { randomUUID } from "node:crypto";
 import { newTimer } from "../lib/exam-timer";
 import { examBatches, timedExamPlan, type Batch } from "../lib/timed-exam";
 import { effectiveExamFacts } from "../lib/exam-facts";
-import { Router, type IRouter, type Request } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
@@ -28,6 +28,7 @@ import { lookupExamGuide } from "../lib/exam-guide";
 import { saveExamGuide } from "../lib/exam-guide-state";
 import { eventsFrom, resultsHistoryText, weakConcepts } from "../lib/results-history";
 import { reportFacts, reportFactsText } from "../lib/readiness";
+import { ReplyExtractor, sseEvent } from "../lib/reply-stream";
 import { LESSON_CHIPS, LESSON_START, currentLesson, lessonMisses, lessonOrder, lessonText, nextMiss, type LessonMeta, type LessonMiss, type PlanCard } from "../lib/lesson";
 import { TECHNIQUE_LABELS, memoryCardsView, missesOf } from "../lib/memory-cards";
 import { DAILY_SET, dailyLine, dailyReps, dailyText, firstMessageToday, localDay } from "../lib/daily-reps";
@@ -612,10 +613,45 @@ function memoryItems(plan: SheetPlan, quizSession: Session | null, deckSession: 
   return items;
 }
 
-router.post("/study/chat", async (req, res): Promise<void> => {
+/**
+ * Sends a message to the coach. D-206: with `stream`, the coach's reply text goes out as server-sent
+ * "delta" events while it is written, then one "done" event carries the saved chat (the same body the
+ * plain request returns) or one "error" event ({status, error, code}). Anything that stops the request
+ * before the first word answers as plain JSON with its status, exactly like the plain request.
+ */
+async function sendChat(req: Request, res: Response, stream: boolean): Promise<void> {
+  let sse = false;
+  const openStream = () => {
+    if (sse) return;
+    sse = true;
+    res.status(200);
+    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+  };
+  const reply = (status: number, body: unknown): void => {
+    if (!sse) { res.status(status).json(body); return; }
+    res.write(status === 200 ? sseEvent("done", body) : sseEvent("error", { status, ...(isObject(body) ? body : {}) }));
+    res.end();
+  };
+  const onDelta = stream ? (text: string) => { if (!text) return; openStream(); res.write(sseEvent("delta", { text })); } : undefined;
+  try {
+    await sendChatBody(req, reply, onDelta);
+  } catch (error) {
+    if (!sse) throw error;
+    req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat stream failed");
+    reply(502, { error: "The coach could not answer just now. Your message was not lost; try sending it again." });
+  }
+}
+
+router.post("/study/chat", (req, res) => sendChat(req, res, false));
+router.post("/study/chat/stream", (req, res) => sendChat(req, res, true));
+
+async function sendChatBody(req: Request, reply: (status: number, body: unknown) => void, onDelta?: (text: string) => void): Promise<void> {
   const parsed = SendHomeChatMessageBody.safeParse(req.body);
   if (!parsed.success || !parsed.data.content.trim()) {
-    res.status(400).json({ error: "Message content must be 1-8000 characters, with the conversation version." });
+    reply(400, { error: "Message content must be 1-8000 characters, with the conversation version." });
     return;
   }
   const ownerId = owner(req);
@@ -628,7 +664,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     .where(eq(studyStatesTable.ownerId, ownerId)).limit(1);
   const state = stateRows[0]?.state;
   if (!isObject(state) || state.aiConsent !== true) {
-    res.status(403).json({ error: "Persist explicit AI consent in study state (aiConsent: true) before using AI coaching." });
+    reply(403, { error: "Persist explicit AI consent in study state (aiConsent: true) before using AI coaching." });
     return;
   }
   // The thread is the focused course's (D-038); an unknown or missing courseId means the general thread.
@@ -636,7 +672,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const existing = await loadChat(ownerId, threadId);
   const version = existing?.version ?? 0;
   if (parsed.data.version !== version) {
-    res.status(409).json({ error: "The conversation changed on another device. Reload and send again.", version });
+    reply(409, { error: "The conversation changed on another device. Reload and send again.", version });
     return;
   }
   const messages = existing?.messages ?? [];
@@ -646,12 +682,12 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   if (parsed.data.timedExam) {
     const raw = list(state.courses).find((c): c is JsonObject => isObject(c) && c.id === threadId);
     if (!raw || raw.kind !== "exam") {
-      res.status(400).json({ error: "Timed exams are for certification exams." });
+      reply(400, { error: "Timed exams are for certification exams." });
       return;
     }
     const sized = timedExamPlan(effectiveExamFacts(raw), parsed.data.timedExam.size);
     if ("error" in sized) {
-      res.status(400).json({ error: sized.error });
+      reply(400, { error: sized.error });
       return;
     }
     timed = sized;
@@ -661,11 +697,11 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   const premium = enforced() ? await planFor(ownerId, threadId) : null; // D-156: an exam pass counts in its exam's thread
   const planInThread = premium;
   if (premium && threadId && !activeFor(courses, premium).includes(threadId)) {
-    res.status(402).json({ error: limitMessage("read_only", premium.limits), code: "course_read_only" });
+    reply(402, { error: limitMessage("read_only", premium.limits), code: "course_read_only" });
     return;
   }
   if (premium && !await consume(ownerId, "messages", premium.limits.messages)) {
-    res.status(402).json({ error: limitMessage("messages", premium.limits), code: "daily_limit" });
+    reply(402, { error: limitMessage("messages", premium.limits), code: "daily_limit" });
     return;
   }
   let messageCounted = !!premium;
@@ -790,10 +826,13 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     // No coach AI call: the app writes the reply (D-114).
     coach = { reply: `Timed exam: ${timed.count} questions in ${timed.minutes} minutes, spread over the official sections by weight. The clock is running now and keeps running if you leave the app. Unanswered questions count as wrong, like the real exam, and at 0:00 it is graded with what you answered. Good luck.`, suggestions: [], actions: [] };
   } else try {
+    // D-206: the reply text streams to the app while it is written (the rest of the JSON follows).
+    const extractor = onDelta ? new ReplyExtractor() : null;
     const response = await complete("coach", {
       ...(material ? { context: material.text } : {}),
       system: coachSystem(),
       messages: [...history, { role: "user", content }],
+      ...(extractor && onDelta ? { onText: (delta: string) => onDelta(extractor.push(delta)) } : {}),
     });
     coach = parseCoachReply(response.text);
     if (!coach) throw new Error(response.text ? "Reply was not valid coach JSON" : "Empty response");
@@ -815,7 +854,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   } catch (error) {
     req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat AI request failed");
     await giveBack();
-    res.status(502).json({ error: "The coach could not answer just now. Your message was not lost; try sending it again." });
+    reply(502, { error: "The coach could not answer just now. Your message was not lost; try sending it again." });
     return;
   }
 
@@ -845,13 +884,13 @@ router.post("/study/chat", async (req, res): Promise<void> => {
   // The free plan has one course (D-090): a coach reply that would add another is not applied.
   if (premium && premium.limits.courses !== null && plan.creates.length && courses.length + plan.creates.length > premium.limits.courses) {
     await giveBack();
-    res.status(402).json({ error: limitMessage("course", premium.limits), code: "premium_required" });
+    reply(402, { error: limitMessage("course", premium.limits), code: "premium_required" });
     return;
   }
   const done: HomeChatAction[] = [];
   const created = await createCourses(ownerId, plan.creates);
   if (created === null) {
-    res.status(409).json({ error: "Your courses changed on another device. Reload and send again.", version });
+    reply(409, { error: "Your courses changed on another device. Reload and send again.", version });
     return;
   }
   for (const course of created) done.push({ type: "create_course", courseId: course.id, name: course.name, ...(course.kind === "exam" ? { courseKind: "exam" as const } : {}) });
@@ -900,7 +939,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
           found = guide.found;
           sections = guide.sections.length;
           if (!await saveExamGuide(ownerId, course.id, guide, true)) {
-            res.status(409).json({ error: "Your courses changed on another device. Reload and send again.", version });
+            reply(409, { error: "Your courses changed on another device. Reload and send again.", version });
             return;
           }
           if (guide.found) void fillBank(ownerId, course.id); // D-145: a new exam's free 50 come from the bank
@@ -941,7 +980,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
         const fixed = await fixUploadNotes(ownerId, courseId, plan.fixUpload.upload, plan.fixUpload.correction);
         if (fixed === null) {
           await giveBack();
-          res.status(409).json({ error: "Your study data changed on another device. Reload and send again.", version });
+          reply(409, { error: "Your study data changed on another device. Reload and send again.", version });
           return;
         }
         if (fixed === "missing") req.log.info({ courseId }, "Home chat: fix_upload_notes for an upload that does not exist");
@@ -952,7 +991,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       } catch (error) {
         req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat upload notes fix failed");
         await giveBack();
-        res.status(502).json({ error: "The coach could not fix those notes just now. Try sending that again." });
+        reply(502, { error: "The coach could not fix those notes just now. Try sending that again." });
         return;
       }
     }
@@ -970,7 +1009,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
         const summary = plan.courseNotes ? await updateCourseNotes(ownerId, courseId, courseName, plan.courseNotes.statement) : await undoCourseNotes(ownerId, courseId);
         if (summary === null) {
           await giveBack();
-          res.status(409).json({ error: "Your study data changed on another device. Reload and send again.", version });
+          reply(409, { error: "Your study data changed on another device. Reload and send again.", version });
           return;
         }
         if (summary) {
@@ -980,7 +1019,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       } catch (error) {
         req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat course notes update failed");
         await giveBack();
-        res.status(502).json({ error: "The coach could not update your course notes just now. Try sending that again." });
+        reply(502, { error: "The coach could not update your course notes just now. Try sending that again." });
         return;
       }
     }
@@ -993,7 +1032,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
         const courseName = [...courses, ...created].find((c) => c.id === courseId)?.name ?? courseId;
         const added = await updateMemorySheet(ownerId, courseId, items, courseName);
         if (added === null) {
-          res.status(409).json({ error: "Your study data changed on another device. Reload and send again.", version });
+          reply(409, { error: "Your study data changed on another device. Reload and send again.", version });
           return;
         }
         // Nothing new (every term was already on the sheet): no card in the chat.
@@ -1001,7 +1040,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       } catch (error) {
         req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat memory sheet update failed");
         await giveBack();
-        res.status(502).json({ error: "The coach could not update your memory sheet just now. Try sending that again." });
+        reply(502, { error: "The coach could not update your memory sheet just now. Try sending that again." });
         return;
       }
     } else if (courseId) req.log.info("Home chat memory sheet update skipped: nothing to add");
@@ -1014,7 +1053,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     const premium = courseId === threadId && planInThread ? planInThread : await planFor(ownerId, courseId);
     if (!activeFor([...courses, ...created], premium).includes(courseId)) {
       await giveBack();
-      res.status(402).json({ error: limitMessage("read_only", premium.limits), code: "course_read_only" });
+      reply(402, { error: limitMessage("read_only", premium.limits), code: "course_read_only" });
       return false;
     }
     // D-153: a certification exam on the free plan has its first 50 questions free (instead of the daily
@@ -1023,7 +1062,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       const left = examFreeLeft(await examQuestionsServed(ownerId, courseId));
       if (left === 0) {
         await giveBack();
-        res.status(402).json({ error: limitMessage("exam_free", premium.limits), code: "exam_free_used" });
+        reply(402, { error: limitMessage("exam_free", premium.limits), code: "exam_free_used" });
         return false;
       }
       quiz.count = Math.min(quiz.count, left);
@@ -1032,12 +1071,12 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     // D-155: a student course studies with sets during the free week or with Premium.
     if (premium.plan === "free" && [...courses, ...created].find((c) => c.id === courseId)?.kind !== "exam") {
       await giveBack();
-      res.status(402).json({ error: limitMessage("trial", premium.limits), code: "trial_required" });
+      reply(402, { error: limitMessage("trial", premium.limits), code: "trial_required" });
       return false;
     }
     if (!await consume(ownerId, "sets", premium.limits.sets)) {
       await giveBack();
-      res.status(402).json({ error: limitMessage("sets", premium.limits), code: "daily_limit" });
+      reply(402, { error: limitMessage("sets", premium.limits), code: "daily_limit" });
       return false;
     }
     setCounted = true;
@@ -1070,7 +1109,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
         // The reply promised a set it cannot deliver: save nothing (courses created above stay), let the student retry.
         req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat quiz generation failed");
         await setFailed();
-        res.status(502).json({ error: "The coach could not write your questions just now. Try sending that again." });
+        reply(502, { error: "The coach could not write your questions just now. Try sending that again." });
         return;
       }
     }
@@ -1086,7 +1125,7 @@ router.post("/study/chat", async (req, res): Promise<void> => {
       } catch (error) {
         req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat flashcard generation failed");
         await setFailed();
-        res.status(502).json({ error: "The coach could not write your flashcards just now. Try sending that again." });
+        reply(502, { error: "The coach could not write your flashcards just now. Try sending that again." });
         return;
       }
     }
@@ -1118,12 +1157,12 @@ router.post("/study/chat", async (req, res): Promise<void> => {
     saved = updated[0];
   }
   if (saved) {
-    res.json(await chatView(ownerId, [...courses, ...created], saved.messages, saved.version));
+    reply(200, await chatView(ownerId, [...courses, ...created], saved.messages, saved.version));
     return;
   }
   // Raced with another device after the actions were applied: the course/session exist; the student reloads.
   const current = await loadChat(ownerId, threadId);
-  res.status(409).json({ error: "The conversation changed on another device. Reload to see the latest.", version: current?.version ?? 0 });
-});
+  reply(409, { error: "The conversation changed on another device. Reload to see the latest.", version: current?.version ?? 0 });
+}
 
 export default router;

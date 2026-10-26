@@ -28,6 +28,8 @@ export interface AnthropicRequest extends TaskConfig {
   messages: AiMessage[];
   jsonSchema?: JsonSchema;
   webSearch?: { maxUses: number };
+  /** D-206: stream the reply, telling each text piece as it is written (not with web search). */
+  onText?: (delta: string) => void;
 }
 
 const WEB_SEARCH_TOOL = "web_search_20260209" as const;
@@ -67,6 +69,13 @@ export function anthropicBody(request: AnthropicRequest): Anthropic.Beta.Message
   };
 }
 
+/** D-206: the same call, streamed: each text piece goes to onText as it arrives; the final message is returned. */
+async function streamed(body: Anthropic.Beta.MessageCreateParamsNonStreaming, options: { timeout?: number; maxRetries?: number } | undefined, onText: (delta: string) => void) {
+  const stream = anthropic().beta.messages.stream(body, options);
+  stream.on("text", (delta) => { try { onText(delta); } catch { /* the listener never fails a call */ } });
+  return stream.finalMessage();
+}
+
 export async function anthropicCompletion(
   request: AnthropicRequest & { timeoutMs?: number; maxRetries?: number },
 ): Promise<AiResult> {
@@ -74,7 +83,9 @@ export async function anthropicCompletion(
     ? undefined
     : { timeout: request.timeoutMs, maxRetries: request.maxRetries };
   const body = anthropicBody(request);
-  let response = await anthropic().beta.messages.create(body, options);
+  let response = request.onText && !request.webSearch
+    ? await streamed(body, options, request.onText)
+    : await anthropic().beta.messages.create(body, options);
   const usage = { inputTokens: 0, outputTokens: 0, cachedInputTokens: 0, cacheWriteTokens: 0 };
   const add = (r: typeof response) => {
     usage.inputTokens += r.usage.input_tokens + (r.usage.cache_read_input_tokens ?? 0) + (r.usage.cache_creation_input_tokens ?? 0);

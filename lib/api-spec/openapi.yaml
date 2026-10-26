@@ -512,6 +512,32 @@ paths:
         "403": { description: Explicit persisted AI consent required }
         "409": { description: Conversation changed on another device; reload }
         "502": { description: The coach did not answer; nothing was changed }
+  /study/chat/stream:
+    post:
+      operationId: streamHomeChatMessage
+      tags: [study]
+      summary: Send a message to the coach and receive its reply text while it is written (D-206)
+      description: >-
+        Same input and outcome as POST /study/chat. When the coach starts writing, the response is
+        text/event-stream: "delta" events ({"text": string}) carry the reply text as it is written, then
+        exactly one "done" event carries the updated conversation (the HomeChat body POST /study/chat returns)
+        or one "error" event ({"status": integer, "error": string, "code"?: string}). A request stopped before
+        the coach writes anything answers as plain JSON with the same statuses as POST /study/chat.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HomeChatInput" }
+      responses:
+        "200":
+          description: Server-sent events (delta, then done or error), or the updated conversation as JSON
+          content:
+            text/event-stream:
+              schema: { type: string }
+        "400": { description: Invalid message }
+        "403": { description: Explicit persisted AI consent required }
+        "409": { description: Conversation changed on another device; reload }
+        "502": { description: The coach did not answer; nothing was changed }
   /study/chat/open:
     post:
       operationId: openHomeChat
