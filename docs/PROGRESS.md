@@ -1,5 +1,31 @@
 # Progress
 
+## Session 23s — 2026-10-26 — score card without the misses list, Back to chat after a set (D-207), branch `fix/score-sheet-and-back-to-chat`
+
+### Done
+- Practice score card: the "Your misses" list is gone (score, line and By section bars stay). The exam sheet keeps its list (only place to report a bad exam question).
+- Back to chat / Return to course list show as soon as a set is graded or a deck finished (`showStudyDone`). Build #109.
+- Sounds on build 29: the phone's media volume was at zero; no app change.
+- Verified here: see the PR (typecheck, phone unit tests, iOS bundle export).
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (buttons unchanged). 2. One primary action: PASS (Back to chat is the one main button again). 3. Chunked: PASS (less on the score card). 4. Native patterns: PASS. 5. Progress / resume: PASS (the walk resumes in the chat). 6. One accent: PASS. 7. Tokens; Dark Mode; Dynamic Type: PASS (styles removed only). 8. Reduce Motion / VoiceOver: PASS (no new motion). 9. Paywall: N/A.
+
+### Needs real-iPhone check
+- Finish a practice set with misses: the score card shows the score and bars only, with Back to chat and Return to course list under it right away. Back to chat: the evaluation types out, then the misses.
+
+## Session 23r — 2026-10-26 — readiness comes after going over the misses (D-209), branch `feat/coach-v38-readiness-last`
+
+### Done
+- coach.v38: with misses the report card is only Coach's evaluation; Exam readiness is written in the wrap-up after the last miss. No misses: unchanged. The server passes the readiness facts on the turn that answers the last miss.
+- Verified here: `pnpm run typecheck` (all packages), `pnpm test` (405 tests: 404 pass, 1 skipped as before), evals build (`node evals/build.mjs`). New: tests/coach-v38-order.test.mjs; lesson.e2e.test.mjs checks the report card prompt has no readiness section and only the wrap-up turn carries the readiness facts.
+
+### Next
+- Dan runs the coach evals for v38 on his Mac (command in the PR).
+
+### Needs real-iPhone check
+- Finish a set with misses: the evaluation only, then Your misses; after Got it on the last miss: "That was the last one", then Exam readiness types out under its title, then the three chips. A perfect set: evaluation and readiness together, as before.
+
 ## Session 23t — 2026-10-26 — a dropped connection is retried once (D-208), branch `fix/connection-retry`
 
 ### Done

@@ -41,7 +41,7 @@ import { HomeSkeleton } from '@/components/Skeleton';
 import { LiveSetCard } from '@/components/LiveSetCard';
 import { ProgressBar, useElapsed } from '@/components/ProgressBar';
 import { estimate, waitFor } from '@/lib/progress';
-import { liveSetAction, resumeLabel } from '@/lib/live-set';
+import { liveSetAction, resumeLabel, showStudyDone } from '@/lib/live-set';
 import { courseExamFacts, type TimedSize } from '@/lib/exam-facts';
 import { passMarkLine } from '@/lib/exam-sheet';
 
@@ -801,7 +801,7 @@ export default function CoachHome() {
                   onGraded={(graded) => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
                   onError={(problem) => setError(readableError(problem))} />
               ) : null}
-              {(gradedSessionId && !activeQuiz && !deckSessionId) || (finishedDeckId && !activeDeck) ? (
+              {showStudyDone({ gradedSessionId, activeQuizId: activeQuiz?.sessionId ?? null, deckSessionId, finishedDeckId, activeDeckId: activeDeck?.sessionId ?? null }) ? (
                 <>
                   <PressScale accessibilityRole="button" onPress={() => { setStudyOpen(false); setGradedSessionId(null); setFinishedDeckId(null); }} style={styles.backToChat} testID="button-done-study"><Text style={styles.backToChatText}>Back to chat</Text></PressScale>
                   {/* Dan (D-059): the review ends with a way back to the course list. */}
