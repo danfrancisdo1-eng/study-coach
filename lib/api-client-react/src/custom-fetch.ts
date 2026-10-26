@@ -44,6 +44,16 @@ export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
 }
 
+/**
+ * D-206: the absolute URL and auth header for a request the generated client cannot make itself
+ * (the streamed coach reply is read with the platform's streaming fetch).
+ */
+export async function apiTarget(path: string): Promise<{ url: string; headers: Record<string, string> }> {
+  const url = _baseUrl && path.startsWith("/") ? `${_baseUrl}${path}` : path;
+  const token = _authTokenGetter ? await _authTokenGetter() : null;
+  return { url, headers: token ? { authorization: `Bearer ${token}` } : {} };
+}
+
 function isRequest(input: RequestInfo | URL): input is Request {
   return typeof Request !== "undefined" && input instanceof Request;
 }

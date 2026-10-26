@@ -5,7 +5,7 @@
  * ("1. Osmosis: water follows salt"), or plain text. Inline **bold** becomes bold spans.
  */
 export type Span = { text: string; bold: boolean };
-export type Block =
+export type Block = Spaced & (
   | { kind: 'heading'; spans: Span[] }
   | { kind: 'bullet'; spans: Span[] }
   | { kind: 'trick'; n: string; label: string | null; spans: Span[] }
@@ -15,7 +15,9 @@ export type Block =
   | { kind: 'section'; spans: Span[] }
   /** D-193: "#### Secrets User vs Officer" starts one memory tip, drawn as its own card. */
   | { kind: 'tip'; spans: Span[] }
-  | { kind: 'text'; spans: Span[] };
+  | { kind: 'text'; spans: Span[] });
+/** D-206: a block after a blank line starts a new thought (more room above it). */
+export type Spaced = { spaced?: boolean };
 
 /** A reply laid out in sections; a section holds plain blocks and tip cards. Blocks before the first section stay on top. */
 export type Tip = { title: Span[]; blocks: Block[] };
@@ -36,8 +38,26 @@ export function spansOf(line: string): Span[] {
   return spans.filter((s) => s.text.length > 0);
 }
 
+/**
+ * D-206 (Dan: "a space in between each thought"): a block that follows a blank line is a new thought;
+ * the chat draws extra room above it. Section titles and tip headers already have their own room.
+ */
 export function blocksOf(content: string): Block[] {
-  return content.split(/\n+/).map((l) => l.trim()).filter(Boolean).map((line): Block => {
+  const lines = content.split('\n').map((l) => l.trim());
+  const spaced = new Set<string>();
+  const kept: string[] = [];
+  lines.forEach((line, i) => {
+    if (!line) return;
+    if (kept.length && i > 0 && !lines[i - 1]) spaced.add(String(kept.length));
+    kept.push(line);
+  });
+  return kept.map((line, index) => ({ line, index })).map(({ line, index }): Block => {
+    const block = blockOf(line);
+    return spaced.has(String(index)) && block.kind !== 'section' && block.kind !== 'tip' ? { ...block, spaced: true } : block;
+  });
+}
+
+function blockOf(line: string): Block {
     // D-193: sections and tip cards (checked before the generic "# heading").
     const section = /^###\s+(.+)$/.exec(line);
     if (section && !line.startsWith('####')) return { kind: 'section', spans: [{ text: section[1]!.replace(/\*\*/g, '').trim(), bold: true }] };
@@ -63,7 +83,6 @@ export function blocksOf(content: string): Block[] {
         : { kind: 'trick', n: numbered[1]!, label: null, spans: spansOf(rest) };
     }
     return { kind: 'text', spans: spansOf(line) };
-  });
 }
 
 /**

@@ -1,5 +1,17 @@
 # Progress
 
+## Session 23q — 2026-10-26 — the coach types it out (D-206), branch `feat/stream-coach`
+
+### Done
+- Streamed coach replies: server route POST /study/chat/stream (SSE), Anthropic streaming in the AI module, reply text pulled from the streaming JSON; phone types it at 400 wpm with sliding titles, waits while the set sheet is open, keeps the reply's top in view. Mock approved by Dan first (https://claude.ai/artifact/1FgZBDcjY8MCjtkKf7RLNm).
+- Verified here: see the PR (typecheck, tests, iOS bundle export). New tests: reply-stream.test.mjs, chat-stream.e2e.test.mjs (real server, stub AI), lib/chat-stream.test.mjs (phone: events, pacing, which messages stream, scroll pin, open bold).
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (unchanged chips). 2. One primary action: PASS. 3. Chunked: PASS (sections and thoughts arrive one at a time). 4. Native patterns: PASS (typing replies, as in chat apps). 5. Progress / resume: PASS (dots until the first word; the walk resumes as before). 6. One accent: PASS. 7. Tokens; Dark Mode; Dynamic Type: PASS (no new styles). 8. Reduce Motion: titles appear without sliding (ReportReveal); the words still type at reading pace; VoiceOver reads the dots as "Coach is thinking". 9. Paywall: N/A (same limits as the plain request).
+
+### Needs real-iPhone check
+- Finish a set with misses and stay in the score sheet a moment, then Back to chat: the evaluation types out under its title from there (not already done); then readiness, then Your misses and the first miss. The screen does not jump to the bottom; the evaluation's top stays in view. Got it / Not yet replies type out too. Turn on airplane mode mid-reply: an error line, nothing lost.
+
 ## Session 23n — 2026-10-25 — the coach goes over your misses (D-203), branch `feat/coach-teaches-misses`
 
 ### Done

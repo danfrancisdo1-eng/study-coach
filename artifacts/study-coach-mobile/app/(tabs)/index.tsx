@@ -20,6 +20,8 @@ import { blocksOf, sectionsOf, type Block, type Span } from '@/lib/coach-text';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { EvaluationPlaceholder, SectionBody, SectionTitle, ThinkingDots } from '@/components/ReportReveal';
 import { EVALUATION_TITLE, LESSON_START, revealPlan, shouldStartLesson, visibleChips, type RevealStep } from '@/lib/lesson-chat';
+import { closeOpenBold, paceStep, pinnedOffset, streamable } from '@/lib/chat-stream';
+import { streamChatMessage } from '@/lib/coach-stream';
 import { topicParts } from '@/lib/topic-label';
 import { daysLeft, daysLeftLabel } from '@/lib/syllabus';
 import { studyRequest } from '@/lib/course-actions';
@@ -44,6 +46,7 @@ import { courseExamFacts, type TimedSize } from '@/lib/exam-facts';
 import { passMarkLine } from '@/lib/exam-sheet';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.'; // sent for the student after Grade so the coach can respond to the result
+const STREAM_TITLE_STEP = { title: 0, line: 420, dots: 0, body: 0 }; // D-206: a title slides in, its line draws; its text streams
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
 const SIM_EXAM_CHIP = 'Simulated exam'; // D-130: opens the timed sheet, not a chat message
 const REVIEW_CHIP = 'Review sheet (PDF)'; // D-139: opens the course's review sheet, not a chat message. The coach sends this exact text (coach.v31), so it stays as is; the course page's button says "Review PDF" (D-180).
@@ -159,7 +162,11 @@ export default function CoachHome() {
   useEffect(() => { setGradedSessionId(null); setFinishedDeckId(null); setStudyOpen(false); openedForRef.current = null; }, [focusCourseId]);
   const messages = chatQuery.data?.messages ?? [];
   const version = chatQuery.data?.version ?? 0;
-  const busy = send.isPending || putState.isPending;
+  // D-206: a coach reply streaming in (the report card, going over the misses): typed out at reading pace.
+  type LiveReply = { user: string | null; received: string; shown: number; done: HomeChat | null; anchorId: string | null; auto: boolean; draft: string };
+  const [live, setLive] = useState<LiveReply | null>(null);
+  const userScrolledRef = useRef(false);
+  const busy = send.isPending || putState.isPending || live !== null;
   const courses = coursesFrom(stateQuery.data?.state);
   const intakeCourse = courses.find((course) => course.id === intakeCourseId) ?? null;
   const focusCourse = courses.find((course) => course.id === focusCourseId) ?? null;
@@ -205,7 +212,7 @@ export default function CoachHome() {
     if (activeStudyId && openedForRef.current !== activeStudyId) { openedForRef.current = activeStudyId; setStudyOpen(true); }
   }, [activeStudyId]);
   const lastMessage = messages[messages.length - 1];
-  const baseChips = lastMessage?.role === 'assistant' && !activeQuiz && !activeDeck ? (lastMessage.suggestions ?? []) : [];
+  const baseChips = lastMessage?.role === 'assistant' && !activeQuiz && !activeDeck && !live ? (lastMessage.suggestions ?? []) : [];
   // D-130 (Dan: "No option for exam or simul"): after a graded set on a certification exam, the
   // after-set chips also offer the timed Simulated exam (opens the course's timed sheet).
   // D-203: "Go over my misses" is sent by the app itself; its chip shows only if that failed.
@@ -244,6 +251,11 @@ export default function CoachHome() {
   // on every new message raced the top-of-reply scroll, and whichever ran last won. Measured, so it
   // cannot overshoot: scrollToIndex with viewPosition on an inverted list jumped past the reply.
   const newestFirst = useMemo(() => [...messages].reverse(), [messages]);
+  const LIVE_REPLY = 'live-reply';
+  const LIVE_USER = 'live-user';
+  const listData: HomeChatMessage[] = live
+    ? [{ id: LIVE_REPLY, role: 'assistant', content: closeOpenBold(live.received.slice(0, live.shown)), at: '' }, ...(live.user ? [{ id: LIVE_USER, role: 'user' as const, content: live.user, at: '' }] : []), ...newestFirst]
+    : newestFirst;
   const viewportRef = useRef(0);
   const placedRef = useRef<string | null>(null);
   const heightsRef = useRef(new Map<string, number>());
@@ -260,11 +272,23 @@ export default function CoachHome() {
   useEffect(() => { settleNewest(); }, [messages.length]);
   const placeNewest = (id: string, height: number) => {
     heightsRef.current.set(id, height);
+    if (id === LIVE_USER) return;
+    if (id === LIVE_REPLY) { pinLive(height); return; }
     settleNewest();
+  };
+  // D-206 (Dan: "it pops you at the end of the chat. So you don't even see the coach's evaluation"): while a
+  // reply types out, the top of it (with the student's own line above it, or the report card when the misses
+  // start right after it) stays at the top of the screen; the new words land below. A scroll by hand stops it.
+  const pinLive = (height: number) => {
+    if (!live || userScrolledRef.current) return;
+    const room = viewportRef.current - stripHeight - 24;
+    const above = live.anchorId ? heightsRef.current.get(live.anchorId) ?? 0 : live.user ? heightsRef.current.get(LIVE_USER) ?? 0 : 0;
+    listRef.current?.scrollToOffset({ offset: pinnedOffset(height + (above ? above + 12 : 0), room), animated: false });
   };
 
   // The course screen's handoff (D-058) goes out once the chat is loaded, consented and on that course. Before the early returns: hooks keep their order.
   const sendTextRef = useRef<(text: string, timed?: TimedSize, auto?: { lessonFor: string }) => Promise<void>>(async () => {});
+  const afterReplyRef = useRef<(result: HomeChat, auto?: { lessonFor: string }) => Promise<void>>(async () => {});
   // D-182: a question asked under the welcome before consent goes out as soon as consent is given; the draft stays in the box until it is sent.
   useEffect(() => {
     if (!pendingAsk || !consented || stateQuery.isLoading || chatQuery.isLoading) return;
@@ -283,6 +307,26 @@ export default function CoachHome() {
     const timed = (['full', '10', '20', '40'] as const).find((size) => size === handoffTimed);
     void sendTextRef.current(handoff, timed);
   });
+
+  // D-206: the pacer: the next word (or a whole "### " title) after its delay, at 400 words a minute; it
+  // waits while the set's sheet covers the chat, so the report card types out once the student is back.
+  useEffect(() => {
+    if (!live || studyOpen) return;
+    const step = paceStep(live.received, live.shown, live.done !== null);
+    if (step) {
+      const timer = setTimeout(() => setLive((l) => (l ? { ...l, shown: Math.max(l.shown, step.shown) } : l)), step.delay);
+      return () => clearTimeout(timer);
+    }
+    if (!live.done || live.shown < live.received.length) return;
+    // All shown: the saved chat takes the live reply's place, drawn as is (no second reveal, no scroll).
+    const result = live.done;
+    const auto = live.auto ? { lessonFor: live.anchorId ?? '' } : undefined;
+    if (seenRef.current) for (const m of result.messages) seenRef.current.ids.add(m.id);
+    placedRef.current = result.messages[result.messages.length - 1]?.id ?? null;
+    queryClient.setQueryData(chatKey, result);
+    setLive(null);
+    void afterReplyRef.current(result, auto);
+  }, [live, studyOpen]);
 
   useEffect(() => {
     if (busy || !consented || !shouldStartLesson(lastMessage, lessonTriedRef.current)) return;
@@ -334,7 +378,7 @@ export default function CoachHome() {
 
   // Report a coach reply (D-046): long-press → reason → the server marks the message and logs it for review.
   const reportMessage = (item: HomeChatMessage) => {
-    if (item.role !== 'assistant' || item.reported) return;
+    if (item.role !== 'assistant' || item.reported || item.id === LIVE_REPLY) return;
     const file = async (reason: 'wrong' | 'harmful' | 'other') => {
       try {
         await report.mutateAsync({ data: { messageId: item.id, reason, ...(focusCourseId ? { courseId: focusCourseId } : {}) } });
@@ -352,28 +396,50 @@ export default function CoachHome() {
     ]);
   };
 
+  /** What follows a saved reply, streamed or not: the set/deck cards, the draft, a new course's guide. */
+  const afterReply = async (result: HomeChat, auto?: { lessonFor: string }) => {
+    if (result.activeQuiz) { setGradedSessionId(null); setFinishedDeckId(null); } // a new set replaces the old cards
+    if (result.activeDeck) { setFinishedDeckId(null); setGradedSessionId(null); }
+    // An app-sent message (D-203) leaves whatever the student is typing alone.
+    if (!auto) { setDraft(''); Keyboard.dismiss(); }
+    const last = result.messages[result.messages.length - 1];
+    const actions = last?.actions ?? [];
+    if (actions.some((a) => a.type === 'create_course' || a.type === 'lookup_exam_guide')) {
+      await queryClient.invalidateQueries({ queryKey: [...getGetStudyStateQueryKey(), userId] });
+      for (const a of actions) if (a.type === 'create_course' && a.courseKind === 'exam') void fetchGuide(a.courseId);
+    }
+    const started = actions.find((a) => a.type === 'start_session' && a.sessionId);
+    if (started?.sessionId) router.push({ pathname: '/(tabs)/courses', params: { openSession: started.sessionId } });
+  };
+
   const sendText = async (text: string, timed?: TimedSize, auto?: { lessonFor: string }) => {
     const content = text.trim();
     if (!content || busy || !consented) return;
     setError('');
+    const data = { content, version, utcOffsetMinutes: -new Date().getTimezoneOffset(), ...(focusCourseId ? { courseId: focusCourseId } : {}), ...(timed ? { timedExam: { size: timed } } : {}) };
     try {
-      const result: HomeChat = await send.mutateAsync({ data: { content, version, utcOffsetMinutes: -new Date().getTimezoneOffset(), ...(focusCourseId ? { courseId: focusCourseId } : {}), ...(timed ? { timedExam: { size: timed } } : {}) } });
+      if (!timed && streamable(content, lastMessage)) {
+        // D-206: the reply types out while it is written; it is saved into the thread once it has all shown.
+        userScrolledRef.current = false;
+        const sentDraft = draft;
+        if (!auto) { setDraft(''); Keyboard.dismiss(); }
+        setLive({ user: content === LESSON_START ? null : content, received: '', shown: 0, done: null, anchorId: content === LESSON_START ? lastMessage?.id ?? null : null, auto: !!auto, draft: auto ? '' : sentDraft });
+        try {
+          const result = await streamChatMessage(data, (piece) => setLive((l) => (l ? { ...l, received: l.received + piece } : l)));
+          setLive((l) => (l ? { ...l, done: result } : l));
+          return;
+        } catch (problem) {
+          setLive(null);
+          if (!auto) setDraft(sentDraft); // never lose what the student typed
+          // A server without the streamed route yet (an older deploy): send it the usual way.
+          if ((problem as { status?: number }).status !== 404) throw problem;
+        }
+      }
+      const result: HomeChat = await send.mutateAsync({ data });
       // D-203: the report card's first title was already on screen while it was written; it does not slide in twice.
       if (content === FINISHED_SET_MESSAGE) titleShownForRef.current = result.messages[result.messages.length - 1]?.id ?? null;
       queryClient.setQueryData(chatKey, result);
-      if (result.activeQuiz) { setGradedSessionId(null); setFinishedDeckId(null); } // a new set replaces the old cards
-      if (result.activeDeck) { setFinishedDeckId(null); setGradedSessionId(null); }
-      // An app-sent message (D-203) leaves whatever the student is typing alone.
-      if (!auto) { setDraft(''); Keyboard.dismiss(); }
-      const last = result.messages[result.messages.length - 1];
-      const actions = last?.actions ?? [];
-      if (actions.some((a) => a.type === 'create_course' || a.type === 'lookup_exam_guide')) {
-        await queryClient.invalidateQueries({ queryKey: [...getGetStudyStateQueryKey(), userId] });
-        for (const a of actions) if (a.type === 'create_course' && a.courseKind === 'exam') void fetchGuide(a.courseId);
-      }
-      const started = actions.find((a) => a.type === 'start_session' && a.sessionId);
-      if (started?.sessionId) router.push({ pathname: '/(tabs)/courses', params: { openSession: started.sessionId } });
-
+      await afterReply(result, auto);
     } catch (problem) {
       const status = (problem as { status?: number }).status;
       if (status === 409) await queryClient.invalidateQueries({ queryKey: chatKey });
@@ -388,6 +454,7 @@ export default function CoachHome() {
   // The + corner (CLAUDE.md §8): opens the material sheet on the course the coach
   // most recently worked on; with no course yet, the Add sheet.
   sendTextRef.current = sendText;
+  afterReplyRef.current = afterReply;
   // D-182: from under the welcome, the first question moves the welcome aside; without consent it waits for the consent card.
   const askFromWelcome = () => {
     const decision = welcomeAsk(draft, consented);
@@ -430,7 +497,7 @@ export default function CoachHome() {
     : part);
   // Coach replies: blank line between paragraphs; "1. Label: trick" lines become their own
   // hook chips (same ⚡ style as the question hooks; Dan: tricks ran together as one paragraph).
-  const renderCoachText = (content: string, messageId?: string) => {
+  const renderCoachText = (content: string, messageId?: string, streaming = false) => {
     // D-098: headings bold with room above them, bullets, inline **bold** (lib/coach-text.ts).
     const inline = (spans: Span[]) => spans.map((sp, k) => sp.bold
       ? <Text key={k} style={styles.bold}>{withLinks(sp.text)}</Text>
@@ -470,7 +537,8 @@ export default function CoachHome() {
     // D-203: a new report card comes in section by section (title slides in, a line draws, dots, then the text).
     const titled = sections.filter((section) => section.title);
     const steps = messageId ? revealOf(messageId, titled.length).steps : null;
-    const stepOf = (section: (typeof sections)[number]) => (steps && section.title ? steps[titled.indexOf(section)] ?? null : null);
+    // D-206: while a reply types out, each title slides in as it arrives and its text follows word by word.
+    const stepOf = (section: (typeof sections)[number]) => (streaming && section.title ? STREAM_TITLE_STEP : steps && section.title ? steps[titled.indexOf(section)] ?? null : null);
     return (
       <View style={styles.coachBlocks}>
         {sections.map((section, s) => (
@@ -483,7 +551,7 @@ export default function CoachHome() {
                     <Text style={styles.tipTitle} accessibilityRole="header">{item.tip.title.map((t) => t.text).join('')}</Text>
                     {item.tip.blocks.map((b, k) => renderBlock(b, k))}
                   </View>
-                ) : renderBlock(item.block, i))}
+                ) : item.block.spaced ? <View key={i} style={styles.thoughtGap}>{renderBlock(item.block, i)}</View> : renderBlock(item.block, i))}
               </View>
             </SectionBody>
           </View>
@@ -499,7 +567,8 @@ export default function CoachHome() {
     <Animated.View entering={titledCount(item) === 0 && revealOf(item.id, 0).fresh ? FadeIn.duration(reduceMotion ? 150 : 320) : undefined} onLayout={(e) => placeNewest(item.id, e.nativeEvent.layout.height)}>
     {item.sessionStart ? <View style={styles.sessionDivider}><View style={styles.sessionLine} /><Text style={styles.sessionLabel}>New session</Text><View style={styles.sessionLine} /></View> : null}
     <Pressable onLongPress={item.role === 'assistant' ? () => reportMessage(item) : undefined} delayLongPress={450} accessibilityHint={item.role === 'assistant' ? 'Press and hold to report this reply' : undefined} style={[styles.turn, item.role === 'user' ? styles.userTurn : styles.coachTurn]} testID={`chat-turn-${item.role}`}>
-      {item.role === 'assistant' ? renderCoachText(item.content, item.id) : <Text style={styles.body}>{item.content}</Text>}
+      {item.id === LIVE_REPLY ? (item.content ? renderCoachText(item.content, undefined, true) : <ThinkingDots testID="live-thinking" />)
+        : item.role === 'assistant' ? renderCoachText(item.content, item.id) : <Text style={styles.body}>{item.content}</Text>}
       {item.reported ? <View style={styles.reportedRow} testID="chat-reported"><Feather name="flag" size={12} color={colors.mutedForeground} /><Text style={styles.caption}>Reported for review</Text></View> : null}
       {item.id === lastMessage?.id && chips.length ? (() => {
         // D-166: section chips ("<name> · 27.5%") draw as full-width rows, one line each, the weight in its own
@@ -614,12 +683,13 @@ export default function CoachHome() {
         <View style={styles.chatArea}>
         <FlatList
           ref={listRef}
-          data={newestFirst}
-          inverted={newestFirst.length > 0}
+          data={listData}
+          inverted={listData.length > 0}
+          onScrollBeginDrag={() => { userScrolledRef.current = true; }}
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
           // Inverted lists flip their padding: the room under the glass strip is paddingBottom when inverted.
-          contentContainerStyle={[styles.list, newestFirst.length > 0 ? { paddingBottom: 12 + stripHeight } : { paddingTop: 12 + stripHeight }]}
+          contentContainerStyle={[styles.list, listData.length > 0 ? { paddingBottom: 12 + stripHeight } : { paddingTop: 12 + stripHeight }]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           onLayout={(e) => { viewportRef.current = e.nativeEvent.layout.height; }}
@@ -657,7 +727,7 @@ export default function CoachHome() {
               )}
             </View>
           )}
-          ListHeaderComponent={busy ? (() => {
+          ListHeaderComponent={busy && !live ? (() => {
             // D-126, D-191: a filling bar while a set's first questions or a deck are written; dots for a chat.
             const wait = send.isPending ? waitFor(send.variables?.data.content) : null;
             const sending = send.isPending ? send.variables?.data.content : null;
@@ -740,7 +810,7 @@ export default function CoachHome() {
               <Feather name="plus" size={22} color={colors.primaryForeground} />
             </PressScale>
             {/* The gold ring spins only while the coach is writing a reply or a set (D-048). */}
-            <GlowRing active={send.isPending} radius={16} style={styles.inputRing}>
+            <GlowRing active={send.isPending || live !== null} radius={16} style={styles.inputRing}>
             <TextInput
               ref={inputRef}
               value={draft} onChangeText={setDraft} placeholder={composerPlaceholder(showWelcome)} placeholderTextColor={colors.mutedForeground}
@@ -823,6 +893,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   popQuizHint: { color: colors.navyText, fontSize: 13, opacity: 0.8 },
   quoteRow: { borderLeftWidth: 3, borderLeftColor: colors.primaryText, borderRadius: 10, backgroundColor: colors.secondary, paddingHorizontal: 12, paddingVertical: 10, marginVertical: 4 }, // D-193: a tinted box (readiness, the takeaway)
   coachSection: { gap: 8 },
+  thoughtGap: { marginTop: 8 }, // D-206: a blank line in the reply is a new thought: more room above it
   coachSectionRule: { marginTop: 10, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   sectionTitle: { color: colors.primaryText, fontSize: 13, lineHeight: 18, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
   tipCard: { gap: 6, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, marginTop: 4 },

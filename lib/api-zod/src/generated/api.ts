@@ -1463,6 +1463,34 @@ export const SendHomeChatMessageResponse = zod.object({
 
 
 /**
+ * Same input and outcome as POST /study/chat. When the coach starts writing, the response is text/event-stream: "delta" events ({"text": string}) carry the reply text as it is written, then exactly one "done" event carries the updated conversation (the HomeChat body POST /study/chat returns) or one "error" event ({"status": integer, "error": string, "code"?: string}). A request stopped before the coach writes anything answers as plain JSON with the same statuses as POST /study/chat.
+ * @summary Send a message to the coach and receive its reply text while it is written (D-206)
+ */
+export const streamHomeChatMessageBodyContentMax = 8000;
+
+export const streamHomeChatMessageBodyVersionMin = 0;
+
+export const streamHomeChatMessageBodyCourseIdMax = 200;
+
+export const streamHomeChatMessageBodyUtcOffsetMinutesMin = -840;
+export const streamHomeChatMessageBodyUtcOffsetMinutesMax = 840;
+
+
+
+export const StreamHomeChatMessageBody = zod.object({
+  "content": zod.string().min(1).max(streamHomeChatMessageBodyContentMax),
+  "version": zod.number().int().min(streamHomeChatMessageBodyVersionMin).describe('Conversation version from the last GET/POST; 0 for a new conversation.'),
+  "courseId": zod.string().max(streamHomeChatMessageBodyCourseIdMax).optional().describe('The course or exam the student is focused on: selects that course\'s thread (one per course; omitted or unknown = the general thread), and the coach assumes it when a message does not name one.'),
+  "utcOffsetMinutes": zod.number().int().min(streamHomeChatMessageBodyUtcOffsetMinutesMin).max(streamHomeChatMessageBodyUtcOffsetMinutesMax).optional().describe('Daily reps (D-139): the device\'s offset from UTC in minutes (e.g. -300 for Chicago in summer), so \'today\' is the student\'s day. Omitted = UTC.'),
+  "timedExam": zod.object({
+  "size": zod.enum(['full', '10', '20', '40'])
+}).optional().describe('Timed exams (D-114): start a full exam simulation or a 10/20/40-question block on this thread\'s certification exam, sized and timed from the real exam\'s facts. No coach AI call; the reply is written by the app. 400 when the course is not an exam or the question count / time limit are unknown.')
+})
+
+export const StreamHomeChatMessageResponse = zod.unknown()
+
+
+/**
  * @summary Called when the app opens. Starts a new session in the chat (a check-in greeting with chips) when the last activity is older than the session gap; otherwise returns the chat unchanged.
  */
 export const openHomeChatBodyCourseIdMax = 200;

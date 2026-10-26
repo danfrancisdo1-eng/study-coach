@@ -18,6 +18,8 @@ export interface AiInput {
   maxRetries?: number;
   /** Let the model search the web (Anthropic server tool). Only for tasks that need live facts, e.g. exam guides. */
   webSearch?: { maxUses: number };
+  /** D-206: told each piece of the reply text as the model writes it (Anthropic streams; other providers call it once with the whole text). */
+  onText?: (delta: string) => void;
 }
 
 /** D-145: told about every call's tokens (the app logs cost per account; evals register nothing). */
@@ -35,6 +37,14 @@ function completeWith(task: AiTask, input: AiInput): Promise<AiResult> {
   const config = taskConfig(task);
   if (config.provider === "anthropic") {
     return anthropicCompletion({ ...config, ...input, jsonSchema: TASK_SCHEMAS[task] });
+  }
+  // D-206: other providers do not stream here; the whole text arrives at once.
+  if (input.onText) {
+    const { onText, ...rest } = input;
+    return completeWith(task, rest).then((result) => {
+      if (result.text) { try { onText(result.text); } catch { /* the listener never fails a call */ } }
+      return result;
+    });
   }
   // Other providers: the material simply goes in front of the instructions.
   if (input.context) {
