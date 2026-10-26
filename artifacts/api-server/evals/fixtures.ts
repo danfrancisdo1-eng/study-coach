@@ -603,6 +603,9 @@ export interface CoachCase {
   lesson?: { text: string; previous: number; total: number };
   /** D-203: the "teaching" number the reply must give (checked by code). */
   expectTeaching?: number;
+  /** D-204 (coach.v37): the walk's layout, checked by code: "first" opens with the Your misses title, "miss" teaches a
+   * miss, both with one thought per paragraph and exactly one Memory hack; "none" (wrap-up, moving on) has neither title. */
+  walkFormat?: "first" | "miss" | "none";
 }
 
 const bioResults = `Sets and decks (3 total):
@@ -1668,80 +1671,85 @@ function lessonCases(): CoachCase[] {
     "3. Q: Which feature reads the serial numbers printed on parts in a photo? | they chose: Image classification | right answer: OCR (the Read API) | why: OCR extracts printed or handwritten text from images.",
   ].join("\n");
   const reportCard = "### 🎯 Coach's evaluation\n- **7 of 10 (70%).** Solid set.\n- **Still shaky:** Key Vault roles, grounding, OCR.\n### 📈 Exam readiness\n> ⚠️ **Getting close.** Generative AI isn't solid yet.\n- Here's what we need to do: one extra set a day on generative AI.";
-  const teachMiss1 = "Let's go through the ones you missed, one at a time. First up, the Key Vault one. The answer was **Key Vault Secrets User**. You picked Administrator, which sounds like the safe, official choice. But think of the vault as an apartment building: the Administrator is the manager with every key, the Secrets User is a tenant who can only open their own mailbox. Least privilege means the mailbox key. Got it?";
-  const teachMiss3 = "Nice. Last one: reading the serial numbers on parts in a photo. The answer was **OCR (the Read API)**. You picked image classification, but that only says what the whole photo is, not what's written on it. OCR literally reads the letters, like it's reading a page. Text in a picture? Think 'Read'. Does that click?";
-  const base = { courses: [course], firstVisit: false, focusCourseId: "ai103", today: "2026-10-24", quiz, maxEmojis: 1 };
+  // D-204 (coach.v37): one thought per paragraph, a Your misses title on the first, a Memory hack on each miss.
+  const teachMiss1 = "### 🔁 Your misses\n\nLet's go through the ones you missed, one at a time.\n\nFirst up: the Key Vault one.\n\nThe answer was **Key Vault Secrets User**. You picked Administrator, which sounds like the safe, official choice.\n\n### 🧠 Memory hack\n\n**Side by side.** Think of the vault as an apartment building: the Administrator is the manager with every key, the Secrets User is a tenant who can only open their own mailbox.\n\nLeast privilege means the mailbox key.\n\nGot it?";
+  const teachMiss2 = "Nice.\n\nNext one: keeping a chat agent tied to company documents.\n\nThe answer was **retrieval-augmented generation**. You picked raising the temperature, the setting people hear about most.\n\n### 🧠 Memory hack\n\n**Think of it like.** An open-book exam: the model looks up the page before it answers. Temperature only changes how creative it sounds.\n\nMake sense?";
+  const teachMiss3 = "Nice.\n\nLast one: reading the serial numbers on parts in a photo.\n\nThe answer was **OCR (the Read API)**. You picked image classification, but that only says what the whole photo is, not what's written on it.\n\n### 🧠 Memory hack\n\n**Rhyme.** Text in a picture? OCR reads it, letter by letter.\n\nDoes that click?";
+  const base = { courses: [course], firstVisit: false, focusCourseId: "ai103", today: "2026-10-24", quiz, maxEmojis: 2 };
   return [
     {
       ...base, name: "going over the misses: the walk opens on the first miss only, like a teacher, and asks if they've got it",
       history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }],
-      lesson: { text, previous: 0, total: 3 }, expectTeaching: 1,
+      lesson: { text, previous: 0, total: 3 }, expectTeaching: 1, walkFormat: "first",
       message: "Go over my misses",
       expectedActions: [], expectedSuggestions: ["Got it", "Not yet"],
       expectations: [
-        "Opens with one short bridge line about going through the misses one at a time",
+        "After the Your misses title, opens with one short bridge line about going through the misses one at a time",
         "Teaches only the first miss (the Key Vault role); never starts on the second or third",
-        "Says the right answer (Key Vault Secrets User), why Administrator was tempting, and one way to remember it (using the plan's picture is right), in natural spoken sentences rather than pasted notes",
-        "Ends with a short natural check such as 'Got it?' or 'Make sense?'",
-        "Reads like a teacher talking, warm and direct, not a template or a card",
+        "Says the right answer (Key Vault Secrets User) and why Administrator was tempting, before the Memory hack, in natural spoken sentences rather than pasted notes",
+        "The Memory hack starts with a bold technique name that fits the miss (two roles mixed up: a side by side or a picture fits; using the plan's picture is right), then the trick",
+        "Breaks it up: each thought is its own short paragraph, not one long run-on paragraph",
+        "Ends with a short natural check such as 'Got it?' or 'Make sense?' as its own last line",
       ],
-      maxWords: 110,
+      maxWords: 130,
     },
     {
       ...base, name: "going over the misses: 'not really' gets the same miss again from a new angle",
       history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }, { role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }],
-      lesson: { text, previous: 1, total: 3 }, expectTeaching: 1,
+      lesson: { text, previous: 1, total: 3 }, expectTeaching: 1, walkFormat: "miss",
       message: "not really",
       expectedActions: [], expectedSuggestions: ["Got it", "Not yet"],
       expectations: [
         "Stays on the Key Vault miss; does not move on to grounding/RAG",
         "Explains it again from a different angle (a new picture or simpler words), not the apartment-building sentences again",
+        "Its Memory hack names a different technique than the last reply's 'Side by side'",
         "Is kind about it (no 'as I said'), and ends with a short check",
-      ],
-      maxWords: 100,
-    },
-    {
-      ...base, name: "going over the misses: 'yeah got it' moves on to the second miss",
-      history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }, { role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }],
-      lesson: { text, previous: 1, total: 3 }, expectTeaching: 2,
-      message: "yeah got it",
-      expectedActions: [], expectedSuggestions: ["Got it", "Not yet"],
-      expectations: [
-        "Starts with one short warm word, then teaches the second miss (grounding with retrieval-augmented generation) and only that one",
-        "Says the right answer, why raising the temperature was tempting, and one way to remember it (e.g. an open-book exam)",
-        "Ends with a short natural check",
       ],
       maxWords: 110,
     },
     {
+      ...base, name: "going over the misses: 'yeah got it' moves on to the second miss",
+      history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }, { role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }],
+      lesson: { text, previous: 1, total: 3 }, expectTeaching: 2, walkFormat: "miss",
+      message: "yeah got it",
+      expectedActions: [], expectedSuggestions: ["Got it", "Not yet"],
+      expectations: [
+        "Starts with one short warm word on its own line, then teaches the second miss (grounding with retrieval-augmented generation) and only that one",
+        "Says the right answer and why raising the temperature was tempting, then a Memory hack whose bold technique name fits (e.g. an open-book exam as 'Think of it like')",
+        "Breaks it up: each thought is its own short paragraph",
+        "Ends with a short natural check",
+      ],
+      maxWords: 130,
+    },
+    {
       ...base, name: "going over the misses: a question about the current miss is answered, and the walk stays on it",
       history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }, { role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }],
-      lesson: { text, previous: 1, total: 3 }, expectTeaching: 1,
+      lesson: { text, previous: 1, total: 3 }, expectTeaching: 1, walkFormat: "miss",
       message: "but wouldn't administrator also be able to read the secrets? why is it wrong",
       expectedActions: [], expectedSuggestions: ["Got it", "Not yet"],
       expectations: [
         "Answers the question directly: yes, Administrator could, but it can do far more, and least privilege means the smallest role that does the job",
         "Stays on the Key Vault miss and ends with a short check",
       ],
-      maxWords: 100,
+      maxWords: 130,
     },
     {
       ...base, name: "going over the misses: the last miss has no plan, so the coach writes its own true trick",
-      history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }, { role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }, { role: "user", content: "Got it" }, { role: "assistant", content: "Nice. Next one: keeping a chat agent tied to company documents. The answer was **retrieval-augmented generation**. Temperature only changes how creative it sounds; RAG is an open-book exam. Make sense?" }],
-      lesson: { text, previous: 2, total: 3 }, expectTeaching: 3,
+      history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }, { role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }, { role: "user", content: "Got it" }, { role: "assistant", content: teachMiss2 }],
+      lesson: { text, previous: 2, total: 3 }, expectTeaching: 3, walkFormat: "miss",
       message: "Got it",
       expectedActions: [], expectedSuggestions: ["Got it", "Not yet"],
       expectations: [
         "Teaches the third miss (OCR / the Read API for text in a photo) and only that one",
-        "Gives a way to remember it that is true (OCR reads text; image classification labels the whole picture)",
+        "Its Memory hack names a technique and gives a way to remember it that is true (OCR reads text; image classification labels the whole picture)",
         "Ends with a short natural check",
       ],
-      maxWords: 110,
+      maxWords: 130,
     },
     {
       ...base, name: "going over the misses: after the last one, a short wrap-up with the next step",
-      history: [{ role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }, { role: "user", content: "Got it" }, { role: "assistant", content: "Nice. Next one: grounding. The answer was **retrieval-augmented generation**: an open-book exam. Make sense?" }, { role: "user", content: "Got it" }, { role: "assistant", content: teachMiss3 }],
-      lesson: { text, previous: 3, total: 3 }, expectTeaching: 0,
+      history: [{ role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }, { role: "user", content: "Got it" }, { role: "assistant", content: teachMiss2 }, { role: "user", content: "Got it" }, { role: "assistant", content: teachMiss3 }],
+      lesson: { text, previous: 3, total: 3 }, expectTeaching: 0, walkFormat: "none",
       message: "yes",
       expectedActions: [], expectedSuggestions: ["Another set on the missed topics", "Another set on everything", "Flashcards for the misses"],
       expectations: [
@@ -1754,7 +1762,7 @@ function lessonCases(): CoachCase[] {
     {
       ...base, name: "going over the misses: asking for a new set ends the walk and starts it",
       history: [{ role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }],
-      lesson: { text, previous: 1, total: 3 }, expectTeaching: 0,
+      lesson: { text, previous: 1, total: 3 }, expectTeaching: 0, walkFormat: "none",
       message: "actually let's skip this, give me another set on everything",
       expectedActions: [{ type: "start_quiz", name: "Microsoft AI-103", kind: "practice" }],
       expectations: ["Starts the set right away in one short line, without going over more misses"],

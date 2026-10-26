@@ -1,5 +1,14 @@
 # Progress
 
+## Session 23o — 2026-10-26 — misses broken into lines, a Your misses title and a Memory hack (D-204), branch `feat/coach-v37-walk-format`
+
+### Done
+- coach.v37 (server only): one thought per paragraph, "### 🔁 Your misses" on the first miss, "### 🧠 Memory hack" with the coach's chosen technique on every miss, a different technique on "not yet". Walk eval cases and a layout check (evals/walk-format.ts) updated.
+- Verified here: `pnpm run typecheck` passes; `pnpm test` 388 tests, 387 pass, 0 fail, 1 skipped; new tests/coach-v37-walk.test.mjs (4, including the layout check on the approved mock texts); `node evals/build.mjs` builds. Evals not run here (needs Dan's key).
+
+### Next
+- Dan runs the coach evals on the Mac, then merge. Ships with the streaming build (D-205) so the phone shows the lines and titles as approved.
+
 ## Session 23n — 2026-10-25 — the coach goes over your misses (D-203), branch `feat/coach-teaches-misses`
 
 ### Done
