@@ -145,7 +145,10 @@ export function reportFactsText(facts: ReportFacts, isExam: boolean): string {
       lines.push(`- What Ready takes: a set at ${READY_SET}% or better, with every section at ${Math.round(STRONG * 100)}% or better over its recent answers (at least ${MIN_SECTION_ANSWERS} answers each).`);
     } else {
       const overall = r.answers ? `${pctOf(r.right, r.answers)}% right` : "no answers";
-      lines.push(`- ${what}: ${levelWords(r.level)} (${overall} over the last ${r.answers} answers${r.answers < MIN_COURSE_ANSWERS ? `; ${MIN_COURSE_ANSWERS} are needed before it can say Ready or Getting close` : ""}).`);
+      // D-203: too few answers is "not judged yet", not "Not yet" (the coach gave a verdict from one set).
+      lines.push(r.answers < MIN_COURSE_ANSWERS
+        ? `- ${what}: not judged yet (${overall} over the ${r.answers} answers so far; ${MIN_COURSE_ANSWERS} are needed before it can say Ready, Getting close or Not yet).`
+        : `- ${what}: ${levelWords(r.level)} (${overall} over the last ${r.answers} answers).`);
       lines.push(`- What Ready takes: a set at ${READY_SET}% or better, with ${READY_COURSE}% or better over the last ${RECENT_COURSE} answers (at least ${MIN_COURSE_ANSWERS} answered).`);
     }
     if (r.focus.length) lines.push(`- Work on next: ${r.focus.join("; ")}.`);

@@ -1470,7 +1470,7 @@ export const coachCases: CoachCase[] = [
       "- This set: 7 of 10 (70%).",
       "- Missed questions: 3.",
       "- This is the student's first graded set on this course.",
-      "- Readiness for this course's tests: Not yet (70% right over the last 10 answers; 20 are needed before it can say Ready or Getting close).",
+      "- Readiness for this course's tests: not judged yet (70% right over the 10 answers so far; 20 are needed before it can say Ready, Getting close or Not yet).",
       "- What Ready takes: a set at 90% or better, with 85% or better over the last 30 answers (at least 20 answered).",
       "- Work on next: Reconstruction — 14th Amendment; Reconstruction — Compromise of 1877.",
     ].join("\n") },

@@ -86,7 +86,7 @@ test('the facts text: this set, the one before, readiness with sections, focus a
   assert.match(text, /What Ready takes: a set at 90% or better, with every section at 70% or better over its recent answers \(at least 3 answers each\)\./);
   const first = reportFactsText(reportFacts([events[1]], null, null), false);
   assert.match(first, /first graded set on this course/);
-  assert.match(first, /Readiness for this course's tests: Not yet \(50% right over the last 10 answers; 20 are needed/);
+  assert.match(first, /Readiness for this course's tests: not judged yet \(50% right over the 10 answers so far; 20 are needed before it can say Ready, Getting close or Not yet\)\./);
   assert.match(first, /What Ready takes: a set at 90% or better, with 85% or better over the last 30 answers \(at least 20 answered\)\./);
   assert.equal(levelWords('close'), 'Getting close');
 });
