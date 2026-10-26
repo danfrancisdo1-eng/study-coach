@@ -13,7 +13,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v37";
+import * as coachPrompt from "../prompts/coach.v38";
 import { daysUntil, isSyllabus, setSizeOf } from "../lib/syllabus";
 import { courseContext, NOTES_BLOCK, PLANNING } from "../lib/course-context";
 import { indexText, routedContext, sectionsOf, wordSearch } from "../lib/course-sections";
@@ -802,10 +802,11 @@ async function sendChatBody(req: Request, reply: (status: number, body: unknown)
   const examSoon = threadSummary && threadSummary.kind === "exam" && typeof threadSummary.daysLeft === "number" && threadSummary.daysLeft >= 2 && threadSummary.daysLeft <= 7 && firstToday
     ? { courseName: threadSummary.name, days: threadSummary.daysLeft } : null;
   // D-192: the report card's facts, on the first reply after a graded set in a course's own chat.
-  const facts = threadId && content === FINISHED_SET && quiz?.graded
-    ? reportFacts(courseEvents, threadSummary?.kind === "exam" && threadSummary.guideSections?.length ? threadSummary.guideSections : null, typeof threadSummary?.daysLeft === "number" ? threadSummary.daysLeft : null)
-    : null;
-  const report = facts ? { text: reportFactsText(facts, threadSummary?.kind === "exam"), isExam: threadSummary?.kind === "exam" } : null;
+  const factsText = () => {
+    const facts = reportFacts(courseEvents, threadSummary?.kind === "exam" && threadSummary.guideSections?.length ? threadSummary.guideSections : null, typeof threadSummary?.daysLeft === "number" ? threadSummary.daysLeft : null);
+    return facts ? { text: reportFactsText(facts, threadSummary?.kind === "exam"), isExam: threadSummary?.kind === "exam" } : null;
+  };
+  const report = threadId && content === FINISHED_SET && quiz?.graded ? factsText() : null;
   // D-203: going over the graded set's misses, one per reply. "Go over my misses" (the app sends it after the
   // report card) starts it; it goes on while the newest coach message teaches one of them.
   const gradedSession = quiz?.graded && lastQuizSession?.quiz?.grade ? lastQuizSession : null;
@@ -820,7 +821,10 @@ async function sendChatBody(req: Request, reply: (status: number, body: unknown)
     req.log.info({ sessionId: gradedSession.id, previous: lessonState?.previous ?? null, misses: misses.length, plans: misses.filter((m) => m.plan).length }, "Home chat: going over the misses");
   }
   const lesson = lessonState ? { text: lessonText(lessonState), previous: lessonState.previous, total: lessonState.misses.length } : null;
-  const coachSystem = () => coachPrompt.systemPrompt({ today, daily, firstMessageToday: firstToday, courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, setSize, askSyllabus, examSoon, report, lesson });
+  // D-209 (Dan: "go through the misses with the coach then have the readiness come up"): the student is answering
+  // the last miss, so the wrap-up gets the same facts as the report card and writes the readiness section.
+  const readiness = threadId && lessonState && lessonState.previous > 0 && lessonState.previous >= lessonState.misses.length ? factsText() : null;
+  const coachSystem = () => coachPrompt.systemPrompt({ today, daily, firstMessageToday: firstToday, courses: summary, firstVisit: messages.length === 0, quiz, deck, focusCourseId: courses.some((c) => c.id === parsed.data.courseId) ? parsed.data.courseId ?? null : null, results: threadId ? results : null, setSize, askSyllabus, examSoon, report, lesson, readiness });
 
   let coach;
   if (timed) {

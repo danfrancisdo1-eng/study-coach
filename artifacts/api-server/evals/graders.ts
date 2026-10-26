@@ -414,9 +414,11 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   // D-203: going over the misses: the miss number is checked by code, and a miss reads like talk (no titles, bullets or Pop quiz).
   if (testCase.expectTeaching !== undefined && (parsed.teaching ?? 0) !== testCase.expectTeaching) notes.push(`wrong teaching: ${parsed.teaching ?? 0} != ${testCase.expectTeaching}`);
   if (testCase.lesson) for (const problem of walkFormatProblems(parsed.reply, testCase.walkFormat ?? "miss")) notes.push(`format: ${problem}`);
+  // D-209: a report card with misses leaves readiness for the end of going over them.
+  if (testCase.noReadinessSection && /^#{2,}\s.*readiness/im.test(parsed.reply)) notes.push("format: a readiness section in a report card with misses");
   const verdict = await judge<{ expectations: { met: boolean; reason: string }[] }>(
     "You grade one reply from the AI study coach on an app's home chat, for students age 13+. Return exactly one verdict per expectation, in the same order. Check each expectation strictly.",
-    { courses: testCase.courses, history: testCase.history, latestQuestionSet: testCase.quiz ?? null, latestDeck: testCase.deck ?? null, resultsSoFar: testCase.results ?? null, reportFacts: testCase.report?.text ?? null, missesBeingGoneOver: testCase.lesson ?? null, webFindings: testCase.webFindings ?? null, guideJustLookedUp: testCase.guideJustLookedUp ?? null, studentMessage: testCase.message, expectations: testCase.expectations, reply: parsed.reply, suggestions: parsed.suggestions, actionsTaken: parsed.actions },
+    { courses: testCase.courses, history: testCase.history, latestQuestionSet: testCase.quiz ?? null, latestDeck: testCase.deck ?? null, resultsSoFar: testCase.results ?? null, reportFacts: testCase.report?.text ?? null, missesBeingGoneOver: testCase.lesson ?? null, readinessFactsForTheWrapUp: testCase.readiness?.text ?? null, webFindings: testCase.webFindings ?? null, guideJustLookedUp: testCase.guideJustLookedUp ?? null, studentMessage: testCase.message, expectations: testCase.expectations, reply: parsed.reply, suggestions: parsed.suggestions, actionsTaken: parsed.actions },
     {
       type: "object", additionalProperties: false, required: ["expectations"],
       properties: { expectations: { type: "array", items: { type: "object", additionalProperties: false, required: ["met", "reason"], properties: { met: { type: "boolean" }, reason: { type: "string" } } } } },
