@@ -32,7 +32,7 @@ Newest first. Each entry: date, decision, why, who decided.
 - The v38 eval round (D-209): the exam-in-3-days heads-up (AI-103) named no area to hit first and opened with a ⚠️, which read as alarm. Dan: "why did this fail" ... "yes do it".
 - The coach had to compare the guide's sections with the results itself. Now the server does it (lib/readiness.ts `countdownFocus`, the same rule the prompt gave: the sections never practiced, heaviest first, guide order on a tie; when all were practiced, the lowest scoring; a course without a guide: the concepts missed most) and passes them as `examSoon.focus`.
 - **coach.v39:** the countdown line names exactly those one or two areas (a long section name may be shortened), comes first even when the chat before ended on "Come back for your next 10", and uses no warning emoji (⚠️, 🚨). Without areas it keeps the old instruction. Everything else is v38.
-- **Evals:** the AI-103 countdown case gets the areas the server would pick (computer vision, text analysis) and expects those two by name. Dan runs the coach evals.
+- **Evals:** the AI-103 countdown case gets the areas the server would pick (computer vision, text analysis) and expects those two by name. Evals round 1 (Dan's Mac): coach 80/83; the countdown case and the day-before case pass. The three misses are older rules v39 does not touch, each of which missed in an earlier round: one reply ran 276 words (limit 260), a later turn after a set offered the Pop quiz chips for a non-Pop-quiz question, and the certification memory tips split the vision approaches. Model variance; shipped as is.
 - **Decided by:** Dan.
 
 ## 2026-10-26 — D-211: The AI agreement is asked on the course screen, where the button was tapped
