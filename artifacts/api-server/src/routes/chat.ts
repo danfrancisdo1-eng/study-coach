@@ -13,7 +13,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v38";
+import * as coachPrompt from "../prompts/coach.v39";
 import { daysUntil, isSyllabus, setSizeOf } from "../lib/syllabus";
 import { courseContext, NOTES_BLOCK, PLANNING } from "../lib/course-context";
 import { indexText, routedContext, sectionsOf, wordSearch } from "../lib/course-sections";
@@ -27,7 +27,7 @@ import * as webLookupPrompt from "../prompts/web-lookup.v1";
 import { lookupExamGuide } from "../lib/exam-guide";
 import { saveExamGuide } from "../lib/exam-guide-state";
 import { eventsFrom, resultsHistoryText, weakConcepts } from "../lib/results-history";
-import { reportFacts, reportFactsText } from "../lib/readiness";
+import { countdownFocus, reportFacts, reportFactsText } from "../lib/readiness";
 import { ReplyExtractor, sseEvent } from "../lib/reply-stream";
 import { LESSON_CHIPS, LESSON_START, currentLesson, lessonMisses, lessonOrder, lessonText, nextMiss, type LessonMeta, type LessonMiss, type PlanCard } from "../lib/lesson";
 import { TECHNIQUE_LABELS, memoryCardsView, missesOf } from "../lib/memory-cards";
@@ -800,7 +800,8 @@ async function sendChatBody(req: Request, reply: (status: number, body: unknown)
   const threadSummary = threadId ? summary.find((c) => c.id === threadId) : undefined;
   const askSyllabus = !!threadSummary && threadSummary.hasSyllabus === false && !messages.some((m) => m.role === "assistant" && /syllabus/i.test(m.content));
   const examSoon = threadSummary && threadSummary.kind === "exam" && typeof threadSummary.daysLeft === "number" && threadSummary.daysLeft >= 2 && threadSummary.daysLeft <= 7 && firstToday
-    ? { courseName: threadSummary.name, days: threadSummary.daysLeft } : null;
+    // D-212: the app picks the one or two areas the countdown names (never practiced first, else the lowest scoring).
+    ? { courseName: threadSummary.name, days: threadSummary.daysLeft, focus: countdownFocus(courseEvents, threadSummary.guideSections?.length ? threadSummary.guideSections : null) } : null;
   // D-192: the report card's facts, on the first reply after a graded set in a course's own chat.
   const factsText = () => {
     const facts = reportFacts(courseEvents, threadSummary?.kind === "exam" && threadSummary.guideSections?.length ? threadSummary.guideSections : null, typeof threadSummary?.daysLeft === "number" ? threadSummary.daysLeft : null);

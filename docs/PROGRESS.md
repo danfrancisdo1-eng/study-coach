@@ -44,6 +44,12 @@
 ### Next
 - Mock: the agreement asked right on the course screen when an AI button is tapped before it.
 
+## Session 23w — 2026-10-27 — the exam countdown names the areas the app picked (D-212), branch `feat/coach-v39-countdown-focus`
+
+### Done
+- `countdownFocus` (lib/readiness.ts) picks the one or two areas; coach.v39 names them in the countdown line, no warning emoji. Server only.
+- Verified here: see the PR (typecheck, tests incl. tests/coach-v39-countdown.test.mjs, evals build). Evals: Dan runs them.
+
 ## Session 23v — 2026-10-26 — the AI agreement asked on the course screen (D-211), branch `feat/consent-on-course-screen`
 
 ### Done

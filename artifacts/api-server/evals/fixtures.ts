@@ -594,7 +594,8 @@ export interface CoachCase {
   /** D-189: no syllabus saved in this college course and the coach has not asked yet. */
   askSyllabus?: boolean;
   /** D-189: the exam is 2–7 days away and this is the day's first message. */
-  examSoon?: { courseName: string; days: number };
+  /** D-212 (coach.v39): `focus` is what the server picks with countdownFocus. */
+  examSoon?: { courseName: string; days: number; focus?: string[] };
   /** D-192 (coach.v33): the report card's facts after a graded set (readiness.ts reportFactsText). */
   report?: { text: string; isExam: boolean };
   /** D-192: at most this many emojis in the reply (checked by code). */
@@ -702,10 +703,11 @@ export const coachCases: CoachCase[] = [
     ] }], firstVisit: false, focusCourseId: "ai103", today: "2026-10-18", firstMessageToday: true,
     history: [{ role: "user", content: "thanks" }, { role: "assistant", content: "Anytime. Come back for your next 10." }],
     results: "Sets and decks (3 total):\n- 2026-10-17 practice on Implement generative AI and agentic solutions: 8/10 (80%); missed: Agent tools\n- 2026-10-16 practice on Plan and manage an Azure AI solution: 9/10 (90%); missed: Key Vault\n- 2026-10-15 practice on Implement generative AI and agentic solutions: 7/10 (70%); missed: Prompt flow, RAG grounding, Content filters",
-    examSoon: { courseName: "Microsoft AI-103", days: 3 },
+    // D-212: what countdownFocus picks from these results: never practiced, all 12.5%, guide order.
+    examSoon: { courseName: "Microsoft AI-103", days: 3, focus: ["Implement computer vision solutions", "Implement text analysis solutions"] },
     message: "hey",
     expectedActions: [], expectedSuggestions: ["Next 10"],
-    expectations: ["Opens by saying the exam is in 3 days", "Names one or two areas to hit first, from the sections never practiced (computer vision, text analysis or information extraction)", "Encouraging; never says they might fail and uses no fake urgency", "Does not invent a score"],
+    expectations: ["Opens by saying the exam is in 3 days", "Names computer vision and text analysis as the areas to hit first (never practiced), no other areas", "Encouraging; never says they might fail and uses no fake urgency", "Does not invent a score"],
     maxWords: 70,
   },
   // coach.v29 (D-142): a review PDF request in a course chat: one line and the button, no review in the chat.
