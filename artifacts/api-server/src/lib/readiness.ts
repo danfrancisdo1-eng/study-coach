@@ -156,3 +156,22 @@ export function reportFactsText(facts: ReportFacts, isExam: boolean): string {
   if (facts.daysLeft !== null) lines.push(`- Days to the exam: ${facts.daysLeft}.`);
   return lines.join("\n");
 }
+
+/**
+ * D-212: the one or two areas the exam countdown names (coach.v39; the coach used to work them out and
+ * sometimes named none). With a guide: the sections never practiced, heaviest first (guide order on a
+ * tie); when every section has been practiced, the lowest-scoring ones. Without a guide: the concepts
+ * missed most recently. Same rule the prompt gave the coach before; now the app applies it.
+ */
+export function countdownFocus(events: ResultEvent[], guide: { name: string; weight: number | null }[] | null): string[] {
+  if (guide && guide.length >= 2) {
+    const standings = readiness(events, guide)?.sections ?? guide.map((s) => ({ name: s.name, weight: s.weight, right: 0, total: 0 }));
+    const weightOf = (s: SectionStanding) => (typeof s.weight === "number" ? s.weight : 0);
+    const never = standings.filter((s) => s.total === 0);
+    const picked = never.length
+      ? [...never].sort((a, b) => weightOf(b) - weightOf(a))
+      : [...standings].sort((a, b) => share(a) - share(b) || weightOf(b) - weightOf(a));
+    return picked.slice(0, 2).map((s) => s.name);
+  }
+  return readiness(events, null)?.focus ?? [];
+}
