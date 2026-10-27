@@ -6,8 +6,8 @@ import { Router, type IRouter } from "express";
 
 const router: IRouter = Router();
 
-const UPDATED = "2026-10-22";
-export const CONTACT_EMAIL = "drfrancis@clinicalforesight.ai";
+const UPDATED = "2026-10-27";
+export const CONTACT_EMAIL = "support@getrapidrecall.com"; // D-213
 
 const html = `<!doctype html>
 <html lang="en">

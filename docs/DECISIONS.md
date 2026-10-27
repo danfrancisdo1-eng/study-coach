@@ -28,6 +28,11 @@ Newest first. Each entry: date, decision, why, who decided.
 - Next (mock first): asking for the agreement right on the course screen when an AI button is tapped there. Dan: "whatever you recommend".
 - **Decided by:** Dan (via Claude Code's recommendation).
 
+## 2026-10-27 — D-213: The contact email is support@getrapidrecall.com
+- Dan: "the privacy policy has the wrong email. Remove the clinicalforesight email and replace with support@getrapidrecall.com".
+- The privacy policy and the /support page (one constant, routes/privacy.ts) now give support@getrapidrecall.com; the policy's "Last updated" date is 2026-10-27. Server only: live after the Render deploy. The App Store Connect support/contact fields are Dan's to check (not changed here).
+- **Decided by:** Dan.
+
 ## 2026-10-27 — D-212: The exam countdown names the areas the app picked (coach.v39)
 - The v38 eval round (D-209): the exam-in-3-days heads-up (AI-103) named no area to hit first and opened with a ⚠️, which read as alarm. Dan: "why did this fail" ... "yes do it".
 - The coach had to compare the guide's sections with the results itself. Now the server does it (lib/readiness.ts `countdownFocus`, the same rule the prompt gave: the sections never practiced, heaviest first, guide order on a tie; when all were practiced, the lowest scoring; a course without a guide: the concepts missed most) and passes them as `examSoon.focus`.
