@@ -31,6 +31,14 @@ Newest first. Each entry: date, decision, why, who decided.
 ## 2026-10-27 — D-213: The contact email is support@getrapidrecall.com
 - Dan: "the privacy policy has the wrong email. Remove the clinicalforesight email and replace with support@getrapidrecall.com".
 - The privacy policy and the /support page (one constant, routes/privacy.ts) now give support@getrapidrecall.com; the policy's "Last updated" date is 2026-10-27. Server only: live after the Render deploy. The App Store Connect support/contact fields are Dan's to check (not changed here).
+
+## 2026-10-28 — D-214: Memory hacks fit the kind of fact (coach.v40, memory-cards.v2)
+- Dan: "it seems to only be using one format for the memory hacks. I haven't seen any mnemonics, word associations, and others. It was supposed to reason and determine the best way a human would remember the miss depending on the question."
+- Why it happened: both prompts chose the technique from the mix-up ("two things mixed up" → Side by side / contrast_pair), and every multiple-choice miss is a mix-up of what was picked and what was right; the coach's example replies only showed Side by side and Picture it.
+- **memory-cards.v2:** CONFUSION only when the two options truly look or sound alike; otherwise the card is chosen from the kind of fact (a term that sounds like an everyday word → sound-alike; a list → acronym or chunks; an order → story or acronym; a number → a pattern; how it works → analogy; where it is → a picture; a trap word → spot the trap). A set uses a mix: at least min(3, misses) techniques, none on more than two cards, never the same twice in a row.
+- **coach.v40:** the Memory hack follows the same "kind of fact" rule (plan's technique when it fits), never the same technique as the miss just before; the example replies now show a Sound-alike (stroma → stream) and an Acronym (PMAT) as well as Side by side and Picture it. Everything else is v39.
+- **Evals:** code checks: moving on to the next miss, the technique differs from the one before; memory cards have the mix above. Two new walk cases (PSY 101): Maslow's order gets an acronym, story or chunks; dendrites after a Side by side gets a different, fitting technique. Dan runs the coach and memory_cards evals.
+- Next (Dan's idea, step 2): a picture only when the coach decides a picture is the best way to remember a miss; mock first.
 - **Decided by:** Dan.
 
 ## 2026-10-27 — D-212: The exam countdown names the areas the app picked (coach.v39)

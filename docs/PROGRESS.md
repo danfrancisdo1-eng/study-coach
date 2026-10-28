@@ -52,6 +52,15 @@
 ### Needs a check after the Render deploy
 - https://study-coach-api-pskt.onrender.com/privacy and /support show support@getrapidrecall.com. App Store Connect's contact email, if it used the old address.
 
+## Session 23y — 2026-10-28 — memory hacks fit the kind of fact (D-214), branch `feat/coach-v40-memory-techniques`
+
+### Done
+- memory-cards.v2 and coach.v40: the technique is chosen from the kind of fact, not the mix-up; a mix across a set; never the same twice in a row; new examples (Sound-alike, Acronym). Eval code checks and two new walk cases. Server only.
+- Verified here: see the PR (typecheck, tests incl. tests/coach-v40-techniques.test.mjs, evals build). Evals: Dan runs coach and memory_cards.
+
+### Next
+- Step 2: a picture for a miss when the coach decides it is the best way to remember it (mock first).
+
 ## Session 23w — 2026-10-27 — the exam countdown names the areas the app picked (D-212), branch `feat/coach-v39-countdown-focus`
 
 ### Done
