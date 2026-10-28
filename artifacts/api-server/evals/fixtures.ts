@@ -1495,6 +1495,8 @@ export const coachCases: CoachCase[] = [
   },
   // coach.v36 (D-203): after the report card, the coach goes over the misses in the chat, one per reply.
   ...lessonCases(),
+  // coach.v40 (D-214): the Memory hack technique fits the kind of fact.
+  ...techniqueCases(),
   {
     name: "personality outside the report: a teaching reply is warm, uses at most three emojis, none in the Pop quiz",
     courses: [{ id: "bio", name: "BIOL 114", materials: 3, lectures: 1, hasSyllabus: true }], firstVisit: false, focusCourseId: "bio", today: "2026-10-24",
@@ -1655,6 +1657,53 @@ export const memoryCardsCases: MemoryCardsCase[] = [
     expectations: ["Five cards, one per miss, in the given order", "The set note does not call a weak set great; any encouragement is earned and specific", "The techniques are not all the same"],
   },
 ];
+
+// D-214 (coach.v40, Dan: "I haven't seen any mnemonics, word associations, and others"): the technique is chosen from
+// the kind of fact, not from the mix-up. A list in order gets an acronym/story/chunks; a term that sounds like an
+// everyday word gets a sound-alike; the miss after a Side by side never gets Side by side again.
+function techniqueCases(): CoachCase[] {
+  const course = { id: "psy", name: "PSY 101", kind: "course" as const, materials: 3, lectures: 1, hasSyllabus: true };
+  const missed = [
+    { concept: "Motivation — Maslow's hierarchy", prompt: "Which lists Maslow's hierarchy of needs from the bottom up?", chose: "Safety, physiological, esteem, love and belonging, self-actualization", correct: "Physiological, safety, love and belonging, esteem, self-actualization", explanation: "Basic body needs come first, then safety, then belonging, then esteem, and self-actualization is at the top." },
+    { concept: "Neurons — dendrites", prompt: "Which part of a neuron receives signals from other neurons?", chose: "Axon", correct: "Dendrites", explanation: "Dendrites receive incoming signals; the axon sends signals out." },
+  ];
+  const quiz = { courseName: "PSY 101", topic: "All topics", kind: "practice" as const, answered: 10, total: 10, graded: { correct: 8, percent: 80, missed } };
+  const text = [
+    "1. Q: Which lists Maslow's hierarchy of needs from the bottom up? | they chose: Safety, physiological, esteem, love and belonging, self-actualization | right answer: Physiological, safety, love and belonging, esteem, self-actualization | why: Basic body needs come first, then safety, then belonging, then esteem, and self-actualization is at the top.",
+    "2. Q: Which part of a neuron receives signals from other neurons? | they chose: Axon | right answer: Dendrites | why: Dendrites receive incoming signals; the axon sends signals out.",
+  ].join("\n");
+  const reportCard = "### 🎯 Coach's evaluation\n- **8 of 10 (80%).** Nice set.\n- **Still shaky:** Maslow's order, neuron parts.";
+  const teachMiss1 = "### 🔁 Your misses\n\nLet's go through the ones you missed, one at a time.\n\nFirst up: the order of Maslow's hierarchy.\n\nThe answer was **physiological, safety, love and belonging, esteem, self-actualization**. You put safety first, which is easy to do because feeling safe sounds like the most basic need.\n\n### 🧠 Memory hack\n\n**Side by side.** Physiological is the body: food, water, sleep. Safety comes after, once the body is taken care of.\n\nBody first, then safety.\n\nGot it?";
+  const base = { courses: [course], firstVisit: false, focusCourseId: "psy", today: "2026-10-24", quiz, maxEmojis: 2 };
+  return [
+    {
+      ...base, name: "memory hack fits the fact: a list in order gets an acronym, story or chunks, not Side by side (PSY 101 Maslow)",
+      history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }],
+      lesson: { text, previous: 0, total: 2 }, expectTeaching: 1, walkFormat: "first",
+      message: "Go over my misses",
+      expectedActions: [], expectedSuggestions: ["Got it", "Not yet"],
+      expectations: [
+        "Teaches only the first miss (the order of Maslow's hierarchy)",
+        "The Memory hack's technique is one for a list in order (an acronym or acrostic, a story, or chunks), never Side by side; any letters it uses really match physiological, safety, love and belonging, esteem, self-actualization in that order",
+        "Ends with a short natural check",
+      ],
+      maxWords: 140,
+    },
+    {
+      ...base, name: "memory hack fits the fact: after a Side by side, the next miss gets a different technique, a word association fits dendrites (PSY 101)",
+      history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }, { role: "user", content: "Go over my misses" }, { role: "assistant", content: teachMiss1 }],
+      lesson: { text, previous: 1, total: 2 }, expectTeaching: 2, walkFormat: "miss",
+      message: "Got it",
+      expectedActions: [], expectedSuggestions: ["Got it", "Not yet"],
+      expectations: [
+        "Teaches the second miss (dendrites receive, the axon sends) and only that one",
+        "The Memory hack uses a technique other than Side by side that suits a term (for example a sound-alike or word association, a picture, or 'think of it like'), and it is true: dendrites receive signals, the axon sends them",
+        "Ends with a short natural check",
+      ],
+      maxWords: 130,
+    },
+  ];
+}
 
 // D-203 (coach.v36): going over the misses one at a time, like a teacher (Dan: "Hey, you got this wrong ... this is a
 // way to remember this one ... do you think you have it now?"). Three AI-103 misses; the first two have the memory

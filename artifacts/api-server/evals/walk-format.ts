@@ -38,3 +38,25 @@ export function walkFormatProblems(reply: string, format: "first" | "miss" | "no
   if (paragraphs.length < 4) problems.push(`not broken up: ${paragraphs.length} paragraphs`);
   return problems;
 }
+
+/** D-214 (coach.v40): the bold technique name a Memory hack starts with ("Side by side"), or null. */
+export function hackTechnique(reply: string): string | null {
+  const after = reply.split(/^###\s+🧠\s+Memory hack\s*$/im)[1];
+  const m = after?.match(/^\s*\*\*([^*\n]{2,40}?)\.?\*\*/);
+  return m ? m[1]!.trim().replace(/\.$/, "").toLowerCase() : null;
+}
+
+/**
+ * D-214 (memory-cards.v2): a set's techniques are a mix: at least min(3, n) different ones, none on more than
+ * two cards, never the same on two cards in a row.
+ */
+export function techniqueMixProblems(techniques: string[]): string[] {
+  const problems: string[] = [];
+  if (techniques.length < 2) return problems;
+  const distinct = new Set(techniques).size;
+  const need = Math.min(3, techniques.length);
+  if (distinct < need) problems.push(`only ${distinct} different technique(s) across ${techniques.length} cards (need ${need}): ${techniques.join(", ")}`);
+  for (const t of new Set(techniques)) if (techniques.filter((x) => x === t).length > 2) problems.push(`${t} on more than two cards`);
+  for (let i = 1; i < techniques.length; i += 1) if (techniques[i] === techniques[i - 1]) problems.push(`${techniques[i]} on two cards in a row`);
+  return problems;
+}

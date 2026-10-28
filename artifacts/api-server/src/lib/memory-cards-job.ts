@@ -5,7 +5,7 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db, studySessionsTable, studyStatesTable } from "@workspace/db";
 import { complete } from "../ai";
-import * as memoryCardsPrompt from "../prompts/memory-cards.v1";
+import * as memoryCardsPrompt from "../prompts/memory-cards.v2";
 import type { Session } from "./session-quiz";
 import { conceptTallies, eventsFrom } from "./results-history";
 import { notesOf } from "./course-notes";

@@ -28,6 +28,15 @@ Newest first. Each entry: date, decision, why, who decided.
 - Next (mock first): asking for the agreement right on the course screen when an AI button is tapped there. Dan: "whatever you recommend".
 - **Decided by:** Dan (via Claude Code's recommendation).
 
+## 2026-10-28 — D-214: Memory hacks fit the kind of fact (coach.v40, memory-cards.v2)
+- Dan: "it seems to only be using one format for the memory hacks. I haven't seen any mnemonics, word associations, and others. It was supposed to reason and determine the best way a human would remember the miss depending on the question."
+- Why it happened: both prompts chose the technique from the mix-up ("two things mixed up" → Side by side / contrast_pair), and every multiple-choice miss is a mix-up of what was picked and what was right; the coach's example replies only showed Side by side and Picture it.
+- **memory-cards.v2:** CONFUSION only when the two options truly look or sound alike; otherwise the card is chosen from the kind of fact (a term that sounds like an everyday word → sound-alike; a list → acronym or chunks; an order → story or acronym; a number → a pattern; how it works → analogy; where it is → a picture; a trap word → spot the trap). A set uses a mix: at least min(3, misses) techniques, none on more than two cards, never the same twice in a row.
+- **coach.v40:** the Memory hack follows the same "kind of fact" rule (plan's technique when it fits), never the same technique as the miss just before; the example replies now show a Sound-alike (stroma → stream) and an Acronym (PMAT) as well as Side by side and Picture it. Everything else is v39.
+- **Evals:** code checks: moving on to the next miss, the technique differs from the one before; memory cards have the mix above. Two new walk cases (PSY 101): Maslow's order gets an acronym, story or chunks; dendrites after a Side by side gets a different, fitting technique. Dan runs the coach and memory_cards evals.
+- Next (Dan's idea, step 2): a picture only when the coach decides a picture is the best way to remember a miss; mock first.
+- **Decided by:** Dan.
+
 ## 2026-10-27 — D-212: The exam countdown names the areas the app picked (coach.v39)
 - The v38 eval round (D-209): the exam-in-3-days heads-up (AI-103) named no area to hit first and opened with a ⚠️, which read as alarm. Dan: "why did this fail" ... "yes do it".
 - The coach had to compare the guide's sections with the results itself. Now the server does it (lib/readiness.ts `countdownFocus`, the same rule the prompt gave: the sections never practiced, heaviest first, guide order on a tie; when all were practiced, the lowest scoring; a course without a guide: the concepts missed most) and passes them as `examSoon.focus`.

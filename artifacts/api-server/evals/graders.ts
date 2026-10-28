@@ -1,7 +1,7 @@
 // Scoring for each eval task. Deterministic checks first (format, counts, dates, quotes);
 // a Claude judge only for things code can't check (answer-key correctness, tutoring quality).
 import Anthropic from "@anthropic-ai/sdk";
-import { walkFormatProblems } from "./walk-format";
+import { hackTechnique, techniqueMixProblems, walkFormatProblems } from "./walk-format";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
 import type { MemoryCardsCase, CourseRouterCase, UploadNotesCase, CourseNotesCase, ReviewSheetCase, CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase, WebLookupCase } from "./fixtures";
 import { explanationProblem, giveawayKey, parseQuizCheck } from "../src/lib/quiz-check";
@@ -414,6 +414,13 @@ async function gradeCoachReply(testCase: CoachCase, text: string | null): Promis
   // D-203: going over the misses: the miss number is checked by code, and a miss reads like talk (no titles, bullets or Pop quiz).
   if (testCase.expectTeaching !== undefined && (parsed.teaching ?? 0) !== testCase.expectTeaching) notes.push(`wrong teaching: ${parsed.teaching ?? 0} != ${testCase.expectTeaching}`);
   if (testCase.lesson) for (const problem of walkFormatProblems(parsed.reply, testCase.walkFormat ?? "miss")) notes.push(`format: ${problem}`);
+  // D-214: moving on to the next miss, the Memory hack uses a different technique than the one just before.
+  if (testCase.lesson && testCase.expectTeaching !== undefined && testCase.expectTeaching > testCase.lesson.previous) {
+    const before = [...(testCase.history ?? [])].reverse().find((m) => m.role === "assistant" && hackTechnique(m.content));
+    const was = before ? hackTechnique(before.content) : null;
+    const now = hackTechnique(parsed.reply);
+    if (was && now && was === now) notes.push(`format: the same Memory hack technique as the miss before (${now})`);
+  }
   // D-209: a report card with misses leaves readiness for the end of going over them.
   if (testCase.noReadinessSection && /^#{2,}\s.*readiness/im.test(parsed.reply)) notes.push("format: a readiness section in a report card with misses");
   const verdict = await judge<{ expectations: { met: boolean; reason: string }[] }>(
@@ -592,7 +599,8 @@ export async function gradeMemoryCards(testCase: MemoryCardsCase, text: string |
   if (emojiCount(setNote) > 1) notes.push("set note: more than one emoji");
   if ((setNote.match(/[.!?](\s|$)/g) ?? []).length > 2) notes.push("set note: more than two sentences");
   if (testCase.weakSet && /\b(great|amazing|awesome|excellent|fantastic) (job|work|set)\b/i.test(setNote)) notes.push(`set note praises a weak set: "${setNote.slice(0, 100)}"`);
-  if (testCase.misses.length >= 5 && new Set(raw.cards.map((c) => c.technique)).size < 2) notes.push("every card uses the same technique");
+  // D-214 (memory-cards.v2): a mix of techniques across the set.
+  for (const problem of techniqueMixProblems(raw.cards.map((c) => String(c.technique)))) notes.push(`techniques: ${problem}`);
   const verdict = await judge<{ cards: { ok: boolean; reason: string }[]; expectations: { met: boolean; reason: string }[] }>(
     "You review memory cards a study app wrote for a student's missed questions. For each card decide: is the memory tool TRUE, specific to this question (real terms from it, not generic advice), does it actually use the technique it names, does it point to the given correct answer, and is 'why_you_missed' a plausible, kind reason? A vivid tool built on a false fact fails. Then judge each listed expectation. Be strict and brief.",
     { misses: testCase.misses, courseNotes: testCase.courseNotes, reply: raw, expectations: testCase.expectations },
