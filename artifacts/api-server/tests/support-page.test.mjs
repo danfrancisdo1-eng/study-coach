@@ -20,6 +20,9 @@ test('the privacy policy names the contact email and is no longer a draft', asyn
   const page = await res.text();
   assert.ok(page.includes(`mailto:${CONTACT_EMAIL}`));
   assert.doesNotMatch(page, /draft|to be added/i);
+  // D-213: the support address, never the old personal one.
+  assert.equal(CONTACT_EMAIL, 'support@getrapidrecall.com');
+  assert.doesNotMatch(page, /clinicalforesight/i);
 });
 
 test('the support page gives the contact email and the restore, cancel and delete paths', async (t) => {

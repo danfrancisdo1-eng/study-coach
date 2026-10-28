@@ -28,6 +28,10 @@ Newest first. Each entry: date, decision, why, who decided.
 - Next (mock first): asking for the agreement right on the course screen when an AI button is tapped there. Dan: "whatever you recommend".
 - **Decided by:** Dan (via Claude Code's recommendation).
 
+## 2026-10-27 — D-213: The contact email is support@getrapidrecall.com
+- Dan: "the privacy policy has the wrong email. Remove the clinicalforesight email and replace with support@getrapidrecall.com".
+- The privacy policy and the /support page (one constant, routes/privacy.ts) now give support@getrapidrecall.com; the policy's "Last updated" date is 2026-10-27. Server only: live after the Render deploy. The App Store Connect support/contact fields are Dan's to check (not changed here).
+
 ## 2026-10-28 — D-214: Memory hacks fit the kind of fact (coach.v40, memory-cards.v2)
 - Dan: "it seems to only be using one format for the memory hacks. I haven't seen any mnemonics, word associations, and others. It was supposed to reason and determine the best way a human would remember the miss depending on the question."
 - Why it happened: both prompts chose the technique from the mix-up ("two things mixed up" → Side by side / contrast_pair), and every multiple-choice miss is a mix-up of what was picked and what was right; the coach's example replies only showed Side by side and Picture it.

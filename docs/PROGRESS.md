@@ -44,6 +44,14 @@
 ### Next
 - Mock: the agreement asked right on the course screen when an AI button is tapped before it.
 
+## Session 23x — 2026-10-27 — support@getrapidrecall.com on the privacy and support pages (D-213), branch `fix/support-email`
+
+### Done
+- The contact email on /privacy and /support is support@getrapidrecall.com (was drfrancis@clinicalforesight.ai). Verified here: support-page.test.mjs (checks the address and that the old one is gone), typecheck.
+
+### Needs a check after the Render deploy
+- https://study-coach-api-pskt.onrender.com/privacy and /support show support@getrapidrecall.com. App Store Connect's contact email, if it used the old address.
+
 ## Session 23y — 2026-10-28 — memory hacks fit the kind of fact (D-214), branch `feat/coach-v40-memory-techniques`
 
 ### Done
