@@ -52,6 +52,12 @@
 ### Needs a check after the Render deploy
 - https://study-coach-api-pskt.onrender.com/privacy and /support show support@getrapidrecall.com. App Store Connect's contact email, if it used the old address.
 
+## Session 23z — 2026-10-28 — the memory coach plans its techniques first (D-215), branch `fix/memory-cards-v3`
+
+### Done
+- memory-cards.v3: technique_plan first (no back-to-back repeat), no trick on a doubted key, headlines 10 words. Server only.
+- Verified here: see the PR (typecheck, tests incl. tests/memory-cards-v3.test.mjs, evals build). Evals: Dan runs memory_cards (usual 9/9).
+
 ## Session 23y — 2026-10-28 — memory hacks fit the kind of fact (D-214), branch `feat/coach-v40-memory-techniques`
 
 ### Done

@@ -1641,9 +1641,9 @@ export const memoryCardsCases: MemoryCardsCase[] = [
     expectations: ["The card is about the bell becoming a conditioned stimulus; there is no poem and nothing about cats"],
   },
   {
-    name: "a wrong key is flagged, the card still follows the key", courseName: "CHEM 101", kind: "course", recentTechniques: [], courseNotes: "",
+    name: "a wrong key is flagged and the card teaches nothing false (D-215)", courseName: "CHEM 101", kind: "course", recentTechniques: [], courseNotes: "",
     misses: [miss("q8", "Element symbols", "What is the chemical symbol for sodium?", ["So", "Na", "Sd", "S"], "So", "Na", "Sodium's symbol comes from its name.")],
-    keyConcern: ["q8"], expectations: ["key_concern says the key looks wrong because sodium's symbol is Na (from natrium)"],
+    keyConcern: ["q8"], expectations: ["key_concern says the key looks wrong because sodium's symbol is Na (from natrium)", "The card builds no memory trick on 'So'; it says the key marks So, that the real symbol is Na, and that the student can report it for a re-check"],
   },
   {
     name: "a weak set of 5: earned encouragement, varied techniques", courseName: "Google Cloud Digital Leader", kind: "exam", recentTechniques: [], courseNotes: "", weakSet: true,

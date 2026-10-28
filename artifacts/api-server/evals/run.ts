@@ -30,7 +30,7 @@ import * as examGuidePrompt from "../src/prompts/exam-guide.v2";
 import * as memorySheetPrompt from "../src/prompts/memory-sheet.v2";
 import * as reviewSheetPrompt from "../src/prompts/review-sheet.v3";
 import * as flagCheckPrompt from "../src/prompts/flag-check.v1";
-import * as memoryCardsPrompt from "../src/prompts/memory-cards.v2";
+import * as memoryCardsPrompt from "../src/prompts/memory-cards.v3";
 import { taskConfig, type AiTask } from "../src/ai/tasks";
 import { classicQuizCases, coachCases, courseNotesCases, uploadNotesCases, courseRouterCases, routerCourseDocs, examGuideCases, flagCheckCases, flashcardsCases, memorySheetCases, memoryCardsCases, reviewSheetCases, ocrCaseNames, planCases, quizCheckCases, sessionQuizCases, syllabusCases, tutorCases, webLookupCases, type Source } from "./fixtures";
 import { gradeClassicQuiz, gradeCoach, gradeCourseNotes, gradeUploadNotes, gradeCourseRouter, gradeExamGuide, gradeFlagCheck, gradeFlashcards, gradeMemorySheet, gradeMemoryCards, gradeOcr, gradePlan, gradeQuizCheck, gradeReviewSheet, gradeSessionQuiz, gradeSyllabus, gradeTutor, gradeWebLookup, type Score } from "./graders";
