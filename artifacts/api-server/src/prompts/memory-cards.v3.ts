@@ -5,7 +5,8 @@
 // ground truth, a technique that already failed on a concept is never reused, the answer key wins.
 // v3 (D-215, the v2 eval round: memory_cards 6/9, down from 9/9): the techniques are planned for the whole set first
 // ("technique_plan", checked before any card is written), so no technique repeats back to back; a card whose key looks
-// wrong builds no trick on the doubted answer; headlines are counted and cut to 10 words.
+// wrong builds no trick on the doubted answer; headlines are counted and cut to 10 words; the class's own mnemonic from the
+// notes always wins; options that are stages of one process are SEQUENCE, not GAP.
 // v2 (D-214, Dan: "it seems to only be using one format for the memory hacks. I haven't seen any mnemonics, word associations,
 // and others. It was supposed to reason and determine the best way a human would remember the miss"): every multiple-choice
 // miss looked like a CONFUSION, so nearly every card was a contrast_pair (Side by side). Now the card is chosen from the
@@ -30,7 +31,7 @@ The input (JSON) has "misses" (at most 5, the most important first) and "courseN
 
 For each miss:
 1. Diagnose why the student most likely missed it, from the question, their answer and the right one. Pick one:
-   - CONFUSION: two options that truly look or sound alike were mixed up (Cloud Armor / Model Armor, mitosis / meiosis, affect / effect). Every wrong answer is a mix-up of what they picked and what was right; that alone is not CONFUSION. When the two options do not look or sound alike, diagnose what they did not know instead (usually GAP, SEQUENCE or MECHANISM).
+   - CONFUSION: two options that truly look or sound alike were mixed up (Cloud Armor / Model Armor, mitosis / meiosis, affect / effect). Every wrong answer is a mix-up of what they picked and what was right; that alone is not CONFUSION. When the two options do not look or sound alike, diagnose what they did not know instead: SEQUENCE when the options are steps or stages of one process (phases of mitosis, steps of a procedure), otherwise usually GAP or MECHANISM.
    - GAP: they didn't know the fact or term at all.
    - SEQUENCE: an order of steps, stages or events.
    - MECHANISM: they know the words but not how or why it works.
@@ -46,6 +47,7 @@ For each miss:
    visual_scene (a vivid picture) works for any of them.
    Then think like a good tutor about this one fact: what would make THIS answer come back to a person on test day? A name or term that sounds like an everyday word: keyword_image (stroma sounds like "stream": the sugar flows in the stream). A list of 3 or more: acronym_acrostic (spell the real letters out) or chunking. An order of steps: story_chain or acronym_acrostic. A number or range: chunking or a pattern in the numbers (shown as chunking). How or why something works: analogy or why_chain. Where something is or what it looks like: visual_scene. A trap word in the question: trap_flag. A step in a calculation: worked_step. contrast_pair only for a true CONFUSION.
    Across the set: use at least as many different techniques as there are misses, up to 3 (two misses → two different techniques; three or more → at least three); never one technique on more than two cards, and never the same technique on two cards in a row.
+   The class's own memory aid comes first: when the course notes give a mnemonic, acronym, phrase or picture for this fact (e.g. a teacher's "PMAT = Please Make Another Taco"), build that card on it, word for word, and name the technique it is; never invent a different one for that fact. The mix rules give way to it.
    Plan before you write: first fill "technique_plan" with the technique for each card, in the order of the misses. Then check the plan against the rules just above (look at each technique next to the one before it); when two neighbours are the same, or one technique appears three times, swap in the next-best fitting technique for one of them, and check again. Every card then uses its technique from the plan, in order.
    The technique you name must be the one the tool actually uses: contrast_pair puts the two side by side; keyword_image is a sound-alike word turned into a picture; acronym_acrostic is real first letters spelling a word or sentence (spell them out); chunking groups items into a few chunks; story_chain links items in a short story; visual_scene is one vivid scene; why_chain is cause → effect → effect; analogy compares it to something everyday; worked_step shows the exact step done right; trap_flag names the trap word and the habit that beats it; mini_palace puts items in places in a room. If the tool turns out to be an analogy, name it analogy.
    If the miss lists "prior_techniques", those were already tried on this concept and it still didn't stick: never use one of them again; pick a different technique.

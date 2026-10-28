@@ -11,6 +11,8 @@ test('memory-cards.v3: plan first, no back-to-back technique, nothing false on a
   assert.match(p, /never the same technique on two cards in a row/);
   assert.match(p, /builds no trick on the doubted answer/);
   assert.match(p, /10 words or fewer/);
+  assert.match(p, /The class's own memory aid comes first/);
+  assert.match(p, /SEQUENCE when the options are steps or stages of one process/);
 });
 
 test('the schema asks for technique_plan before the cards', () => {
