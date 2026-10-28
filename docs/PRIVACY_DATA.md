@@ -68,6 +68,6 @@ Study Coach has no sharing feature (the session-report share was removed in D-08
 
 ## Open items before submission
 
-- ~~Contact email on the policy page~~ done (D-160): drfrancis@clinicalforesight.ai, also on /support.
+- ~~Contact email on the policy page~~ done (D-160); since D-213 it is support@getrapidrecall.com, also on /support.
 - Decide log retention for reported replies (Render default today).
 - Legal review of the policy wording (Dan).
