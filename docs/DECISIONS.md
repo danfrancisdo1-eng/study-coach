@@ -32,12 +32,18 @@ Newest first. Each entry: date, decision, why, who decided.
 - Dan: "the privacy policy has the wrong email. Remove the clinicalforesight email and replace with support@getrapidrecall.com".
 - The privacy policy and the /support page (one constant, routes/privacy.ts) now give support@getrapidrecall.com; the policy's "Last updated" date is 2026-10-27. Server only: live after the Render deploy. The App Store Connect support/contact fields are Dan's to check (not changed here).
 
+## 2026-10-28 — D-215: The memory coach plans its techniques first and never builds a trick on a doubted key (memory-cards.v3)
+- The v2 eval round (D-214): memory_cards 6/9, down from 9/9: two sound-alike cards in a row (the new mix rule), a card that flagged the wrong key (sodium marked "So") but still built a trick on "So", and one headline over 12 words. Dan: "Yes, go ahead."
+- **memory-cards.v3:** the reply now starts with "technique_plan" (one technique per card, in order; new field in the AI schema), which the coach checks against the mix rules (never the same twice in a row, none more than twice, at least min(3, misses) kinds) and fixes before writing any card; the cards follow the plan. A card whose key looks wrong builds no trick on the doubted answer: it says what the key marks, the real fact, and to report it for a re-check, and does not blame the student; correct_answer stays the key's text. Headlines: 10 words or fewer, counted (the eval still fails at 12).
+- **Evals:** code checks that technique_plan exists and the cards follow it; the wrong-key case now expects no trick on the doubted answer, and the judge judges a flagged card by that rule. Dan runs the memory_cards evals.
+- **Decided by:** Dan.
+
 ## 2026-10-28 — D-214: Memory hacks fit the kind of fact (coach.v40, memory-cards.v2)
 - Dan: "it seems to only be using one format for the memory hacks. I haven't seen any mnemonics, word associations, and others. It was supposed to reason and determine the best way a human would remember the miss depending on the question."
 - Why it happened: both prompts chose the technique from the mix-up ("two things mixed up" → Side by side / contrast_pair), and every multiple-choice miss is a mix-up of what was picked and what was right; the coach's example replies only showed Side by side and Picture it.
 - **memory-cards.v2:** CONFUSION only when the two options truly look or sound alike; otherwise the card is chosen from the kind of fact (a term that sounds like an everyday word → sound-alike; a list → acronym or chunks; an order → story or acronym; a number → a pattern; how it works → analogy; where it is → a picture; a trap word → spot the trap). A set uses a mix: at least min(3, misses) techniques, none on more than two cards, never the same twice in a row.
 - **coach.v40:** the Memory hack follows the same "kind of fact" rule (plan's technique when it fits), never the same technique as the miss just before; the example replies now show a Sound-alike (stroma → stream) and an Acronym (PMAT) as well as Side by side and Picture it. Everything else is v39.
-- **Evals:** code checks: moving on to the next miss, the technique differs from the one before; memory cards have the mix above. Two new walk cases (PSY 101): Maslow's order gets an acronym, story or chunks; dendrites after a Side by side gets a different, fitting technique. Dan runs the coach and memory_cards evals.
+- **Evals:** code checks: moving on to the next miss, the technique differs from the one before; memory cards have the mix above. Two new walk cases (PSY 101): Maslow's order gets an acronym, story or chunks; dendrites after a Side by side gets a different, fitting technique. Evals round 1 (Dan's Mac): coach 84/85 (both new walk cases pass), memory_cards 6/9 (down from 9/9; fixed in D-215).
 - Next (Dan's idea, step 2): a picture only when the coach decides a picture is the best way to remember a miss; mock first.
 - **Decided by:** Dan.
 

@@ -601,8 +601,12 @@ export async function gradeMemoryCards(testCase: MemoryCardsCase, text: string |
   if (testCase.weakSet && /\b(great|amazing|awesome|excellent|fantastic) (job|work|set)\b/i.test(setNote)) notes.push(`set note praises a weak set: "${setNote.slice(0, 100)}"`);
   // D-214 (memory-cards.v2): a mix of techniques across the set.
   for (const problem of techniqueMixProblems(raw.cards.map((c) => String(c.technique)))) notes.push(`techniques: ${problem}`);
+  // D-215 (memory-cards.v3): the plan comes first and the cards follow it.
+  const plan = Array.isArray((raw as { technique_plan?: unknown }).technique_plan) ? (raw as { technique_plan: unknown[] }).technique_plan.map(String) : null;
+  if (!plan) notes.push("no technique_plan");
+  else if (plan.join(",") !== raw.cards.map((c) => String(c.technique)).join(",")) notes.push(`the cards do not follow technique_plan (${plan.join(", ")})`);
   const verdict = await judge<{ cards: { ok: boolean; reason: string }[]; expectations: { met: boolean; reason: string }[] }>(
-    "You review memory cards a study app wrote for a student's missed questions. For each card decide: is the memory tool TRUE, specific to this question (real terms from it, not generic advice), does it actually use the technique it names, does it point to the given correct answer, and is 'why_you_missed' a plausible, kind reason? A vivid tool built on a false fact fails. Then judge each listed expectation. Be strict and brief.",
+    "You review memory cards a study app wrote for a student's missed questions. For each card decide: is the memory tool TRUE, specific to this question (real terms from it, not generic advice), does it actually use the technique it names, does it point to the given correct answer, and is 'why_you_missed' a plausible, kind reason? A vivid tool built on a false fact fails. A card with a non-empty key_concern (the app doubts the answer key) is judged differently: it must build no trick on the doubted answer, say what the key marks and the real fact, point the student to a re-check, and not blame them for an answer that may well be right. Then judge each listed expectation. Be strict and brief.",
     { misses: testCase.misses, courseNotes: testCase.courseNotes, reply: raw, expectations: testCase.expectations },
     { type: "object", additionalProperties: false, required: ["cards", "expectations"], properties: {
       cards: { type: "array", items: { type: "object", additionalProperties: false, required: ["ok", "reason"], properties: { ok: { type: "boolean" }, reason: { type: "string" } } } },

@@ -99,6 +99,8 @@ export const uploadNotesSchema = object({ notes: string });
 export const courseRouterSchema = object({ sections: strings, searchRaw: { type: "boolean" }, terms: strings });
 
 export const memoryCardsSchema = object({
+  // D-215 (memory-cards.v3): the techniques for the whole set, planned and checked before the cards are written.
+  technique_plan: strings,
   set_note: string,
   cards: {
     type: "array",
