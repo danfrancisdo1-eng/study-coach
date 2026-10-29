@@ -835,7 +835,8 @@ export const CreateStudySessionResponse = zod.object({
   "prompt": zod.string(),
   "answer": zod.string()
 }),zod.null()]),
-  "keyConcern": zod.string().nullable()
+  "keyConcern": zod.string().nullable(),
+  "picture": zod.string().nullish().describe('D-216: the scene drawn for this card, or null')
 }))
 }),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
@@ -1127,10 +1128,30 @@ export const GetStudySessionResponse = zod.object({
   "prompt": zod.string(),
   "answer": zod.string()
 }),zod.null()]),
-  "keyConcern": zod.string().nullable()
+  "keyConcern": zod.string().nullable(),
+  "picture": zod.string().nullish().describe('D-216: the scene drawn for this card, or null')
 }))
 }),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
+
+
+/**
+ * @summary D-216: the memory-hack picture for one missed question of the graded set (ready, still drawing, or none)
+ */
+export const getMemoryPicturePathQuestionIdMax = 200;
+
+
+
+export const GetMemoryPictureParams = zod.object({
+  "sessionId": zod.coerce.string().uuid(),
+  "questionId": zod.coerce.string().max(getMemoryPicturePathQuestionIdMax)
+})
+
+export const GetMemoryPictureResponse = zod.object({
+  "status": zod.enum(['ready', 'drawing', 'none']),
+  "mimeType": zod.string().optional(),
+  "data": zod.string().optional().describe('Base64 image')
+}).describe('D-216: a memory-hack picture. data (base64) and mimeType only when status is ready.')
 
 
 /**
@@ -1351,6 +1372,10 @@ export const GetHomeChatResponse = zod.object({
 })).optional(),
   "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message'),
   "sessionStart": zod.boolean().optional().describe('True for the app-written greeting that opens a new study session (clients draw a divider above it)'),
+  "picture": zod.object({
+  "sessionId": zod.string(),
+  "questionId": zod.string()
+}).optional().describe('D-216: this coach reply teaches a miss that has a memory-hack picture; the app fetches it with getMemoryPicture and shows it under the Memory hack'),
   "reported": zod.object({
   "reason": zod.enum(['wrong', 'harmful', 'other']),
   "note": zod.string().optional(),
@@ -1436,6 +1461,10 @@ export const SendHomeChatMessageResponse = zod.object({
 })).optional(),
   "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message'),
   "sessionStart": zod.boolean().optional().describe('True for the app-written greeting that opens a new study session (clients draw a divider above it)'),
+  "picture": zod.object({
+  "sessionId": zod.string(),
+  "questionId": zod.string()
+}).optional().describe('D-216: this coach reply teaches a miss that has a memory-hack picture; the app fetches it with getMemoryPicture and shows it under the Memory hack'),
   "reported": zod.object({
   "reason": zod.enum(['wrong', 'harmful', 'other']),
   "note": zod.string().optional(),
@@ -1535,6 +1564,10 @@ export const OpenHomeChatResponse = zod.object({
 })).optional(),
   "suggestions": zod.array(zod.string()).optional().describe('Tap-to-reply chips under an assistant message'),
   "sessionStart": zod.boolean().optional().describe('True for the app-written greeting that opens a new study session (clients draw a divider above it)'),
+  "picture": zod.object({
+  "sessionId": zod.string(),
+  "questionId": zod.string()
+}).optional().describe('D-216: this coach reply teaches a miss that has a memory-hack picture; the app fetches it with getMemoryPicture and shows it under the Memory hack'),
   "reported": zod.object({
   "reason": zod.enum(['wrong', 'harmful', 'other']),
   "note": zod.string().optional(),
@@ -1813,7 +1846,8 @@ export const CheckInStudySessionResponse = zod.object({
   "prompt": zod.string(),
   "answer": zod.string()
 }),zod.null()]),
-  "keyConcern": zod.string().nullable()
+  "keyConcern": zod.string().nullable(),
+  "picture": zod.string().nullish().describe('D-216: the scene drawn for this card, or null')
 }))
 }),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
@@ -2076,7 +2110,8 @@ export const SendStudyMessageResponse = zod.object({
   "prompt": zod.string(),
   "answer": zod.string()
 }),zod.null()]),
-  "keyConcern": zod.string().nullable()
+  "keyConcern": zod.string().nullable(),
+  "picture": zod.string().nullish().describe('D-216: the scene drawn for this card, or null')
 }))
 }),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
@@ -2335,7 +2370,8 @@ export const GenerateStudyQuizResponse = zod.object({
   "prompt": zod.string(),
   "answer": zod.string()
 }),zod.null()]),
-  "keyConcern": zod.string().nullable()
+  "keyConcern": zod.string().nullable(),
+  "picture": zod.string().nullish().describe('D-216: the scene drawn for this card, or null')
 }))
 }),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
@@ -2595,7 +2631,8 @@ export const SaveStudyAnswerResponse = zod.object({
   "prompt": zod.string(),
   "answer": zod.string()
 }),zod.null()]),
-  "keyConcern": zod.string().nullable()
+  "keyConcern": zod.string().nullable(),
+  "picture": zod.string().nullish().describe('D-216: the scene drawn for this card, or null')
 }))
 }),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
@@ -2860,7 +2897,8 @@ export const FlagStudyQuestionResponse = zod.object({
   "prompt": zod.string(),
   "answer": zod.string()
 }),zod.null()]),
-  "keyConcern": zod.string().nullable()
+  "keyConcern": zod.string().nullable(),
+  "picture": zod.string().nullish().describe('D-216: the scene drawn for this card, or null')
 }))
 }),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
@@ -3119,7 +3157,8 @@ export const ReviewFlashcardResponse = zod.object({
   "prompt": zod.string(),
   "answer": zod.string()
 }),zod.null()]),
-  "keyConcern": zod.string().nullable()
+  "keyConcern": zod.string().nullable(),
+  "picture": zod.string().nullish().describe('D-216: the scene drawn for this card, or null')
 }))
 }),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')
@@ -3373,7 +3412,8 @@ export const GradeStudyQuizResponse = zod.object({
   "prompt": zod.string(),
   "answer": zod.string()
 }),zod.null()]),
-  "keyConcern": zod.string().nullable()
+  "keyConcern": zod.string().nullable(),
+  "picture": zod.string().nullish().describe('D-216: the scene drawn for this card, or null')
 }))
 }),zod.null()]).optional().describe('D-194: memory cards for the graded set\'s top misses; null when nothing was missed or the set is not graded.')
 }).describe('Public session payload. Never includes correct option IDs, answer indices, or grading keys.')

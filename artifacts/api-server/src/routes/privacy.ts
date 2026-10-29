@@ -6,7 +6,7 @@ import { Router, type IRouter } from "express";
 
 const router: IRouter = Router();
 
-const UPDATED = "2026-10-27";
+const UPDATED = "2026-10-29";
 export const CONTACT_EMAIL = "support@getrapidrecall.com"; // D-213
 
 const html = `<!doctype html>
@@ -39,7 +39,7 @@ const html = `<!doctype html>
 <p>The app does not collect your location, contacts, photos beyond the ones you pick, or advertising identifiers, and it does not show ads.</p>
 
 <h2>How AI is used</h2>
-<p>Before any of your content goes to an AI provider, the app asks for your consent and names the providers. Your messages, course names, selected materials (including photos you pick, so their text can be read) and quiz answers are sent to <strong>Anthropic</strong> (Claude) to coach you, write practice questions and explain results. Lecture recordings you choose to transcribe are sent to <strong>OpenAI</strong> for transcription. These providers process the content to return a result; they are not permitted to use it to advertise to you. AI can make mistakes; the app shows you the explanation behind every answer and lets you report a question or a reply.</p>
+<p>Before any of your content goes to an AI provider, the app asks for your consent and names the providers. Your messages, course names, selected materials (including photos you pick, so their text can be read) and quiz answers are sent to <strong>Anthropic</strong> (Claude) to coach you, write practice questions and explain results. Lecture recordings you choose to transcribe are sent to <strong>OpenAI</strong> for transcription. When a picture is the best way to remember a missed question, a one-sentence description of the idea (never your name, your answers or your material) is sent to <strong>OpenAI</strong>'s image model to draw it; the picture is kept with that set in your account. These providers process the content to return a result; they are not permitted to use it to advertise to you. AI can make mistakes; the app shows you the explanation behind every answer and lets you report a question or a reply.</p>
 
 <h2>Where it is stored</h2>
 <p>Your account data and study content are stored on servers hosted by Render in the United States. Lecture audio is stored only on your device.</p>

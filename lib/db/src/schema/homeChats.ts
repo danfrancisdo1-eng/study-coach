@@ -29,6 +29,8 @@ export type HomeChatMessage = {
   hidden?: boolean;
   /** D-203: while the coach goes over a graded set's misses: the set, the misses in order, and the one this reply teaches (0 = none). */
   lesson?: { sessionId: string; order: string[]; miss: number };
+  /** D-216: this reply first teaches a miss that has a memory-hack picture (GET /study/sessions/{sessionId}/pictures/{questionId}). */
+  picture?: { sessionId: string; questionId: string };
 };
 
 // One row per account: the chat-first home conversation (SPEC §7). Kept out of

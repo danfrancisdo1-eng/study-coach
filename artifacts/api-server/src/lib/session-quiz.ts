@@ -107,10 +107,13 @@ export type Session = {
   reviewSchedule: Array<Record<string, unknown>>;
   /** D-194: the memory cards for this session's graded set (memory-cards.ts). */
   memoryCards?: MemoryCardsRecord | null;
+  /** D-216: memory-hack pictures for the graded set, by question id (memory-pictures.ts); never sent with the session. */
+  memoryPictures?: MemoryPictures | null;
   _version?: number;
 };
 
 import { memoryCardsView, type MemoryCardsRecord } from "./memory-cards";
+import type { MemoryPictures } from "./memory-pictures";
 
 export function jsonObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -192,7 +195,8 @@ export function safeSession(session: Session): Record<string, unknown> {
     grade: value.grade,
     timer: value.timer ?? null,
   });
-  const { _version, attempts = [], quiz: currentQuiz, flashcards, memoryCards: _memoryCards, ...publicSession } = session;
+  // D-216: the pictures are served one by one (GET .../pictures/{questionId}), never inside the session.
+  const { _version, attempts = [], quiz: currentQuiz, flashcards, memoryCards: _memoryCards, memoryPictures: _memoryPictures, ...publicSession } = session;
   return {
     ...publicSession,
     quiz: currentQuiz ? publicQuiz(currentQuiz) : null,

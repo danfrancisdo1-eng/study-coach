@@ -44,7 +44,7 @@ export type LessonMiss = {
   explanation: string;
   hook: string;
   /** The memory coach's card for it, when written (why it was tempting, a way to remember it). */
-  plan: { whyYouMissed: string; headline: string; memoryTool: string; technique: string; keyConcern: string | null } | null;
+  plan: { whyYouMissed: string; headline: string; memoryTool: string; technique: string; keyConcern: string | null; picture?: string | null } | null;
 };
 
 /**
@@ -78,7 +78,7 @@ export function lessonMisses(order: string[], questions: StoredQuestion[], cards
       correct: q.options.find((o) => o.id === q.correctOptionId)?.text ?? "",
       explanation: q.explanation ?? "",
       hook: q.hook ?? "",
-      plan: card ? { whyYouMissed: card.whyYouMissed, headline: card.headline, memoryTool: card.memoryTool, technique: card.techniqueLabel, keyConcern: card.keyConcern } : null,
+      plan: card ? { whyYouMissed: card.whyYouMissed, headline: card.headline, memoryTool: card.memoryTool, technique: card.techniqueLabel, keyConcern: card.keyConcern, picture: card.picture ?? null } : null,
     }];
   });
 }
@@ -98,6 +98,19 @@ export function nextMiss(previous: number, total: number, teaching: number): num
   return previous + 1 > total ? 0 : previous + 1;
 }
 
+/**
+ * D-216: the picture to show under the reply's Memory hack: only on the reply that first teaches a miss (moving to
+ * miss k, not a "not yet" re-explanation of the same one), and only when that miss's card has a picture.
+ */
+export function pictureFor(
+  sessionId: string, order: string[], previous: number, miss: number, cards: { questionId: string; picture?: string | null }[] | null,
+): { sessionId: string; questionId: string } | null {
+  if (miss <= 0 || miss === previous) return null;
+  const questionId = order[miss - 1];
+  const card = questionId ? (cards ?? []).find((c) => c.questionId === questionId) : undefined;
+  return card?.picture ? { sessionId, questionId: questionId! } : null;
+}
+
 /** The walk's state as the coach is told it (null when no walk is on). */
 export type LessonPrompt = { misses: LessonMiss[]; previous: number };
 
@@ -105,7 +118,7 @@ export type LessonPrompt = { misses: LessonMiss[]; previous: number };
 export function lessonText({ misses }: LessonPrompt): string {
   return misses.map((m) => {
     const plan = m.plan
-      ? ` | the plan: why it was tempting: ${m.plan.whyYouMissed || "(not written)"}; the one thing to remember: ${m.plan.headline}; a way to remember it (${m.plan.technique}): ${m.plan.memoryTool}${m.plan.keyConcern ? `; the memory coach doubts the answer key: ${m.plan.keyConcern}` : ""}`
+      ? ` | the plan: why it was tempting: ${m.plan.whyYouMissed || "(not written)"}; the one thing to remember: ${m.plan.headline}; a way to remember it (${m.plan.technique}): ${m.plan.memoryTool}${m.plan.keyConcern ? `; the memory coach doubts the answer key: ${m.plan.keyConcern}` : ""}${m.plan.picture ? `; a picture of this is shown under your Memory hack: ${m.plan.picture}` : ""}`
       : "";
     return `${m.number}. Q: ${m.question} | they chose: ${m.chose} | right answer: ${m.correct} | why: ${m.explanation}${m.hook ? ` | hook: ${m.hook}` : ""}${plan}`;
   }).join("\n");

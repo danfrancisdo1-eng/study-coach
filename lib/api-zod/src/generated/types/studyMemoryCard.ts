@@ -25,4 +25,9 @@ export interface StudyMemoryCard {
   lockIn: StudyMemoryCardLockIn;
   /** @nullable */
   keyConcern: string | null;
+  /**
+     * D-216: the scene drawn for this card, or null
+     * @nullable
+     */
+  picture?: string | null;
 }

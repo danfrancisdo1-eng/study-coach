@@ -41,6 +41,7 @@ import type {
   ListLectures200,
   ListLecturesParams,
   ListStudySessions200,
+  MemoryPicture,
   PlanInput,
   PlanResult,
   PremiumRefreshInput,
@@ -1903,6 +1904,88 @@ export function useGetStudySession<TData = Awaited<ReturnType<typeof getStudySes
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetStudySessionQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMemoryPictureUrl = (sessionId: string,
+    questionId: string,) => {
+
+
+
+
+  return `/api/study/sessions/${sessionId}/pictures/${questionId}`
+}
+
+/**
+ * @summary D-216: the memory-hack picture for one missed question of the graded set (ready, still drawing, or none)
+ */
+export const getMemoryPicture = async (sessionId: string,
+    questionId: string, options?: Parameters<typeof customFetch>[1]): Promise<MemoryPicture> => {
+
+  return customFetch<MemoryPicture>(getGetMemoryPictureUrl(sessionId,questionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMemoryPictureQueryKey = (sessionId: string,
+    questionId: string,) => {
+    return [
+    `/api/study/sessions/${sessionId}/pictures/${questionId}`
+    ] as const;
+    }
+
+
+export const getGetMemoryPictureQueryOptions = <TData = Awaited<ReturnType<typeof getMemoryPicture>>, TError = ErrorType<void>>(sessionId: string,
+    questionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMemoryPicture>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMemoryPictureQueryKey(sessionId,questionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMemoryPicture>>> = ({ signal }) => getMemoryPicture(sessionId,questionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sessionId !== null && sessionId !== undefined && questionId !== null && questionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMemoryPicture>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMemoryPictureQueryResult = NonNullable<Awaited<ReturnType<typeof getMemoryPicture>>>
+export type GetMemoryPictureQueryError = ErrorType<void>
+
+
+/**
+ * @summary D-216: the memory-hack picture for one missed question of the graded set (ready, still drawing, or none)
+ */
+
+export function useGetMemoryPicture<TData = Awaited<ReturnType<typeof getMemoryPicture>>, TError = ErrorType<void>>(
+ sessionId: string,
+    questionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMemoryPicture>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMemoryPictureQueryOptions(sessionId,questionId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
