@@ -20,3 +20,11 @@ test('the notice names the AI providers (CLAUDE.md §6)', () => {
   assert.match(AI_NOTICE[0].text, /Anthropic Claude/);
   assert.match(AI_NOTICE[0].text, /OpenAI/);
 });
+
+test('D-216: the notice says memory-hack pictures are drawn by OpenAI', () => {
+  const line = AI_NOTICE.find((l) => l.icon === 'image');
+  assert.ok(line);
+  assert.match(line.text, /picture/i);
+  assert.match(line.text, /OpenAI/);
+  assert.equal(new Set(AI_NOTICE.map((l) => l.icon)).size, AI_NOTICE.length, 'icons are unique (they are the list keys)');
+});
