@@ -4,9 +4,11 @@
  * thing and save the same way. Pure, so node tests load it.
  */
 
-/** Three short lines instead of one paragraph (review finding 27, D-082). Icons are Feather names. */
-export const AI_NOTICE: { icon: 'send' | 'alert-circle' | 'refresh-cw'; text: string }[] = [
+/** Short lines instead of one paragraph (review finding 27, D-082); the picture line is D-216. Icons are Feather names. */
+export const AI_NOTICE: { icon: 'send' | 'image' | 'alert-circle' | 'refresh-cw'; text: string }[] = [
   { icon: 'send', text: 'Your messages, course names, chosen course material and quiz answers go to Anthropic Claude to coach you. Lecture recordings are transcribed by OpenAI.' },
+  // D-216: some memory hacks come with a picture, drawn by OpenAI's image model from a short description of the idea.
+  { icon: 'image', text: 'Some memory hacks come with a picture, drawn by OpenAI from a short description of the idea. Nothing about you is sent.' },
   { icon: 'alert-circle', text: 'AI can make mistakes. Press and hold any coach reply to report it.' },
   { icon: 'refresh-cw', text: 'To withdraw, delete your account in Account (the coach needs AI to work).' },
 ];

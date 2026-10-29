@@ -2,35 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
-## 2026-10-26 — D-207: The practice score card no longer lists the misses; Back to chat shows right after a set
-- Dan on build 29: "it's still reviewing the wrong answers inside the score sheet ... the coach was going to do them individually"; "after finishing questions there was no way out".
-- **Score card:** the practice card keeps the score, its line and the By section bars; the "Your misses (N)" cards with "See why" are gone (the coach goes over the misses one at a time in the chat, D-203). The exam score sheet keeps its "Questions you missed" list for now: it is the only place to report a bad exam question (CLAUDE.md §6), since an exam shows no feedback while it runs.
-- **Back to chat:** the "Back to chat" and "Return to course list" buttons under a finished set waited for the chat to stop naming the set, which only happens once the coach's report card is saved; since D-206 that report types out only after the sheet is closed, so the buttons never came. They now show as soon as the set is graded (or a deck finished) (lib/live-set.ts `showStudyDone`, with tests).
-- **Sounds (build 29):** the missing cha-ching and buzzer were the phone's media volume at zero in Control Center (the ringer was up); not an app bug. D-205 stays; it is harmless.
-- Build #109. **Decided by:** Dan.
-
-## 2026-10-26 — D-209: Readiness comes after going over the misses (coach.v38)
-- Dan on build 29: "Let's switch it though. Let's go through the misses with the coach then have the readiness come up." Mock v7 (https://claude.ai/artifact/1FgZBDcjY8MCjtkKf7RLNm), approved: Coach's evaluation → Your misses → Exam readiness.
-- **coach.v38:** with misses, the report card is only "### 🎯 Coach's evaluation" (score with its percent, progress, Still shaky); its one chip stays "Go over my misses". The walk is unchanged until the wrap-up after the last miss: one line that that was the last one (earned encouragement), then the "### 📈 Exam readiness" (or "### 📈 Readiness") section with the same rules the report card used (the verdict box with only the verdict bold, where they stand in numbers, what Ready takes, "Here's what we need to do" with one concrete step; "not judged yet" under 20 answers), then the three after-set chips. Its "Here's what we need to do" replaces the old "Next step:" line. With no misses the report card is unchanged (evaluation, then readiness). The readiness rules are one function in the prompt, used in both places.
-- **Server (routes/chat.ts):** the report facts (readiness.ts reportFacts/reportFactsText) are also computed on the turn that answers the last miss and passed to the prompt as `readiness`; only the wrap-up uses them. The report card still gets the facts (score, the set before it).
-- **Evals:** the report cases with misses (AI-103, PSY 101, HIST 210, the general one-line case) expect no readiness section (checked by code too); the no-miss cases (AZ-500, BIOL 114) keep readiness. The wrap-up case gets the readiness facts and expects the last-one line, then Exam readiness (Getting close, the numbers, what Ready takes, one step using the 12 days), no Memory hack, teaching 0, the three chips; a code layout check ("wrap" in evals/walk-format.ts) fails it without exactly one readiness title, its "> " verdict line, the last-one line first, or with a separate "Next step:". Evals round 1 (Dan's Mac): coach 80/83. Every new and changed case passes (the four report cards with misses, both no-miss report cards, the wrap-up with readiness, every walk case). The three misses are in rules v38 does not touch and that missed in earlier rounds too: the exam-in-3-days heads-up named no area, the day-before line said "your midterm" without its name and date, and one reply ran 261 words (limit 260). Model variance; shipped as is.
-
-## 2026-10-26 — D-208: A dropped connection is retried once, quietly
-- Dan on build 29: a "No connection right now" error and an answer tap that did nothing; both worked on a second tap.
-- **Server:** Node closed an idle kept-alive connection after 5 s, sooner than the hosting proxy in front of it, which could then send the next request down a connection that was closing. Idle connections now stay open 65 s (headers timeout 66 s). A test checks the server announces it.
-- **Phone, API client:** a request that fails before any answer (no HTTP status) is sent once more after 0.6 s when it is safe to repeat: GET, HEAD, PUT, DELETE (saving an answer is a PUT). A POST is never repeated by the client; a cancelled request is not either.
-- **Phone, the coach's typed-out reply (D-206):** a dropped stream is sent once more; what the first try showed is cleared and the reply types out again. If the retry gets a 409 (the first try got through and was saved, so the chat moved on), the chat is reloaded with no error and the message is not put back in the box. An answer from the server (a limit, an error) is never retried.
+## 2026-10-29 — D-217: Memory hack pictures on the phone
+- The phone half of D-216 (mock approved: "I like it. Pretty slick."; Dan's choices: everyone, at most 2 a set; stored in the set's record).
+- A reply that first teaches a pictured miss carries `picture` ({sessionId, questionId}); the chat shows the picture under the Memory hack's first paragraph (lib/memory-picture.ts `pictureSlot`), in the typed-out reply as soon as that paragraph is there. components/MemoryPicture.tsx asks GET /study/sessions/{id}/pictures/{questionId}: a soft placeholder while it reads "drawing" (asked again every 3 s, up to 3 minutes), the picture (3:2, rounded) when ready, nothing when there is none. Tap to see it full screen; tap to close.
+- The AI notice (Coach tab and the consent sheet, lib/ai-consent.ts) gains a line: "Some memory hacks come with a picture, drawn by OpenAI from a short description of the idea. Nothing about you is sent." Build #110.
 - **Decided by:** Dan.
-
-## 2026-10-26 — D-210: "Turn on the AI coach first" in plain words
-- A beta tester added the NJ Real Estate License exam from the welcome screen before agreeing to the AI notice; looking up the exam showed the server's developer sentence "Persist explicit AI consent in study state (aiConsent: true) before using AI coaching."
-- Every AI route that needs the agreement now answers (403) "Turn on the AI coach first: go to the Coach tab and tap “I understand and consent”." with `code: "ai_consent_required"` (lib/consent.ts, one copy). Server only: live after the Render deploy, no phone build needed.
-- Next (mock first): asking for the agreement right on the course screen when an AI button is tapped there. Dan: "whatever you recommend".
-- **Decided by:** Dan (via Claude Code's recommendation).
-
-## 2026-10-27 — D-213: The contact email is support@getrapidrecall.com
-- Dan: "the privacy policy has the wrong email. Remove the clinicalforesight email and replace with support@getrapidrecall.com".
-- The privacy policy and the /support page (one constant, routes/privacy.ts) now give support@getrapidrecall.com; the policy's "Last updated" date is 2026-10-27. Server only: live after the Render deploy. The App Store Connect support/contact fields are Dan's to check (not changed here).
 
 ## 2026-10-29 — D-216: Memory-hack pictures, only when a picture is the best way to remember (server)
 - Dan: "not to use an image every miss just when it decides the best way to have the user remember would be an image"; mock approved ("I like it. Pretty slick."; board "Memory hack with a picture" in https://claude.ai/artifact/1FgZBDcjY8MCjtkKf7RLNm). Choices: 1a, everyone gets pictures, at most 2 per set ("the people that are trying it out, need to see"); 2a, kept inside the set's own record ("we can always switch it to a proper file store once we launch").
@@ -60,6 +36,10 @@ Newest first. Each entry: date, decision, why, who decided.
 - Next (Dan's idea, step 2): a picture only when the coach decides a picture is the best way to remember a miss; mock first.
 - **Decided by:** Dan.
 
+## 2026-10-27 — D-213: The contact email is support@getrapidrecall.com
+- Dan: "the privacy policy has the wrong email. Remove the clinicalforesight email and replace with support@getrapidrecall.com".
+- The privacy policy and the /support page (one constant, routes/privacy.ts) now give support@getrapidrecall.com; the policy's "Last updated" date is 2026-10-27. Server only: live after the Render deploy. The App Store Connect support/contact fields are Dan's to check (not changed here).
+
 ## 2026-10-27 — D-212: The exam countdown names the areas the app picked (coach.v39)
 - The v38 eval round (D-209): the exam-in-3-days heads-up (AI-103) named no area to hit first and opened with a ⚠️, which read as alarm. Dan: "why did this fail" ... "yes do it".
 - The coach had to compare the guide's sections with the results itself. Now the server does it (lib/readiness.ts `countdownFocus`, the same rule the prompt gave: the sections never practiced, heaviest first, guide order on a tie; when all were practiced, the lowest scoring; a course without a guide: the concepts missed most) and passes them as `examSoon.focus`.
@@ -72,6 +52,32 @@ Newest first. Each entry: date, decision, why, who decided.
 - On a course screen, without the agreement, the AI buttons (Look up / Refresh the exam guide, Practice questions, Ask the coach, Simulated exam, Flashcards, Memory tips, Outline, Review PDF, Questions without material) slide up a consent sheet (components/ConsentSheet.tsx) instead of sending a request that fails. Same notice as the Coach tab (now one copy, lib/ai-consent.ts, naming Anthropic Claude and OpenAI), privacy link, "I understand and consent" and "Not now". Agreeing saves it the same way as the Coach tab (aiConsent, the 13+ confirmation time), looks up the guides of exams added before it, then the tapped action carries on. "Not now" sends nothing. The grey line "The coach needs your AI consent first; it asks on the coach screen." is gone. The automatic guide refresh (D-118) waits for the agreement instead of failing quietly.
 - Not changed: adding material keeps its own photo consent check (D-120); the Coach tab's consent card stays.
 - **Decided by:** Dan.
+
+## 2026-10-26 — D-210: "Turn on the AI coach first" in plain words
+- A beta tester added the NJ Real Estate License exam from the welcome screen before agreeing to the AI notice; looking up the exam showed the server's developer sentence "Persist explicit AI consent in study state (aiConsent: true) before using AI coaching."
+- Every AI route that needs the agreement now answers (403) "Turn on the AI coach first: go to the Coach tab and tap “I understand and consent”." with `code: "ai_consent_required"` (lib/consent.ts, one copy). Server only: live after the Render deploy, no phone build needed.
+- Next (mock first): asking for the agreement right on the course screen when an AI button is tapped there. Dan: "whatever you recommend".
+- **Decided by:** Dan (via Claude Code's recommendation).
+
+## 2026-10-26 — D-209: Readiness comes after going over the misses (coach.v38)
+- Dan on build 29: "Let's switch it though. Let's go through the misses with the coach then have the readiness come up." Mock v7 (https://claude.ai/artifact/1FgZBDcjY8MCjtkKf7RLNm), approved: Coach's evaluation → Your misses → Exam readiness.
+- **coach.v38:** with misses, the report card is only "### 🎯 Coach's evaluation" (score with its percent, progress, Still shaky); its one chip stays "Go over my misses". The walk is unchanged until the wrap-up after the last miss: one line that that was the last one (earned encouragement), then the "### 📈 Exam readiness" (or "### 📈 Readiness") section with the same rules the report card used (the verdict box with only the verdict bold, where they stand in numbers, what Ready takes, "Here's what we need to do" with one concrete step; "not judged yet" under 20 answers), then the three after-set chips. Its "Here's what we need to do" replaces the old "Next step:" line. With no misses the report card is unchanged (evaluation, then readiness). The readiness rules are one function in the prompt, used in both places.
+- **Server (routes/chat.ts):** the report facts (readiness.ts reportFacts/reportFactsText) are also computed on the turn that answers the last miss and passed to the prompt as `readiness`; only the wrap-up uses them. The report card still gets the facts (score, the set before it).
+- **Evals:** the report cases with misses (AI-103, PSY 101, HIST 210, the general one-line case) expect no readiness section (checked by code too); the no-miss cases (AZ-500, BIOL 114) keep readiness. The wrap-up case gets the readiness facts and expects the last-one line, then Exam readiness (Getting close, the numbers, what Ready takes, one step using the 12 days), no Memory hack, teaching 0, the three chips; a code layout check ("wrap" in evals/walk-format.ts) fails it without exactly one readiness title, its "> " verdict line, the last-one line first, or with a separate "Next step:". Evals round 1 (Dan's Mac): coach 80/83. Every new and changed case passes (the four report cards with misses, both no-miss report cards, the wrap-up with readiness, every walk case). The three misses are in rules v38 does not touch and that missed in earlier rounds too: the exam-in-3-days heads-up named no area, the day-before line said "your midterm" without its name and date, and one reply ran 261 words (limit 260). Model variance; shipped as is.
+
+## 2026-10-26 — D-208: A dropped connection is retried once, quietly
+- Dan on build 29: a "No connection right now" error and an answer tap that did nothing; both worked on a second tap.
+- **Server:** Node closed an idle kept-alive connection after 5 s, sooner than the hosting proxy in front of it, which could then send the next request down a connection that was closing. Idle connections now stay open 65 s (headers timeout 66 s). A test checks the server announces it.
+- **Phone, API client:** a request that fails before any answer (no HTTP status) is sent once more after 0.6 s when it is safe to repeat: GET, HEAD, PUT, DELETE (saving an answer is a PUT). A POST is never repeated by the client; a cancelled request is not either.
+- **Phone, the coach's typed-out reply (D-206):** a dropped stream is sent once more; what the first try showed is cleared and the reply types out again. If the retry gets a 409 (the first try got through and was saved, so the chat moved on), the chat is reloaded with no error and the message is not put back in the box. An answer from the server (a limit, an error) is never retried.
+- **Decided by:** Dan.
+
+## 2026-10-26 — D-207: The practice score card no longer lists the misses; Back to chat shows right after a set
+- Dan on build 29: "it's still reviewing the wrong answers inside the score sheet ... the coach was going to do them individually"; "after finishing questions there was no way out".
+- **Score card:** the practice card keeps the score, its line and the By section bars; the "Your misses (N)" cards with "See why" are gone (the coach goes over the misses one at a time in the chat, D-203). The exam score sheet keeps its "Questions you missed" list for now: it is the only place to report a bad exam question (CLAUDE.md §6), since an exam shows no feedback while it runs.
+- **Back to chat:** the "Back to chat" and "Return to course list" buttons under a finished set waited for the chat to stop naming the set, which only happens once the coach's report card is saved; since D-206 that report types out only after the sheet is closed, so the buttons never came. They now show as soon as the set is graded (or a deck finished) (lib/live-set.ts `showStudyDone`, with tests).
+- **Sounds (build 29):** the missing cha-ching and buzzer were the phone's media volume at zero in Control Center (the ringer was up); not an app bug. D-205 stays; it is harmless.
+- Build #109. **Decided by:** Dan.
 
 ## 2026-10-26 — D-206: The coach's reply types out while it is written (the report card and going over the misses)
 - Dan on build 28: "When the coach is thinking then finishes it spits out at once an entire paragraph and buttons ... Cant it print one letter at a time as fast as its thinking"; then, on the mock he approved: "have the text stream under all three of those titles ... is it possible to stream it slower at 400WPM"; "when it kicks over to the review of the misses in the chat, it pops you at the end of the chat. So you don't even see the coach's evaluation"; titles slide in, they are not typed.

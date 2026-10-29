@@ -21,6 +21,8 @@ import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { EvaluationPlaceholder, SectionBody, SectionTitle, ThinkingDots } from '@/components/ReportReveal';
 import { EVALUATION_TITLE, LESSON_START, revealPlan, shouldStartLesson, visibleChips, type RevealStep } from '@/lib/lesson-chat';
 import { AlreadySent, closeOpenBold, paceStep, pinnedOffset, sendWithRetry, streamable } from '@/lib/chat-stream';
+import { pictureSlot } from '@/lib/memory-picture';
+import { MemoryPicture } from '@/components/MemoryPicture';
 import { streamChatMessage } from '@/lib/coach-stream';
 import { topicParts } from '@/lib/topic-label';
 import { daysLeft, daysLeftLabel } from '@/lib/syllabus';
@@ -249,7 +251,7 @@ export default function CoachHome() {
   const LIVE_REPLY = 'live-reply';
   const LIVE_USER = 'live-user';
   const listData: HomeChatMessage[] = live
-    ? [{ id: LIVE_REPLY, role: 'assistant', content: closeOpenBold(live.received.slice(0, live.shown)), at: '' }, ...(live.user ? [{ id: LIVE_USER, role: 'user' as const, content: live.user, at: '' }] : []), ...newestFirst]
+    ? [{ id: LIVE_REPLY, role: 'assistant', content: closeOpenBold(live.received.slice(0, live.shown)), at: '', ...(live.done?.messages[live.done.messages.length - 1]?.picture ? { picture: live.done.messages[live.done.messages.length - 1]!.picture } : {}) }, ...(live.user ? [{ id: LIVE_USER, role: 'user' as const, content: live.user, at: '' }] : []), ...newestFirst]
     : newestFirst;
   const viewportRef = useRef(0);
   const placedRef = useRef<string | null>(null);
@@ -501,7 +503,7 @@ export default function CoachHome() {
     : part);
   // Coach replies: blank line between paragraphs; "1. Label: trick" lines become their own
   // hook chips (same ⚡ style as the question hooks; Dan: tricks ran together as one paragraph).
-  const renderCoachText = (content: string, messageId?: string, streaming = false) => {
+  const renderCoachText = (content: string, messageId?: string, streaming = false, picture?: HomeChatMessage['picture']) => {
     // D-098: headings bold with room above them, bullets, inline **bold** (lib/coach-text.ts).
     const inline = (spans: Span[]) => spans.map((sp, k) => sp.bold
       ? <Text key={k} style={styles.bold}>{withLinks(sp.text)}</Text>
@@ -538,6 +540,8 @@ export default function CoachHome() {
     // D-193 (Dan: "you can't tell where the readiness starts and ends ... each tip should be one
     // concrete thought"): "### " sections get a divider and a coloured title; each "#### " tip is its own card.
     const sections = sectionsOf(blocksOf(content));
+    // D-216: the memory hack's picture, under the Memory hack's first paragraph.
+    const slot = picture ? pictureSlot(sections) : null;
     // D-203: a new report card comes in section by section (title slides in, a line draws, dots, then the text).
     const titled = sections.filter((section) => section.title);
     const steps = messageId ? revealOf(messageId, titled.length).steps : null;
@@ -550,12 +554,17 @@ export default function CoachHome() {
             {section.title ? <SectionTitle title={section.title.map((t) => t.text).join('')} step={stepOf(section)} textStyle={styles.sectionTitle} /> : null}
             <SectionBody step={stepOf(section)}>
               <View style={styles.coachSection}>
-                {section.items.map((item, i) => item.kind === 'tip' ? (
-                  <View key={i} style={styles.tipCard} testID="chat-tip">
-                    <Text style={styles.tipTitle} accessibilityRole="header">{item.tip.title.map((t) => t.text).join('')}</Text>
-                    {item.tip.blocks.map((b, k) => renderBlock(b, k))}
-                  </View>
-                ) : item.block.spaced ? <View key={i} style={styles.thoughtGap}>{renderBlock(item.block, i)}</View> : renderBlock(item.block, i))}
+                {section.items.map((item, i) => (
+                  <React.Fragment key={i}>
+                    {item.kind === 'tip' ? (
+                      <View style={styles.tipCard} testID="chat-tip">
+                        <Text style={styles.tipTitle} accessibilityRole="header">{item.tip.title.map((t) => t.text).join('')}</Text>
+                        {item.tip.blocks.map((b, k) => renderBlock(b, k))}
+                      </View>
+                    ) : item.block.spaced ? <View style={styles.thoughtGap}>{renderBlock(item.block, i)}</View> : renderBlock(item.block, i)}
+                    {picture && slot && slot.section === s && slot.after === i ? <MemoryPicture sessionId={picture.sessionId} questionId={picture.questionId} /> : null}
+                  </React.Fragment>
+                ))}
               </View>
             </SectionBody>
           </View>
@@ -571,8 +580,8 @@ export default function CoachHome() {
     <Animated.View entering={titledCount(item) === 0 && revealOf(item.id, 0).fresh ? FadeIn.duration(reduceMotion ? 150 : 320) : undefined} onLayout={(e) => placeNewest(item.id, e.nativeEvent.layout.height)}>
     {item.sessionStart ? <View style={styles.sessionDivider}><View style={styles.sessionLine} /><Text style={styles.sessionLabel}>New session</Text><View style={styles.sessionLine} /></View> : null}
     <Pressable onLongPress={item.role === 'assistant' ? () => reportMessage(item) : undefined} delayLongPress={450} accessibilityHint={item.role === 'assistant' ? 'Press and hold to report this reply' : undefined} style={[styles.turn, item.role === 'user' ? styles.userTurn : styles.coachTurn]} testID={`chat-turn-${item.role}`}>
-      {item.id === LIVE_REPLY ? (item.content ? renderCoachText(item.content, undefined, true) : <ThinkingDots testID="live-thinking" />)
-        : item.role === 'assistant' ? renderCoachText(item.content, item.id) : <Text style={styles.body}>{item.content}</Text>}
+      {item.id === LIVE_REPLY ? (item.content ? renderCoachText(item.content, undefined, true, item.picture) : <ThinkingDots testID="live-thinking" />)
+        : item.role === 'assistant' ? renderCoachText(item.content, item.id, false, item.picture) : <Text style={styles.body}>{item.content}</Text>}
       {item.reported ? <View style={styles.reportedRow} testID="chat-reported"><Feather name="flag" size={12} color={colors.mutedForeground} /><Text style={styles.caption}>Reported for review</Text></View> : null}
       {item.id === lastMessage?.id && chips.length ? (() => {
         // D-166: section chips ("<name> · 27.5%") draw as full-width rows, one line each, the weight in its own
