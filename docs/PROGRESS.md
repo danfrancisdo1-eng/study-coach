@@ -1,56 +1,16 @@
 # Progress
 
-## Session 23s — 2026-10-26 — score card without the misses list, Back to chat after a set (D-207), branch `fix/score-sheet-and-back-to-chat`
+## Session 24b — 2026-10-29 — memory hack pictures on the phone (D-217), branch `feat/memory-pictures-phone`
 
 ### Done
-- Practice score card: the "Your misses" list is gone (score, line and By section bars stay). The exam sheet keeps its list (only place to report a bad exam question).
-- Back to chat / Return to course list show as soon as a set is graded or a deck finished (`showStudyDone`). Build #109.
-- Sounds on build 29: the phone's media volume was at zero; no app change.
-- Verified here: see the PR (typecheck, phone unit tests, iOS bundle export).
+- The picture under the Memory hack (placeholder while drawing, tap to enlarge), the AI notice line about pictures, build #110. Built on the server branch (D-216, PR #38).
+- Verified here: see the PR (typecheck, all tests incl. lib/memory-picture.test.mjs and the ai-consent picture line, iOS bundle export). Not run in a simulator (none here).
 
 ### UX checklist (docs/UX_PRINCIPLES.md), code review only
-1. Tap targets: PASS (buttons unchanged). 2. One primary action: PASS (Back to chat is the one main button again). 3. Chunked: PASS (less on the score card). 4. Native patterns: PASS. 5. Progress / resume: PASS (the walk resumes in the chat). 6. One accent: PASS. 7. Tokens; Dark Mode; Dynamic Type: PASS (styles removed only). 8. Reduce Motion / VoiceOver: PASS (no new motion). 9. Paywall: N/A.
+1. Tap targets: PASS (the picture is a full-width target; the full view closes on any tap). 2. One primary action: PASS (Got it / Not yet unchanged). 3. Chunked: PASS (one picture under one paragraph; at most 2 a set). 4. Native patterns: PASS (tap to enlarge, fade-in). 5. Progress / resume: PASS (placeholder while drawing; the walk resumes as before). 6. One accent: PASS. 7. Tokens; Dark Mode; Dynamic Type: PASS (theme tokens; the caption scales). 8. Reduce Motion / labels: PASS (the placeholder pulse stops with Reduce Motion; "Memory hack picture. Double tap to enlarge."). 9. Paywall: N/A (everyone, at most 2 a set).
 
 ### Needs real-iPhone check
-- Finish a practice set with misses: the score card shows the score and bars only, with Back to chat and Return to course list under it right away. Back to chat: the evaluation types out, then the misses.
-
-## Session 23r — 2026-10-26 — readiness comes after going over the misses (D-209), branch `feat/coach-v38-readiness-last`
-
-### Done
-- coach.v38: with misses the report card is only Coach's evaluation; Exam readiness is written in the wrap-up after the last miss. No misses: unchanged. The server passes the readiness facts on the turn that answers the last miss.
-- Verified here: `pnpm run typecheck` (all packages), `pnpm test` (405 tests: 404 pass, 1 skipped as before), evals build (`node evals/build.mjs`). New: tests/coach-v38-order.test.mjs; lesson.e2e.test.mjs checks the report card prompt has no readiness section and only the wrap-up turn carries the readiness facts.
-
-### Next
-- Dan runs the coach evals for v38 on his Mac (command in the PR).
-
-### Needs real-iPhone check
-- Finish a set with misses: the evaluation only, then Your misses; after Got it on the last miss: "That was the last one", then Exam readiness types out under its title, then the three chips. A perfect set: evaluation and readiness together, as before.
-
-## Session 23t — 2026-10-26 — a dropped connection is retried once (D-208), branch `fix/connection-retry`
-
-### Done
-- Server keeps idle connections 65 s (was Node's 5 s). API client retries once on a dropped connection for GET/HEAD/PUT/DELETE. The streamed coach reply retries once; a 409 on the retry reloads the chat quietly.
-- Verified here: see the PR (typecheck, tests, iOS bundle export). New tests: lib/custom-fetch-retry.test.mjs, the retry case in lib/chat-stream.test.mjs, the keep-alive check in coach-auth.test.mjs (fails on the old server, passes now).
-
-### Needs real-iPhone check
-- Use the app normally after leaving it idle for a minute or two: no "No connection right now" on the first tap, answer taps register the first time. Airplane mode on: an error line still shows after the one retry, nothing lost.
-- Needs the Render deploy for the server half.
-
-## Session 23u — 2026-10-26 — "Turn on the AI coach first" in plain words (D-210), branch `fix/consent-wording`
-
-### Done
-- The 403 for AI features used before the AI agreement now reads as a student instruction, with a code for the app (lib/consent.ts; study.ts, chat.ts, courses.ts). Verified here: see the PR.
-
-### Next
-- Mock: the agreement asked right on the course screen when an AI button is tapped before it.
-
-## Session 23x — 2026-10-27 — support@getrapidrecall.com on the privacy and support pages (D-213), branch `fix/support-email`
-
-### Done
-- The contact email on /privacy and /support is support@getrapidrecall.com (was drfrancis@clinicalforesight.ai). Verified here: support-page.test.mjs (checks the address and that the old one is gone), typecheck.
-
-### Needs a check after the Render deploy
-- https://study-coach-api-pskt.onrender.com/privacy and /support show support@getrapidrecall.com. App Store Connect's contact email, if it used the old address.
+- Finish a set with misses that include a visual one (e.g. detection vs segmentation): when the coach reaches it, a picture appears under the Memory hack's first paragraph; tap enlarges it. A miss without a picture shows none. If no picture ever shows, check the Render log for "Memory picture" errors (OpenAI may ask to verify the organization before its image model can be used).
 
 ## Session 24a — 2026-10-29 — memory-hack pictures, server half (D-216), branch `feat/memory-pictures-server`
 
@@ -79,6 +39,14 @@
 ### Next
 - Step 2: a picture for a miss when the coach decides it is the best way to remember it (mock first).
 
+## Session 23x — 2026-10-27 — support@getrapidrecall.com on the privacy and support pages (D-213), branch `fix/support-email`
+
+### Done
+- The contact email on /privacy and /support is support@getrapidrecall.com (was drfrancis@clinicalforesight.ai). Verified here: support-page.test.mjs (checks the address and that the old one is gone), typecheck.
+
+### Needs a check after the Render deploy
+- https://study-coach-api-pskt.onrender.com/privacy and /support show support@getrapidrecall.com. App Store Connect's contact email, if it used the old address.
+
 ## Session 23w — 2026-10-27 — the exam countdown names the areas the app picked (D-212), branch `feat/coach-v39-countdown-focus`
 
 ### Done
@@ -96,6 +64,50 @@
 
 ### Needs real-iPhone check
 - A new account that skips the agreement: add an exam, open it, tap Look up. The sheet slides up; I understand and consent → "Searching for the official guide…" → the guide. Not now → nothing sent, no error. Practice questions from the sheet goes to the chat and starts the set.
+
+## Session 23u — 2026-10-26 — "Turn on the AI coach first" in plain words (D-210), branch `fix/consent-wording`
+
+### Done
+- The 403 for AI features used before the AI agreement now reads as a student instruction, with a code for the app (lib/consent.ts; study.ts, chat.ts, courses.ts). Verified here: see the PR.
+
+### Next
+- Mock: the agreement asked right on the course screen when an AI button is tapped before it.
+
+## Session 23t — 2026-10-26 — a dropped connection is retried once (D-208), branch `fix/connection-retry`
+
+### Done
+- Server keeps idle connections 65 s (was Node's 5 s). API client retries once on a dropped connection for GET/HEAD/PUT/DELETE. The streamed coach reply retries once; a 409 on the retry reloads the chat quietly.
+- Verified here: see the PR (typecheck, tests, iOS bundle export). New tests: lib/custom-fetch-retry.test.mjs, the retry case in lib/chat-stream.test.mjs, the keep-alive check in coach-auth.test.mjs (fails on the old server, passes now).
+
+### Needs real-iPhone check
+- Use the app normally after leaving it idle for a minute or two: no "No connection right now" on the first tap, answer taps register the first time. Airplane mode on: an error line still shows after the one retry, nothing lost.
+- Needs the Render deploy for the server half.
+
+## Session 23s — 2026-10-26 — score card without the misses list, Back to chat after a set (D-207), branch `fix/score-sheet-and-back-to-chat`
+
+### Done
+- Practice score card: the "Your misses" list is gone (score, line and By section bars stay). The exam sheet keeps its list (only place to report a bad exam question).
+- Back to chat / Return to course list show as soon as a set is graded or a deck finished (`showStudyDone`). Build #109.
+- Sounds on build 29: the phone's media volume was at zero; no app change.
+- Verified here: see the PR (typecheck, phone unit tests, iOS bundle export).
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (buttons unchanged). 2. One primary action: PASS (Back to chat is the one main button again). 3. Chunked: PASS (less on the score card). 4. Native patterns: PASS. 5. Progress / resume: PASS (the walk resumes in the chat). 6. One accent: PASS. 7. Tokens; Dark Mode; Dynamic Type: PASS (styles removed only). 8. Reduce Motion / VoiceOver: PASS (no new motion). 9. Paywall: N/A.
+
+### Needs real-iPhone check
+- Finish a practice set with misses: the score card shows the score and bars only, with Back to chat and Return to course list under it right away. Back to chat: the evaluation types out, then the misses.
+
+## Session 23r — 2026-10-26 — readiness comes after going over the misses (D-209), branch `feat/coach-v38-readiness-last`
+
+### Done
+- coach.v38: with misses the report card is only Coach's evaluation; Exam readiness is written in the wrap-up after the last miss. No misses: unchanged. The server passes the readiness facts on the turn that answers the last miss.
+- Verified here: `pnpm run typecheck` (all packages), `pnpm test` (405 tests: 404 pass, 1 skipped as before), evals build (`node evals/build.mjs`). New: tests/coach-v38-order.test.mjs; lesson.e2e.test.mjs checks the report card prompt has no readiness section and only the wrap-up turn carries the readiness facts.
+
+### Next
+- Dan runs the coach evals for v38 on his Mac (command in the PR).
+
+### Needs real-iPhone check
+- Finish a set with misses: the evaluation only, then Your misses; after Got it on the last miss: "That was the last one", then Exam readiness types out under its title, then the three chips. A perfect set: evaluation and readiness together, as before.
 
 ## Session 23q — 2026-10-26 — the coach types it out (D-206), branch `feat/stream-coach`
 
