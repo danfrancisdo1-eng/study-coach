@@ -117,6 +117,8 @@ export const memoryCardsSchema = object({
       lock_in: object({ prompt: string, answer: string }),
       nudges: strings,
       key_concern: string,
+      // D-216 (memory-cards.v4): a scene to draw, "" for most cards.
+      picture: string,
     }),
   },
 });

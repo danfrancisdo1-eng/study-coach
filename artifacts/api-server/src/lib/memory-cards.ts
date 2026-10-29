@@ -30,6 +30,8 @@ export type MemoryCard = {
   nudges: string[];
   /** The coach thinks the answer key may be wrong (never shown as fact; the app offers a re-check). */
   keyConcern: string | null;
+  /** D-216: a one-sentence scene to draw when a picture is the best way to remember this one (at most 2 per set), else null. */
+  picture?: string | null;
 };
 
 export type MemoryCardsRecord = {
@@ -44,6 +46,15 @@ export type MemoryCardsRecord = {
 };
 
 export const MAX_CARDS = 5;
+/** D-216: at most this many cards per set carry a picture (memory-pictures.ts MAX_PICTURES; inlined so unit tests load this file). */
+export const MAX_CARD_PICTURES = 2;
+/** D-216: the scene description, one clean sentence of at most 400 characters (memory-pictures.ts cleanDescription). */
+function pictureOf(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const text = value.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!text || /^(none|n\/a|null|no picture)\.?$/i.test(text)) return "";
+  return text.length > 400 ? text.slice(0, 400).replace(/\s+\S*$/, "") : text;
+}
 
 /** One missed question as the memory coach reads it. */
 export type Miss = {
@@ -172,6 +183,9 @@ export function validateCards(raw: unknown, misses: Miss[]): { setNote: string; 
     const lockAnswer = str(lock?.answer, 300);
     const visual = str(c.visual_cue, 300);
     const concern = str(c.key_concern, 300);
+    // D-216: only the first two cards that ask for a picture keep it.
+    const wanted = pictureOf(c.picture);
+    const picture = wanted && cards.filter((x) => x.picture).length < MAX_CARD_PICTURES ? wanted : null;
     const nudges = (Array.isArray(c.nudges) ? c.nudges : [])
       .map((n) => str(n, 200))
       .filter((n) => n.length > 0 && n.length <= 90 && n.endsWith("?") && !revealsAnswer(n, answer))
@@ -190,6 +204,7 @@ export function validateCards(raw: unknown, misses: Miss[]): { setNote: string; 
       lockIn: lockPrompt && lockAnswer ? { prompt: lockPrompt, answer: lockAnswer } : null,
       nudges,
       keyConcern: concern && !/^(null|none|n\/a)$/i.test(concern) ? concern : null,
+      picture,
     });
     if (cards.length >= MAX_CARDS) break;
   }

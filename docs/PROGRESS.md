@@ -52,6 +52,18 @@
 ### Needs a check after the Render deploy
 - https://study-coach-api-pskt.onrender.com/privacy and /support show support@getrapidrecall.com. App Store Connect's contact email, if it used the old address.
 
+## Session 24a — 2026-10-29 — memory-hack pictures, server half (D-216), branch `feat/memory-pictures-server`
+
+### Done
+- memory-cards.v4 asks for a picture only where seeing it helps most (at most 2 per set); the background job draws them with OpenAI's image model (`AI_IMAGE_MODEL`, default gpt-image-1) and keeps them on the set's record; GET /study/sessions/{sessionId}/pictures/{questionId}; the reply that first teaches a pictured miss carries `picture`; coach.v41 describes the same scene. Privacy text updated.
+- Verified here: see the PR (typecheck, tests incl. tests/memory-pictures.test.mjs and tests/memory-pictures.e2e.test.mjs with a stub image model, evals build). Evals: Dan runs coach and memory_cards.
+
+### Next
+- Phone half: show the picture under the Memory hack (tap to enlarge), consent card line, build stamp.
+
+### Needs a check after the Render deploy
+- A set with a vision-type miss: the Render log shows "Memory picture written" with status ready and its size. Nothing to set in Render unless a different image model is wanted (`AI_IMAGE_MODEL`).
+
 ## Session 23z — 2026-10-28 — the memory coach plans its techniques first (D-215), branch `fix/memory-cards-v3`
 
 ### Done

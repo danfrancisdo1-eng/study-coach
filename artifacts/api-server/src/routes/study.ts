@@ -41,6 +41,7 @@ import { newUploadsWithoutCourse } from "../lib/course-materials";
 import { addsCourseBeyondPlan, examFreeLeft, limitMessage } from "../lib/premium";
 import { activeFor, consume, enforced, examQuestionsServed, planFor, refund } from "../lib/premium-store";
 import { AI_CONSENT_REQUIRED } from "../lib/consent";
+import { pictureView } from "../lib/memory-pictures";
 
 /**
  * Premium gate for one AI use on a course (D-090, only with PREMIUM_LIMITS=on): the course must
@@ -838,12 +839,13 @@ export async function getSession(id: string, ownerId: string): Promise<Session |
 
 export async function saveSession(session: Session, ownerId: string): Promise<boolean> {
   const expectedVersion = session._version ?? 1;
-  const { _version, memoryCards: _memoryCards, ...storedSession } = session;
+  const { _version, memoryCards: _memoryCards, memoryPictures: _memoryPictures, ...storedSession } = session;
   // D-194: the memory cards are written by their own background job without a version bump, so a
   // report or any other save meanwhile never conflicts with it; every save keeps the stored cards.
+  // D-216: the same for the memory-hack pictures.
   const updated = await db.update(studySessionsTable)
     .set({
-      session: sql`jsonb_set(${JSON.stringify(storedSession)}::jsonb, '{memoryCards}', coalesce(${studySessionsTable.session} -> 'memoryCards', 'null'::jsonb))`,
+      session: sql`jsonb_set(jsonb_set(${JSON.stringify(storedSession)}::jsonb, '{memoryCards}', coalesce(${studySessionsTable.session} -> 'memoryCards', 'null'::jsonb)), '{memoryPictures}', coalesce(${studySessionsTable.session} -> 'memoryPictures', 'null'::jsonb))`,
       version: expectedVersion + 1,
       updatedAt: new Date(),
     })
@@ -1014,6 +1016,17 @@ router.post("/study/sessions", async (req, res): Promise<void> => {
 router.get("/study/sessions/:id", async (req, res): Promise<void> => {
   const session = await requireSession(req, res);
   if (session) res.json(safeSession(session));
+});
+
+// D-216: one memory-hack picture of the graded set (openapi: /study/sessions/{sessionId}/pictures/{questionId}).
+router.get("/study/sessions/:id/pictures/:questionId", async (req, res): Promise<void> => {
+  const questionId = req.params.questionId;
+  if (typeof questionId !== "string" || !questionId.trim() || questionId.length > 200) {
+    res.status(400).json({ error: "Invalid question id." });
+    return;
+  }
+  const session = await requireSession(req, res);
+  if (session) res.json(pictureView(session, questionId, new Date()));
 });
 
 router.post("/study/sessions/:id/check-in", async (req, res): Promise<void> => {

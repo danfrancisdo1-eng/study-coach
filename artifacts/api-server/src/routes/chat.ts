@@ -13,7 +13,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, homeChatsTable, lecturesTable, studySessionsTable, studyStatesTable, type HomeChatAction, type HomeChatMessage } from "@workspace/db";
 import { SendHomeChatMessageBody } from "@workspace/api-zod";
 import { complete } from "../ai";
-import * as coachPrompt from "../prompts/coach.v40";
+import * as coachPrompt from "../prompts/coach.v41";
 import { daysUntil, isSyllabus, setSizeOf } from "../lib/syllabus";
 import { courseContext, NOTES_BLOCK, PLANNING } from "../lib/course-context";
 import { indexText, routedContext, sectionsOf, wordSearch } from "../lib/course-sections";
@@ -29,7 +29,7 @@ import { saveExamGuide } from "../lib/exam-guide-state";
 import { eventsFrom, resultsHistoryText, weakConcepts } from "../lib/results-history";
 import { countdownFocus, reportFacts, reportFactsText } from "../lib/readiness";
 import { ReplyExtractor, sseEvent } from "../lib/reply-stream";
-import { LESSON_CHIPS, LESSON_START, currentLesson, lessonMisses, lessonOrder, lessonText, nextMiss, type LessonMeta, type LessonMiss, type PlanCard } from "../lib/lesson";
+import { LESSON_CHIPS, LESSON_START, currentLesson, lessonMisses, lessonOrder, lessonText, nextMiss, pictureFor, type LessonMeta, type LessonMiss, type PlanCard } from "../lib/lesson";
 import { TECHNIQUE_LABELS, memoryCardsView, missesOf } from "../lib/memory-cards";
 import { DAILY_SET, dailyLine, dailyReps, dailyText, firstMessageToday, localDay } from "../lib/daily-reps";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
@@ -813,9 +813,11 @@ async function sendChatBody(req: Request, reply: (status: number, body: unknown)
   const gradedSession = quiz?.graded && lastQuizSession?.quiz?.grade ? lastQuizSession : null;
   const previousLesson = gradedSession ? currentLesson(messages, gradedSession.id) : null;
   let lessonState: { order: string[]; misses: LessonMiss[]; previous: number } | null = null;
+  let lessonCards: PlanCard[] | null = null;
   if (gradedSession && (previousLesson || (content === LESSON_START && missesOf(gradedSession.quiz!.questions).length))) {
     const session = previousLesson ? gradedSession : await settledCards(ownerId, gradedSession);
     const cards = readyCards(session);
+    lessonCards = cards;
     const order = previousLesson?.order ?? lessonOrder(session.quiz!.questions, cards);
     const misses = lessonMisses(order, session.quiz!.questions, cards);
     if (misses.length) lessonState = { order, misses, previous: previousLesson?.miss ?? 0 };
@@ -870,10 +872,13 @@ async function sendChatBody(req: Request, reply: (status: number, body: unknown)
   if (content === FINISHED_SET && quiz?.graded && quiz.graded.missed.length > 0) coach = { ...coach, suggestions: [LESSON_START] };
   // D-203: which miss this reply teaches; under a miss the chips are "Got it" / "Not yet". A set or deck started instead ends the walk.
   let lessonMeta: LessonMeta | null = null;
+  let pictureMeta: { sessionId: string; questionId: string } | null = null;
   if (lessonState && gradedSession) {
     const movedOn = coach.actions.some((a) => a.type === "start_quiz" || a.type === "start_flashcards");
     const miss = movedOn ? 0 : nextMiss(lessonState.previous, lessonState.misses.length, coach.teaching ?? 0);
     lessonMeta = { sessionId: gradedSession.id, order: lessonState.order, miss };
+    // D-216: the reply that first teaches a pictured miss carries the picture (the app shows it under the Memory hack).
+    pictureMeta = pictureFor(gradedSession.id, lessonState.order, lessonState.previous, miss, lessonCards);
     if (miss > 0) coach = { ...coach, suggestions: [...LESSON_CHIPS] };
   }
   const plan = planActions(courses, coach.actions);
@@ -1148,7 +1153,7 @@ async function sendChatBody(req: Request, reply: (status: number, body: unknown)
   const next: HomeChatMessage[] = [
     ...messages,
     { id: randomUUID(), role: "user" as const, content, at: now, ...(content === LESSON_START ? { hidden: true } : {}) },
-    { id: randomUUID(), role: "assistant" as const, content: coach.reply, at: new Date().toISOString(), actions: done, ...(coach.suggestions.length ? { suggestions: coach.suggestions } : {}), ...(lessonMeta ? { lesson: lessonMeta } : {}) },
+    { id: randomUUID(), role: "assistant" as const, content: coach.reply, at: new Date().toISOString(), actions: done, ...(coach.suggestions.length ? { suggestions: coach.suggestions } : {}), ...(lessonMeta ? { lesson: lessonMeta } : {}), ...(pictureMeta ? { picture: pictureMeta } : {}) },
   ].slice(-MAX_MESSAGES);
   let saved: { messages: HomeChatMessage[]; version: number } | undefined;
   if (!existing) {

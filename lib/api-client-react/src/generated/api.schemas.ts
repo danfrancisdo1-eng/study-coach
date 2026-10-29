@@ -645,6 +645,11 @@ export interface StudyMemoryCard {
   lockIn: StudyMemoryCardLockIn;
   /** @nullable */
   keyConcern: string | null;
+  /**
+     * D-216: the scene drawn for this card, or null
+     * @nullable
+     */
+  picture?: string | null;
 }
 
 export interface StudyMemoryCards {
@@ -674,6 +679,25 @@ export interface StudySession {
   flashcards?: StudyFlashcardDeck | null;
   /** D-194: memory cards for the graded set's top misses; null when nothing was missed or the set is not graded. */
   memoryCards?: StudyMemoryCards | null;
+}
+
+export type MemoryPictureStatus = typeof MemoryPictureStatus[keyof typeof MemoryPictureStatus];
+
+
+export const MemoryPictureStatus = {
+  ready: 'ready',
+  drawing: 'drawing',
+  none: 'none',
+} as const;
+
+/**
+ * D-216: a memory-hack picture. data (base64) and mimeType only when status is ready.
+ */
+export interface MemoryPicture {
+  status: MemoryPictureStatus;
+  mimeType?: string;
+  /** Base64 image */
+  data?: string;
 }
 
 export type CourseResultsTopicsItem = {
@@ -996,6 +1020,14 @@ export const HomeChatMessageRole = {
   assistant: 'assistant',
 } as const;
 
+/**
+ * D-216: this coach reply teaches a miss that has a memory-hack picture; the app fetches it with getMemoryPicture and shows it under the Memory hack
+ */
+export type HomeChatMessagePicture = {
+  sessionId: string;
+  questionId: string;
+};
+
 export type HomeChatMessageReportedReason = typeof HomeChatMessageReportedReason[keyof typeof HomeChatMessageReportedReason];
 
 
@@ -1024,6 +1056,8 @@ export interface HomeChatMessage {
   suggestions?: string[];
   /** True for the app-written greeting that opens a new study session (clients draw a divider above it) */
   sessionStart?: boolean;
+  /** D-216: this coach reply teaches a miss that has a memory-hack picture; the app fetches it with getMemoryPicture and shows it under the Memory hack */
+  picture?: HomeChatMessagePicture;
   /** The student reported this coach reply (D-046) */
   reported?: HomeChatMessageReported;
 }
