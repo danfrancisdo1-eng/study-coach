@@ -37,6 +37,7 @@ payment data (none yet), location, contacts, advertising identifiers. No analyti
 | Clerk | email, name, sign-in method, session tokens | sign-up / sign-in | Clerk DPA; no training use |
 | Anthropic (Claude) | messages, course names, selected material text, question sets, answers, results summary, exam guide, memory sheet | every coach turn, set, deck, grading, flag re-check, web lookup | API terms: not used to train models |
 | OpenAI | lecture audio (for transcription only) | when the student taps Transcribe | API terms: not used to train models |
+| OpenAI (image model) | a one-sentence scene description for a memory-hack picture (D-216); no name, answers or material | after a graded set, at most 2 per set, only when the memory coach decides a picture helps most | API terms: not used to train models |
 | Web search (via Anthropic's web search tool) | the search query only (exam name/topic) | exam guide lookup; "search the web" requests | as above |
 | RevenueCat | the account id (as app user id) and Apple purchase receipts | when the student subscribes or restores | RevenueCat DPA; no payment card data reaches Study Coach |
 | Render | hosts the API and the database | always | Render DPA |
@@ -60,6 +61,7 @@ Study Coach has no sharing feature (the session-report share was removed in D-08
 - User content: other user content (study material, messages, recordings' transcripts) — linked to the user — app functionality.
 - Identifiers: user id — linked — app functionality.
 - Photos or Videos and Audio Data — linked — app functionality (a picked photo goes to Anthropic to be read; a recording the student transcribes goes to OpenAI).
+- Memory-hack pictures (D-216): generated images, stored inside the graded set's record in the account (no separate file store yet; a file store can replace it at launch); deleted with the account.
 - Purchases: purchase history — linked — app functionality (RevenueCat).
 - Usage data: product interaction (daily use counts, AI use) — linked — app functionality, analytics.
 - Diagnostics: other diagnostic data (server error logs tied to the account) — linked — app functionality. No crash SDK.

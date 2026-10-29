@@ -604,6 +604,8 @@ export interface CoachCase {
   lesson?: { text: string; previous: number; total: number };
   /** D-203: the "teaching" number the reply must give (checked by code). */
   expectTeaching?: number;
+  /** D-216 (coach.v41): the plan shows a picture under this reply's Memory hack: the hack is "Picture it" with no "see the picture" talk (checked by code). */
+  pictureHack?: boolean;
   /** D-204 (coach.v37): the walk's layout, checked by code: "first" opens with the Your misses title, "miss" teaches a
    * miss, both with one thought per paragraph and exactly one Memory hack; "none" (wrap-up, moving on) has neither title. */
   walkFormat?: "first" | "miss" | "none" | "wrap";
@@ -1596,6 +1598,9 @@ export interface MemoryCardsCase {
   mustMention?: Record<string, RegExp>;
   /** The set is weak: the set note must not praise it. */
   weakSet?: boolean;
+  /** D-216 (memory-cards.v4): these cards must have a picture / must not (by question_id); checked by code. */
+  pictureFor?: string[];
+  noPictureFor?: string[];
   expectations: string[];
 }
 
@@ -1646,6 +1651,16 @@ export const memoryCardsCases: MemoryCardsCase[] = [
     keyConcern: ["q8"], expectations: ["key_concern says the key looks wrong because sodium's symbol is Na (from natrium)", "The card builds no memory trick on 'So'; it says the key marks So, that the real symbol is Na, and that the student can report it for a re-check"],
   },
   {
+    name: "pictures (D-216): only where seeing it is the best way, at most two, never words in them", courseName: "Microsoft AI-103", kind: "exam", recentTechniques: [], courseNotes: "",
+    misses: [
+      miss("p1", "Computer vision: detection vs segmentation", "You need the exact outline of each tumor in a scan, pixel by pixel. Which computer vision task is this?", ["Image classification", "Object detection", "Semantic segmentation", "OCR"], "Semantic segmentation", "Object detection", "Detection draws boxes; segmentation labels every pixel, giving the exact shape."),
+      miss("p2", "Responsible AI principles", "Which list is Microsoft's six Responsible AI principles?", ["Fairness, reliability and safety, privacy and security, inclusiveness, transparency, accountability", "Fairness, efficiency, privacy, inclusiveness, transparency, accountability", "Safety, speed, privacy, fairness, openness, accountability", "Fairness, reliability, security, scale, transparency, accountability"], "Fairness, reliability and safety, privacy and security, inclusiveness, transparency, accountability", "Fairness, efficiency, privacy, inclusiveness, transparency, accountability", "The six are fairness, reliability and safety, privacy and security, inclusiveness, transparency and accountability."),
+      miss("p3", "Azure AI Search: port", "Which port does a client use to call the Azure AI Search REST API over HTTPS?", ["80", "443", "8080", "22"], "443", "80", "HTTPS uses port 443; 80 is plain HTTP."),
+    ],
+    pictureFor: ["p1"], noPictureFor: ["p3"],
+    expectations: ["At most two cards have a picture, and the detection-vs-segmentation card is one of them", "Every picture is one simple, concrete scene with no words, letters, numbers or labels in it, safe for a teenager, and its card's memory tool describes the same scene"],
+  },
+  {
     name: "a weak set of 5: earned encouragement, varied techniques", courseName: "Google Cloud Digital Leader", kind: "exam", recentTechniques: [], courseNotes: "", weakSet: true,
     misses: [
       miss("a1", "Data: BigQuery", "Which service is a serverless data warehouse for SQL analytics on petabytes?", ["Cloud SQL", "BigQuery", "Bigtable", "Spanner"], "BigQuery", "Cloud SQL", "BigQuery is the serverless analytics warehouse; Cloud SQL is managed MySQL/Postgres for apps."),
@@ -1675,7 +1690,27 @@ function techniqueCases(): CoachCase[] {
   const reportCard = "### 🎯 Coach's evaluation\n- **8 of 10 (80%).** Nice set.\n- **Still shaky:** Maslow's order, neuron parts.";
   const teachMiss1 = "### 🔁 Your misses\n\nLet's go through the ones you missed, one at a time.\n\nFirst up: the order of Maslow's hierarchy.\n\nThe answer was **physiological, safety, love and belonging, esteem, self-actualization**. You put safety first, which is easy to do because feeling safe sounds like the most basic need.\n\n### 🧠 Memory hack\n\n**Side by side.** Physiological is the body: food, water, sleep. Safety comes after, once the body is taken care of.\n\nBody first, then safety.\n\nGot it?";
   const base = { courses: [course], firstVisit: false, focusCourseId: "psy", today: "2026-10-24", quiz, maxEmojis: 2 };
+  // D-216 (coach.v41): a miss whose plan comes with a picture.
+  const visionCourse = { id: "ai103", name: "Microsoft AI-103", kind: "exam" as const, examDate: "2026-11-05", daysLeft: 12, materials: 3, lectures: 0 };
+  const visionMissed = [{ concept: "Implement computer vision solutions — segmentation", prompt: "You need the exact outline of each tumor in a scan, pixel by pixel. Which computer vision task is this?", chose: "Object detection", correct: "Semantic segmentation", explanation: "Detection draws boxes; segmentation labels every pixel, giving the exact shape." }];
+  const visionQuiz = { courseName: "Microsoft AI-103", topic: "All topics", kind: "practice" as const, answered: 10, total: 10, graded: { correct: 9, percent: 90, missed: visionMissed } };
+  const visionText = "1. Q: You need the exact outline of each tumor in a scan, pixel by pixel. Which computer vision task is this? | they chose: Object detection | right answer: Semantic segmentation | why: Detection draws boxes; segmentation labels every pixel, giving the exact shape. | the plan: why it was tempting: both find things in an image; the one thing to remember: Detection boxes it; segmentation colours it in.; a way to remember it (Picture it): Picture a cat: detection draws a box around it, segmentation colours in the cat itself, every pixel.; a picture of this is shown under your Memory hack: Two cats side by side: the left one with a dashed red box drawn around it, the right one coloured in solid blue, edge to edge.";
+  const visionReport = "### 🎯 Coach's evaluation\n- **9 of 10 (90%).** Strong set.\n- **Still shaky:** segmentation.";
   return [
+    {
+      courses: [visionCourse], firstVisit: false, focusCourseId: "ai103", today: "2026-10-24", quiz: visionQuiz, maxEmojis: 2,
+      name: "memory hack with a picture (D-216): Picture it, the same scene in words, no 'see the picture' talk (AI-103)",
+      history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: visionReport }],
+      lesson: { text: visionText, previous: 0, total: 1 }, expectTeaching: 1, walkFormat: "first", pictureHack: true,
+      message: "Go over my misses",
+      expectedActions: [], expectedSuggestions: ["Got it", "Not yet"],
+      expectations: [
+        "Teaches the segmentation miss: the right answer is semantic segmentation and object detection was tempting",
+        "The Memory hack is 'Picture it' and its first paragraph describes the same scene as the picture (a box around a cat versus the cat coloured in), with nothing the picture does not show",
+        "Never refers to the picture itself (no 'see the picture/image below', 'as shown')",
+      ],
+      maxWords: 140,
+    },
     {
       ...base, name: "memory hack fits the fact: a list in order gets an acronym, story or chunks, not Side by side (PSY 101 Maslow)",
       history: [{ role: "user", content: "I finished the set." }, { role: "assistant", content: reportCard }],

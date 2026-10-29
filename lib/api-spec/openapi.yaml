@@ -405,6 +405,21 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/StudySession" }
         "404": { description: Session not found }
+  /study/sessions/{sessionId}/pictures/{questionId}:
+    parameters:
+      - { name: sessionId, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: questionId, in: path, required: true, schema: { type: string, maxLength: 200 } }
+    get:
+      operationId: getMemoryPicture
+      tags: [study]
+      summary: "D-216: the memory-hack picture for one missed question of the graded set (ready, still drawing, or none)"
+      responses:
+        "200":
+          description: The picture, or its state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MemoryPicture" }
+        "404": { description: Session not found }
   /study/lectures:
     get:
       operationId: listLectures
@@ -924,6 +939,14 @@ components:
         cards:
           type: array
           items: { $ref: "#/components/schemas/StudyMemoryCard" }
+    MemoryPicture:
+      type: object
+      description: "D-216: a memory-hack picture. data (base64) and mimeType only when status is ready."
+      required: [status]
+      properties:
+        status: { type: string, enum: [ready, drawing, none] }
+        mimeType: { type: string }
+        data: { type: string, description: Base64 image }
     StudyMemoryCard:
       type: object
       required: [questionId, concept, diagnosis, technique, techniqueLabel, headline, whyYouMissed, correctAnswer, memoryTool, recallCue, visualCue, lockIn, keyConcern]
@@ -948,6 +971,7 @@ components:
                 answer: { type: string }
             - { type: "null" }
         keyConcern: { type: [string, "null"] }
+        picture: { type: [string, "null"], description: "D-216: the scene drawn for this card, or null" }
     CourseResults:
       type: object
       required: [topics, concepts, weak, sets]
@@ -1143,6 +1167,13 @@ components:
         actions: { type: array, items: { $ref: "#/components/schemas/HomeChatAction" } }
         suggestions: { type: array, items: { type: string }, description: "Tap-to-reply chips under an assistant message" }
         sessionStart: { type: boolean, description: "True for the app-written greeting that opens a new study session (clients draw a divider above it)" }
+        picture:
+          description: "D-216: this coach reply teaches a miss that has a memory-hack picture; the app fetches it with getMemoryPicture and shows it under the Memory hack"
+          type: object
+          required: [sessionId, questionId]
+          properties:
+            sessionId: { type: string }
+            questionId: { type: string }
         reported:
           description: The student reported this coach reply (D-046)
           type: object
