@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-10-31 — D-218: The exam score sheet folds its answers away; the old memory cards screen is removed
+- Dan: "proceed" (on the two cleanups: the exam sheet still listed the misses the practice card no longer shows, D-207; two unused files from D-203).
+- **Exam score sheet (QuizCard):** the "Questions you missed" list is folded under one link, "See the answers and report a question (N)". It stays there (not deleted) because an exam shows no feedback while it runs, so it is the only place to report a bad exam question (CLAUDE.md §6). The coach goes over the misses in the chat, as after a practice set.
+- **Removed (Dan's OK):** components/MemoryCards.tsx, lib/memory-cards.ts and its test on the phone, unused since D-203 replaced the memory cards bar with the walk. The server's memory cards (the coach's plan) are unchanged. Build #111.
+- **Decided by:** Dan.
+
 ## 2026-10-29 — D-217: Memory hack pictures on the phone
 - The phone half of D-216 (mock approved: "I like it. Pretty slick."; Dan's choices: everyone, at most 2 a set; stored in the set's record).
 - A reply that first teaches a pictured miss carries `picture` ({sessionId, questionId}); the chat shows the picture under the Memory hack's first paragraph (lib/memory-picture.ts `pictureSlot`), in the typed-out reply as soon as that paragraph is there. components/MemoryPicture.tsx asks GET /study/sessions/{id}/pictures/{questionId}: a soft placeholder while it reads "drawing" (asked again every 3 s, up to 3 minutes), the picture (3:2, rounded) when ready, nothing when there is none. Tap to see it full screen; tap to close.
