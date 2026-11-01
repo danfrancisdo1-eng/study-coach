@@ -1,5 +1,18 @@
 # Progress
 
+## Session W3 — 2026-11-01 — web uses the phone's logic files (D-302), branch `web/shared-logic`
+
+### Done
+- Dan checked step 1 live: signed in with Google on the Render address, the account page shows his courses (Microsoft AI-103, NCP-Gen AI LLMs; AGENTIC AI was never on this account).
+- Step 2: seven duplicated logic files removed from the web; it imports the phone's (lib/*). Web chat draws the newer "section"/"tip" lines as headings, as before.
+- Verified here: typecheck passes; `pnpm test` 435 tests, 433 pass, 1 skipped, 1 fail (ai-study-requests.test.mjs, shallow-clone history, fails on main too); web build passes both with the full install and in a clean copy installed like the Render image (web + server only); the signed-in account page loads in Chromium against the real server and database (test sign-in); old vs new chat parser give the same drawing on sample replies.
+
+### Needs Dan to check (after merge and the Render deploy)
+- Nothing new to see: the web looks the same. Reload, sign in, send the coach one message.
+
+### Next
+- Step 3: mock-up of the web Coach chat (live typing, chips, report a reply, consent, upgrade screen) for Dan's approval.
+
 ## Session W2 — 2026-11-01 — web sign-in crash fixed (D-301), branch `web/fix-query-client`
 
 ### Done

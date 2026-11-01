@@ -18,8 +18,8 @@ import MaterialIntake from './MaterialIntake';
 import HomeChat from './HomeChat';
 import DeleteAccount from './DeleteAccount';
 import { readLegacyStudyData } from './lib/legacy-import';
-import { courseExamFacts, factPicks, needsFactsLookup, timedChoices } from './lib/exam-facts';
-import { passMarkLine } from './lib/exam-sheet';
+import { courseExamFacts, factPicks, needsFactsLookup, timedChoices } from '@phone-lib/exam-facts';
+import { passMarkLine } from '@phone-lib/exam-sheet';
 
 type AccountState = {
   aiConsent: boolean;

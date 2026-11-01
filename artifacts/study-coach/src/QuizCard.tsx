@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { clockText, clockTone, scoreLine, secondsLeft, timeUsedLine } from './lib/exam-sheet';
+import { clockText, clockTone, scoreLine, secondsLeft, timeUsedLine } from '@phone-lib/exam-sheet';
 import ProgressBar from './ProgressBar';
-import { topicParts } from './lib/topic-label';
-import { writtenProgress } from './lib/progress';
+import { topicParts } from '@phone-lib/topic-label';
+import { writtenProgress } from '@phone-lib/progress';
 import { getGetStudySessionQueryKey, useFlagStudyQuestion, useGetStudySession, useGradeStudyQuiz, useSaveStudyAnswer, type StudyQuestionFlagInputKind, type StudySession, type StudyQuizQuestionsItem } from '@workspace/api-client-react';
 
 /**

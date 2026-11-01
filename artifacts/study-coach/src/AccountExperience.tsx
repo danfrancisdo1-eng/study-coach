@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { ArrowLeft, ArrowRight, BookOpen, Check, FileText, Pencil, Plus, Send, ShieldCheck, UploadCloud, X } from 'lucide-react';
 import './account-experience.css';
-import { factsFromInputs, realExamLine, type ExamFacts } from './lib/exam-facts';
+import { factsFromInputs, realExamLine, type ExamFacts } from '@phone-lib/exam-facts';
 
 /** Exact once-per-session materials questions; the parent persists when it has been answered. */
 export const MATERIALS_CHECK_PROMPT = 'Do you have any course materials you want to add?';

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useExtractStudyWebsite, type StudyMaterialExtraction } from '@workspace/api-client-react';
 import ProgressBar, { useElapsed } from './ProgressBar';
-import { materialWorkMs, timeLeftText, uploadThenWork } from './lib/progress';
+import { materialWorkMs, timeLeftText, uploadThenWork } from '@phone-lib/progress';
 import { uploadMaterial } from './lib/material-upload';
 
 export default function MaterialIntake({ courseName, consent, files, onFilesChange, onSave }: {
