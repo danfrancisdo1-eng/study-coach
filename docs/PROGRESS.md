@@ -1,5 +1,14 @@
 # Progress
 
+## Session W2 — 2026-11-01 — web sign-in crash fixed (D-301), branch `web/fix-query-client`
+
+### Done
+- After step 1 went live, Dan signed in and got "Something went wrong". Cause: two copies of react-query in the web bundle. Fixed in vite.config.ts.
+- Verified here: typecheck passes; `pnpm test` 435 tests, 433 pass, 1 skipped, 1 fail (ai-study-requests.test.mjs, needs an old commit missing from this shallow clone; fails on main too); new tests/web-build.test.mjs (fails before the fix, passes after). The account page loads in Chromium against the real server and database with a test sign-in, empty and with data shaped like Dan's.
+
+### Needs Dan to check (after merge and the Render deploy)
+- Reload https://study-coach-api-pskt.onrender.com/ , sign in with Google: the account page with the coach and AGENTIC AI.
+
 ## Session W1 — 2026-11-01 — web app served by Render (D-300), branch `web/hosting`
 
 ### Done

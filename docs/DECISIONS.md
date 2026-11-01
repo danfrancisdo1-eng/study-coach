@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-11-01 — D-301: The web build keeps one copy of react-query
+- After D-300 went live, Dan signed in with Google on the Render address and got "Something went wrong" right after sign-in.
+- Cause: pnpm links lib/api-client-react to a react-query copy built for the phone's newer React (19.2.3), while the web app uses its own copy (React 19.1.0). The web bundle held both, so the generated hooks looked for a QueryClient in the copy the page never set up ("No QueryClient set").
+- Fix: vite.config.ts dedupes @tanstack/react-query (as it already did react and react-dom). tests/web-build.test.mjs builds the web app and checks there is one copy (fails on the old config with 2, passes with 1).
+- Reproduced and checked with the real server and database here, signed in as a test account with a stub sign-in, on an empty account and on one shaped like Dan's (courses with coach notes, uploads, an exam with date, facts and guide).
+- **Decided by:** Claude (bug fix), reported by Dan.
+
 ## 2026-11-01 — D-300: The web app is served by the API server on Render (web parity, step 1)
 - Dan chose "full" web parity (same accounts, same data, phone features) and OK'd the plan: one small draft PR per step, hosting first. The web session uses IDs from D-300 up.
 - **Hosting:** the Render service study-coach-api also serves the built web app (Step 6, Option A in docs/plans/move-off-replit.md): one service, one address, no extra cost, no cross-site setup. The Dockerfile builds artifacts/study-coach; the server serves artifacts/study-coach/dist/public (WEB_DIST_DIR) with a page fallback for app routes. /api, /privacy, /support and /reps/* stay the server's own (lib/web-app.ts SERVER_PATHS). Without a web build the server runs the API only, as before.

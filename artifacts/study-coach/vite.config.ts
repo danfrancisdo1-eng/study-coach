@@ -60,7 +60,9 @@ export default defineConfig({
         'attached_assets',
       ),
     },
-    dedupe: ['react', 'react-dom'],
+    // D-301: one copy of react-query. lib/api-client-react otherwise gets the copy pnpm links
+    // for the phone's newer React, and its hooks then find no QueryClient ("No QueryClient set").
+    dedupe: ['react', 'react-dom', '@tanstack/react-query'],
   },
   root: path.resolve(import.meta.dirname),
   build: {
