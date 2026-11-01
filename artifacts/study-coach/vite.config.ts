@@ -1,7 +1,7 @@
 import path from 'path';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'vite';
+import { defineConfig, transformWithEsbuild, type Plugin } from 'vite';
 
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 
@@ -30,9 +30,28 @@ if (!basePath) {
   );
 }
 
+// D-302: the phone's platform-free logic files (artifacts/study-coach-mobile/lib), read in place.
+const phoneLib = path.resolve(import.meta.dirname, '..', 'study-coach-mobile', 'lib');
+const phoneLibPattern = new RegExp(`^${(phoneLib + path.sep).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^?]*\\.ts$`);
+const isPhoneLib = (id: string) => phoneLibPattern.test(id);
+
+// Vite would read the phone folder's tsconfig.json for these files, and it extends
+// expo/tsconfig.base, which the web/server image does not install. The files are plain
+// TypeScript, so they are compiled here with fixed settings instead (vite:esbuild skips them).
+function phoneLibTypeScript(): Plugin {
+  return {
+    name: 'study-coach:phone-lib',
+    async transform(code, id) {
+      if (!isPhoneLib(id)) return null;
+      return transformWithEsbuild(code, id, { loader: 'ts', tsconfigRaw: '{"compilerOptions":{"verbatimModuleSyntax":false}}' });
+    },
+  };
+}
+
 export default defineConfig({
   base: basePath,
   plugins: [
+    phoneLibTypeScript(),
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
@@ -50,9 +69,16 @@ export default defineConfig({
         ]
       : []),
   ],
+  esbuild: {
+    // Vite's defaults (TypeScript and JSX, not .js), minus the phone's logic files (see above).
+    include: /\.(m?ts|[jt]sx)$/,
+    exclude: [/\.js$/, phoneLibPattern],
+  },
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, 'src'),
+      // D-302: platform-free logic shared with the phone app, read in place (never edited from here).
+      '@phone-lib': phoneLib,
       '@assets': path.resolve(
         import.meta.dirname,
         '..',

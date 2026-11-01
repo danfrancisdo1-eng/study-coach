@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetStudySessionQueryKey, useGetStudySession, useReviewFlashcard, type StudySession } from '@workspace/api-client-react';
-import { cardLines } from './lib/card-text';
-import { spansOf } from './lib/coach-text';
-import { topicParts } from './lib/topic-label';
+import { cardLines } from '@phone-lib/card-text';
+import { spansOf } from '@phone-lib/coach-text';
+import { topicParts } from '@phone-lib/topic-label';
 
 /** Flashcards in the home chat (D-021), web version of the iPhone FlashcardDeck. */
 export default function FlashcardDeck({ sessionId, onFinished, onError }: {

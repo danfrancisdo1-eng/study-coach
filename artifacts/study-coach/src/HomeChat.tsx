@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { blocksOf, type Span } from './lib/coach-text';
-import { topicParts } from './lib/topic-label';
+import { blocksOf, type Span } from '@phone-lib/coach-text';
+import { topicParts } from '@phone-lib/topic-label';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetHomeChatQueryKey, useCreateReviewSheet, useGetHomeChat, useOpenHomeChat, useSendHomeChatMessage, type HomeChat as HomeChatData } from '@workspace/api-client-react';
-import { reviewHtml } from './lib/review-html';
+import { reviewHtml } from '@phone-lib/review-html';
 import QuizCard from './QuizCard';
 import ProgressBar, { useElapsed } from './ProgressBar';
-import { estimate } from './lib/progress';
+import { estimate } from '@phone-lib/progress';
 import FlashcardDeck from './FlashcardDeck';
-import type { TimedSize } from './lib/exam-facts';
+import type { TimedSize } from '@phone-lib/exam-facts';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.';
 const REVIEW_CHIP = 'Review sheet (PDF)';
@@ -132,7 +132,8 @@ export default function HomeChat({ aiConsent, busy, courseId, timedChoices = [],
                 ? blocksOf(turn.content).map((block, i) => {
                   // D-098: bold section headings with space above, bullets, inline bold.
                   const inline = (spans: Span[]) => spans.map((sp, k) => sp.bold ? <strong key={k}>{sp.text}</strong> : <span key={k}>{sp.text}</span>);
-                  if (block.kind === 'heading') return <p key={i} style={{ fontWeight: 700, marginTop: i > 0 ? '1em' : 0 }}>{block.spans[0]?.text}</p>;
+                  // D-302: the shared parser names '###' lines 'section' and '####' lines 'tip'; drawn as headings, as before.
+                  if (block.kind === 'heading' || block.kind === 'section' || block.kind === 'tip') return <p key={i} style={{ fontWeight: 700, marginTop: i > 0 ? '1em' : 0 }}>{block.spans[0]?.text}</p>;
                   if (block.kind === 'bullet') return <p key={i} style={{ paddingLeft: '1em', textIndent: '-.8em' }}>• {inline(block.spans)}</p>;
                   if (block.kind === 'popquiz') return <div key={i} role="button" tabIndex={0} data-testid="chat-pop-quiz" className="sc-miss-hook" style={{ borderRadius: 14, padding: '12px 14px', margin: '8px 0', cursor: 'text' }}
                     onClick={() => inputRef.current?.focus()} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') inputRef.current?.focus(); }}>

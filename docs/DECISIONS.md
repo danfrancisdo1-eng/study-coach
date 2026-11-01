@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-11-01 — D-302: The web app reads the phone's logic files in place
+- Step 2 of web parity (Dan: "reuse the phone's logic files as-is", no phone edits). The web had its own older copies of seven platform-free files; they are removed and the web imports the phone's: coach-text, exam-facts, exam-sheet, card-text, review-html, topic-label, progress (artifacts/study-coach-mobile/lib, alias `@phone-lib/*` in the web's vite.config.ts and tsconfig.json). The phone's versions are supersets of the web copies (same functions, plus newer ones).
+- The web never edits these files; a change there is the phone session's, and the web picks it up. Moving shared logic into lib/ waits for a quiet moment (it would touch the phone's imports).
+- The shared chat parser names "###" lines "section" and "####" lines "tip"; the web chat draws both as headings, exactly as its old copy did (checked on sample coach replies: no difference in what is drawn).
+- The web build compiles these files with fixed settings instead of the phone folder's tsconfig.json, which extends expo/tsconfig.base and is not installed in the Render image (found by rehearsing the image's install: the build failed until this was in).
+- **Decided by:** Dan (plan approval).
+
 ## 2026-11-01 — D-301: The web build keeps one copy of react-query
 - After D-300 went live, Dan signed in with Google on the Render address and got "Something went wrong" right after sign-in.
 - Cause: pnpm links lib/api-client-react to a react-query copy built for the phone's newer React (19.2.3), while the web app uses its own copy (React 19.1.0). The web bundle held both, so the generated hooks looked for a QueryClient in the copy the page never set up ("No QueryClient set").
