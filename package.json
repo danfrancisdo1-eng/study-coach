@@ -7,7 +7,7 @@
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
-    "test": "node --test --test-concurrency=1 artifacts/api-server/tests/*.test.mjs artifacts/study-coach-mobile/lib/*.test.mjs"
+    "test": "node --test --test-concurrency=1 artifacts/api-server/tests/*.test.mjs artifacts/study-coach-mobile/lib/*.test.mjs artifacts/study-coach/src/lib/*.test.mjs"
   },
   "private": true,
   "dependencies": {

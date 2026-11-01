@@ -1,0 +1,112 @@
+/* D-303: the web Coach screen, in the phone's look (constants/colors.ts, D-170: indigo primary, amber
+   highlight; system font for chrome, Fraunces for titles). Light and dark follow the device, like the phone. */
+.rr-app {
+  --rr-bg: #f6f7fa; --rr-fg: #15192a; --rr-card: #ffffff; --rr-muted: #eef1f6; --rr-muted-fg: #5b6578;
+  --rr-border: #d9dee7; --rr-primary: #2b4fd8; --rr-primary-end: #3d5fe8; --rr-primary-fg: #ffffff; --rr-primary-text: #2548b8;
+  --rr-accent: #e6eefb; --rr-chip-bg: #fff6df; --rr-chip-border: #e9cf8a; --rr-chip-text: #8a5a00;
+  --rr-hook-bg: #fff6df; --rr-hook-text: #5c3d00; --rr-wrong: #9f2a22; --rr-shade: rgba(10, 12, 24, .45);
+  --rr-display: 'Fraunces', Georgia, serif;
+  --rr-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  .rr-app {
+    --rr-bg: #0f1726; --rr-fg: #e9eef6; --rr-card: #182235; --rr-muted: #1c2740; --rr-muted-fg: #93a1b8;
+    --rr-border: #2a3650; --rr-primary: #7c9bff; --rr-primary-end: #5b7cf0; --rr-primary-fg: #0f1726; --rr-primary-text: #7c9bff;
+    --rr-accent: #1f2f4f; --rr-chip-bg: #1c2740; --rr-chip-border: #3a4a6a; --rr-chip-text: #f2b544;
+    --rr-hook-bg: #3a2e12; --rr-hook-text: #ffd27a; --rr-wrong: #ff6b61; --rr-shade: rgba(0, 0, 0, .6);
+    color-scheme: dark;
+  }
+}
+
+.rr-app { min-height: 100vh; display: flex; background: var(--rr-bg); color: var(--rr-fg); font-family: var(--rr-ui); font-size: 15px; line-height: 1.5; }
+.rr-app button, .rr-app input { font: inherit; }
+.rr-app :focus-visible { outline: 3px solid var(--rr-primary); outline-offset: 2px; }
+
+/* Menu: a side column on a computer, tabs along the bottom on a phone. */
+.rr-nav { flex: 0 0 236px; box-sizing: border-box; padding: 28px 18px; display: flex; flex-direction: column; gap: 6px; border-right: 1px solid var(--rr-border); background: var(--rr-card); position: sticky; top: 0; height: 100vh; }
+.rr-brand { font-family: var(--rr-display); font-weight: 600; font-size: 21px; padding: 0 10px 22px; }
+.rr-nav-link { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border-radius: 12px; color: var(--rr-fg); text-decoration: none; }
+.rr-nav-link:hover { background: var(--rr-muted); }
+.rr-nav-link[aria-current="page"] { background: var(--rr-accent); color: var(--rr-primary-text); font-weight: 600; }
+.rr-plan { margin-top: auto; padding: 14px 12px; border-radius: 12px; background: var(--rr-muted); font-size: 13px; color: var(--rr-muted-fg); display: grid; gap: 4px; }
+.rr-plan strong { color: var(--rr-fg); font-weight: 600; }
+.rr-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+@media (max-width: 760px) {
+  .rr-app { flex-direction: column; }
+  .rr-nav { position: fixed; inset: auto 0 0 0; height: calc(60px + env(safe-area-inset-bottom, 0px)); align-items: center; flex: none; flex-direction: row; justify-content: space-around; padding: 4px max(8px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)); border-right: 0; border-top: 1px solid var(--rr-border); z-index: 20; }
+  .rr-brand, .rr-plan { display: none; }
+  .rr-nav-link { flex-direction: column; gap: 2px; min-width: 64px; justify-content: center; font-size: 12px; padding: 4px 8px; }
+  .rr-nav-link[aria-current="page"] { background: transparent; }
+  .rr-main { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* Top bar: course chips, the countdown, and the plan line on a phone. */
+.rr-top { position: sticky; top: 0; z-index: 10; background: var(--rr-bg); box-sizing: border-box; padding: 18px max(16px, 3vw) 12px; border-bottom: 1px solid var(--rr-border); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.rr-chips { display: flex; gap: 8px; overflow-x: auto; max-width: 100%; padding-bottom: 2px; }
+.rr-course-chip { flex: none; min-height: 44px; padding: 0 14px; border-radius: 20px; border: 1px solid var(--rr-border); background: var(--rr-card); color: var(--rr-fg); font-size: 14px; cursor: pointer; }
+.rr-course-chip[aria-pressed="true"] { border-color: var(--rr-primary); background: var(--rr-primary); color: var(--rr-primary-fg); font-weight: 600; }
+.rr-countdown { font-size: 14px; color: var(--rr-muted-fg); }
+.rr-countdown strong { color: var(--rr-fg); }
+.rr-plan-inline { display: none; width: 100%; font-size: 13px; color: var(--rr-muted-fg); }
+@media (max-width: 760px) { .rr-plan-inline { display: block; } }
+
+/* The conversation. */
+.rr-thread { flex: 1; box-sizing: border-box; width: 100%; max-width: 820px; align-self: center; padding: 24px max(16px, 3vw); display: flex; flex-direction: column; gap: 16px; }
+.rr-session { text-align: center; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--rr-muted-fg); }
+.rr-user { align-self: flex-end; max-width: 75%; padding: 11px 16px; border-radius: 16px 16px 4px 16px; background: var(--rr-primary); color: var(--rr-primary-fg); white-space: pre-wrap; overflow-wrap: anywhere; }
+.rr-reply { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; border-radius: 16px; background: var(--rr-card); border: 1px solid var(--rr-border); overflow-wrap: anywhere; }
+.rr-reply p { margin: 0; }
+.rr-section { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.rr-section h3 { margin: 0; font-family: var(--rr-display); font-weight: 600; font-size: 19px; line-height: 1.3; text-wrap: balance; }
+.rr-section::after { content: ""; flex: 1; height: 2px; background: var(--rr-primary); opacity: .35; }
+.rr-heading { font-weight: 700; }
+.rr-spaced { margin-top: 6px !important; }
+.rr-bullet { padding-left: 1.1em; text-indent: -.9em; }
+.rr-quote { border-left: 3px solid var(--rr-border); padding-left: 12px; font-weight: 700; }
+.rr-hook { padding: 13px 16px; border-radius: 12px; background: var(--rr-hook-bg); color: var(--rr-hook-text); }
+.rr-hook-title { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.rr-popquiz { padding: 13px 16px; border-radius: 12px; background: var(--rr-accent); border: 0; color: var(--rr-fg); text-align: left; cursor: text; display: grid; gap: 4px; }
+.rr-caret { display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -2px; background: var(--rr-primary); animation: rr-blink 1s steps(1) infinite; }
+@keyframes rr-blink { 50% { opacity: 0; } }
+.rr-thinking { color: var(--rr-muted-fg); font-size: 14px; }
+.rr-note { font-size: 13px; color: var(--rr-muted-fg); }
+.rr-reply-foot { display: flex; justify-content: flex-end; align-items: center; gap: 8px; position: relative; }
+.rr-quiet { min-height: 44px; min-width: 44px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; color: var(--rr-muted-fg); font-size: 13px; cursor: pointer; }
+.rr-quiet:hover, .rr-quiet[aria-expanded="true"] { background: var(--rr-muted); color: var(--rr-fg); }
+.rr-menu { position: absolute; right: 0; bottom: 50px; z-index: 5; width: min(300px, 80vw); box-sizing: border-box; padding: 8px; border-radius: 14px; background: var(--rr-card); border: 1px solid var(--rr-border); box-shadow: 0 12px 32px rgba(10, 12, 24, .22); display: grid; gap: 2px; }
+.rr-menu-title { padding: 6px 10px; font-size: 13px; color: var(--rr-muted-fg); }
+.rr-menu button { min-height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: var(--rr-fg); text-align: left; cursor: pointer; }
+.rr-menu button:hover, .rr-menu button:focus-visible { background: var(--rr-accent); }
+
+.rr-suggestions { display: flex; flex-wrap: wrap; gap: 8px; }
+.rr-chip { min-height: 44px; padding: 0 18px; border-radius: 22px; border: 1px solid var(--rr-chip-border); background: var(--rr-chip-bg); color: var(--rr-chip-text); font-weight: 600; cursor: pointer; }
+.rr-chip:disabled, .rr-course-chip:disabled { opacity: .55; cursor: default; }
+.rr-error { padding: 12px 14px; border-radius: 12px; background: var(--rr-muted); color: var(--rr-wrong); }
+.rr-toast { align-self: flex-start; padding: 10px 14px; border-radius: 12px; background: var(--rr-fg); color: var(--rr-bg); font-size: 14px; }
+
+/* The message box. */
+.rr-composer { box-sizing: border-box; width: 100%; max-width: 820px; align-self: center; padding: 12px max(16px, 3vw) 22px; display: flex; gap: 10px; align-items: center; position: sticky; bottom: 0; background: var(--rr-bg); }
+@media (max-width: 760px) { .rr-composer { bottom: calc(60px + env(safe-area-inset-bottom, 0px)); } }
+.rr-input { flex: 1; min-width: 0; min-height: 44px; box-sizing: border-box; padding: 0 16px; border-radius: 12px; border: 1px solid var(--rr-border); background: var(--rr-card); color: var(--rr-fg); }
+.rr-input::placeholder { color: var(--rr-muted-fg); }
+.rr-primary { min-height: 44px; padding: 0 20px; border-radius: 12px; border: 0; background: linear-gradient(135deg, var(--rr-primary), var(--rr-primary-end)); color: var(--rr-primary-fg); font-weight: 600; cursor: pointer; }
+.rr-primary:disabled { opacity: .55; cursor: default; }
+.rr-primary--wide { width: 100%; min-height: 52px; }
+.rr-secondary { min-height: 44px; width: 100%; border: 0; border-radius: 12px; background: transparent; color: var(--rr-primary-text); font-weight: 600; cursor: pointer; }
+
+/* Dialogs: the AI agreement and the plan limit. */
+.rr-shade { position: fixed; inset: 0; z-index: 40; background: var(--rr-shade); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.rr-dialog { width: min(500px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box; padding: 28px; border-radius: 16px; background: var(--rr-card); color: var(--rr-fg); display: flex; flex-direction: column; gap: 14px; }
+.rr-dialog h2 { margin: 0; font-family: var(--rr-display); font-weight: 600; font-size: 24px; line-height: 1.25; text-wrap: balance; }
+.rr-dialog p { margin: 0; }
+.rr-dialog .rr-reason { color: var(--rr-muted-fg); }
+.rr-notice { display: grid; gap: 12px; }
+.rr-notice div { display: flex; gap: 12px; }
+.rr-notice svg { flex: none; margin-top: 3px; color: var(--rr-primary-text); }
+.rr-callout { padding: 14px 16px; border-radius: 12px; background: var(--rr-muted); }
+.rr-badge { align-self: flex-start; padding: 3px 10px; border-radius: 20px; background: var(--rr-chip-bg); border: 1px solid var(--rr-chip-border); color: var(--rr-chip-text); font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.rr-dialog a { color: var(--rr-primary-text); }
+
+@media (prefers-reduced-motion: reduce) { .rr-caret { animation: none; } }
