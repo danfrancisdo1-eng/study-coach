@@ -15,7 +15,6 @@ import AccountExperience, {
   type ReviewItem, type SessionTurn,
 } from './AccountExperience';
 import MaterialIntake from './MaterialIntake';
-import HomeChat from './HomeChat';
 import DeleteAccount from './DeleteAccount';
 import { readLegacyStudyData } from './lib/legacy-import';
 import { courseExamFacts, factPicks, needsFactsLookup, timedChoices } from '@phone-lib/exam-facts';
@@ -229,13 +228,11 @@ export function AccountPage({ onClassic, onSignOut }: { onClassic: () => void; o
       </select>
     </label> : null}
     {sessionId && sessionQuery.isLoading ? <div className="notice">Restoring your saved session…</div> : sessionId && sessionQuery.error ? <div className="error" role="alert">{message(sessionQuery.error)} <button type="button" onClick={() => void sessionQuery.refetch()} data-testid="button-retry-load-session">Try again</button></div> : <>
-      {!current && <HomeChat aiConsent={state.aiConsent === true} busy={busy} courseId={selectedCourseId}
-        passMark={(() => { const c = (state.courses ?? []).find(item => item?.id === selectedCourseId) as unknown as Record<string, unknown> | undefined; return passMarkLine(courseExamFacts(c ?? {}).passingScore); })()}
-        timedChoices={(() => { const c = (state.courses ?? []).find(item => item?.id === selectedCourseId) as unknown as Record<string, unknown> | undefined; return c && c.kind === 'exam' ? timedChoices(courseExamFacts(c)) : []; })()}
-        factPicks={(() => { const c = (state.courses ?? []).find(item => item?.id === selectedCourseId) as unknown as Record<string, unknown> | undefined; return c && c.kind === 'exam' ? factPicks(courseExamFacts(c)) : null; })()}
-        onPickFacts={async (questions, minutes) => { const c = (state.courses ?? []).find(item => item?.id === selectedCourseId) as unknown as Record<string, unknown> | undefined; if (!selectedCourseId) return; await saveExamFacts.mutateAsync({ courseId: selectedCourseId, data: { questionCount: questions, durationMinutes: minutes, passingScore: courseExamFacts(c).passingScore } }); await stateQuery.refetch(); }}
-        onCoursesChanged={() => void client.invalidateQueries({ queryKey: stateKey })}
-        onOpenSession={id => { setIntakeFiles([]); setSessionId(id); setAdding(false); void client.invalidateQueries({ queryKey: listKey }); }} />}
+      {/* D-303: the coach chat is the Coach tab now; this page keeps courses, materials and the account until they are rebuilt. */}
+      {!current && <section className="ae-card" data-testid="panel-coach-moved" style={{ marginBottom: 17 }}>
+        <div className="ae-card-top"><div><span className="ae-kicker">YOUR COACH</span><h2 className="ae-heading">The coach chat has its own tab</h2></div></div>
+        <a className="ae-button ae-button--ink" href="/coach" data-testid="link-open-coach">Open Coach</a>
+      </section>}
       {!current && courses.length > 0 && (
         <section className="ae-card" data-testid="panel-home-intake" style={{ marginBottom: 17 }}>
           <div className="ae-card-top"><div><span className="ae-kicker">ADD MATERIAL</span><h2 className="ae-heading">Which course?</h2></div></div>

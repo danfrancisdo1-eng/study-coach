@@ -1,5 +1,21 @@
 # Progress
 
+## Session W4 — 2026-11-01 — the web Coach tab (D-303), branch `web/coach-chat`
+
+### Done
+- Step 3 of web parity, from the approved mock: side menu / bottom tabs, course chips and exam countdown, the chat (live typing for the replies the phone streams, Report under each reply), the AI agreement on the first send, the plan line with the live count, the plan-limit dialog (Premium only in the iPhone app). Signed-in "/" opens Coach; Courses and Account still open the old account page.
+- Verified here: typecheck passes; `pnpm test` 442 tests, 440 pass, 1 skipped, 1 fail (ai-study-requests.test.mjs, shallow-clone history, fails on main too); new src/lib/coach-ui.test.mjs (7, now in `pnpm test`); web build passes, also in a clean copy installed like the Render image. Clicked through in Chromium against the real server and database (test sign-in, stand-in AI, limits on, 38 of 40 messages used): agreement → message sent → count 1 of 40 → Report → "Reported for review" → "Got it" types out under its titles → count 0 of 40 → next send opens the limit dialog, the draft is kept; phone width in dark mode, no sideways scroll.
+
+### UX checklist (docs/UX_PRINCIPLES.md), screenshots in the PR
+1. Tap targets ≥ 44 px: PASS (chips, course chips, Report, Send, dialog buttons). 2. One primary action; ≤ 5 tabs: PASS (Send; three tabs). 3. Chunked, scannable answers: PASS (section titles, one thought per paragraph). 4. Familiar patterns: PASS (side menu on a computer, tab bar on a phone, menus and dialogs close with Escape or a click outside). 5. Progress / resume: PASS (the thread per course, the live count). 6. One accent, not color-only: PASS (indigo for the main action, amber chips; "Reported for review" is text). 7. Tokens; dark mode; text size: PASS (the phone's tokens, light and dark checked; scales with browser zoom). 8. Contrast, labels, reduced motion: PASS (the phone's checked pairs; labelled message box, menu and dialogs; the typing caret stops blinking with reduced motion). 9. Paywall rules: PASS (nothing sold on the web; plain OK to close; no trick UI).
+
+### Needs Dan to check (after merge and the Render deploy)
+- Sign in: the Coach tab opens. Pick Microsoft AI-103: the countdown shows if it has an exam date. Send a message, get a reply. Tap Report under it → It is wrong → "Reported for review". Courses and Account open the old page.
+- The live count shows only once PREMIUM_LIMITS=on on Render (off during the beta).
+
+### Next
+- Step 4: Courses and the course screen (mock first).
+
 ## Session W3 — 2026-11-01 — web uses the phone's logic files (D-302), branch `web/shared-logic`
 
 ### Done

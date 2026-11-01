@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-11-01 — D-303: The web Coach tab (web parity step 3)
+- Built from the mock Dan approved (https://claude.ai/artifact/E29bi6eUJatompfxrWZKMu), plus "yes show the live count".
+- **Frame:** the phone's three tabs (Coach, Courses, Account) as a side menu on a computer and tabs along the bottom at phone width (src/coach/AppShell.tsx). Signed-in "/" opens /coach. Courses and Account open the existing account page (/desk) until steps 4 and 7 rebuild them; the old page's chat panel is replaced by a link to Coach.
+- **Chat (src/coach/CoachChat.tsx, grown from the old web HomeChat):** course chips and the exam countdown on top (the phone's daysLeft label); one thread per course; sets, flashcards, timed exams and the review sheet as before. New: the replies the phone streams (the report card and going over the misses, chat-stream.ts `streamable`) type out on the web too (POST /study/chat/stream read with fetch, src/lib/coach-stream.ts; the phone's parser and pacing). Report under every coach reply (Wrong / Harmful / Something else → POST /study/chat/report; "Reported for review" after).
+- **AI agreement:** the first send before agreeing opens the agreement (the phone's text; "use Report" in place of "press and hold"); agreeing saves it (the phone's consentedState) and the message goes; "Not now" sends nothing.
+- **Plan:** the menu shows the phone's plan line and, while the server enforces limits, the live count from GET /premium ("28 of 40 coach messages left today"), refreshed after each message. A 402 opens a dialog: what happened, that nothing was lost, and that Premium is bought in the iPhone app (nothing is sold on the web; D-300 plan). "I already have Premium: check again" calls POST /premium/refresh.
+- Colors are the phone's tokens (constants/colors.ts) in light and dark, following the device.
+- **Decided by:** Dan ("yes show the live count, ok build it").
+
 ## 2026-11-01 — D-302: The web app reads the phone's logic files in place
 - Step 2 of web parity (Dan: "reuse the phone's logic files as-is", no phone edits). The web had its own older copies of seven platform-free files; they are removed and the web imports the phone's: coach-text, exam-facts, exam-sheet, card-text, review-html, topic-label, progress (artifacts/study-coach-mobile/lib, alias `@phone-lib/*` in the web's vite.config.ts and tsconfig.json). The phone's versions are supersets of the web copies (same functions, plus newer ones).
 - The web never edits these files; a change there is the phone session's, and the web picks it up. Moving shared logic into lib/ waits for a quiet moment (it would touch the phone's imports).

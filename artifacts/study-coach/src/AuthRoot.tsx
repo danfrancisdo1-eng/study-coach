@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/reac
 import { Link, Redirect, Route, Router as WouterRouter, Switch, useLocation } from 'wouter';
 import LegacyApp from './App';
 import { AccountPage } from './AccountPage';
+import CoachPage from './coach/CoachPage';
 
 // D-300: on Render the server puts the publishable key into the page (window.__STUDY_COACH_CONFIG__);
 // local development still reads it from .env.local.
@@ -120,9 +121,11 @@ function AuthRoutes() {
     <QueryClientProvider client={queryClient}>
       <AuthCacheInvalidator />
       <Switch>
-        <Route path="/"><><Show when="signed-in"><Redirect to="/desk" /></Show><Show when="signed-out"><PublicHome /></Show></></Route>
+        <Route path="/"><><Show when="signed-in"><Redirect to="/coach" /></Show><Show when="signed-out"><PublicHome /></Show></></Route>
         <Route path="/sign-in/*?"><div className="onboard" style={{ maxWidth: 480 }}><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /></div></Route>
         <Route path="/sign-up/*?"><div className="onboard" style={{ maxWidth: 480 }}><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /></div></Route>
+        {/* D-303: the Coach tab is the signed-in home, as on the phone. */}
+        <Route path="/coach"><><Show when="signed-in"><CoachPage /></Show><Show when="signed-out"><Redirect to="/" /></Show></></Route>
         <Route path="/desk"><><Show when="signed-in"><Desk /></Show><Show when="signed-out"><Redirect to="/" /></Show></></Route>
         <Route path="/classic/*?"><><Show when="signed-in"><Classic /></Show><Show when="signed-out"><Redirect to="/" /></Show></></Route>
         <Route><PublicHome /></Route>
