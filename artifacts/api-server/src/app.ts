@@ -4,6 +4,7 @@ import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import router, { requireStudyAuth } from "./routes";
 import privacyRouter from "./routes/privacy";
+import { pageRouter as repPageRouter } from "./routes/reps";
 import { logger } from "./lib/logger";
 import { setUsageListener } from "./ai";
 import { logAiCost } from "./lib/cost-log";
@@ -118,5 +119,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api", router);
 // The privacy policy is a public page, so it also answers at the root (the URL the app links to and App Store Connect asks for).
 app.use(privacyRouter);
+// D-219: a campus rep's private page (a long random link), public like the privacy page.
+app.use(repPageRouter);
 
 export default app;

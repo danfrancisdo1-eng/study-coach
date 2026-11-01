@@ -149,6 +149,106 @@ paths:
                   deleted: { type: boolean }
                   identityDeleted: { type: boolean, description: "False when the data is gone but the sign-in identity could not be removed; the student should contact support" }
         "401": { description: Authentication required }
+  /reps/check:
+    get:
+      operationId: checkRepCode
+      tags: [study]
+      summary: "D-219: is this a campus rep's code? No sign-in (the sign-up screen). First name and school only."
+      parameters:
+        - { name: code, in: query, required: true, schema: { type: string, maxLength: 60 } }
+      responses:
+        "200":
+          description: Whether the code is a rep's
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RepCodeCheck" }
+        "429": { description: Too many lookups from this address }
+  /study/rep-code:
+    post:
+      operationId: claimRepCode
+      tags: [study]
+      summary: "D-219: tie the signed-in account to the campus rep whose code it is (first code wins; the same code again is fine)"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RepCodeClaimInput" }
+      responses:
+        "200":
+          description: The rep the account now belongs to
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RepCodeClaim" }
+        "400": { description: No code given }
+        "401": { description: Authentication required }
+        "404": { description: Unknown or inactive code }
+        "409": { description: The account already has a different rep's code }
+  /admin/reps:
+    get:
+      operationId: listReps
+      tags: [study]
+      summary: "D-219: every campus rep for one month (owner only)"
+      parameters:
+        - { name: month, in: query, required: false, schema: { type: string, pattern: "^\\d{4}-\\d{2}$" } }
+      responses:
+        "200":
+          description: The month's report
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RepsReport" }
+        "401": { description: Authentication required }
+        "403": { description: Not the app's owner }
+    post:
+      operationId: createRep
+      tags: [study]
+      summary: "D-219: add a campus rep (owner only); the code is made from the name and school when not given"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateRepInput" }
+      responses:
+        "200":
+          description: The new rep's row for this month
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RepRow" }
+        "400": { description: "Missing name or school, or a bad code or share" }
+        "401": { description: Authentication required }
+        "403": { description: Not the app's owner }
+        "409": { description: The code is taken }
+  /admin/reps/{repId}/payouts/{month}:
+    parameters:
+      - { name: repId, in: path, required: true, schema: { type: string, maxLength: 100 } }
+      - { name: month, in: path, required: true, schema: { type: string, pattern: "^\\d{4}-\\d{2}$" } }
+    put:
+      operationId: markRepPaid
+      tags: [study]
+      summary: "D-219: record that the rep's share for the month was paid (owner only)"
+      responses:
+        "200":
+          description: The rep's row for that month
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RepRow" }
+        "400": { description: Bad month }
+        "401": { description: Authentication required }
+        "403": { description: Not the app's owner }
+        "404": { description: Rep not found }
+    delete:
+      operationId: unmarkRepPaid
+      tags: [study]
+      summary: "D-219: undo Mark paid for the month (owner only)"
+      responses:
+        "200":
+          description: The rep's row for that month
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RepRow" }
+        "400": { description: Bad month }
+        "401": { description: Authentication required }
+        "403": { description: Not the app's owner }
+        "404": { description: Rep not found }
   /premium:
     get:
       operationId: getPremiumStatus
@@ -939,6 +1039,67 @@ components:
         cards:
           type: array
           items: { $ref: "#/components/schemas/StudyMemoryCard" }
+    RepCodeCheck:
+      type: object
+      description: "D-219: name (first name) and school only when valid."
+      required: [valid]
+      properties:
+        valid: { type: boolean }
+        name: { type: string }
+        school: { type: string }
+    RepCodeClaimInput:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, minLength: 1, maxLength: 60 }
+    RepCodeClaim:
+      type: object
+      required: [code, name, school]
+      properties:
+        code: { type: string }
+        name: { type: string, description: The rep's first name }
+        school: { type: string }
+    CreateRepInput:
+      type: object
+      required: [name, school]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        school: { type: string, minLength: 1, maxLength: 80 }
+        code: { type: string, maxLength: 40 }
+        sharePercent: { type: integer, minimum: 0, maximum: 100 }
+    RepRow:
+      type: object
+      description: "D-219: one rep for one month. Money in US cents, live (non-sandbox) payments only."
+      required: [id, name, school, code, sharePercent, active, signups, active7d, paying, netCents, shareCents, paid, link]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        school: { type: string }
+        code: { type: string }
+        sharePercent: { type: integer }
+        active: { type: boolean }
+        signups: { type: integer, description: Accounts that signed up with the code (all time) }
+        active7d: { type: integer, description: "Of those, accounts that studied in the last 7 days" }
+        paying: { type: integer, description: "Of those, accounts with Premium now" }
+        netCents: { type: integer, description: "What RapidRecall received this month after Apple's fee, minus refunds" }
+        shareCents: { type: integer, description: The rep's share of netCents }
+        paid: { type: boolean, description: Marked paid for this month }
+        link: { type: string, description: The rep's private page }
+    RepsReport:
+      type: object
+      required: [month, months, totals, reps]
+      properties:
+        month: { type: string }
+        months: { type: array, items: { type: string }, description: "Months with any data, newest first, always including the current one" }
+        totals:
+          type: object
+          required: [signups, paying, netCents, owedCents]
+          properties:
+            signups: { type: integer }
+            paying: { type: integer }
+            netCents: { type: integer }
+            owedCents: { type: integer, description: Shares not yet marked paid for this month }
+        reps: { type: array, items: { $ref: "#/components/schemas/RepRow" } }
     MemoryPicture:
       type: object
       description: "D-216: a memory-hack picture. data (base64) and mimeType only when status is ready."

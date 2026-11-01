@@ -8,6 +8,7 @@ import chatRouter from "./chat";
 import accountRouter from "./account";
 import privacyRouter from "./privacy";
 import premiumRouter from "./premium";
+import repsRouter from "./reps";
 
 export { requireStudyAuth } from "./study";
 
@@ -22,5 +23,6 @@ router.use(chatRouter);
 router.use(accountRouter);
 router.use(privacyRouter);
 router.use(premiumRouter);
+router.use(repsRouter); // D-219: campus reps
 
 export default router;
