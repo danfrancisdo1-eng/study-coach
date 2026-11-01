@@ -68,3 +68,22 @@ export function countdownText(course: { kind?: unknown; examDate?: unknown } | n
   if (days === null) return null;
   return `${daysLeftLabel(days)} · ${describeExamDate(String(course.examDate))}`;
 }
+
+type AnchorMessage = { id: string; actions?: { type: string; sessionId?: string | null }[] | null };
+
+/**
+ * D-304 (Dan: start the coach's review after the set, not before it): the coach message a set's card sits
+ * under, so the card stays where the set started and everything said after it (the score, the review of
+ * the misses) comes below it. A quiz: the message whose start_quiz action holds its session; a deck: the
+ * last message that started flashcards. Null: no such message in the thread (the card goes at the end).
+ */
+export function setCardAnchor(messages: readonly AnchorMessage[], card: { kind: 'quiz'; sessionId: string } | { kind: 'deck' }): string | null {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i]!;
+    for (const action of message.actions ?? []) {
+      if (card.kind === 'quiz' && action.type === 'start_quiz' && action.sessionId === card.sessionId) return message.id;
+      if (card.kind === 'deck' && action.type === 'start_flashcards') return message.id;
+    }
+  }
+  return null;
+}

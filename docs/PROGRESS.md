@@ -1,5 +1,14 @@
 # Progress
 
+## Session W5 — 2026-11-01 — set card before the coach's review on the web (D-304), branch `web/set-card-order`
+
+### Done
+- The web set card sits under the message that started the set, so the score comes before the coach's evaluation and the review of the misses. Timed-exam choices moved below and hidden during the review.
+- Verified here: typecheck; `pnpm test` 445 tests, 443 pass, 1 skipped, 1 fail (ai-study-requests.test.mjs, shallow-clone history, fails on main too); coach-ui test for setCardAnchor. In Chromium against the real server and database (stand-in AI): answer and grade a set, the evaluation arrives, "Go over my misses": the score card is above both. The same script on the old code puts it below (the bug, reproduced).
+
+### Needs Dan to check (after merge and the Render deploy)
+- Finish a set on the web: the score shows first, then the coach's evaluation, then the misses one at a time.
+
 ## Session 24f — 2026-11-01 — pictures: the misses walk waits for the plan (D-221), branch `fix/picture-plan-wait`
 
 ### Done
