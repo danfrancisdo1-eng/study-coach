@@ -8,6 +8,7 @@ import { timingSafeEqual } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { db, studyStatesTable } from "@workspace/db";
 import { requireStudyAuth } from "./study";
+import { recordRepPayment } from "../lib/reps-store";
 import { activeFor, bindExamPasses, enforced, examPassesOf, planFor, recordEvent, recordExamPass, refreshFromRevenueCat, usageFor } from "../lib/premium-store";
 import { isExamPass } from "../lib/premium";
 
@@ -93,11 +94,13 @@ router.post("/premium/revenuecat", async (req, res): Promise<void> => {
       ? await recordExamPass(appUserId, { id, productId: event["product_id"] as string, purchasedAt: new Date(at) }) : false;
     if (recorded) await bindPasses(appUserId, null);
     req.log.info({ type: event["type"], recorded }, "RevenueCat exam pass event");
+    await recordRepPayment(appUserId, event, req.log); // D-219: never throws
     res.json({ ok: true, changed: recorded });
     return;
   }
   const changed = await recordEvent(appUserId, event as Parameters<typeof recordEvent>[1]);
   req.log.info({ type: event["type"], changed }, "RevenueCat event");
+  await recordRepPayment(appUserId, event, req.log); // D-219: never throws
   res.json({ ok: true, changed });
 });
 

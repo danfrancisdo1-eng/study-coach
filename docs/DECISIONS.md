@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-11-01 — D-219: Campus reps: a code at sign-up, each rep's share of what RapidRecall receives (server)
+- Dan: "give a college student at each college to represent RRAI ... I'll split whatever people that you get for the app, I'll split you how much they pay. Is there a way to like track"; mock approved ("yes"); "ok the rep tables" (explicit OK for an additive migration).
+- **Database (migration 0007, additive only; plan: docs/plans/2026-11-01-campus-reps-migration-0007.md):** `reps` (code, name, school, share %, private page token), `rep_signups` (which rep invited which account; first code wins), `rep_payments` (each RevenueCat payment event of an invited account, in cents, after Apple's fee; sandbox kept but never counted), `rep_payouts` (Mark paid). No existing table changes.
+- **Money:** RevenueCat's webhook (D-091) now also records a payment for an invited account: purchases, renewals and product changes with a positive price, refunds as a negative price; net = price × the event's takehome_percentage, else 85% (REP_TAKEHOME overrides); resent events are ignored (event id). The rep's share = net × their percent (default 50%), per calendar month (UTC). TestFlight (sandbox) purchases never count. Rep bookkeeping can never change the webhook's answer.
+- **API (openapi):** GET /reps/check (no sign-in: first name and school of a valid code), POST /study/rep-code (claim; same code again is fine, a different one is 409), owner-only (OWNER_ACCOUNT_IDS) GET/POST /admin/reps and PUT/DELETE /admin/reps/{id}/payouts/{month}. The rep's private page is a server page at /reps/<long random token>: sign-ups, studied this week, paying, earned so far, this month's share and a month table. Counts and money only, never names or emails.
+- Deleting an account removes its rep sign-up; its past payments stay in the rep's books with the account id replaced. Privacy policy and PRIVACY_DATA updated. The phone half (code field at sign-up, Dan's reps page) is D-220.
+- **Decided by:** Dan.
+
 ## 2026-10-31 — D-218: The exam score sheet folds its answers away; the old memory cards screen is removed
 - Dan: "proceed" (on the two cleanups: the exam sheet still listed the misses the practice card no longer shows, D-207; two unused files from D-203).
 - **Exam score sheet (QuizCard):** the "Questions you missed" list is folded under one link, "See the answers and report a question (N)". It stays there (not deleted) because an exam shows no feedback while it runs, so it is the only place to report a bad exam question (CLAUDE.md §6). The coach goes over the misses in the chat, as after a practice set.

@@ -5,8 +5,8 @@
 // is gone too. Lecture audio lives only on the phone and leaves with the app.
 import { Router, type IRouter, type Request } from "express";
 import { clerkClient } from "@clerk/express";
-import { eq } from "drizzle-orm";
-import { aiCostTable, aiUsageTable, db, entitlementsTable, examPassesTable, homeChatsTable, lecturesTable, questionBankTable, studySessionsTable, studyStatesTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
+import { aiCostTable, aiUsageTable, db, entitlementsTable, examPassesTable, homeChatsTable, lecturesTable, questionBankTable, repPaymentsTable, repSignupsTable, studySessionsTable, studyStatesTable } from "@workspace/db";
 import { requireStudyAuth } from "./study";
 
 const router: IRouter = Router();
@@ -31,6 +31,9 @@ router.delete("/study/account", async (req, res): Promise<void> => {
     await tx.delete(questionBankTable).where(eq(questionBankTable.ownerId, ownerId));
     await tx.delete(aiCostTable).where(eq(aiCostTable.ownerId, ownerId));
     await tx.delete(examPassesTable).where(eq(examPassesTable.ownerId, ownerId)); // D-156
+    // D-219: which campus rep invited the account goes; its past payments stay in the rep's books without the account id.
+    await tx.delete(repSignupsTable).where(eq(repSignupsTable.ownerId, ownerId));
+    await tx.update(repPaymentsTable).set({ ownerId: sql`'deleted:' || md5(${repPaymentsTable.ownerId})` }).where(eq(repPaymentsTable.ownerId, ownerId));
     return { sessions: sessions.length, chats: chats.length, lectures: lectures.length, states: states.length };
   });
   // The sign-in identity. Tests run without a Clerk backend (SKIP_CLERK_USER_DELETE=1); never set in production.

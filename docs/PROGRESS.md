@@ -1,5 +1,14 @@
 # Progress
 
+## Session 24d — 2026-11-01 — campus reps, server half (D-219), branch `feat/campus-reps-server`
+
+### Done
+- Migration 0007 (four new tables, additive), lib/reps.ts (codes, money, months), lib/reps-store.ts, routes/reps.ts (check, claim, owner-only report / add rep / mark paid, the rep's private page), the RevenueCat webhook records invited accounts' payments, account deletion, privacy text.
+- Verified here: see the PR (typecheck, tests incl. tests/reps.test.mjs and tests/reps.e2e.test.mjs).
+
+### After merge (Render)
+- The deploy adds the four tables (migration 0007). Optional env: PUBLIC_BASE_URL (the address in rep links; defaults to the request's host), REP_TAKEHOME (0.85 unless set).
+
 ## Session 24c — 2026-10-31 — exam answers folded; old memory cards screen removed (D-218), branch `chore/cleanups-exam-sheet`
 
 ### Done
