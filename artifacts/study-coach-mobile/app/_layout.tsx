@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ClerkLoaded, ClerkProvider, useAuth } from '@clerk/expo';
+import { useClaimPendingRepCode } from '@/hooks/useClaimPendingRepCode';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -39,6 +40,8 @@ function AuthenticatedApiRuntime() {
   }, [userId]);
   // The sign-in screen says "Welcome back." only on a phone that has signed in before (review finding 11, D-084).
   useEffect(() => { if (userId) AsyncStorage.setItem(SIGNED_IN_BEFORE_KEY, '1').catch(() => {}); }, [userId]);
+  // D-219: the campus rep code typed at sign-up is claimed once the account exists.
+  useClaimPendingRepCode(userId);
 
   return (
     <Stack screenOptions={{ headerBackTitle: 'Back', headerShown: false }}>

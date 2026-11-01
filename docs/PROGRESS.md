@@ -1,5 +1,18 @@
 # Progress
 
+## Session 24e — 2026-11-01 — campus reps on the phone (D-220), branch `feat/campus-reps-phone`
+
+### Done
+- Rep code field at sign-up (checked live, kept across Apple/Google sign-up, claimed once the account exists); Account → Campus reps for the owner (months, totals, reps, Mark paid, Share link, Add rep). Built on the server branch (D-219, PR #41). Build #112.
+- Verified here: see the PR (typecheck, all tests incl. lib/rep-code.test.mjs, iOS bundle export). Not run in a simulator.
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (44 pt chips and buttons). 2. One primary action: PASS (sign-up keeps Apple/Google/Create account; the field is optional and quiet). 3. Chunked: PASS (one card per rep). 4. Native patterns: PASS (share sheet, page sheet for Add rep). 5. Progress / resume: PASS (the code waits on the phone until the account exists). 6. One accent: PASS. 7. Tokens; Dark Mode; Dynamic Type: PASS. 8. Labels: PASS (the check line is a polite live region; field labelled optional). 9. Paywall: N/A.
+
+### Needs real-iPhone check
+- Account → Campus reps (Dan's account only): Add rep → the card shows the code; Share sends the page link; open it in Safari.
+- On a new account: type the code at sign-up (✓ line), sign up with Apple: the rep's sign-ups go up by one.
+
 ## Session 24d — 2026-11-01 — campus reps, server half (D-219), branch `feat/campus-reps-server`
 
 ### Done

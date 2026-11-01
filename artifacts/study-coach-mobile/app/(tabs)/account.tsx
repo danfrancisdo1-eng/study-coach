@@ -146,6 +146,8 @@ export default function AccountScreen() {
         <View style={styles.divider} />
         {/* D-184 (Dan): the story, since it is nowhere else in the app; then the replays, privacy, sounds, sign out. */}
         {/* D-182: the founder story. */}
+        {/* D-219: only the owner's account (OWNER_ACCOUNT_IDS) sees the campus reps. */}
+        {status?.source === 'owner' ? row('users', 'Campus reps', 'Codes, sign-ups, earnings and payouts', () => router.push('/reps'), 'button-campus-reps') : null}
         {row('award', 'Why I built this', 'Two AI certifications, self-taught, this method', () => router.push('/about'), 'button-about')}
         {/* D-150: Dan's intro video again; it comes back here. */}
         {row('film', 'Watch the intro', 'The short video from the first launch', () => router.push('/intro?replay=1'), 'button-replay-intro')}

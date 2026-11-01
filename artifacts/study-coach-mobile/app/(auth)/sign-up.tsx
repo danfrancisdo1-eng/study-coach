@@ -8,6 +8,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { useColors } from '@/hooks/useColors';
 import { Feather } from '@expo/vector-icons';
 import { SocialSignIn } from '@/components/SocialSignIn';
+import { RepCodeField } from '@/components/RepCodeField';
 import { PRIVACY_URL, openPrivacy } from '@/lib/privacy-url';
 
 export default function SignUpScreen() {
@@ -94,6 +95,8 @@ export default function SignUpScreen() {
             RapidRecall AI is for people 13 and older. By creating an account you agree to the{' '}
             {PRIVACY_URL ? <Text style={[styles.link, styles.captionLink, { color: colors.primaryText }]} accessibilityRole="link" onPress={withTap(openPrivacy)} testID="link-privacy">privacy policy</Text> : 'privacy policy'}.
           </Text>
+          {/* D-219: a campus rep's code, optional; kept on the phone so Apple and Google sign-up credit the rep too. */}
+          <RepCodeField />
           <View>
             <SocialSignIn disabled={!ageOk} />
             {!ageOk ? <Pressable accessibilityRole="button" accessibilityLabel="Tick I'm 13 or older first" onPress={() => setAgeNudge(true)} style={StyleSheet.absoluteFill} testID="button-age-gate-social" /> : null}
