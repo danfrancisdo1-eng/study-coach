@@ -6,6 +6,7 @@ import router, { requireStudyAuth } from "./routes";
 import privacyRouter from "./routes/privacy";
 import { pageRouter as repPageRouter } from "./routes/reps";
 import { logger } from "./lib/logger";
+import { webAppRouter, webDistDir } from "./lib/web-app";
 import { setUsageListener } from "./ai";
 import { logAiCost } from "./lib/cost-log";
 
@@ -73,6 +74,11 @@ app.use(
     },
   }),
 );
+// D-300: the built web app (when it was built into the image) answers every page address the
+// server does not own. Before Clerk's middleware: pages and their files need no sign-in check.
+const webApp = webAppRouter(webDistDir(), { clerkPublishableKey: process.env.CLERK_PUBLISHABLE_KEY });
+if (webApp) app.use(webApp);
+else logger.info({ dir: webDistDir() }, "Web app not built; serving the API only");
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(
   clerkMiddleware((req) => ({

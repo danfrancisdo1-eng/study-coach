@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-11-01 — D-300: The web app is served by the API server on Render (web parity, step 1)
+- Dan chose "full" web parity (same accounts, same data, phone features) and OK'd the plan: one small draft PR per step, hosting first. The web session uses IDs from D-300 up.
+- **Hosting:** the Render service study-coach-api also serves the built web app (Step 6, Option A in docs/plans/move-off-replit.md): one service, one address, no extra cost, no cross-site setup. The Dockerfile builds artifacts/study-coach; the server serves artifacts/study-coach/dist/public (WEB_DIST_DIR) with a page fallback for app routes. /api, /privacy, /support and /reps/* stay the server's own (lib/web-app.ts SERVER_PATHS). Without a web build the server runs the API only, as before.
+- **Before Clerk's middleware:** the pages and their files are served before clerkMiddleware, because Clerk otherwise sends a browser's first page load on a handshake redirect. API sign-in is unchanged.
+- **Sign-in key at runtime:** the server puts the publishable Clerk key (CLERK_PUBLISHABLE_KEY, already set on Render) into the page as window.__STUDY_COACH_CONFIG__, so the image build needs no extra settings. Secret keys never reach the page (tested). Local development still reads VITE_CLERK_PUBLISHABLE_KEY.
+- vite.config.ts: PORT and BASE_PATH are needed only for the dev server and preview; a production build uses "/".
+- Also decided with the plan: the web reads the phone's platform-free lib files directly (no phone edits); no buying on the web for now (the web shows the plan and points to the iPhone app); the classic browser-only workspace will be retired.
+- **Decided by:** Dan ("ok, 1 yes, 2 yes, 3 retire it").
+
 ## 2026-11-01 — D-220: Campus reps on the phone
 - The phone half of D-219 (mock approved; Dan: "yes", "ok the rep tables").
 - **Sign-up:** "Got a code from a campus rep? (optional)" (components/RepCodeField.tsx) above the Apple / Google buttons. The code is checked as it is typed ("✓ From Jane at Ole Miss. Thanks for joining through them!" / "We don't know that code…") and a valid one is kept on the phone, so Apple and Google sign-up (which leave the screen) still credit the rep; returning to the screen keeps it. Once the account exists the app claims it once (hooks/useClaimPendingRepCode.ts, in the root layout) and forgets it after the server answers; it is kept only when the server could not be reached.

@@ -1,5 +1,19 @@
 # Progress
 
+## Session W1 — 2026-11-01 — web app served by Render (D-300), branch `web/hosting`
+
+### Done
+- Web parity plan approved by Dan (full parity, one draft PR per step; reuse the phone's logic files; no buying on the web; retire the classic workspace).
+- Step 1: the API server serves the built web app at the site root (lib/web-app.ts), before Clerk's middleware; the Dockerfile builds the web app; the publishable sign-in key is put into the page at runtime; vite builds without PORT/BASE_PATH.
+- Verified here: typecheck passes; `pnpm test` 434 tests, 432 pass, 1 skipped, 1 fail (ai-study-requests.test.mjs needs an old commit missing from this shallow clone; fails on main too); new tests/web-app.e2e.test.mjs (pages, files, a browser's first load is not redirected, API and /privacy, /support, /reps unchanged, no secret in the page, API-only without a build). Rehearsed the Docker build steps in a clean copy (no Docker here); the real web build loads in Chromium from the server with the key in the page and no errors. Sign-in itself not exercised: Clerk is not reachable from here.
+
+### After merge (Render)
+- The deploy builds the web app too (a minute or two longer). Then open https://study-coach-api-pskt.onrender.com/ : the RapidRecall start page; sign in with Google; your account page shows AGENTIC AI.
+- If sign-in shows an error about the address, Clerk needs the Render address added (steps in the PR).
+
+### Next
+- Step 2: the web reads the phone's logic files (text, exam, set, consent, premium rules) instead of its own older copies.
+
 ## Session 24e — 2026-11-01 — campus reps on the phone (D-220), branch `feat/campus-reps-phone`
 
 ### Done

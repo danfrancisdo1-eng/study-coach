@@ -49,6 +49,7 @@ Every account record (including the AGENTIC AI course and saved sessions) is sto
 - Rollback = change that one line back to the Replit address.
 
 ## Step 6: Web app (M; can come after the iPhone)
+- **2026-11-01: Option A chosen and built (D-300, branch `web/hosting`).** The API server serves the built web app; pages are served before Clerk's middleware; the publishable key is put into the page at runtime.
 - The web app expects the API on its own domain (`/api`). Option A: the API server also serves the built web app (one service, simplest). Option B: Render static site with `/api` rewritten to the API. Recommend A.
 - Replit-only Vite plugins are skipped outside Replit already; verify the production build.
 
