@@ -13,6 +13,20 @@ export type PlanCard = MemoryCard & { techniqueLabel: string };
 
 /** The report card's one chip: the app sends it by itself so the first miss follows the report. */
 export const LESSON_START = "Go over my misses";
+/**
+ * D-221 (Dan: "still no pictures"): how long the walk's first reply waits for the memory coach's plan (its cards,
+ * which also say which miss gets a picture). The plan is written in the background from grading and can take
+ * longer than the old 10 seconds; without it the walk starts with no plan and no picture. So the wait runs until
+ * about PLAN_READY_MS after grading, at least PLAN_MIN_WAIT_MS and at most PLAN_MAX_WAIT_MS from the tap.
+ */
+export const PLAN_READY_MS = 75_000;
+export const PLAN_MIN_WAIT_MS = 10_000;
+export const PLAN_MAX_WAIT_MS = 45_000;
+export function planWaitMs(gradedAt: string, now: number): number {
+  const graded = Date.parse(gradedAt);
+  const untilReady = Number.isFinite(graded) ? graded + PLAN_READY_MS - now : 0;
+  return Math.min(PLAN_MAX_WAIT_MS, Math.max(PLAN_MIN_WAIT_MS, untilReady));
+}
 /** The two quick answers under every miss (typing works too). */
 export const GOT_IT = "Got it";
 export const NOT_YET = "Not yet";

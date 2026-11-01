@@ -1,5 +1,18 @@
 # Progress
 
+## Session 24f — 2026-11-01 — pictures: the misses walk waits for the plan (D-221), branch `fix/picture-plan-wait`
+
+### Done
+- Found why Dan saw no pictures: the walk gave up waiting for the memory plan after 10 seconds. It now waits up to 45 s (until ~75 s after grading) with keep-alive lines on the stream, plus clearer logs.
+- Verified here: typecheck passes; `pnpm test` 453 tests, 452 pass, 1 skipped. New end-to-end test (memory-plan-wait.e2e) makes the plan take 12 s: it fails on the old code and passes now.
+
+### Needs Dan to check (after merge and the Render deploy)
+- Do a set, miss a few, tap "Go over my misses" right away. The first reply may take longer (up to ~45 s) the first time. A picture appears under a Memory hack when the coach chose one.
+- Render log: "going over the misses … plans: N, pictures: N, waitedMs" and "memory picture shown".
+
+### Next
+- If plans still arrive late often, show "Getting your memory hacks ready…" on the phone while it waits (needs a build).
+
 ## Session W4 — 2026-11-01 — the web Coach tab (D-303), branch `web/coach-chat`
 
 ### Done

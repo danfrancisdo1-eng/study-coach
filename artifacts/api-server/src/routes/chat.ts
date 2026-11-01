@@ -29,7 +29,7 @@ import { saveExamGuide } from "../lib/exam-guide-state";
 import { eventsFrom, resultsHistoryText, weakConcepts } from "../lib/results-history";
 import { countdownFocus, reportFacts, reportFactsText } from "../lib/readiness";
 import { ReplyExtractor, sseEvent } from "../lib/reply-stream";
-import { LESSON_CHIPS, LESSON_START, currentLesson, lessonMisses, lessonOrder, lessonText, nextMiss, pictureFor, type LessonMeta, type LessonMiss, type PlanCard } from "../lib/lesson";
+import { LESSON_CHIPS, LESSON_START, currentLesson, lessonMisses, lessonOrder, lessonText, nextMiss, pictureFor, planWaitMs, type LessonMeta, type LessonMiss, type PlanCard } from "../lib/lesson";
 import { TECHNIQUE_LABELS, memoryCardsView, missesOf } from "../lib/memory-cards";
 import { DAILY_SET, dailyLine, dailyReps, dailyText, firstMessageToday, localDay } from "../lib/daily-reps";
 import { reviewedLectureMaterials } from "../lib/lecture-materials";
@@ -189,11 +189,12 @@ function readyCards(session: Session): PlanCard[] | null {
     : null;
 }
 
-/** D-203: at the start of the walk, wait a little for the memory cards if they are still being written (they are its plan). */
-async function settledCards(ownerId: string, session: Session, waitMs = 10_000): Promise<Session> {
+/** D-203: at the start of the walk, wait for the memory cards if they are still being written (they are its plan). D-221: up to planWaitMs. */
+async function settledCards(ownerId: string, session: Session, onWait: () => void = () => {}, waitMs = planWaitMs(String(session.quiz?.grade?.gradedAt ?? ""), Date.now())): Promise<Session> {
   let current = session;
   const until = Date.now() + waitMs;
   while (memoryCardsView(current, new Date())?.status === "writing" && Date.now() < until) {
+    onWait();
     await new Promise((resolve) => setTimeout(resolve, 1000));
     current = (await loadSession(ownerId, session.id)) ?? current;
   }
@@ -637,8 +638,10 @@ async function sendChat(req: Request, res: Response, stream: boolean): Promise<v
     res.end();
   };
   const onDelta = stream ? (text: string) => { if (!text) return; openStream(); res.write(sseEvent("delta", { text })); } : undefined;
+  // D-221: a comment line (the apps' stream readers skip it) while the server waits before the first word.
+  const onWait = stream ? () => { openStream(); res.write(": waiting\n\n"); } : undefined;
   try {
-    await sendChatBody(req, reply, onDelta);
+    await sendChatBody(req, reply, onDelta, onWait);
   } catch (error) {
     if (!sse) throw error;
     req.log.error({ error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "Unknown error" }, "Home chat stream failed");
@@ -649,7 +652,7 @@ async function sendChat(req: Request, res: Response, stream: boolean): Promise<v
 router.post("/study/chat", (req, res) => sendChat(req, res, false));
 router.post("/study/chat/stream", (req, res) => sendChat(req, res, true));
 
-async function sendChatBody(req: Request, reply: (status: number, body: unknown) => void, onDelta?: (text: string) => void): Promise<void> {
+async function sendChatBody(req: Request, reply: (status: number, body: unknown) => void, onDelta?: (text: string) => void, onWait?: () => void): Promise<void> {
   const parsed = SendHomeChatMessageBody.safeParse(req.body);
   if (!parsed.success || !parsed.data.content.trim()) {
     reply(400, { error: "Message content must be 1-8000 characters, with the conversation version." });
@@ -815,13 +818,22 @@ async function sendChatBody(req: Request, reply: (status: number, body: unknown)
   let lessonState: { order: string[]; misses: LessonMiss[]; previous: number } | null = null;
   let lessonCards: PlanCard[] | null = null;
   if (gradedSession && (previousLesson || (content === LESSON_START && missesOf(gradedSession.quiz!.questions).length))) {
-    const session = previousLesson ? gradedSession : await settledCards(ownerId, gradedSession);
+    const waitStart = Date.now();
+    // D-221: a long wait sends a comment line every few seconds, so the phone does not give up on a quiet connection.
+    let lastPing = 0;
+    const keepAlive = () => {
+      if (!onWait || Date.now() - lastPing < 5_000) return;
+      lastPing = Date.now();
+      onWait();
+    };
+    const session = previousLesson ? gradedSession : await settledCards(ownerId, gradedSession, keepAlive);
+    const waitedMs = Date.now() - waitStart;
     const cards = readyCards(session);
     lessonCards = cards;
     const order = previousLesson?.order ?? lessonOrder(session.quiz!.questions, cards);
     const misses = lessonMisses(order, session.quiz!.questions, cards);
     if (misses.length) lessonState = { order, misses, previous: previousLesson?.miss ?? 0 };
-    req.log.info({ sessionId: gradedSession.id, previous: lessonState?.previous ?? null, misses: misses.length, plans: misses.filter((m) => m.plan).length }, "Home chat: going over the misses");
+    req.log.info({ sessionId: gradedSession.id, previous: lessonState?.previous ?? null, misses: misses.length, plans: misses.filter((m) => m.plan).length, pictures: (cards ?? []).filter((c) => c.picture).length, waitedMs }, "Home chat: going over the misses");
   }
   const lesson = lessonState ? { text: lessonText(lessonState), previous: lessonState.previous, total: lessonState.misses.length } : null;
   // D-209 (Dan: "go through the misses with the coach then have the readiness come up"): the student is answering
@@ -879,6 +891,7 @@ async function sendChatBody(req: Request, reply: (status: number, body: unknown)
     lessonMeta = { sessionId: gradedSession.id, order: lessonState.order, miss };
     // D-216: the reply that first teaches a pictured miss carries the picture (the app shows it under the Memory hack).
     pictureMeta = pictureFor(gradedSession.id, lessonState.order, lessonState.previous, miss, lessonCards);
+    if (pictureMeta) req.log.info({ sessionId: gradedSession.id, questionId: pictureMeta.questionId, miss }, "Home chat: memory picture shown");
     if (miss > 0) coach = { ...coach, suggestions: [...LESSON_CHIPS] };
   }
   const plan = planActions(courses, coach.actions);
