@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-11-01 — D-220: Campus reps on the phone
+- The phone half of D-219 (mock approved; Dan: "yes", "ok the rep tables").
+- **Sign-up:** "Got a code from a campus rep? (optional)" (components/RepCodeField.tsx) above the Apple / Google buttons. The code is checked as it is typed ("✓ From Jane at Ole Miss. Thanks for joining through them!" / "We don't know that code…") and a valid one is kept on the phone, so Apple and Google sign-up (which leave the screen) still credit the rep; returning to the screen keeps it. Once the account exists the app claims it once (hooks/useClaimPendingRepCode.ts, in the root layout) and forgets it after the server answers; it is kept only when the server could not be reached.
+- **Dan's reps (app/reps.tsx):** Account → Campus reps, shown only when the plan's source is "owner" (the server answers 403 to everyone else). One month at a time (month chips), four totals, a school filter, a card per rep (code, signed up, studied this week, paying, received, their share), Mark paid / Paid ✓, Share (sends the rep their private page link and code), and Add rep (name, school, optional code, share %, 50 by default). It replaces the mock's wide web page; the reps' own pages stay web links (D-219).
+- lib/rep-code.ts (pure, tested): code normalising, the line under the field, when to forget a pending code, money and month labels. Build #112.
+- **Decided by:** Dan.
+
 ## 2026-11-01 — D-219: Campus reps: a code at sign-up, each rep's share of what RapidRecall receives (server)
 - Dan: "give a college student at each college to represent RRAI ... I'll split whatever people that you get for the app, I'll split you how much they pay. Is there a way to like track"; mock approved ("yes"); "ok the rep tables" (explicit OK for an additive migration).
 - **Database (migration 0007, additive only; plan: docs/plans/2026-11-01-campus-reps-migration-0007.md):** `reps` (code, name, school, share %, private page token), `rep_signups` (which rep invited which account; first code wins), `rep_payments` (each RevenueCat payment event of an invited account, in cents, after Apple's fee; sandbox kept but never counted), `rep_payouts` (Mark paid). No existing table changes.

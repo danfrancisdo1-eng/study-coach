@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useCheckRepCode } from '@workspace/api-client-react';
+import { getCheckRepCodeQueryKey, useCheckRepCode } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { PENDING_REP_CODE_KEY, isCheckableRepCode, normalizeRepCode, repCodeLine } from '@/lib/rep-code';
 
@@ -20,7 +20,7 @@ export function RepCodeField() {
     const timer = setTimeout(() => setDebounced(typed), 400);
     return () => clearTimeout(timer);
   }, [typed]);
-  const check = useCheckRepCode({ code }, { query: { enabled: isCheckableRepCode(code), staleTime: 60_000, retry: false } });
+  const check = useCheckRepCode({ code }, { query: { queryKey: getCheckRepCodeQueryKey({ code }), enabled: isCheckableRepCode(code), staleTime: 60_000, retry: false } });
   const line = repCodeLine(code, check.data);
   // Only what the student typed here changes the kept code: coming back to this screen (empty field) keeps it.
   const edited = useRef(false);
