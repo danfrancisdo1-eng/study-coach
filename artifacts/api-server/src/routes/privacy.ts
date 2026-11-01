@@ -6,7 +6,7 @@ import { Router, type IRouter } from "express";
 
 const router: IRouter = Router();
 
-const UPDATED = "2026-10-29";
+const UPDATED = "2026-11-01";
 export const CONTACT_EMAIL = "support@getrapidrecall.com"; // D-213
 
 const html = `<!doctype html>
@@ -34,6 +34,7 @@ const html = `<!doctype html>
   <li><strong>Your study content:</strong> the courses and exams you add, the material you upload or photograph (notes, syllabi, slides, web pages), the questions and answers in your practice sets and flashcards, your memory sheet, and your conversation with the coach.</li>
   <li><strong>Lectures:</strong> audio you record stays on your phone. If you choose to transcribe a recording, the audio is sent for transcription and only the transcript is kept on our servers.</li>
   <li><strong>Your plan:</strong> whether you have Premium or an exam pass, when it renews or ends, and how much you used the app each day (question sets, coach messages and AI use). Purchases are made through Apple and checked by RevenueCat; RapidRecall AI never sees your payment details.</li>
+  <li><strong>A campus rep's code (optional):</strong> if you type a code from a campus rep when you sign up, we store which rep invited you, and the payments RevenueCat reports for your account count toward that rep's share. The rep sees only counts and money totals, never your name, email or anything you study.</li>
   <li><strong>Usage needed to run the app:</strong> request logs with timestamps and error reports, kept for a limited time to keep the service working.</li>
 </ul>
 <p>The app does not collect your location, contacts, photos beyond the ones you pick, or advertising identifiers, and it does not show ads.</p>

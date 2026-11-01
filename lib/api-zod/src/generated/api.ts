@@ -198,6 +198,177 @@ export const DeleteAccountResponse = zod.object({
 
 
 /**
+ * @summary D-219: is this a campus rep's code? No sign-in (the sign-up screen). First name and school only.
+ */
+export const checkRepCodeQueryCodeMax = 60;
+
+
+
+export const CheckRepCodeQueryParams = zod.object({
+  "code": zod.coerce.string().max(checkRepCodeQueryCodeMax)
+})
+
+export const CheckRepCodeResponse = zod.object({
+  "valid": zod.boolean(),
+  "name": zod.string().optional(),
+  "school": zod.string().optional()
+}).describe('D-219: name (first name) and school only when valid.')
+
+
+/**
+ * @summary D-219: tie the signed-in account to the campus rep whose code it is (first code wins; the same code again is fine)
+ */
+export const claimRepCodeBodyCodeMax = 60;
+
+
+
+export const ClaimRepCodeBody = zod.object({
+  "code": zod.string().min(1).max(claimRepCodeBodyCodeMax)
+})
+
+export const ClaimRepCodeResponse = zod.object({
+  "code": zod.string(),
+  "name": zod.string().describe('The rep\'s first name'),
+  "school": zod.string()
+})
+
+
+/**
+ * @summary D-219: every campus rep for one month (owner only)
+ */
+export const listRepsQueryMonthRegExp = new RegExp('^\\d{4}-\\d{2}$');
+
+
+export const ListRepsQueryParams = zod.object({
+  "month": zod.coerce.string().regex(listRepsQueryMonthRegExp).optional()
+})
+
+export const ListRepsResponse = zod.object({
+  "month": zod.string(),
+  "months": zod.array(zod.string()).describe('Months with any data, newest first, always including the current one'),
+  "totals": zod.object({
+  "signups": zod.number().int(),
+  "paying": zod.number().int(),
+  "netCents": zod.number().int(),
+  "owedCents": zod.number().int().describe('Shares not yet marked paid for this month')
+}),
+  "reps": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "school": zod.string(),
+  "code": zod.string(),
+  "sharePercent": zod.number().int(),
+  "active": zod.boolean(),
+  "signups": zod.number().int().describe('Accounts that signed up with the code (all time)'),
+  "active7d": zod.number().int().describe('Of those, accounts that studied in the last 7 days'),
+  "paying": zod.number().int().describe('Of those, accounts with Premium now'),
+  "netCents": zod.number().int().describe('What RapidRecall received this month after Apple\'s fee, minus refunds'),
+  "shareCents": zod.number().int().describe('The rep\'s share of netCents'),
+  "paid": zod.boolean().describe('Marked paid for this month'),
+  "link": zod.string().describe('The rep\'s private page')
+}).describe('D-219: one rep for one month. Money in US cents, live (non-sandbox) payments only.'))
+})
+
+
+/**
+ * @summary D-219: add a campus rep (owner only); the code is made from the name and school when not given
+ */
+export const createRepBodyNameMax = 80;
+
+export const createRepBodySchoolMax = 80;
+
+export const createRepBodyCodeMax = 40;
+
+export const createRepBodySharePercentMin = 0;
+export const createRepBodySharePercentMax = 100;
+
+
+
+export const CreateRepBody = zod.object({
+  "name": zod.string().min(1).max(createRepBodyNameMax),
+  "school": zod.string().min(1).max(createRepBodySchoolMax),
+  "code": zod.string().max(createRepBodyCodeMax).optional(),
+  "sharePercent": zod.number().int().min(createRepBodySharePercentMin).max(createRepBodySharePercentMax).optional()
+})
+
+export const CreateRepResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "school": zod.string(),
+  "code": zod.string(),
+  "sharePercent": zod.number().int(),
+  "active": zod.boolean(),
+  "signups": zod.number().int().describe('Accounts that signed up with the code (all time)'),
+  "active7d": zod.number().int().describe('Of those, accounts that studied in the last 7 days'),
+  "paying": zod.number().int().describe('Of those, accounts with Premium now'),
+  "netCents": zod.number().int().describe('What RapidRecall received this month after Apple\'s fee, minus refunds'),
+  "shareCents": zod.number().int().describe('The rep\'s share of netCents'),
+  "paid": zod.boolean().describe('Marked paid for this month'),
+  "link": zod.string().describe('The rep\'s private page')
+}).describe('D-219: one rep for one month. Money in US cents, live (non-sandbox) payments only.')
+
+
+/**
+ * @summary D-219: record that the rep's share for the month was paid (owner only)
+ */
+export const markRepPaidPathRepIdMax = 100;
+
+export const markRepPaidPathMonthRegExp = new RegExp('^\\d{4}-\\d{2}$');
+
+
+export const MarkRepPaidParams = zod.object({
+  "repId": zod.coerce.string().max(markRepPaidPathRepIdMax),
+  "month": zod.coerce.string().regex(markRepPaidPathMonthRegExp)
+})
+
+export const MarkRepPaidResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "school": zod.string(),
+  "code": zod.string(),
+  "sharePercent": zod.number().int(),
+  "active": zod.boolean(),
+  "signups": zod.number().int().describe('Accounts that signed up with the code (all time)'),
+  "active7d": zod.number().int().describe('Of those, accounts that studied in the last 7 days'),
+  "paying": zod.number().int().describe('Of those, accounts with Premium now'),
+  "netCents": zod.number().int().describe('What RapidRecall received this month after Apple\'s fee, minus refunds'),
+  "shareCents": zod.number().int().describe('The rep\'s share of netCents'),
+  "paid": zod.boolean().describe('Marked paid for this month'),
+  "link": zod.string().describe('The rep\'s private page')
+}).describe('D-219: one rep for one month. Money in US cents, live (non-sandbox) payments only.')
+
+
+/**
+ * @summary D-219: undo Mark paid for the month (owner only)
+ */
+export const unmarkRepPaidPathRepIdMax = 100;
+
+export const unmarkRepPaidPathMonthRegExp = new RegExp('^\\d{4}-\\d{2}$');
+
+
+export const UnmarkRepPaidParams = zod.object({
+  "repId": zod.coerce.string().max(unmarkRepPaidPathRepIdMax),
+  "month": zod.coerce.string().regex(unmarkRepPaidPathMonthRegExp)
+})
+
+export const UnmarkRepPaidResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "school": zod.string(),
+  "code": zod.string(),
+  "sharePercent": zod.number().int(),
+  "active": zod.boolean(),
+  "signups": zod.number().int().describe('Accounts that signed up with the code (all time)'),
+  "active7d": zod.number().int().describe('Of those, accounts that studied in the last 7 days'),
+  "paying": zod.number().int().describe('Of those, accounts with Premium now'),
+  "netCents": zod.number().int().describe('What RapidRecall received this month after Apple\'s fee, minus refunds'),
+  "shareCents": zod.number().int().describe('The rep\'s share of netCents'),
+  "paid": zod.boolean().describe('Marked paid for this month'),
+  "link": zod.string().describe('The rep\'s private page')
+}).describe('D-219: one rep for one month. Money in US cents, live (non-sandbox) payments only.')
+
+
+/**
  * @summary The account's plan, limits, today's AI use and which courses are active (D-090)
  */
 export const GetPremiumStatusResponse = zod.object({

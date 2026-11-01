@@ -22,8 +22,10 @@ import type {
 import type {
   AnalyzeInput,
   AnalyzeResult,
+  CheckRepCodeParams,
   CourseDeletion,
   CourseResults,
+  CreateRepInput,
   DeleteAccount200,
   ExamFacts,
   ExamFactsInput,
@@ -40,6 +42,7 @@ import type {
   LectureUpdate,
   ListLectures200,
   ListLecturesParams,
+  ListRepsParams,
   ListStudySessions200,
   MemoryPicture,
   PlanInput,
@@ -48,7 +51,12 @@ import type {
   PremiumStatus,
   QuizInput,
   QuizResult,
+  RepCodeCheck,
+  RepCodeClaim,
+  RepCodeClaimInput,
+  RepRow,
   ReportHomeChatMessage200,
+  RepsReport,
   ReviewSheet,
   StudyAnswerInput,
   StudyCheckIn,
@@ -761,6 +769,502 @@ export const useDeleteAccount = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteAccountMutationOptions(options));
+    }
+
+export const getCheckRepCodeUrl = (params: CheckRepCodeParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reps/check?${stringifiedParams}` : `/api/reps/check`
+}
+
+/**
+ * @summary D-219: is this a campus rep's code? No sign-in (the sign-up screen). First name and school only.
+ */
+export const checkRepCode = async (params: CheckRepCodeParams, options?: Parameters<typeof customFetch>[1]): Promise<RepCodeCheck> => {
+
+  return customFetch<RepCodeCheck>(getCheckRepCodeUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCheckRepCodeQueryKey = (params?: CheckRepCodeParams,) => {
+    return [
+    `/api/reps/check`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getCheckRepCodeQueryOptions = <TData = Awaited<ReturnType<typeof checkRepCode>>, TError = ErrorType<void>>(params: CheckRepCodeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkRepCode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCheckRepCodeQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof checkRepCode>>> = ({ signal }) => checkRepCode(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof checkRepCode>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type CheckRepCodeQueryResult = NonNullable<Awaited<ReturnType<typeof checkRepCode>>>
+export type CheckRepCodeQueryError = ErrorType<void>
+
+
+/**
+ * @summary D-219: is this a campus rep's code? No sign-in (the sign-up screen). First name and school only.
+ */
+
+export function useCheckRepCode<TData = Awaited<ReturnType<typeof checkRepCode>>, TError = ErrorType<void>>(
+ params: CheckRepCodeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkRepCode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getCheckRepCodeQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getClaimRepCodeUrl = () => {
+
+
+
+
+  return `/api/study/rep-code`
+}
+
+/**
+ * @summary D-219: tie the signed-in account to the campus rep whose code it is (first code wins; the same code again is fine)
+ */
+export const claimRepCode = async (repCodeClaimInput: RepCodeClaimInput, options?: Parameters<typeof customFetch>[1]): Promise<RepCodeClaim> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RepCodeClaim>(getClaimRepCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(repCodeClaimInput)
+  }
+);}
+
+
+
+
+
+export const getClaimRepCodeMutationKey = () => ['claimRepCode'] as const;
+
+export const getClaimRepCodeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimRepCode>>, TError,ClaimRepCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof claimRepCode>>, TError,ClaimRepCodeMutationVariables, TContext> => {
+
+const mutationKey = getClaimRepCodeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof claimRepCode>>, ClaimRepCodeMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  claimRepCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClaimRepCodeMutationResult = NonNullable<Awaited<ReturnType<typeof claimRepCode>>>
+    export type ClaimRepCodeMutationBody = BodyType<RepCodeClaimInput>
+    export type ClaimRepCodeMutationError = ErrorType<void>
+    export type ClaimRepCodeMutationVariables = {data: BodyType<RepCodeClaimInput>}
+
+    /**
+ * @summary D-219: tie the signed-in account to the campus rep whose code it is (first code wins; the same code again is fine)
+ */
+export const useClaimRepCode = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimRepCode>>, TError,ClaimRepCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof claimRepCode>>,
+        TError,
+        ClaimRepCodeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getClaimRepCodeMutationOptions(options));
+    }
+
+export const getListRepsUrl = (params?: ListRepsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/reps?${stringifiedParams}` : `/api/admin/reps`
+}
+
+/**
+ * @summary D-219: every campus rep for one month (owner only)
+ */
+export const listReps = async (params?: ListRepsParams, options?: Parameters<typeof customFetch>[1]): Promise<RepsReport> => {
+
+  return customFetch<RepsReport>(getListRepsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRepsQueryKey = (params?: ListRepsParams,) => {
+    return [
+    `/api/admin/reps`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListRepsQueryOptions = <TData = Awaited<ReturnType<typeof listReps>>, TError = ErrorType<void>>(params?: ListRepsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRepsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listReps>>> = ({ signal }) => listReps(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listReps>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRepsQueryResult = NonNullable<Awaited<ReturnType<typeof listReps>>>
+export type ListRepsQueryError = ErrorType<void>
+
+
+/**
+ * @summary D-219: every campus rep for one month (owner only)
+ */
+
+export function useListReps<TData = Awaited<ReturnType<typeof listReps>>, TError = ErrorType<void>>(
+ params?: ListRepsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRepsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateRepUrl = () => {
+
+
+
+
+  return `/api/admin/reps`
+}
+
+/**
+ * @summary D-219: add a campus rep (owner only); the code is made from the name and school when not given
+ */
+export const createRep = async (createRepInput: CreateRepInput, options?: Parameters<typeof customFetch>[1]): Promise<RepRow> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RepRow>(getCreateRepUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createRepInput)
+  }
+);}
+
+
+
+
+
+export const getCreateRepMutationKey = () => ['createRep'] as const;
+
+export const getCreateRepMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRep>>, TError,CreateRepMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createRep>>, TError,CreateRepMutationVariables, TContext> => {
+
+const mutationKey = getCreateRepMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRep>>, CreateRepMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createRep(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateRepMutationResult = NonNullable<Awaited<ReturnType<typeof createRep>>>
+    export type CreateRepMutationBody = BodyType<CreateRepInput>
+    export type CreateRepMutationError = ErrorType<void>
+    export type CreateRepMutationVariables = {data: BodyType<CreateRepInput>}
+
+    /**
+ * @summary D-219: add a campus rep (owner only); the code is made from the name and school when not given
+ */
+export const useCreateRep = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRep>>, TError,CreateRepMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createRep>>,
+        TError,
+        CreateRepMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateRepMutationOptions(options));
+    }
+
+export const getMarkRepPaidUrl = (repId: string,
+    month: string,) => {
+
+
+
+
+  return `/api/admin/reps/${repId}/payouts/${month}`
+}
+
+/**
+ * @summary D-219: record that the rep's share for the month was paid (owner only)
+ */
+export const markRepPaid = async (repId: string,
+    month: string, options?: Parameters<typeof customFetch>[1]): Promise<RepRow> => {
+
+  return customFetch<RepRow>(getMarkRepPaidUrl(repId,month),
+  {
+    ...options,
+    method: 'PUT'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkRepPaidMutationKey = () => ['markRepPaid'] as const;
+
+export const getMarkRepPaidMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markRepPaid>>, TError,MarkRepPaidMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markRepPaid>>, TError,MarkRepPaidMutationVariables, TContext> => {
+
+const mutationKey = getMarkRepPaidMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markRepPaid>>, MarkRepPaidMutationVariables> = (props) => {
+          const {repId,month} = props ?? {};
+
+          return  markRepPaid(repId,month,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkRepPaidMutationResult = NonNullable<Awaited<ReturnType<typeof markRepPaid>>>
+
+    export type MarkRepPaidMutationError = ErrorType<void>
+    export type MarkRepPaidMutationVariables = {repId: string;month: string}
+
+    /**
+ * @summary D-219: record that the rep's share for the month was paid (owner only)
+ */
+export const useMarkRepPaid = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markRepPaid>>, TError,MarkRepPaidMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markRepPaid>>,
+        TError,
+        MarkRepPaidMutationVariables,
+        TContext
+      > => {
+      return useMutation(getMarkRepPaidMutationOptions(options));
+    }
+
+export const getUnmarkRepPaidUrl = (repId: string,
+    month: string,) => {
+
+
+
+
+  return `/api/admin/reps/${repId}/payouts/${month}`
+}
+
+/**
+ * @summary D-219: undo Mark paid for the month (owner only)
+ */
+export const unmarkRepPaid = async (repId: string,
+    month: string, options?: Parameters<typeof customFetch>[1]): Promise<RepRow> => {
+
+  return customFetch<RepRow>(getUnmarkRepPaidUrl(repId,month),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getUnmarkRepPaidMutationKey = () => ['unmarkRepPaid'] as const;
+
+export const getUnmarkRepPaidMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unmarkRepPaid>>, TError,UnmarkRepPaidMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unmarkRepPaid>>, TError,UnmarkRepPaidMutationVariables, TContext> => {
+
+const mutationKey = getUnmarkRepPaidMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unmarkRepPaid>>, UnmarkRepPaidMutationVariables> = (props) => {
+          const {repId,month} = props ?? {};
+
+          return  unmarkRepPaid(repId,month,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnmarkRepPaidMutationResult = NonNullable<Awaited<ReturnType<typeof unmarkRepPaid>>>
+
+    export type UnmarkRepPaidMutationError = ErrorType<void>
+    export type UnmarkRepPaidMutationVariables = {repId: string;month: string}
+
+    /**
+ * @summary D-219: undo Mark paid for the month (owner only)
+ */
+export const useUnmarkRepPaid = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unmarkRepPaid>>, TError,UnmarkRepPaidMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unmarkRepPaid>>,
+        TError,
+        UnmarkRepPaidMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUnmarkRepPaidMutationOptions(options));
     }
 
 export const getGetPremiumStatusUrl = () => {

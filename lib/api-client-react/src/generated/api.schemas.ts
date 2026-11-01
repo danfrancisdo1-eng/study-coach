@@ -681,6 +681,92 @@ export interface StudySession {
   memoryCards?: StudyMemoryCards | null;
 }
 
+/**
+ * D-219: name (first name) and school only when valid.
+ */
+export interface RepCodeCheck {
+  valid: boolean;
+  name?: string;
+  school?: string;
+}
+
+export interface RepCodeClaimInput {
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  code: string;
+}
+
+export interface RepCodeClaim {
+  code: string;
+  /** The rep's first name */
+  name: string;
+  school: string;
+}
+
+export interface CreateRepInput {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  school: string;
+  /** @maxLength 40 */
+  code?: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  sharePercent?: number;
+}
+
+/**
+ * D-219: one rep for one month. Money in US cents, live (non-sandbox) payments only.
+ */
+export interface RepRow {
+  id: string;
+  name: string;
+  school: string;
+  code: string;
+  sharePercent: number;
+  active: boolean;
+  /** Accounts that signed up with the code (all time) */
+  signups: number;
+  /** Of those, accounts that studied in the last 7 days */
+  active7d: number;
+  /** Of those, accounts with Premium now */
+  paying: number;
+  /** What RapidRecall received this month after Apple's fee, minus refunds */
+  netCents: number;
+  /** The rep's share of netCents */
+  shareCents: number;
+  /** Marked paid for this month */
+  paid: boolean;
+  /** The rep's private page */
+  link: string;
+}
+
+export type RepsReportTotals = {
+  signups: number;
+  paying: number;
+  netCents: number;
+  /** Shares not yet marked paid for this month */
+  owedCents: number;
+};
+
+export interface RepsReport {
+  month: string;
+  /** Months with any data, newest first, always including the current one */
+  months: string[];
+  totals: RepsReportTotals;
+  reps: RepRow[];
+}
+
 export type MemoryPictureStatus = typeof MemoryPictureStatus[keyof typeof MemoryPictureStatus];
 
 
@@ -1332,6 +1418,20 @@ export type DeleteAccount200 = {
   deleted: boolean;
   /** False when the data is gone but the sign-in identity could not be removed; the student should contact support */
   identityDeleted: boolean;
+};
+
+export type CheckRepCodeParams = {
+/**
+ * @maxLength 60
+ */
+code: string;
+};
+
+export type ListRepsParams = {
+/**
+ * @pattern ^\d{4}-\d{2}$
+ */
+month?: string;
 };
 
 export type ReportHomeChatMessage200 = {
