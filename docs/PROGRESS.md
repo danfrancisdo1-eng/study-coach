@@ -1,5 +1,17 @@
 # Progress
 
+## Session 24c — 2026-10-31 — exam answers folded; old memory cards screen removed (D-218), branch `chore/cleanups-exam-sheet`
+
+### Done
+- Exam score sheet: the misses list is behind "See the answers and report a question (N)". Removed MemoryCards.tsx and the phone's lib/memory-cards.ts (+ test), unused since D-203. Build #111.
+- Verified here: see the PR (typecheck, tests, iOS bundle export).
+
+### UX checklist (docs/UX_PRINCIPLES.md), code review only
+1. Tap targets: PASS (the link is 44 pt). 2. One primary action: PASS. 3. Chunked: PASS (less on the score sheet). 4. Native patterns: PASS (disclosure with a chevron). 5. Progress / resume: N/A. 6. One accent: PASS. 7. Tokens; Dark Mode; Dynamic Type: PASS. 8. Labels: PASS (expanded state announced). 9. Paywall: N/A.
+
+### Needs real-iPhone check
+- Finish a timed exam with misses: the score, then the link; tap it: the answers and the Report link per question; tap again: folded.
+
 ## Session 24b — 2026-10-29 — memory hack pictures on the phone (D-217), branch `feat/memory-pictures-phone`
 
 ### Done

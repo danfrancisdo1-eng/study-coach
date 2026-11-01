@@ -57,6 +57,7 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
   const flag = useFlagStudyQuestion();
   const [reviewingId, setReviewingId] = useState<string | null>(null); // practice: the question whose feedback is on screen
   const [justAnsweredId, setJustAnsweredId] = useState<string | null>(null); // D-172: the verdict whose mark is rising
+  const [answersOpen, setAnswersOpen] = useState(false); // D-218: the exam's answers stay folded; the coach goes over the misses
   const answerSounds = useAnswerSounds();
   useEffect(() => { void prepareFeedbackSounds(); }, []); // D-172
   const [reportingId, setReportingId] = useState<string | null>(null); // the question whose re-check is running
@@ -211,8 +212,15 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
         <CardText style={styles.body}>{scoreLine(quiz.grade)}</CardText>
         {timeUsedLine(quiz.grade) ? <CardText style={styles.muted} testID="text-time-used">{timeUsedLine(quiz.grade)}</CardText> : null}
         {quiz.grade.limitMinutes && passMark ? <CardText style={styles.muted} testID="text-pass-mark">{passMark}</CardText> : null}
-        {misses.length ? <CardText style={styles.cardTitle}>Questions you missed</CardText> : <CardText style={styles.cardTitle}>Nothing missed. Nice.</CardText>}
-        {misses.map((q, i) => (
+        {/* D-218 (Dan: the coach goes over the misses, as on the practice card): the answers are folded under one
+            link, kept only because an exam shows no feedback while it runs, so this is where a bad question is reported. */}
+        {!misses.length ? <CardText style={styles.cardTitle}>Nothing missed. Nice.</CardText> : (
+          <PressScale accessibilityRole="button" accessibilityState={{ expanded: answersOpen }} onPress={() => setAnswersOpen((open) => !open)} style={styles.answersToggle} testID="button-exam-answers">
+            <CardText style={styles.answersToggleText}>{answersOpen ? 'Hide the answers' : `See the answers and report a question (${misses.length})`}</CardText>
+            <Feather name={answersOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.primaryText} />
+          </PressScale>
+        )}
+        {answersOpen && misses.map((q, i) => (
           // Grok's review layout (D-070): concept, question, the trick first, then your answer and the best answer as labelled lines.
           <View key={q.id} style={styles.miss} testID={`quiz-miss-${i}`}>
             {q.concept ? <CardText style={styles.missKicker}>{q.concept}</CardText> : null}
@@ -434,6 +442,8 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   answerLabel: { ...TYPE.smallSemi },
   answerText: { ...TYPE.body, color: colors.foreground },
   missExplain: { ...TYPE.small, color: colors.mutedForeground },
+  answersToggle: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start' },
+  answersToggleText: { ...TYPE.bodySemi, color: colors.primaryText },
   // Report link: small and away from the main button on purpose (UX_PRINCIPLES: destructive-ish actions are small and separated).
   reportLink: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', paddingRight: 12 },
   reportLinkText: { ...TYPE.smallSemi, color: colors.mutedForeground, textDecorationLine: 'underline' },
