@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-11-01 — D-221: The misses walk waits for the memory plan, so pictures show
+- Dan did about 40 questions with 8 or 9 misses and never saw a picture or even its gray placeholder. Render logs: the memory coach asked for a picture in 2 sets ("Memory cards written … pictures: 1").
+- Cause: when "Go over my misses" is tapped, the server waited only 10 seconds for the memory coach's plan (the cards, which also say which miss gets a picture). The newer plan (technique_plan, D-215) often takes longer, so the walk started with no plan, the coach made up its own hack, and no picture was attached. A set with one pictured miss could never show it.
+- Fix: the first walk reply waits until about 75 seconds after grading (planWaitMs: at least 10 s, at most 45 s from the tap). While it waits, the stream sends a comment line every 5 seconds so the phone does not drop a quiet connection (iOS gives up after about 60 s of silence); both apps' stream readers skip comment lines. The "going over the misses" log now says how many pictures the plan has and how long it waited; a new "memory picture shown" line marks each reply that carries one.
+- No prompt change, no phone change: live with the Render deploy.
+
 ## 2026-11-01 — D-303: The web Coach tab (web parity step 3)
 - Built from the mock Dan approved (https://claude.ai/artifact/E29bi6eUJatompfxrWZKMu), plus "yes show the live count".
 - **Frame:** the phone's three tabs (Coach, Courses, Account) as a side menu on a computer and tabs along the bottom at phone width (src/coach/AppShell.tsx). Signed-in "/" opens /coach. Courses and Account open the existing account page (/desk) until steps 4 and 7 rebuild them; the old page's chat panel is replaced by a link to Coach.

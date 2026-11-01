@@ -2,7 +2,7 @@
 // next, and what the coach is told about each (the memory cards as its plan).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LESSON_CHIPS, LESSON_START, MAX_LESSON, currentLesson, lessonMisses, lessonOrder, lessonText, nextMiss } from '../src/lib/lesson.ts';
+import { LESSON_CHIPS, LESSON_START, MAX_LESSON, PLAN_MAX_WAIT_MS, PLAN_MIN_WAIT_MS, currentLesson, lessonMisses, lessonOrder, lessonText, nextMiss, planWaitMs } from '../src/lib/lesson.ts';
 
 const q = (id, { right = false, answered = true } = {}) => ({
   id, prompt: `Question ${id}?`, concept: `Concept ${id}`, explanation: `Because ${id}.`, hook: id === '2' ? 'A hook.' : '',
@@ -59,4 +59,15 @@ test('lessonMisses and lessonText: what they chose, the right answer, and the pl
   const text = lessonText({ misses, previous: 0 });
   assert.match(text, /^1\. Q: Question 3\? \| they chose: Wrong 3 \| right answer: Right 3 \| why: Because 3\. \| the plan: why it was tempting: Tempting 3\.; the one thing to remember: Remember 3; a way to remember it \(Think of it like\): Tool 3\.; the memory coach doubts the answer key: The notes say otherwise\./);
   assert.match(text, /\n2\. Q: Question 1\? \| they chose: Wrong 1 \| right answer: Right 1 \| why: Because 1\.$/);
+});
+
+test('planWaitMs (D-221): waits until about 75 s after grading, at least 10 s and at most 45 s from the tap', () => {
+  const graded = Date.parse('2026-11-01T10:00:00.000Z');
+  const at = (seconds) => graded + seconds * 1000;
+  const g = '2026-11-01T10:00:00.000Z';
+  assert.equal(planWaitMs(g, at(5)), PLAN_MAX_WAIT_MS); // tapped right away: the full 45 s
+  assert.equal(planWaitMs(g, at(45)), 30_000); // 30 s left until 75 s after grading
+  assert.equal(planWaitMs(g, at(70)), PLAN_MIN_WAIT_MS); // nearly there: still the old 10 s
+  assert.equal(planWaitMs(g, at(600)), PLAN_MIN_WAIT_MS); // long after: 10 s
+  assert.equal(planWaitMs('not a date', at(5)), PLAN_MIN_WAIT_MS);
 });
