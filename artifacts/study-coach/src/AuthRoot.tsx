@@ -8,9 +8,12 @@ import { Link, Redirect, Route, Router as WouterRouter, Switch, useLocation } fr
 import LegacyApp from './App';
 import { AccountPage } from './AccountPage';
 
+// D-300: on Render the server puts the publishable key into the page (window.__STUDY_COACH_CONFIG__);
+// local development still reads it from .env.local.
+const runtimeConfig = (window as { __STUDY_COACH_CONFIG__?: { clerkPublishableKey?: string } }).__STUDY_COACH_CONFIG__;
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+  runtimeConfig?.clerkPublishableKey || import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
 );
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -23,7 +26,7 @@ function stripBase(path: string): string {
 }
 
 if (!clerkPubKey) {
-  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in .env file');
+  throw new Error('Missing the Clerk publishable key (CLERK_PUBLISHABLE_KEY on the server, or VITE_CLERK_PUBLISHABLE_KEY in .env.local)');
 }
 
 const clerkAppearance = {
