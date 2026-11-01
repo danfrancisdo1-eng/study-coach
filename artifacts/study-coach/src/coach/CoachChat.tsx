@@ -16,7 +16,7 @@ import QuizCard from '../QuizCard';
 import ProgressBar, { useElapsed } from '../ProgressBar';
 import FlashcardDeck from '../FlashcardDeck';
 import { streamChatMessage } from '../lib/coach-stream';
-import { premiumCode, REPORT_REASONS, type PremiumCode, type ReportReason } from '../lib/coach-ui';
+import { premiumCode, REPORT_REASONS, setCardAnchor, type PremiumCode, type ReportReason } from '../lib/coach-ui';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.';
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
@@ -218,6 +218,17 @@ export default function CoachChat({ aiConsent, courseId, timedChoices = [], fact
 
   const focusInput = () => inputRef.current?.focus();
   const busy = sending;
+  // D-304: the set's card stays where the set started; the score and the coach's review come after it.
+  const setCard = deckSessionId ? <FlashcardDeck key={deckSessionId} sessionId={deckSessionId}
+      onFinished={finished => { setFinishedDeckId(finished.id); void sendText(FINISHED_DECK_MESSAGE); }}
+      onError={failed} />
+    : quizSessionId ? <QuizCard key={quizSessionId} sessionId={quizSessionId} passMark={passMark}
+      onGraded={graded => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
+      onError={failed} />
+    : null;
+  const cardAnchor = deckSessionId ? setCardAnchor(messages, { kind: 'deck' }) : quizSessionId ? setCardAnchor(messages, { kind: 'quiz', sessionId: quizSessionId }) : null;
+  // The timed-exam choices wait while the coach is answering or going over misses (its chips are Got it / Not yet).
+  const showTimed = !busy && !activeQuiz && !activeDeck && !chips.includes('Got it');
 
   return <>
     <section className="rr-thread" aria-label="Conversation" data-testid="panel-home-chat">
@@ -253,6 +264,7 @@ export default function CoachChat({ aiConsent, courseId, timedChoices = [], fact
             </div>
           </article>
         )}
+        {turn.id === cardAnchor && setCard}
       </div>)}
       {pending && <div className="rr-user" data-testid="chat-turn-pending">{pending}</div>}
       {live && <article className="rr-reply" aria-live="polite" data-testid="chat-turn-live">
@@ -262,7 +274,10 @@ export default function CoachChat({ aiConsent, courseId, timedChoices = [], fact
       {chips.length > 0 && <div className="rr-suggestions" data-testid="row-suggestions">
         {chips.map(chip => <button key={chip} type="button" className="rr-chip" disabled={busy} onClick={() => (chip === REVIEW_CHIP && courseId ? openReview(courseId) : void sendText(chip))} data-testid={chip === REVIEW_CHIP ? 'button-suggestion-review' : 'button-suggestion'}>{chip}</button>)}
       </div>}
-      {timedChoices.length === 0 && factPicks && onPickFacts && !activeQuiz && !activeDeck && <div style={{ display: 'grid', gap: 8 }} data-testid="row-timed-picks">
+      {!cardAnchor && setCard}
+      {sending && !live && <ProgressBar fraction={estimate(sendElapsed, 15_000)} label="Coach is working… writing questions can take up to a minute." testId="progress-coach" />}
+      {error && <p className="rr-error" role="alert" data-testid="status-chat-error">{error}</p>}
+      {showTimed && timedChoices.length === 0 && factPicks && onPickFacts && <div style={{ display: 'grid', gap: 8 }} data-testid="row-timed-picks">
         <span className="rr-note">Simulated exam, timed. The official page doesn't list these; pick yours:</span>
         <div className="rr-suggestions"><span className="rr-note">Questions</span>
           {factPicks.questions.map(n => <button key={n} type="button" aria-pressed={(pickQ ?? factPicks.question) === n} className="rr-course-chip" onClick={() => setPickQ(n)} data-testid={`button-pick-questions-${n}`}>{n}</button>)}</div>
@@ -271,18 +286,10 @@ export default function CoachChat({ aiConsent, courseId, timedChoices = [], fact
         {(() => { const q = pickQ ?? factPicks.question; const m = pickM ?? factPicks.minute; return <button type="button" className="rr-primary" disabled={busy || !q || !m}
           onClick={() => { if (q && m) void onPickFacts(q, m).then(() => sendText(`Timed exam: Full exam: ${q} questions · ${m} min`, 'full')); }} data-testid="button-timed-start-picked">{q && m ? `Start timed exam · ${q} questions · ${m} min` : 'Pick questions and minutes'}</button>; })()}
       </div>}
-      {timedChoices.length > 0 && !activeQuiz && !activeDeck && <div className="rr-suggestions" data-testid="row-timed-exam">
+      {showTimed && timedChoices.length > 0 && <div className="rr-suggestions" data-testid="row-timed-exam">
         <span className="rr-note" style={{ alignSelf: 'center' }}>Simulated exam, timed:</span>
         {timedChoices.map(choice => <button key={choice.size} type="button" className="rr-chip" disabled={busy} onClick={() => void sendText(`Timed exam: ${choice.label}`, choice.size)} data-testid={`button-timed-${choice.size}`}>{choice.label}</button>)}
       </div>}
-      {deckSessionId && <FlashcardDeck key={deckSessionId} sessionId={deckSessionId}
-        onFinished={finished => { setFinishedDeckId(finished.id); void sendText(FINISHED_DECK_MESSAGE); }}
-        onError={failed} />}
-      {!deckSessionId && quizSessionId && <QuizCard key={quizSessionId} sessionId={quizSessionId} passMark={passMark}
-        onGraded={graded => { setGradedSessionId(graded.id); void sendText(FINISHED_SET_MESSAGE); }}
-        onError={failed} />}
-      {sending && !live && <ProgressBar fraction={estimate(sendElapsed, 15_000)} label="Coach is working… writing questions can take up to a minute." testId="progress-coach" />}
-      {error && <p className="rr-error" role="alert" data-testid="status-chat-error">{error}</p>}
       <div ref={endRef} />
     </section>
     <form className="rr-composer" onSubmit={submit}>

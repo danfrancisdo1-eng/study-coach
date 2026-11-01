@@ -59,3 +59,20 @@ test('the countdown shows for an exam with a date ahead only', () => {
   assert.equal(countdownText({ kind: 'course', examDate: '2026-11-14' }, today), null);
   assert.equal(countdownText({ kind: 'exam' }, today), null);
 });
+
+test('a set card sits under the message that started it, so the review comes after it (D-304)', async () => {
+  const { setCardAnchor } = await import('./coach-ui.ts');
+  const messages = [
+    { id: 'a', actions: [] },
+    { id: 'b', actions: [{ type: 'start_quiz', sessionId: 's1' }] },
+    { id: 'c', actions: [] },
+    { id: 'd', actions: [{ type: 'start_quiz', sessionId: 's2' }] },
+    { id: 'e', actions: [{ type: 'start_flashcards' }] },
+    { id: 'f' },
+  ];
+  assert.equal(setCardAnchor(messages, { kind: 'quiz', sessionId: 's1' }), 'b');
+  assert.equal(setCardAnchor(messages, { kind: 'quiz', sessionId: 's2' }), 'd');
+  assert.equal(setCardAnchor(messages, { kind: 'quiz', sessionId: 'gone' }), null);
+  assert.equal(setCardAnchor(messages, { kind: 'deck' }), 'e');
+  assert.equal(setCardAnchor([{ id: 'x', actions: null }], { kind: 'deck' }), null);
+});

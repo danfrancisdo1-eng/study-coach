@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-11-01 — D-304: On the web, a set's card stays where the set started
+- Dan (screenshot of the web Coach tab): "is there a way start the coaches review after the last output and not before". The web drew the set's card (and its score) under all the messages, so the coach's evaluation and the review of the misses showed above the score.
+- The card now sits under the coach message that started the set (the start_quiz action holding its session; for flashcards, the last message that started them; src/lib/coach-ui.ts setCardAnchor); everything said after the set comes below it. With no such message, the card stays at the end as before.
+- The timed-exam choices moved below the conversation and wait while the coach answers or goes over misses (its chips are Got it / Not yet).
+- Not changed: after a reload the web still shows no card for a graded set (the phone keeps showing its last set). Doing that safely needs a look at timed sets left open (one would grade itself on reload); left for step 6 (live sets).
+- **Decided by:** Dan (the ask); Claude (the placement).
+
 ## 2026-11-01 — D-221: The misses walk waits for the memory plan, so pictures show
 - Dan did about 40 questions with 8 or 9 misses and never saw a picture or even its gray placeholder. Render logs: the memory coach asked for a picture in 2 sets ("Memory cards written … pictures: 1").
 - Cause: when "Go over my misses" is tapped, the server waited only 10 seconds for the memory coach's plan (the cards, which also say which miss gets a picture). The newer plan (technique_plan, D-215) often takes longer, so the walk started with no plan, the coach made up its own hack, and no picture was attached. A set with one pictured miss could never show it.
