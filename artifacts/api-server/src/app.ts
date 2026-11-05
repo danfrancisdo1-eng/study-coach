@@ -7,11 +7,14 @@ import privacyRouter from "./routes/privacy";
 import { pageRouter as repPageRouter } from "./routes/reps";
 import { logger } from "./lib/logger";
 import { webAppRouter, webDistDir } from "./lib/web-app";
-import { setUsageListener } from "./ai";
+import { setFailureListener, setUsageListener } from "./ai";
 import { logAiCost } from "./lib/cost-log";
+import { notifyAiFailure } from "./lib/ai-alerts";
 
 // D-145: every AI call made for an account is added to its daily cost (ai_cost).
 setUsageListener(logAiCost);
+// D-223: an AI failure a person must fix (bad key, model gone, billing) emails ALERT_EMAIL.
+setFailureListener((failure) => { void notifyAiFailure(failure, logger); });
 import {
   CLERK_PROXY_PATH,
   clerkProxyMiddleware,

@@ -3,6 +3,7 @@
 // one-sentence scene is sent, never the student's name, answers or material.
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { imageSettings, picturePrompt } from "../lib/memory-pictures";
+import { reportFailure } from "./failures";
 
 /** The part of the OpenAI client this uses (tests pass a stub). */
 export type ImagesClient = {
@@ -13,15 +14,21 @@ export type ImagesClient = {
 
 export async function drawPicture(description: string, client: ImagesClient = openai as unknown as ImagesClient, env: Record<string, string | undefined> = process.env): Promise<{ mimeType: string; data: string }> {
   const settings = imageSettings(env);
-  const result = await client.images.generate({
-    model: settings.model,
-    prompt: picturePrompt(description),
-    n: 1,
-    size: settings.size,
-    quality: settings.quality,
-    output_format: settings.outputFormat,
-    output_compression: settings.outputCompression,
-  }, { timeout: 120_000, maxRetries: 1 });
+  let result: Awaited<ReturnType<ImagesClient["images"]["generate"]>>;
+  try {
+    result = await client.images.generate({
+      model: settings.model,
+      prompt: picturePrompt(description),
+      n: 1,
+      size: settings.size,
+      quality: settings.quality,
+      output_format: settings.outputFormat,
+      output_compression: settings.outputCompression,
+    }, { timeout: 120_000, maxRetries: 1 });
+  } catch (error) {
+    reportFailure({ provider: "openai", feature: `memory picture (${settings.model})`, error }); // D-223
+    throw error;
+  }
   const data = result.data?.[0]?.b64_json;
   if (!data) throw new Error("The image model returned no picture");
   return { mimeType: `image/${settings.outputFormat}`, data };
