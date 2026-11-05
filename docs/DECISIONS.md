@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-11-02 — D-222: How campus reps get paid (a process, no code)
+- Dan: "rep protocol sounds good." The app only works out what each rep is owed (D-219/D-220); it never moves money. RevenueCat reports purchases; it cannot pay anyone.
+- Now (a few reps): on the 5th of each month Dan opens Campus reps, pays each rep's share by Venmo, Zelle or PayPal, then taps Mark paid (the rep's page shows "Paid").
+- At sign-up Dan collects each rep's payout handle and a W-9 (reps are contractors; a 1099-NEC above the yearly IRS threshold, to be confirmed with Dan's accountant).
+- The app never stores reps' bank details.
+- Later (about 10+ reps): move to a payout service (PayPal Payouts, Tremendous, or Stripe Connect, which also collects tax forms and files 1099s); hooking it to the reps screen would be a new feature with its own plan.
+
 ## 2026-11-01 — D-304: On the web, a set's card stays where the set started
 - Dan (screenshot of the web Coach tab): "is there a way start the coaches review after the last output and not before". The web drew the set's card (and its score) under all the messages, so the coach's evaluation and the review of the misses showed above the score.
 - The card now sits under the coach message that started the set (the start_quiz action holding its session; for flashcards, the last message that started them; src/lib/coach-ui.ts setCardAnchor); everything said after the set comes below it. With no such message, the card stays at the end as before.
