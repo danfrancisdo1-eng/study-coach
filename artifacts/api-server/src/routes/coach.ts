@@ -8,7 +8,7 @@ import {
   GenerateExamPlanResponse,
 } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server"; // lecture transcription only (moves to lib/stt)
-import { complete, type AiTask } from "../ai";
+import { complete, reportFailure, type AiTask } from "../ai";
 import * as syllabusPrompt from "../prompts/syllabus.v1";
 import * as classicQuizPrompt from "../prompts/classic-quiz.v1";
 import * as examPlanPrompt from "../prompts/exam-plan.v1";
@@ -151,6 +151,7 @@ router.post("/coach/transcribe", (req,res,next)=>{
     res.json({segments});
   }catch(error){
     req.log.error({error:message(error)},"Lecture transcription failed");
+    reportFailure({provider:"openai",feature:"lecture transcription",error}); // D-223: only a fixable failure emails
     res.status(502).json({error:"Transcription failed. Your audio remains in this browser; try again or download it."});
   }finally{
     if(dir)await rm(dir,{recursive:true,force:true}).catch(()=>{});
