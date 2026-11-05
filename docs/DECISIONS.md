@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-11-05 — D-305: The web Courses tab and course screen (web parity step 4)
+- Built from the mock Dan approved (https://claude.ai/artifact/H6oVWkkyZzZeGqgvhkV5bR; "ok build it").
+- **Courses** (/courses, src/courses/CoursesPage.tsx): one row per course or exam with the phone's detail line (kind and exam date, materials, last set, guide sections), the countdown or "Read-only" tag; Add (course or certification exam, name, exam date read like the phone) and the phone's "What next?". Adding never grants AI consent; an exam's guide is looked up after adding when consent is already given.
+- **Course screen** (/courses/:id, src/courses/CoursePage.tsx): syllabus line (courses), study buttons, topics tested with right/asked bars (the phone's mastery rules), Coach recommends, progress, official exam guide with Refresh (asks the AI agreement first when needed), coach-written course notes read-only, memory sheet, material with Show notes, edit name / exam date / exam facts (the phone's saveDetails), delete after typing the name's first word (the phone's rule).
+- **Study buttons go through Coach:** each opens /coach?course=…&send=… (and &timed= for a timed exam choice); the Coach tab focuses the course and sends the phone's request (lib/course-actions.ts studyRequest) once its chat has opened, then clears the address so a reload never sends it again.
+- The review sheet helper moved to src/lib/review-tab.ts (Coach chip and course button share it); the AI agreement helper is src/coach/useAiConsent.tsx.
+- Not yet: adding material on the web (step 5); "+ Add" and "Add your syllabus" open the old account page until then. The Account tab still opens the old page (step 7).
+- **Decided by:** Dan.
+
 ## 2026-11-02 — D-222: How campus reps get paid (a process, no code)
 - Dan: "rep protocol sounds good." The app only works out what each rep is owed (D-219/D-220); it never moves money. RevenueCat reports purchases; it cannot pay anyone.
 - Now (a few reps): on the 5th of each month Dan opens Campus reps, pays each rep's share by Venmo, Zelle or PayPal, then taps Mark paid (the rep's page shows "Paid").

@@ -7,13 +7,12 @@ export type ShellTab = 'coach' | 'courses' | 'account';
 
 /**
  * D-303: the web app's frame, the phone's three tabs (Coach, Courses, Account): a side menu on a computer,
- * tabs along the bottom at phone width. Courses and Account open the existing account page until their
- * own steps rebuild them.
+ * tabs along the bottom at phone width. Account opens the existing account page until step 7 rebuilds it.
  */
 export default function AppShell({ active, plan, children }: { active: ShellTab; plan: { plan: string; count: string | null; upgrade: boolean } | null; children: ReactNode }) {
   const links: { tab: ShellTab; href: string; label: string; Icon: typeof MessageCircle }[] = [
     { tab: 'coach', href: '/coach', label: 'Coach', Icon: MessageCircle },
-    { tab: 'courses', href: '/desk', label: 'Courses', Icon: BookOpen },
+    { tab: 'courses', href: '/courses', label: 'Courses', Icon: BookOpen },
     { tab: 'account', href: '/desk', label: 'Account', Icon: UserRound },
   ];
   return <div className="rr-app">

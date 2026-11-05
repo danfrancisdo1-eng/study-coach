@@ -1,0 +1,64 @@
+/* D-305: the web Courses tab and course screen, on the Coach tab's tokens (coach/coach.css). */
+.rr-page { box-sizing: border-box; width: 100%; max-width: 900px; padding: 28px max(16px, 3vw) 40px; display: flex; flex-direction: column; gap: 18px; }
+.rr-page--wide { max-width: 1160px; }
+.rr-page-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.rr-page-head--end { align-items: flex-end; }
+.rr-title { margin: 0; font-family: var(--rr-display); font-weight: 600; font-size: clamp(26px, 3.2vw, 32px); line-height: 1.2; text-wrap: balance; }
+.rr-kicker { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--rr-muted-fg); }
+.rr-stack-tight { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.rr-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rr-back { align-self: flex-start; min-height: 44px; display: inline-flex; align-items: center; gap: 6px; color: var(--rr-primary-text); font-weight: 600; text-decoration: none; }
+.rr-with-icon { display: inline-flex; align-items: center; gap: 8px; }
+
+.rr-list { list-style: none; margin: 0; padding: 0; border-radius: 16px; background: var(--rr-card); border: 1px solid var(--rr-border); overflow: hidden; }
+.rr-list li + li { border-top: 1px solid var(--rr-border); }
+.rr-list-row { display: flex; align-items: center; gap: 14px; min-height: 72px; padding: 12px 18px; color: var(--rr-fg); text-decoration: none; }
+.rr-list-row:hover { background: var(--rr-muted); }
+.rr-list-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rr-list-main strong { font-size: 16px; overflow-wrap: anywhere; }
+.rr-chevron { flex: none; color: var(--rr-muted-fg); }
+.rr-tag { flex: none; padding: 4px 10px; border-radius: 20px; background: var(--rr-accent); color: var(--rr-primary-text); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.rr-tag--muted { background: var(--rr-muted); color: var(--rr-muted-fg); }
+
+.rr-card { margin: 0; box-sizing: border-box; padding: 18px 20px; border-radius: 16px; background: var(--rr-card); border: 1px solid var(--rr-border); display: flex; flex-direction: column; gap: 10px; min-width: 0; overflow-wrap: anywhere; }
+.rr-card p { margin: 0; }
+.rr-card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 28px; }
+.rr-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+.rr-column { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+@media (max-width: 900px) { .rr-columns { grid-template-columns: minmax(0, 1fr); } }
+.rr-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.rr-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.rr-grid3 label { display: grid; gap: 4px; }
+.rr-span2 { grid-column: 1 / -1; }
+.rr-outline { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--rr-border); background: var(--rr-card); color: var(--rr-fg); cursor: pointer; }
+.rr-outline:hover:not(:disabled) { background: var(--rr-muted); }
+.rr-outline:disabled { opacity: .55; cursor: default; }
+.rr-small { font-size: 14px; }
+.rr-linkbutton { display: inline-flex; align-items: center; text-decoration: none; }
+
+.rr-stat { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: baseline; }
+.rr-stat--plain { align-items: center; }
+.rr-stat-label { min-width: 0; overflow-wrap: anywhere; }
+.rr-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rr-bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--rr-muted); overflow: hidden; }
+.rr-bar-fill { display: block; height: 100%; background: var(--rr-primary); }
+.rr-bar-fill--weak { background: var(--rr-muted-fg); }
+.rr-notes { display: grid; gap: 4px; }
+.rr-notes p { margin: 0; }
+.rr-card .rr-hook p { margin: 0; }
+.rr-hook { display: grid; gap: 2px; }
+.rr-small-text { font-size: 13px; }
+.rr-material { display: grid; gap: 6px; }
+.rr-form { gap: 8px; }
+.rr-label { font-size: 13px; font-weight: 600; }
+.rr-danger { color: var(--rr-wrong); align-self: flex-start; }
+.rr-danger-button { min-height: 44px; padding: 0 18px; border-radius: 12px; border: 0; background: var(--rr-wrong); color: var(--rr-card); font-weight: 600; cursor: pointer; }
+.rr-danger-button:disabled { opacity: .5; cursor: default; }
+
+/* Add a course or exam. */
+.rr-choice { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.rr-choice-item { min-height: 44px; border-radius: 12px; border: 1px solid var(--rr-border); background: var(--rr-card); color: var(--rr-fg); cursor: pointer; }
+.rr-choice-item[aria-checked="true"] { border: 2px solid var(--rr-primary); background: var(--rr-accent); color: var(--rr-primary-text); font-weight: 600; }
+.rr-dialog .rr-outline { width: 100%; }
+/* Links inside text read as links (the base styles reset link colour). */
+.rr-card a:not([class]), .rr-note a:not([class]) { color: var(--rr-primary-text); text-decoration: underline; text-underline-offset: 2px; }
