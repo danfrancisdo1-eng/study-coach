@@ -7,7 +7,6 @@ import {
 } from '@workspace/api-client-react';
 import { blocksOf, type Block, type Span } from '@phone-lib/coach-text';
 import { topicParts } from '@phone-lib/topic-label';
-import { reviewHtml } from '@phone-lib/review-html';
 import { estimate } from '@phone-lib/progress';
 import type { TimedSize } from '@phone-lib/exam-facts';
 import { AlreadySent, closeOpenBold, paceStep, sendWithRetry, streamable } from '@phone-lib/chat-stream';
@@ -16,13 +15,12 @@ import QuizCard from '../QuizCard';
 import ProgressBar, { useElapsed } from '../ProgressBar';
 import FlashcardDeck from '../FlashcardDeck';
 import { streamChatMessage } from '../lib/coach-stream';
+import { openReviewTab } from '../lib/review-tab';
 import { premiumCode, REPORT_REASONS, setCardAnchor, type PremiumCode, type ReportReason } from '../lib/coach-ui';
 
 const FINISHED_SET_MESSAGE = 'I finished the set.';
 const FINISHED_DECK_MESSAGE = 'I finished the flashcards.';
 const REVIEW_CHIP = 'Review sheet (PDF)';
-// D-149: the review sheet opens in its own tab with a "Print or save as PDF" bar (the bar never prints).
-const withPrintBar = (html: string) => html.replace(/<body([^>]*)>/, '<body$1><div class="rr-print-bar" style="position:sticky;top:0;display:flex;justify-content:flex-end;padding:10px;background:#fff;border-bottom:1px solid #ddd"><button type="button" onclick="window.print()" style="font:600 15px system-ui;padding:10px 16px;border-radius:10px;border:0;background:#F2B544;cursor:pointer">Print or save as PDF</button></div><style>@media print{.rr-print-bar{display:none!important}}</style>');
 
 type Live = { received: string; shown: number; finished: boolean };
 
@@ -52,7 +50,7 @@ function ReplyBody({ content, onPopQuiz, caret }: { content: string; onPopQuiz: 
  * the coach writes them (D-206), Report under each reply, the AI agreement asked when the student first sends,
  * and the plan dialog when the server stops a request (402).
  */
-export default function CoachChat({ aiConsent, courseId, timedChoices = [], factPicks, onPickFacts, passMark, onCoursesChanged, onOpenSession, requireConsent, onLimit, onSent }: {
+export default function CoachChat({ aiConsent, courseId, timedChoices = [], factPicks, onPickFacts, passMark, onCoursesChanged, onOpenSession, requireConsent, onLimit, onSent, autoSend, onAutoSent }: {
   aiConsent: boolean;
   courseId?: string | null;
   timedChoices?: { size: TimedSize; label: string }[];
@@ -66,6 +64,9 @@ export default function CoachChat({ aiConsent, courseId, timedChoices = [], fact
   onLimit: (code: PremiumCode) => void;
   /** A message went through (the live count changes). */
   onSent: () => void;
+  /** D-305: a request from a course screen button, sent once when this course's chat has loaded. */
+  autoSend?: { text: string; timed?: TimedSize } | null;
+  onAutoSent?: () => void;
 }) {
   const client = useQueryClient();
   const chatParams = courseId ? { courseId } : undefined;
@@ -83,6 +84,7 @@ export default function CoachChat({ aiConsent, courseId, timedChoices = [], fact
   const [live, setLive] = useState<Live | null>(null);
   const liveResult = useRef<HomeChatData | null>(null);
   const [reportFor, setReportFor] = useState<string | null>(null);
+  const [openedFor, setOpenedFor] = useState<string | null>(null);
   const [gradedSessionId, setGradedSessionId] = useState<string | null>(null);
   const [finishedDeckId, setFinishedDeckId] = useState<string | null>(null);
   const [pickQ, setPickQ] = useState<number | null>(null);
@@ -105,15 +107,7 @@ export default function CoachChat({ aiConsent, courseId, timedChoices = [], fact
     else setError(friendlyError(problem));
   };
 
-  // D-139: the review sheet opens in a new tab, opened in the click itself (pop-up blockers), filled when written.
-  const openReview = (id: string) => {
-    const tab = window.open('', '_blank');
-    if (!tab) { setError('Allow pop-ups for this site to open the review sheet.'); return; }
-    tab.document.write('<p style="font-family:sans-serif;padding:24px">Writing your review sheet…</p>');
-    void review.mutateAsync({ courseId: id }).then((sheet) => {
-      tab.document.open(); tab.document.write(withPrintBar(reviewHtml(sheet))); tab.document.close(); tab.focus();
-    }, (problem) => { tab.close(); failed(problem); });
-  };
+  const openReview = (id: string) => openReviewTab(() => review.mutateAsync({ courseId: id }), failed);
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'nearest' }); }, [messages.length, pending, live?.shown]);
   // A study session opens when the page opens or the tab comes back (the server greets only after a real break).
@@ -122,7 +116,7 @@ export default function CoachChat({ aiConsent, courseId, timedChoices = [], fact
   useEffect(() => {
     if (!aiConsent) return;
     const key = chatKey;
-    const openSession = () => { openRef.current({ data: chatParams ?? {} }).then(result => client.setQueryData(key, result)).catch(() => {}); };
+    const openSession = () => { openRef.current({ data: chatParams ?? {} }).then(result => client.setQueryData(key, result)).catch(() => {}).finally(() => setOpenedFor(courseId ?? '')); };
     openSession();
     const onVisible = () => { if (document.visibilityState === 'visible') openSession(); };
     document.addEventListener('visibilitychange', onVisible);
@@ -197,6 +191,17 @@ export default function CoachChat({ aiConsent, courseId, timedChoices = [], fact
       failed(problem);
     }
   };
+  // D-305: a course screen button opened this chat with a request: send it once the chat is there.
+  const autoSent = useRef<string | null>(null);
+  useEffect(() => {
+    // It waits for the chat to open (the greeting changes the chat's version) unless the agreement is still to come.
+    if (!autoSend || chat.isLoading || !chat.data || sending || (aiConsent && openedFor !== (courseId ?? ''))) return;
+    const key = `${courseId ?? ''}|${autoSend.text}`;
+    if (autoSent.current === key) return;
+    autoSent.current = key;
+    onAutoSent?.();
+    void sendText(autoSend.text, autoSend.timed);
+  }, [autoSend, chat.isLoading, chat.data, sending, courseId, openedFor, aiConsent]);
   const submit = (event: FormEvent) => { event.preventDefault(); void sendText(draft); };
 
   const reportReply = async (message: HomeChatMessage, reason: ReportReason) => {

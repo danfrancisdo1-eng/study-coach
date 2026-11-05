@@ -1,5 +1,16 @@
 # Progress
 
+## Session W6 — 2026-11-05 — web Courses tab and course screen (D-305), branch `web/courses`
+
+### Done
+- Step 4 of web parity from the approved mock: Courses list with Add and "What next?", the course screen (syllabus, study buttons, topics tested, Coach recommends, progress, exam guide, course notes, memory sheet, material notes, edit, delete). Study buttons open Coach on the course and send the request once.
+- Verified here: typecheck passes; `pnpm test` 451 tests, 449 pass, 1 skipped, 1 fail (ai-study-requests.test.mjs, shallow-clone history, fails on main too); new src/lib/courses-ui.test.mjs (6). Web build passes, also installed like the Render image. Clicked through in Chromium against the real server and database (test sign-in, stand-in AI, a graded set on a sample course): list rows, course screen data, a Coach recommends chip opens Coach on the course and sends "Give me a practice set on Mitosis" once (not again on reload), exam screen with real exam line and timed choices, rename, add an exam with a typed date, open it, delete it; phone width in dark mode, no sideways scroll. The Coach tab tests from steps 3 and 3b still pass.
+
+### UX checklist (docs/UX_PRINCIPLES.md), screenshots in chat
+1. Tap targets ≥ 44 px: PASS. 2. One primary action per screen: PASS (Add on the list; Practice questions on the course). 3. Chunked: PASS (one card per kind of information). 4. Familiar patterns: PASS (list rows with a chevron, back link, dialogs close with Escape or a click outside). 5. Progress / resume: PASS (topics, progress, countdown). 6. One accent, not color-only: PASS (bars carry the right/asked number; read-only is a word). 7. Tokens; dark mode; text size: PASS. 8. Contrast, labels: PASS (labelled inputs, bars have a spoken label, delete needs a typed word). 9. Paywall: PASS (read-only says Premium is bought in the iPhone app; nothing sold).
+
+### Needs Dan to check (after merge and the Render deploy)
+- Courses tab: your two exams, each opens its screen. On Microsoft AI-103: the countdown and exam guide. Tap Practice questions: Coach opens on that exam and asks for a set.
 ## Session 24g — 2026-11-05 — AI failure alert email (D-223), branch `feat/ai-failure-alert`
 
 ### Done

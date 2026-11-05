@@ -8,6 +8,8 @@ import { Link, Redirect, Route, Router as WouterRouter, Switch, useLocation } fr
 import LegacyApp from './App';
 import { AccountPage } from './AccountPage';
 import CoachPage from './coach/CoachPage';
+import CoursesPage from './courses/CoursesPage';
+import CoursePage from './courses/CoursePage';
 
 // D-300: on Render the server puts the publishable key into the page (window.__STUDY_COACH_CONFIG__);
 // local development still reads it from .env.local.
@@ -126,6 +128,9 @@ function AuthRoutes() {
         <Route path="/sign-up/*?"><div className="onboard" style={{ maxWidth: 480 }}><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /></div></Route>
         {/* D-303: the Coach tab is the signed-in home, as on the phone. */}
         <Route path="/coach"><><Show when="signed-in"><CoachPage /></Show><Show when="signed-out"><Redirect to="/" /></Show></></Route>
+        {/* D-305: the Courses tab and the course screen. */}
+        <Route path="/courses"><><Show when="signed-in"><CoursesPage /></Show><Show when="signed-out"><Redirect to="/" /></Show></></Route>
+        <Route path="/courses/:courseId">{(params: { courseId: string }) => <><Show when="signed-in"><CoursePage key={params.courseId} courseId={decodeURIComponent(params.courseId)} /></Show><Show when="signed-out"><Redirect to="/" /></Show></>}</Route>
         <Route path="/desk"><><Show when="signed-in"><Desk /></Show><Show when="signed-out"><Redirect to="/" /></Show></></Route>
         <Route path="/classic/*?"><><Show when="signed-in"><Classic /></Show><Show when="signed-out"><Redirect to="/" /></Show></></Route>
         <Route><PublicHome /></Route>

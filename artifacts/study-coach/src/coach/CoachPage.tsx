@@ -13,6 +13,8 @@ import AppShell from './AppShell';
 import CoachChat from './CoachChat';
 import { ConsentDialog, LimitDialog } from './Dialogs';
 import { countdownText, planSummary, type PlanStatus, type PremiumCode } from '../lib/coach-ui';
+import { coachParams } from '../lib/courses-ui';
+import type { TimedSize } from '@phone-lib/exam-facts';
 
 type Course = { id: string; name: string; kind?: string; examDate?: string } & Record<string, unknown>;
 
@@ -25,7 +27,15 @@ export default function CoachPage() {
   const put = usePutStudyState();
   const refresh = useRefreshPremium();
   const saveExamFacts = useSaveExamFacts();
-  const [courseId, setCourseId] = useState<string | null>(null);
+  // D-305: a course screen button opens Coach on its course and can carry one request to send (?course=&send=&timed=).
+  const [initial] = useState(() => coachParams(window.location.search));
+  const [courseId, setCourseId] = useState<string | null>(initial.courseId);
+  const [autoSend, setAutoSend] = useState<{ text: string; timed?: TimedSize } | null>(initial.send ? { text: initial.send, ...(initial.timed ? { timed: initial.timed as TimedSize } : {}) } : null);
+  const autoSent = useCallback(() => {
+    setAutoSend(null);
+    // Sent once: a reload of the page must not send it again.
+    if (window.location.search) window.history.replaceState(null, '', window.location.pathname);
+  }, []);
   const [consent, setConsent] = useState<{ reason: string; run: () => void } | null>(null);
   const [consentError, setConsentError] = useState('');
   const [limit, setLimit] = useState<PremiumCode | null>(null);
@@ -70,8 +80,8 @@ export default function CoachPage() {
   return <AppShell active="coach" plan={plan}>
     <header className="rr-top">
       <div className="rr-chips" role="group" aria-label="Course to study">
-        <button type="button" className="rr-course-chip" aria-pressed={courseId === null} onClick={() => setCourseId(null)} data-testid="button-focus-all">All courses</button>
-        {courses.map(c => <button key={c.id} type="button" className="rr-course-chip" aria-pressed={c.id === courseId} onClick={() => setCourseId(c.id)} data-testid="button-focus-course">{c.name}</button>)}
+        <button type="button" className="rr-course-chip" aria-pressed={courseId === null} onClick={() => { setAutoSend(null); setCourseId(null); }} data-testid="button-focus-all">All courses</button>
+        {courses.map(c => <button key={c.id} type="button" className="rr-course-chip" aria-pressed={c.id === courseId} onClick={() => { setAutoSend(null); setCourseId(c.id); }} data-testid="button-focus-course">{c.name}</button>)}
       </div>
       {countdown && <div className="rr-countdown" data-testid="text-countdown"><strong>{countdown.split(' · ')[0]}</strong> · {countdown.split(' · ').slice(1).join(' · ')}</div>}
       {plan?.count && <div className="rr-plan-inline">{plan.plan} · {plan.count}</div>}
@@ -87,7 +97,8 @@ export default function CoachPage() {
         onOpenSession={() => navigate('/desk')}
         requireConsent={requireConsent}
         onLimit={code => { setLimit(code); refreshUsage(); }}
-        onSent={refreshUsage} />}
+        onSent={refreshUsage}
+        autoSend={autoSend && courses.some(c => c.id === courseId) ? autoSend : null} onAutoSent={autoSent} />}
     {consent && <ConsentDialog reason={consent.reason} busy={put.isPending} error={consentError} onAgree={() => void agree()} onClose={() => { runAfterConsent.current = null; setConsent(null); }} />}
     {limit && <LimitDialog code={limit} status={status} checking={refresh.isPending} onCheckAgain={() => void checkAgain()} onClose={() => setLimit(null)} />}
   </AppShell>;
