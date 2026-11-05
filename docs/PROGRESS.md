@@ -1,5 +1,19 @@
 # Progress
 
+## Session 24g — 2026-11-05 — AI failure alert email (D-223), branch `feat/ai-failure-alert`
+
+### Done
+- Found the outages: the Claude key had expired (Dan replaced it; the coach answers again) and OpenAI retired gpt-image-1 (pictures failed at the drawing step; Dan to set AI_IMAGE_MODEL to a current model).
+- Built the alert: AI failures a person must fix email ALERT_EMAIL via Resend, once per problem every 6 hours.
+- Verified here: typecheck; `pnpm test` (see PR); new unit and end-to-end tests.
+
+### Needs Dan
+- Resend account (danfrancisdo1@gmail.com) → API key → Render: RESEND_API_KEY and ALERT_EMAIL=danfrancisdo1@gmail.com → Save and deploy.
+- Render: AI_IMAGE_MODEL set to a current OpenAI image model (gpt-image-2 suggested; confirm the name on platform.openai.com).
+
+### Next
+- Once a picture model works, make it the code default; "Enter a rep code" in Account (mock first).
+
 ## Session W5 — 2026-11-01 — set card before the coach's review on the web (D-304), branch `web/set-card-order`
 
 ### Done

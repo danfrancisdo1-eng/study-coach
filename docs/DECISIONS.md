@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-11-05 — D-223: The server emails an alert when an AI service needs fixing
+- Dan: "Make it email it if the API starts failing." Two silent outages: the Claude key expired on Nov 2 (every coach reply failed with "invalid x-api-key" until Dan made a new key on Nov 5), and OpenAI retired gpt-image-1 on Oct 23 ("The model 'gpt-image-1' does not exist"), so no memory picture was ever drawn.
+- Every AI call (complete(), the memory picture, lecture transcription) tells one failure listener (src/ai/failures.ts; evals register none). lib/ai-alerts.ts sorts the error: key rejected (401), no access (403, verification), model missing (404, "does not exist", retired), billing (402, credit balance, quota), key missing. Overloaded, rate limits, timeouts and 5xx never email.
+- Each failure of those kinds is logged as "AI alert"; the first per provider and kind in 6 hours is emailed to ALERT_EMAIL through Resend's HTTP API (plain fetch, no new package) with RESEND_API_KEY. The email names the service, the feature, what to do, and the provider's own error text (no student data). Unset keys: logged only. A failed send is retried on the next failure.
+- Sender: Resend's shared onboarding@resend.dev until getrapidrecall.com is verified in Resend (then set ALERT_FROM); until then Resend only delivers to the email the Resend account was made with.
+- Verified here: unit tests (ai-alerts.test.mjs, from the real Render log lines) and an end-to-end test (a rejected key: the chat still answers 502, exactly one email). Decided by Dan.
+
 ## 2026-11-02 — D-222: How campus reps get paid (a process, no code)
 - Dan: "rep protocol sounds good." The app only works out what each rep is owed (D-219/D-220); it never moves money. RevenueCat reports purchases; it cannot pay anyone.
 - Now (a few reps): on the 5th of each month Dan opens Campus reps, pays each rep's share by Venmo, Zelle or PayPal, then taps Mark paid (the rep's page shows "Paid").

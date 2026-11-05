@@ -4,6 +4,9 @@ import { chatCompletion, type ChatMessage, type ChatResult } from "@workspace/in
 import { anthropicCompletion } from "./anthropic";
 import { TASK_SCHEMAS } from "./schemas";
 import { taskConfig, type AiTask } from "./tasks";
+import { reportFailure } from "./failures";
+
+export { setFailureListener, reportFailure, type AiFailure } from "./failures";
 
 export type { AiTask } from "./tasks";
 export type AiMessage = ChatMessage;
@@ -28,7 +31,14 @@ let usageListener: UsageListener | null = null;
 export function setUsageListener(listener: UsageListener | null): void { usageListener = listener; }
 
 export async function complete(task: AiTask, input: AiInput): Promise<AiResult> {
-  const result = await completeWith(task, input);
+  let result: AiResult;
+  try {
+    result = await completeWith(task, input);
+  } catch (error) {
+    // D-223: the app emails an alert when a person must fix it (bad key, model gone, billing).
+    reportFailure({ provider: taskConfig(task).provider, feature: task, error });
+    throw error;
+  }
   try { usageListener?.(task, taskConfig(task).model, result.usage); } catch { /* the cost log never fails a call */ }
   return result;
 }

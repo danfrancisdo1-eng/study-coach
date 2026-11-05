@@ -41,6 +41,11 @@ services:
         sync: false
       - key: OWNER_ACCOUNT_IDS
         sync: false
+      # D-223: an AI failure a person must fix (bad key, model gone, billing) emails ALERT_EMAIL via Resend.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: ALERT_EMAIL
+        sync: false
 
 databases:
   - name: study-coach-db
