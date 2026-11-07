@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeInUp, LinearTransition, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
+import { TermText } from '@/components/TermText';
 import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -146,7 +147,8 @@ export function LiveSetCard({ sessionId, userId, onGraded, onError, onStepChange
     return (
       <View style={styles.question}>
         {showKicker ? <CardText style={styles.kicker}>Question {position + 1} of {total}{question.concept ? ` · ${question.concept}` : ''}</CardText> : null}
-        <CardText style={styles.prompt}>{question.prompt}</CardText>
+        {/* D-226: specialist words are highlighted; press one for its definition. */}
+        <TermText key={question.id} text={question.prompt} terms={question.terms} style={styles.prompt} />
         {question.options.map((option, i) => {
           const chosen = feedback ? feedback.selectedOptionId === option.id : false;
           const correct = feedback ? feedback.correctOptionId === option.id : false;

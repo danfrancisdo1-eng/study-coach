@@ -1417,6 +1417,16 @@ components:
                   properties:
                     id: { type: string, format: uuid }
                     text: { type: string }
+              terms:
+                type: array
+                description: "D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions."
+                maxItems: 3
+                items:
+                  type: object
+                  required: [term, definition]
+                  properties:
+                    term: { type: string }
+                    definition: { type: string }
               flag:
                 oneOf:
                   - $ref: "#/components/schemas/StudyQuestionFlag"

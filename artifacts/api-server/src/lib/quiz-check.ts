@@ -1,5 +1,38 @@
 // Answer-key consistency (D-027): pure parse + apply, no AI import (unit-tested directly).
-export type ProposedQuestion = { prompt: string; options: string[]; answerIndex: number; concept: string; explanation: string; hook?: string };
+/** D-226: a specialist word in a question's stem, with a one-line definition (press it in the app to read it). */
+export type QuestionTerm = { term: string; definition: string };
+export type ProposedQuestion = { prompt: string; options: string[]; answerIndex: number; concept: string; explanation: string; hook?: string; terms?: QuestionTerm[] };
+
+export const MAX_TERMS = 3;
+const squash = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+/**
+ * D-226: the writer's terms, kept only when safe and useful: at most MAX_TERMS, each found word for word in the
+ * stem (so the app can highlight it), a short definition, no repeats, and nothing that gives the answer away (the
+ * term names the correct option or sits inside it, or the definition contains the correct option).
+ */
+export function cleanTerms(value: unknown, prompt: string, correctOption: string): QuestionTerm[] {
+  if (!Array.isArray(value)) return [];
+  const stem = prompt.toLowerCase();
+  const key = squash(correctOption);
+  const seen = new Set<string>();
+  const kept: QuestionTerm[] = [];
+  for (const item of value) {
+    if (kept.length >= MAX_TERMS) break;
+    if (!item || typeof item !== "object") continue;
+    const term = typeof (item as Record<string, unknown>).term === "string" ? ((item as Record<string, unknown>).term as string).trim() : "";
+    const definition = typeof (item as Record<string, unknown>).definition === "string" ? ((item as Record<string, unknown>).definition as string).replace(/\s+/g, " ").trim() : "";
+    if (term.length < 2 || term.length > 60 || definition.length < 8 || definition.length > 240) continue;
+    if (!stem.includes(term.toLowerCase())) continue;
+    const t = squash(term);
+    if (!t || seen.has(t)) continue;
+    if (key && (key === t || ` ${key} `.includes(` ${t} `) || ` ${t} `.includes(` ${key} `))) continue;
+    if (key.length >= 4 && ` ${squash(definition)} `.includes(` ${key} `)) continue;
+    seen.add(t);
+    kept.push({ term, definition });
+  }
+  return kept;
+}
 export type KeyCheck = { consistent: boolean; correctIndex: number | null; duplicateOf?: number };
 
 /** Reads the checker's reply; unknown or malformed entries are ignored (treated as consistent). */

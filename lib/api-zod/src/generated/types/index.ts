@@ -132,6 +132,7 @@ export * from './studyQuizMode';
 export * from './studyQuizQuestionsItem';
 export * from './studyQuizQuestionsItemAnswer';
 export * from './studyQuizQuestionsItemOptionsItem';
+export * from './studyQuizQuestionsItemTermsItem';
 export * from './studyQuizStatus';
 export * from './studyScore';
 export * from './studySession';
