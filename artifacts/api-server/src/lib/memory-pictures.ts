@@ -11,7 +11,8 @@ export const MAX_DESCRIPTION = 400;
 /** How long after grading a missing picture still reads "drawing" (the image takes 10 to 60 seconds). */
 export const DRAWING_WINDOW_MS = 3 * 60_000;
 /** The image model when AI_IMAGE_MODEL is not set (server config, never at call sites). */
-export const DEFAULT_IMAGE_MODEL = "gpt-image-1";
+/** D-225: gpt-image-1 was retired by OpenAI on Oct 23, 2026; gpt-image-2 is confirmed working in production (Nov 7). */
+export const DEFAULT_IMAGE_MODEL = "gpt-image-2";
 
 export type MemoryPictureRecord = {
   status: "drawing" | "ready" | "failed";
