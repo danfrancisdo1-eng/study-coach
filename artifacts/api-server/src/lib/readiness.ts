@@ -175,3 +175,12 @@ export function countdownFocus(events: ResultEvent[], guide: { name: string; wei
   }
   return readiness(events, null)?.focus ?? [];
 }
+
+/**
+ * D-224: when the day's first message gets the countdown heads-up: a dated certification exam or, now,
+ * a class with its next quiz or test date, 2 to 7 days out. (Before D-224 only exams had a date.)
+ */
+export function countdownDue(course: { kind?: string; daysLeft?: number } | undefined, firstMessageToday: boolean): boolean {
+  if (!course || !firstMessageToday || typeof course.daysLeft !== "number") return false;
+  return (course.kind === "exam" || course.kind === "course") && course.daysLeft >= 2 && course.daysLeft <= 7;
+}

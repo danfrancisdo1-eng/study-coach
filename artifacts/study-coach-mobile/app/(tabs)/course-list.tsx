@@ -17,7 +17,8 @@ import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { HeaderIconButton, HeaderTextButton, ScreenHeader } from '@/components/ScreenHeader';
 import { friendlyError } from '@/lib/friendly-error';
 import { premiumCode } from '@/lib/premium-ui';
-import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
+import { dateHint, describeExamDate, parseExamDate, shortDate } from '@/lib/exam-date';
+import { dateError, dateLabel, kindHint } from '@/lib/course-kind';
 import { CourseListSkeleton } from '@/components/Skeleton';
 import { KindChoice } from '@/components/KindChoice';
 import { ADD_PARAM_CLEARED, wantsAddSheet } from '@/lib/add-sheet';
@@ -121,8 +122,9 @@ export default function CourseListScreen() {
   const addCourse = async () => {
     const name = addName.trim();
     if (!name || busy) return;
-    const addIso = addKind === 'exam' ? parseExamDate(addDate) : null;
-    if (addKind === 'exam' && addDate.trim() && !addIso) { setError('Try the exam date like Nov 14 or 11/14/2026.'); return; }
+    // D-224: a class takes its next quiz or test date too (same field the server and the coach read).
+    const addIso = addKind ? parseExamDate(addDate) : null;
+    if (addKind && addDate.trim() && !addIso) { setError(dateError(addKind)); return; }
     setError('');
     try {
       const previous = stateQuery.data;
@@ -148,7 +150,7 @@ export default function CourseListScreen() {
   };
 
   const detail = (row: Row) => [
-    row.kind === 'exam' ? `exam${row.examDate ? ` · ${describeExamDate(row.examDate)}` : ''}` : 'course',
+    row.kind === 'exam' ? `exam${row.examDate ? ` · ${describeExamDate(row.examDate)}` : ''}` : `class${row.examDate ? ` · next test ${shortDate(row.examDate)}` : ''}`,
     `${row.materials + lecturesFor(row.id)} material${row.materials + lecturesFor(row.id) === 1 ? '' : 's'}`,
     ...(lastResult.get(row.id) ? [lastResult.get(row.id)!] : []),
     ...(row.kind === 'exam' ? [lookingUp === row.id ? 'looking up the exam guide…' : row.guide?.found ? `${row.guide.sections} sections` : ''] : []),
@@ -184,7 +186,7 @@ export default function CourseListScreen() {
 
       <Modal visible={addOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { setAddOpen(false); setJustAdded(null); }}>
         <KeyboardAvoidingView behavior="padding" style={[styles.screen, { paddingTop: 20 }]}>
-          <ScreenHeader title={justAdded ? `Added ${justAdded.name}` : 'Add a course or exam'} right={<HeaderIconButton icon="x" label="Close" onPress={() => { setAddOpen(false); setJustAdded(null); }} testID="button-close-add" />} />
+          <ScreenHeader title={justAdded ? `Added ${justAdded.name}` : 'Add a class or exam'} right={<HeaderIconButton icon="x" label="Close" onPress={() => { setAddOpen(false); setJustAdded(null); }} testID="button-close-add" />} />
           {justAdded ? (
             <View style={styles.sheetContent} testID="panel-added-next">
               <Text style={styles.nextTitle}>What next?</Text>
@@ -240,14 +242,15 @@ export default function CourseListScreen() {
             </View>
           ) : (
           <View style={styles.sheetContent}>
-            <Text style={styles.caption}>Is this a course or a certification exam?</Text>
+            <Text style={styles.caption}>Is this a class or a certification exam?</Text>
             <KindChoice value={addKind} onChange={setAddKind} />
-            <TextInput value={addName} onChangeText={setAddName} maxLength={120} placeholder={addKind === 'exam' ? 'e.g. AWS Solutions Architect Associate' : addKind === 'course' ? 'e.g. BIOL 114' : 'Pick one above first'} placeholderTextColor={colors.mutedForeground} editable={addKind !== null} style={[styles.input, addKind === null && styles.disabled]} accessibilityLabel="Name" testID="input-add-name" autoFocus={addKind !== null} />
-            {addKind === 'exam' ? <TextInput value={addDate} onChangeText={setAddDate} placeholder="Exam date, e.g. Nov 14 (optional)" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-add-date" /> : null}
-            {addKind === 'exam' && addDate.trim() ? <Text style={styles.caption} testID="text-add-date-hint">{examDateHint(addDate)}</Text> : null}
+            <Text style={styles.caption} testID="text-kind-hint">{kindHint(addKind)}</Text>
+            <TextInput value={addName} onChangeText={setAddName} maxLength={120} placeholder={addKind === 'exam' ? 'e.g. AWS Solutions Architect Associate' : addKind === 'course' ? 'e.g. BIO 114' : 'Pick one above first'} placeholderTextColor={colors.mutedForeground} editable={addKind !== null} style={[styles.input, addKind === null && styles.disabled]} accessibilityLabel="Name" testID="input-add-name" autoFocus={addKind !== null} />
+            {addKind ? <TextInput value={addDate} onChangeText={setAddDate} placeholder={`${dateLabel(addKind)}, e.g. Nov 14 (optional)`} placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel={dateLabel(addKind)} testID="input-add-date" /> : null}
+            {addKind && addDate.trim() ? <Text style={styles.caption} testID="text-add-date-hint">{dateHint(addKind, addDate)}</Text> : null}
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
             <PressScale gradient accessibilityRole="button" disabled={busy || !addName.trim() || !addKind} onPress={() => void addCourse()} style={[styles.primaryButton, (busy || !addName.trim() || !addKind) && styles.disabled]} testID="button-save-add">
-              <Text style={styles.primaryButtonText}>{addKind === 'exam' ? 'Add exam' : addKind === 'course' ? 'Add course' : 'Add'}</Text>
+              <Text style={styles.primaryButtonText}>{addKind === 'exam' ? 'Add exam' : addKind === 'course' ? 'Add class' : 'Add'}</Text>
             </PressScale>
           </View>
           )}
