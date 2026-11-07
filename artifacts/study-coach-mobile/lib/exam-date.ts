@@ -57,3 +57,38 @@ export function examDateHint(input: string, today: Date = new Date()): string {
   const iso = parseExamDate(input, today);
   return iso ? `Exam on ${describeExamDate(iso)}` : 'Try a date like Nov 14 or 11/14/2026';
 }
+
+// D-224: a class (kind "course") keeps its next quiz or test date in the same field; its wording.
+type Kind = 'course' | 'exam';
+type CourseLike = Record<string, unknown>;
+
+/** What was understood while typing the date, in the kind's words. */
+export function dateHint(kind: Kind | null, input: string, today: Date = new Date()): string {
+  if (!input.trim()) return '';
+  const iso = parseExamDate(input, today);
+  if (!iso) return 'Try a date like Nov 14 or 11/14/2026';
+  return kind === 'exam' ? `Exam on ${describeExamDate(iso)}` : `Next quiz or test: ${describeExamDate(iso)}`;
+}
+
+/** "Mon, Nov 9" (no year) for headers. */
+export function shortDate(iso: string): string {
+  return describeExamDate(iso).replace(/, \d{4}$/, '');
+}
+
+/** The course screen's kicker line. */
+export function kindKicker(course: CourseLike | undefined): string {
+  const date = typeof course?.examDate === 'string' ? course.examDate : null;
+  if (course?.kind === 'exam') return `Certification exam${date ? ` · ${describeExamDate(date)}` : ''}`;
+  return date ? `Class · Next quiz or test ${shortDate(date)}` : 'Class';
+}
+
+/** The class's countdown card line, or null when it has no date or the date has passed. */
+export function classCountdown(course: CourseLike | undefined, today: Date = new Date()): string | null {
+  if (!course || course.kind === 'exam' || typeof course.examDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(course.examDate)) return null;
+  const [y, m, d] = course.examDate.split('-').map(Number);
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const days = Math.round((new Date(y!, m! - 1, d!).getTime() - start.getTime()) / 86_400_000);
+  if (days < 0) return null;
+  return `${shortDate(course.examDate)} · ${days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`}`;
+}
+

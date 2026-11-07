@@ -1,5 +1,21 @@
 # Progress
 
+## Session 24h — 2026-11-07 — Class or Certification Exam (D-224), branch `feat/class-or-exam`
+
+### Done
+- Add sheet: "Class" / "Certification Exam" with a one-line hint; both take a date (class: next quiz or test).
+- Course screen: class countdown card, class kicker, date editable for classes; "Is this for a class?" card replaces the long no-guide paragraph (Switch to Class with Undo, or Keep as certification exam).
+- Server: dated classes get the 2–7 day countdown heads-up.
+- Verified here: typecheck; `pnpm test` 467 tests, 466 pass, 1 skipped; iOS export (build #113).
+
+### Needs real-iPhone check (build #113)
+- Add a Class with a date Monday: the course screen shows "Next quiz or test · Mon … · in N days".
+- Open "Bio Packet 10 Meiosis" (an exam with no guide): the "Is this for a class?" card; Switch → green note, Undo works; Keep → one short line.
+- First coach message of the day 2–7 days before the class date: the countdown heads-up.
+
+### Next
+- "Enter a rep code" in Account (mock first). Web app: the web session will pick up the Class wording.
+
 ## Session 24g — 2026-11-05 — AI failure alert email (D-223), branch `feat/ai-failure-alert`
 
 ### Done

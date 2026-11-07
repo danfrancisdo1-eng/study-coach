@@ -18,7 +18,8 @@ import { HeaderIconButton, ScreenHeader } from '@/components/ScreenHeader';
 import { STAT_VALUE_WIDTH, StatRow } from '@/components/StatRow';
 import { masteryIsStrong, masteryLabel, masteryShare, masteryValue } from '@/lib/mastery';
 import { friendlyError } from '@/lib/friendly-error';
-import { describeExamDate, examDateHint, parseExamDate } from '@/lib/exam-date';
+import { classCountdown, dateHint, describeExamDate, kindKicker, parseExamDate } from '@/lib/exam-date';
+import { dateError, dateLabel, keptAsExam, offerClassSwitch, withKind } from '@/lib/course-kind';
 import { courseExamFacts, factPicks, factsFromInputs, needsFactsLookup, realExamLine, timedChoices, type TimedSize } from '@/lib/exam-facts';
 import { whenLabel } from '@/lib/when';
 import { ActionButton } from '@/components/ActionButton';
@@ -84,6 +85,8 @@ export default function CourseScreen() {
   const [factPassing, setFactPassing] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  // D-224: just switched an exam to a class (the green note with Undo).
+  const [justSwitched, setJustSwitched] = useState(false);
   // D-211: an AI button tapped before the AI agreement asks for it here, then carries on.
   const [consentAsk, setConsentAsk] = useState<{ reason: string; run: () => void; guide: boolean } | null>(null);
   const [consentBusy, setConsentBusy] = useState(false);
@@ -165,12 +168,13 @@ export default function CourseScreen() {
     const trimmed = name.trim();
     if (!trimmed || busy) return;
     const iso = parseExamDate(examDate);
-    if (examDate.trim() && !iso) { setError('Try the exam date like Nov 14 or 11/14/2026.'); return; }
+    if (examDate.trim() && !iso) { setError(dateError(isExam ? 'exam' : 'course')); return; }
     const typed = isExam ? factsFromInputs(factQuestions, factMinutes, factPassing) : null;
     if (typed && 'error' in typed) { setError(typed.error); return; }
     setError(''); setSaving(true);
     try {
-      await persist({ courses: courses.map((c) => c.id === courseId ? { ...c, name: trimmed, ...(isExam ? { examDate: iso ?? undefined } : {}) } : c) });
+      // D-224: a class keeps its next quiz or test date in the same field.
+      await persist({ courses: courses.map((c) => c.id === courseId ? { ...c, name: trimmed, examDate: iso ?? undefined } : c) });
       // Typed exam facts (D-111): only what differs from what the app already uses is saved as a correction.
       if (typed && 'facts' in typed) {
         const t = typed.facts;
@@ -182,6 +186,20 @@ export default function CourseScreen() {
       }
       setEditing(false);
     } catch (problem) { setError(readable(problem)); } finally { setSaving(false); }
+  };
+
+  // D-224: a mistaken exam (no official guide found) becomes a class, or back with Undo; or stays an exam for good.
+  const setKind = async (kind: 'course' | 'exam') => {
+    setError(''); setSaving(true);
+    try {
+      await persist({ courses: withKind(courses, courseId!, kind) });
+      setJustSwitched(kind === 'course');
+    } catch (problem) { setError(readable(problem)); } finally { setSaving(false); }
+  };
+  const keepExam = async () => {
+    setError(''); setSaving(true);
+    try { await persist({ courses: keptAsExam(courses, courseId!) }); }
+    catch (problem) { setError(readable(problem)); } finally { setSaving(false); }
   };
 
   const deleteMaterial = async (material: ManagedMaterial) => {
@@ -262,7 +280,7 @@ export default function CourseScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <AuroraBackground />
-      <ScreenHeader leading="back" onLeading={() => goBack()} kicker={isExam ? `Certification exam${typeof course?.examDate === 'string' ? ` · ${describeExamDate(course.examDate)}` : ''}` : 'Course'}
+      <ScreenHeader leading="back" onLeading={() => goBack()} kicker={kindKicker(course)}
         title={typeof course?.name === 'string' ? course.name : 'Course'}
         right={<HeaderIconButton icon="edit-2" label="Edit name and date" onPress={openEditor} testID="button-edit-course" />} />
       {stateQuery.isLoading ? <CourseSkeleton /> : !course ? (
@@ -275,10 +293,10 @@ export default function CourseScreen() {
             <View style={styles.card}>
               <Text style={styles.kicker}>Name</Text>
               <TextInput value={name} onChangeText={setName} maxLength={120} style={styles.input} accessibilityLabel="Course name" testID="input-course-name" />
-              {isExam ? <><Text style={styles.kicker}>Exam date</Text>
-                <TextInput value={examDate} onChangeText={setExamDate} placeholder="e.g. Nov 14" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel="Exam date" testID="input-exam-date" />
-                {examDate.trim() ? <Text style={styles.caption} testID="text-exam-date-hint">{examDateHint(examDate)}</Text> : null}
-                <Text style={styles.kicker}>Real exam</Text>
+              <Text style={styles.kicker}>{dateLabel(isExam ? 'exam' : 'course')}</Text>
+              <TextInput value={examDate} onChangeText={setExamDate} placeholder="e.g. Nov 14" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" style={styles.input} accessibilityLabel={dateLabel(isExam ? 'exam' : 'course')} testID="input-exam-date" />
+              {examDate.trim() ? <Text style={styles.caption} testID="text-exam-date-hint">{dateHint(isExam ? 'exam' : 'course', examDate)}</Text> : null}
+              {isExam ? <><Text style={styles.kicker}>Real exam</Text>
                 <View style={styles.row}>
                   <TextInput value={factQuestions} onChangeText={setFactQuestions} placeholder="Questions" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={3} style={[styles.input, { flex: 1 }]} accessibilityLabel="Number of questions on the real exam" testID="input-exam-questions" />
                   <TextInput value={factMinutes} onChangeText={setFactMinutes} placeholder="Minutes" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={3} style={[styles.input, { flex: 1 }]} accessibilityLabel="Time limit of the real exam in minutes" testID="input-exam-minutes" />
@@ -289,6 +307,22 @@ export default function CourseScreen() {
                 <ActionButton label="Save" icon="check" onPress={() => void saveDetails()} disabled={busy || !name.trim()} testID="button-save-course" />
                 <ActionButton label="Cancel" secondary onPress={() => setEditing(false)} testID="button-cancel-edit" />
               </View>
+            </View>
+          ) : null}
+
+          {/* D-224: just switched from an exam: nothing was lost, and Undo is right there. */}
+          {justSwitched && !isExam ? (
+            <View style={[styles.card, styles.switchedNote]} testID="panel-switched-to-class">
+              <Text style={[styles.body, styles.switchedText]}>Switched to a class. Your notes, sets{typeof course?.examDate === 'string' ? ' and the date' : ''} stayed.</Text>
+              <ActionButton label="Undo" icon="rotate-ccw" secondary disabled={busy} onPress={() => void setKind('exam')} testID="button-undo-switch" />
+            </View>
+          ) : null}
+          {/* D-224: a class's next quiz or test, counted down like an exam date. */}
+          {!isExam && classCountdown(course) ? (
+            <View style={styles.card} testID="panel-class-countdown">
+              <Text style={styles.kicker}>Next quiz or test</Text>
+              <Text style={[styles.body, styles.countdownLine]} testID="text-class-countdown">{classCountdown(course)}</Text>
+              <Text style={styles.caption}>The coach plans your sets around it. A syllabus adds the rest of your dates.</Text>
             </View>
           ) : null}
 
@@ -377,14 +411,22 @@ export default function CourseScreen() {
           ) : null}
 
 
-          {isExam ? (
+          {/* D-224: no official guide found: ask if it is a class, in place of the long "no guide" paragraph. */}
+          {offerClassSwitch(course) ? (
+            <View style={[styles.card, styles.rescueCard]} testID="panel-class-switch">
+              <Text style={styles.rescueTitle}>Is this for a class?</Text>
+              <Text style={styles.body}>We couldn't find an official exam guide for "{typeof course?.name === 'string' ? course.name : 'this exam'}". If it's a quiz or test for school, make it a class.</Text>
+              <ActionButton label="Switch to Class" icon="book-open" disabled={busy} onPress={() => void setKind('course')} testID="button-switch-to-class" />
+              <ActionButton label="Keep as certification exam" secondary disabled={busy} onPress={() => void keepExam()} testID="button-keep-exam" />
+            </View>
+          ) : isExam ? (
             <View style={styles.card} testID="panel-exam-guide">
               <View style={styles.rowBetween}>
                 <Text style={styles.kicker}>Official exam guide</Text>
                 <ActionButton label={guide ? 'Refresh' : 'Look up'} icon="refresh-cw" secondary disabled={busy} onPress={withConsent(() => void refreshGuide(), GUIDE_REASON, true)} testID="button-refresh-guide" />
               </View>
               {realExamLine(facts) ? <Text style={styles.body} testID="text-real-exam">{realExamLine(facts)}</Text> : null}
-              {!lookupGuide.isPending && guide && (!facts.questionCount || !facts.durationMinutes) ? <Text style={styles.caption} testID="text-exam-facts-missing">The official page didn't give the {!facts.questionCount && !facts.durationMinutes ? 'number of questions or the time limit' : !facts.questionCount ? 'number of questions' : 'time limit'}. Tap the pencil above to type {!facts.questionCount && !facts.durationMinutes ? 'them' : 'it'} in.</Text> : null}
+              {!lookupGuide.isPending && guide?.found === true && (!facts.questionCount || !facts.durationMinutes) ? <Text style={styles.caption} testID="text-exam-facts-missing">The official page didn't give the {!facts.questionCount && !facts.durationMinutes ? 'number of questions or the time limit' : !facts.questionCount ? 'number of questions' : 'time limit'}. Tap the pencil above to type {!facts.questionCount && !facts.durationMinutes ? 'them' : 'it'} in.</Text> : null}
               {lookupGuide.isPending ? <View style={styles.row}><ActivityIndicator color={colors.primaryText} /><Text style={styles.caption}>Searching for the official guide…</Text></View> : null}
               {guide?.found === true ? (
                 <>
@@ -394,7 +436,7 @@ export default function CourseScreen() {
                   {typeof guide.sourceUrl === 'string' ? <Text selectable style={styles.caption}>Source: {guide.sourceUrl}</Text> : null}
                   {typeof guide.notes === 'string' && guide.notes ? <Text style={styles.caption}>{guide.notes}</Text> : null}
                 </>
-              ) : guide ? <Text style={styles.caption}>No official guide was found{typeof guide.notes === 'string' && guide.notes ? `: ${guide.notes}` : ''}. The coach uses its own knowledge of the exam.</Text>
+              ) : guide ? <Text style={styles.caption} testID="text-no-guide">None found online. The coach uses your material and its own knowledge.</Text>
                 : !lookupGuide.isPending ? <Text style={styles.caption}>Look up the published sections and weights so topics and sets match the real exam.</Text> : null}
             </View>
           ) : null}
@@ -572,6 +614,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   scoreColumn: { width: STAT_VALUE_WIDTH, textAlign: 'right', color: colors.foreground, fontSize: 15, lineHeight: 20, fontWeight: '700', fontVariant: ['tabular-nums'] },
   lectureRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10 },
   errorText: { color: colors.destructive, fontSize: 13 },
+  // D-224: the "Is this for a class?" card, the switched note, and the class countdown line.
+  rescueCard: { borderColor: colors.primaryText, borderWidth: 2 },
+  rescueTitle: { color: colors.foreground, fontSize: 17, lineHeight: 22, fontWeight: '800' },
+  switchedNote: { borderColor: colors.correct },
+  switchedText: { flex: 0, color: colors.foreground },
+  countdownLine: { flex: 0, fontSize: 20, lineHeight: 26, fontWeight: '800' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   noteRow: { gap: 8 },

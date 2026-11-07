@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-11-07 — D-224: Class or Certification Exam; a class gets its own quiz or test date; a mistaken exam can switch to a class
+- Dan's son (beta tester) had a class quiz on Monday, picked "Certification exam" because only it took a date, and got a long "No official guide was found: 'Bio Packet 10 Meiosis' looks like a classroom worksheet…" paragraph. Dan approved the mock (AddClass and ClassRescue boards), with "a college or high school course".
+- Adding: the choice reads "Class" / "Certification Exam" with one line under it (Class: a college or high school course, with quizzes, tests and finals, like BIO 114; Certification: a professional or licensing exam, like AWS, NCLEX or real estate). Both take an optional date: "Next quiz or test" for a class, "Exam date" for an exam. The sheet title is "Add a class or exam"; the list row says "class · next test Mon, Nov 9".
+- A class's date lives in the same `examDate` field the server and the coach already read (no schema or API change). The course screen shows a "Next quiz or test" card ("Mon, Nov 9 · in 2 days"), the kicker "Class · Next quiz or test Mon, Nov 9", and the pencil edits the date for a class too.
+- Server: the 2–7 day countdown heads-up on the day's first message now applies to a dated class too (readiness.ts countdownDue). No prompt change: the coach already received a course's date and days left.
+- When an exam's guide lookup finds nothing, the long paragraph is replaced by "Is this for a class?" with Switch to Class (kind becomes "course"; everything else on it is kept; a green note offers Undo) and "Keep as certification exam" (sets `keepAsExam`, so the card does not come back; the guide panel then says "None found online. The coach uses your material and its own knowledge."). The card's wording is neutral ("If it's a quiz or test for school, make it a class"), since a real certification can also lack an online guide.
+- Verified here: typecheck; `pnpm test` 467 tests, 466 pass, 1 skipped; new course-kind.test.mjs and class-date.test.mjs; iOS export. Needs Dan's iPhone check (build #113). Decided by Dan.
+
 ## 2026-11-05 — D-223: The server emails an alert when an AI service needs fixing
 - Dan: "Make it email it if the API starts failing." Two silent outages: the Claude key expired on Nov 2 (every coach reply failed with "invalid x-api-key" until Dan made a new key on Nov 5), and OpenAI retired gpt-image-1 on Oct 23 ("The model 'gpt-image-1' does not exist"), so no memory picture was ever drawn.
 - Every AI call (complete(), the memory picture, lecture transcription) tells one failure listener (src/ai/failures.ts; evals register none). lib/ai-alerts.ts sorts the error: key rejected (401), no access (403, verification), model missing (404, "does not exist", retired), billing (402, credit balance, quota), key missing. Overloaded, rate limits, timeouts and 5xx never email.

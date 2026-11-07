@@ -7,6 +7,7 @@ import { useColors } from '@/hooks/useColors';
 export type CourseKindChoice = 'course' | 'exam';
 
 /**
+ * D-224: the course choice reads "Class" (a college or high school course; Dan's son picked the exam to get a date field).
  * D-158 (Dan: someone adding an exam "will mistakenly just click in to name the course/exam without
  * switching to exam"): no default. Until one is picked, the two outlines take turns glowing (a slow
  * pulse, well under three flashes a second); with Reduce Motion both simply show a strong outline.
@@ -38,8 +39,8 @@ export function KindChoice({ value, onChange }: { value: CourseKindChoice | null
   };
 
   return (
-    <View style={styles.wrap} accessibilityRole="radiogroup" accessibilityLabel="Course or certification exam">
-      {item('course', 'Course', courseGlow)}
+    <View style={styles.wrap} accessibilityRole="radiogroup" accessibilityLabel="Class or certification exam">
+      {item('course', 'Class', courseGlow)}
       {item('exam', 'Certification Exam', examGlow)}
     </View>
   );
