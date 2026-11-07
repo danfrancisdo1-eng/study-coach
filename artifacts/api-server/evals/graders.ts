@@ -154,7 +154,7 @@ export async function gradeSessionQuiz(input: { topic: string; sources: Source[]
     for (const t of terms as { term?: unknown; definition?: unknown }[]) {
       const term = String(t?.term ?? ""), definition = String(t?.definition ?? "");
       const usable = cleanTerms([{ term, definition: "A neutral definition for the check." }], String(q.prompt), "").length === 1;
-      if (usable && definition.length >= 8 && cleanTerms([{ term, definition }], String(q.prompt), key).length === 0) notes.push(`q${i}: the term "${term.slice(0, 40)}" gives the answer away`);
+      if (usable && definition.length >= 8 && cleanTerms([{ term, definition }], String(q.prompt), key).length === 0) notes.push(`q${i}: the term "${term.slice(0, 40)}" gives the answer away (the app drops it before the student sees it)`);
     }
   });
   // D-135: no leaked reasoning, no "closest to" answers.
