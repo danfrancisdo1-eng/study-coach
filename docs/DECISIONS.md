@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-11-07 — D-225: Memory pictures default to gpt-image-2
+- OpenAI retired gpt-image-1 on Oct 23 ("The model 'gpt-image-1' does not exist"), so no picture was drawn. Dan set AI_IMAGE_MODEL=gpt-image-2 on Render and confirmed pictures now appear. The code default (memory-pictures.ts DEFAULT_IMAGE_MODEL) is now gpt-image-2 too, so pictures keep working if the setting is ever removed; AI_IMAGE_MODEL still overrides it. Same size, quality and format settings, which gpt-image-2 accepted in production.
+- Verified here: typecheck; memory-pictures e2e expects the new default. Decided by Dan.
+
 ## 2026-11-07 — D-224: Class or Certification Exam; a class gets its own quiz or test date; a mistaken exam can switch to a class
 - Dan's son (beta tester) had a class quiz on Monday, picked "Certification exam" because only it took a date, and got a long "No official guide was found: 'Bio Packet 10 Meiosis' looks like a classroom worksheet…" paragraph. Dan approved the mock (AddClass and ClassRescue boards), with "a college or high school course".
 - Adding: the choice reads "Class" / "Certification Exam" with one line under it (Class: a college or high school course, with quizzes, tests and finals, like BIO 114; Certification: a professional or licensing exam, like AWS, NCLEX or real estate). Both take an optional date: "Next quiz or test" for a class, "Exam date" for an exam. The sheet title is "Add a class or exam"; the list row says "class · next test Mon, Nov 9".

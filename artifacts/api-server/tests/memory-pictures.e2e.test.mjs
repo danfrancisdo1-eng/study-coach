@@ -98,7 +98,7 @@ test('a pictured memory card gets its picture, and the reply that first teaches 
   // What the image model was asked: the fixed template around the scene, small webp, the default model.
   const images = ai.requests.filter((r) => r.path.includes('/images/generations'));
   assert.equal(images.length, 1, 'one picture: only the card that asked for one');
-  assert.equal(images[0].body.model, 'gpt-image-1');
+  assert.equal(images[0].body.model, 'gpt-image-2');
   assert.equal(images[0].body.prompt, `A simple, friendly flat illustration on a plain light background: ${SCENE.replace(/\.$/, '')}. No text, letters, numbers, labels, logos or watermarks. Safe for a 13-year-old.`);
   assert.equal(images[0].body.size, '1536x1024');
   assert.equal(images[0].body.output_format, 'webp');
