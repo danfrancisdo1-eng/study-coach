@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-11-07 — D-227: Each highlighted term is a real button
+- Dan on build #114: highlights showed, but "the holding on the word or clicking not working". A term was a piece inside one long Text, and iPhone did not deliver press-down / let-go to it.
+- The question is now laid out word by word in a wrapping row (lib/term-segments.ts termTokens: one piece per word with its trailing spaces, one per term; tested to rebuild the exact question) and each term is a Pressable with a little extra touch room. Same behaviour: hold shows the definition, letting go hides it; a quick tap keeps it until the next tap. VoiceOver reads the question as one item with a "Define …" action per term. Questions without terms are drawn exactly as before.
+- Verified here: typecheck; tests; iOS export (build #115). Needs Dan's iPhone check.
+
 ## 2026-11-07 — D-226: Press a highlighted term for its definition (session-quiz.v13)
 - Dan: "sometimes I don't know how to answer the question because there's a word or two words in the question itself where I don't know the definition ... highlight that word ... hold down on it and a box pops up and gives you the definition. And when you let go, the box disappears." Dan: "love ... build it" (no mock requested).
 - session-quiz.v13 (prompt bump): each question lists 0 to 3 specialist terms from its stem, copied exactly, each with a one-sentence definition consistent with the course material; never the concept tested, the correct option, or a term whose definition points at the answer or rules out a wrong one; no words from the options. Otherwise v12's text unchanged.

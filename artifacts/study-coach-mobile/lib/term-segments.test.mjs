@@ -23,3 +23,14 @@ test('terms not in the text are skipped; overlaps keep the earlier, then the lon
   const atStart = termSegments('ATP powers the cell.', [t('ATP')]);
   assert.deepEqual(atStart.map((s) => s.text), ['ATP', ' powers the cell.']);
 });
+
+test('termTokens: one piece per word (spaces kept after it), one piece per term, nothing lost', async () => {
+  const { termTokens } = await import('./term-segments.ts');
+  const text = 'Why do frozen weights stay fixed, and what are adapter matrices?';
+  const tokens = termTokens(termSegments(text, [t('frozen weights'), t('adapter matrices')]));
+  assert.equal(tokens.map((x) => x.text).join(''), text, 'the pieces put back together are the question');
+  assert.deepEqual(tokens.filter((x) => x.term).map((x) => x.text.trim()), ['frozen weights', 'adapter matrices']);
+  assert.deepEqual(tokens.slice(0, 3).map((x) => x.text), ['Why ', 'do ', 'frozen weights ']);
+  assert.ok(tokens.every((x) => !/^\s/.test(x.text)), 'no piece starts with a space');
+  assert.equal(termTokens(termSegments('  Leading space.', [])).map((x) => x.text).join(''), '  Leading space.');
+});
