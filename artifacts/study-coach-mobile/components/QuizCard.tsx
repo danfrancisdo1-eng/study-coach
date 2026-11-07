@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
+import { TermText } from '@/components/TermText';
 import { PRESS_SCALE, PressScale } from '@/components/PressScale';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -369,7 +370,8 @@ export function QuizCard({ sessionId, userId, passMark, onGraded, onError, onSte
       <CardText style={styles.kicker}>{kindLabel} · Question {questions.indexOf(current) + 1} of {total}</CardText>
       {progress}
       {bubbles}
-      <CardText style={styles.prompt}>{current.prompt}</CardText>
+      {/* D-226: specialist words are highlighted; press one for its definition. */}
+      <TermText key={current.id} text={current.prompt} terms={current.terms} style={styles.prompt} />
       {current.options.map((option, i) => (
         <PressScale key={option.id} scale={PRESS_SCALE.card} haptic={false} accessibilityRole="button" accessibilityState={{ selected: chosen === option.id }} disabled={busy} onPress={() => void choose(option.id)}
           style={[styles.option, chosen === option.id && styles.optionChosen, busy && styles.disabled]} testID={`button-quiz-option-${i}`}>

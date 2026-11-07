@@ -528,6 +528,11 @@ export type StudyQuizQuestionsItemOptionsItem = {
   text: string;
 };
 
+export type StudyQuizQuestionsItemTermsItem = {
+  term: string;
+  definition: string;
+};
+
 export type StudyQuizQuestionsItemAnswer = {
   optionId: string;
   assisted: boolean;
@@ -538,6 +543,11 @@ export type StudyQuizQuestionsItem = {
   prompt: string;
   concept: string;
   options: StudyQuizQuestionsItemOptionsItem[];
+  /**
+     * D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.
+     * @maxItems 3
+     */
+  terms?: StudyQuizQuestionsItemTermsItem[];
   flag: StudyQuestionFlag | null;
   answer?: StudyQuizQuestionsItemAnswer;
   /** Available after this attempt has been graded, or, in a practice set, as soon as the question is answered. */

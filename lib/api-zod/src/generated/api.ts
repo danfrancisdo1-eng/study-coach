@@ -768,11 +768,15 @@ export const CreateStudySessionBody = zod.object({
 
 export const createStudySessionResponseQuizOneInvalidItemCountMin = 0;
 
+export const createStudySessionResponseQuizOneQuestionsItemTermsMax = 3;
+
 export const createStudySessionResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
 
 export const createStudySessionResponseAttemptsItemInvalidItemCountMin = 0;
+
+export const createStudySessionResponseAttemptsItemQuestionsItemTermsMax = 3;
 
 export const createStudySessionResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
 
@@ -832,6 +836,10 @@ export const CreateStudySessionResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(createStudySessionResponseQuizOneQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(createStudySessionResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
@@ -903,6 +911,10 @@ export const CreateStudySessionResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(createStudySessionResponseAttemptsItemQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(createStudySessionResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
@@ -1061,11 +1073,15 @@ export const GetStudySessionParams = zod.object({
 
 export const getStudySessionResponseQuizOneInvalidItemCountMin = 0;
 
+export const getStudySessionResponseQuizOneQuestionsItemTermsMax = 3;
+
 export const getStudySessionResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
 
 export const getStudySessionResponseAttemptsItemInvalidItemCountMin = 0;
+
+export const getStudySessionResponseAttemptsItemQuestionsItemTermsMax = 3;
 
 export const getStudySessionResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
 
@@ -1125,6 +1141,10 @@ export const GetStudySessionResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(getStudySessionResponseQuizOneQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(getStudySessionResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
@@ -1196,6 +1216,10 @@ export const GetStudySessionResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(getStudySessionResponseAttemptsItemQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(getStudySessionResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
@@ -1779,11 +1803,15 @@ export const CheckInStudySessionBody = zod.object({
 
 export const checkInStudySessionResponseQuizOneInvalidItemCountMin = 0;
 
+export const checkInStudySessionResponseQuizOneQuestionsItemTermsMax = 3;
+
 export const checkInStudySessionResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
 
 export const checkInStudySessionResponseAttemptsItemInvalidItemCountMin = 0;
+
+export const checkInStudySessionResponseAttemptsItemQuestionsItemTermsMax = 3;
 
 export const checkInStudySessionResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
 
@@ -1843,6 +1871,10 @@ export const CheckInStudySessionResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(checkInStudySessionResponseQuizOneQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(checkInStudySessionResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
@@ -1914,6 +1946,10 @@ export const CheckInStudySessionResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(checkInStudySessionResponseAttemptsItemQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(checkInStudySessionResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
@@ -2043,11 +2079,15 @@ export const SendStudyMessageBody = zod.object({
 
 export const sendStudyMessageResponseQuizOneInvalidItemCountMin = 0;
 
+export const sendStudyMessageResponseQuizOneQuestionsItemTermsMax = 3;
+
 export const sendStudyMessageResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
 
 export const sendStudyMessageResponseAttemptsItemInvalidItemCountMin = 0;
+
+export const sendStudyMessageResponseAttemptsItemQuestionsItemTermsMax = 3;
 
 export const sendStudyMessageResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
 
@@ -2107,6 +2147,10 @@ export const SendStudyMessageResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(sendStudyMessageResponseQuizOneQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(sendStudyMessageResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
@@ -2178,6 +2222,10 @@ export const SendStudyMessageResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(sendStudyMessageResponseAttemptsItemQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(sendStudyMessageResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
@@ -2303,11 +2351,15 @@ export const GenerateStudyQuizBody = zod.object({
 
 export const generateStudyQuizResponseQuizOneInvalidItemCountMin = 0;
 
+export const generateStudyQuizResponseQuizOneQuestionsItemTermsMax = 3;
+
 export const generateStudyQuizResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
 
 export const generateStudyQuizResponseAttemptsItemInvalidItemCountMin = 0;
+
+export const generateStudyQuizResponseAttemptsItemQuestionsItemTermsMax = 3;
 
 export const generateStudyQuizResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
 
@@ -2367,6 +2419,10 @@ export const GenerateStudyQuizResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(generateStudyQuizResponseQuizOneQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(generateStudyQuizResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
@@ -2438,6 +2494,10 @@ export const GenerateStudyQuizResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(generateStudyQuizResponseAttemptsItemQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(generateStudyQuizResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
@@ -2564,11 +2624,15 @@ export const SaveStudyAnswerBody = zod.object({
 
 export const saveStudyAnswerResponseQuizOneInvalidItemCountMin = 0;
 
+export const saveStudyAnswerResponseQuizOneQuestionsItemTermsMax = 3;
+
 export const saveStudyAnswerResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
 
 export const saveStudyAnswerResponseAttemptsItemInvalidItemCountMin = 0;
+
+export const saveStudyAnswerResponseAttemptsItemQuestionsItemTermsMax = 3;
 
 export const saveStudyAnswerResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
 
@@ -2628,6 +2692,10 @@ export const SaveStudyAnswerResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(saveStudyAnswerResponseQuizOneQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(saveStudyAnswerResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
@@ -2699,6 +2767,10 @@ export const SaveStudyAnswerResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(saveStudyAnswerResponseAttemptsItemQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(saveStudyAnswerResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
@@ -2830,11 +2902,15 @@ export const FlagStudyQuestionBody = zod.object({
 
 export const flagStudyQuestionResponseQuizOneInvalidItemCountMin = 0;
 
+export const flagStudyQuestionResponseQuizOneQuestionsItemTermsMax = 3;
+
 export const flagStudyQuestionResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
 
 export const flagStudyQuestionResponseAttemptsItemInvalidItemCountMin = 0;
+
+export const flagStudyQuestionResponseAttemptsItemQuestionsItemTermsMax = 3;
 
 export const flagStudyQuestionResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
 
@@ -2894,6 +2970,10 @@ export const FlagStudyQuestionResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(flagStudyQuestionResponseQuizOneQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(flagStudyQuestionResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
@@ -2965,6 +3045,10 @@ export const FlagStudyQuestionResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(flagStudyQuestionResponseAttemptsItemQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(flagStudyQuestionResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
@@ -3090,11 +3174,15 @@ export const ReviewFlashcardBody = zod.object({
 
 export const reviewFlashcardResponseQuizOneInvalidItemCountMin = 0;
 
+export const reviewFlashcardResponseQuizOneQuestionsItemTermsMax = 3;
+
 export const reviewFlashcardResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
 
 export const reviewFlashcardResponseAttemptsItemInvalidItemCountMin = 0;
+
+export const reviewFlashcardResponseAttemptsItemQuestionsItemTermsMax = 3;
 
 export const reviewFlashcardResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
 
@@ -3154,6 +3242,10 @@ export const ReviewFlashcardResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(reviewFlashcardResponseQuizOneQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(reviewFlashcardResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
@@ -3225,6 +3317,10 @@ export const ReviewFlashcardResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(reviewFlashcardResponseAttemptsItemQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(reviewFlashcardResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),
@@ -3345,11 +3441,15 @@ export const GradeStudyQuizParams = zod.object({
 
 export const gradeStudyQuizResponseQuizOneInvalidItemCountMin = 0;
 
+export const gradeStudyQuizResponseQuizOneQuestionsItemTermsMax = 3;
+
 export const gradeStudyQuizResponseQuizOneQuestionsItemFlagOneReasonMax = 500;
 
 
 
 export const gradeStudyQuizResponseAttemptsItemInvalidItemCountMin = 0;
+
+export const gradeStudyQuizResponseAttemptsItemQuestionsItemTermsMax = 3;
 
 export const gradeStudyQuizResponseAttemptsItemQuestionsItemFlagOneReasonMax = 500;
 
@@ -3409,6 +3509,10 @@ export const GradeStudyQuizResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(gradeStudyQuizResponseQuizOneQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(gradeStudyQuizResponseQuizOneQuestionsItemFlagOneReasonMax).nullable(),
@@ -3480,6 +3584,10 @@ export const GradeStudyQuizResponse = zod.object({
   "id": zod.string().uuid(),
   "text": zod.string()
 })),
+  "terms": zod.array(zod.object({
+  "term": zod.string(),
+  "definition": zod.string()
+})).max(gradeStudyQuizResponseAttemptsItemQuestionsItemTermsMax).optional().describe('D-226: specialist words that appear in the prompt, each with a one-line definition; the app highlights them and shows the definition on press. Never the concept tested or the answer. Absent on older questions.'),
   "flag": zod.union([zod.object({
   "kind": zod.enum(['invalid', 'ambiguous', 'wrong_answer']),
   "reason": zod.string().max(gradeStudyQuizResponseAttemptsItemQuestionsItemFlagOneReasonMax).nullable(),

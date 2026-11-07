@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, why, who decided.
 
+## 2026-11-07 — D-226: Press a highlighted term for its definition (session-quiz.v13)
+- Dan: "sometimes I don't know how to answer the question because there's a word or two words in the question itself where I don't know the definition ... highlight that word ... hold down on it and a box pops up and gives you the definition. And when you let go, the box disappears." Dan: "love ... build it" (no mock requested).
+- session-quiz.v13 (prompt bump): each question lists 0 to 3 specialist terms from its stem, copied exactly, each with a one-sentence definition consistent with the course material; never the concept tested, the correct option, or a term whose definition points at the answer or rules out a wrong one; no words from the options. Otherwise v12's text unchanged.
+- Code guard (quiz-check.ts cleanTerms), applied when the writer's output is read and again after the final key: at most 3 terms; each found word for word in the stem; definition 8 to 240 characters; no repeats; a term is dropped when it is the correct option, sits inside it or contains it, or when its definition contains the correct option. Terms are stored on the question, kept in the question bank, and sent to the app (openapi `terms`, optional; older questions have none).
+- App (components/TermText.tsx, lib/term-segments.ts): terms are highlighted (soft amber, dotted underline) in practice and exam questions. Press and hold shows the definition in a box under the question; letting go hides it. A quick tap keeps it open until tapped again (for anyone who can't hold; UX rule: no custom gesture without an alternative). VoiceOver: a "Define …" action per term. Options never get highlights.
+- Evals: the session_quiz grader fails a case whose term or definition names the answer. Dan runs them (session_quiz).
+- Not built yet (the "bonus" Dan liked): saving looked-up terms for flashcards. Next, its own PR.
+- Verified here: typecheck; `pnpm test` 474 tests, 473 pass, 1 skipped; new question-terms.test.mjs, question-terms.e2e.test.mjs, term-segments.test.mjs; iOS export (build #114). Needs Dan's iPhone check: press and hold, tap, VoiceOver. Decided by Dan.
+
 ## 2026-11-07 — D-225: Memory pictures default to gpt-image-2
 - OpenAI retired gpt-image-1 on Oct 23 ("The model 'gpt-image-1' does not exist"), so no picture was drawn. Dan set AI_IMAGE_MODEL=gpt-image-2 on Render and confirmed pictures now appear. The code default (memory-pictures.ts DEFAULT_IMAGE_MODEL) is now gpt-image-2 too, so pictures keep working if the setting is ever removed; AI_IMAGE_MODEL still overrides it. Same size, quality and format settings, which gpt-image-2 accepted in production.
 - Verified here: typecheck; memory-pictures e2e expects the new default. Decided by Dan.

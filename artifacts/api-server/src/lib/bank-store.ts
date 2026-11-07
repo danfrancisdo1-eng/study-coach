@@ -24,7 +24,7 @@ export function fromBank(entry: BankEntry<BankQuestion>): StoredQuestion {
 }
 
 const bankable = (q: StoredQuestion): BankQuestion => ({
-  prompt: q.prompt, concept: q.concept, options: q.options, correctOptionId: q.correctOptionId, explanation: q.explanation, ...(q.hook ? { hook: q.hook } : {}),
+  prompt: q.prompt, concept: q.concept, options: q.options, correctOptionId: q.correctOptionId, explanation: q.explanation, ...(q.hook ? { hook: q.hook } : {}), ...(q.terms?.length ? { terms: q.terms } : {}),
 });
 
 /** The guide section a question belongs to: the writer prefixes its concept with the section name. */

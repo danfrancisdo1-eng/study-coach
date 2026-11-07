@@ -5,9 +5,9 @@ import { studySources, studyText } from "./study-text";
 import { randomUUID } from "node:crypto";
 import { logger } from "./logger";
 import { complete } from "../ai";
-import * as sessionQuizPrompt from "../prompts/session-quiz.v12";
+import * as sessionQuizPrompt from "../prompts/session-quiz.v13";
 import * as quizCheckPrompt from "../prompts/quiz-check.v7";
-import { applyQuizCheck, explanationProblem, giveawayKey, keyFromExplanation, numericKey, parseQuizCheck, type ProposedQuestion } from "./quiz-check";
+import { applyQuizCheck, cleanTerms, explanationProblem, giveawayKey, keyFromExplanation, numericKey, parseQuizCheck, type ProposedQuestion, type QuestionTerm } from "./quiz-check";
 import { shuffleOptions } from "./shuffle-options";
 import * as flashcardsPrompt from "../prompts/flashcards.v3";
 
@@ -49,6 +49,8 @@ export type StoredQuestion = {
   explanation: string;
   /** One-line memory trick, shown when the question is missed (session-quiz.v3). */
   hook?: string;
+  /** D-226: specialist words in the stem with one-line definitions (session-quiz.v13); highlighted in the app. */
+  terms?: QuestionTerm[];
   answers: Array<{ optionId: string; assisted: boolean }>;
   invalid?: boolean;
   flag?: StoredQuestionFlag;
@@ -114,6 +116,9 @@ export type Session = {
 
 import { memoryCardsView, type MemoryCardsRecord } from "./memory-cards";
 import type { MemoryPictures } from "./memory-pictures";
+
+/** D-226: the terms field only when there are some (older questions and banks simply have none). */
+const withTerms = (terms: QuestionTerm[]): { terms?: QuestionTerm[] } => (terms.length ? { terms } : {});
 
 export function jsonObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -184,6 +189,7 @@ export function safeSession(session: Session): Record<string, unknown> {
       prompt: question.prompt,
       concept: question.concept,
       options: question.options,
+      ...(question.terms?.length ? { terms: question.terms } : {}), // D-226
       flag: question.flag
         ? { ...question.flag, reason: question.flag.reason ?? null }
         : null,
@@ -360,6 +366,7 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
     valid.push({
       prompt: value.prompt.slice(0, 2000), options: value.options as string[], answerIndex: value.answerIndex as number, concept: value.concept.slice(0, 300),
       explanation: value.explanation.slice(0, 2000), ...(typeof value.hook === "string" && value.hook.trim() ? { hook: value.hook.trim().slice(0, 300) } : {}),
+      ...withTerms(cleanTerms(value.terms, value.prompt, (value.options as string[])[value.answerIndex as number] ?? "")),
     });
   }
   // D-135: code checks first: drop leaked reasoning or "closest to" answers; re-key when the
@@ -384,7 +391,7 @@ export async function generateSessionQuiz(input: GenerateQuizInput): Promise<Qui
   // Option order (D-032): shuffled after the check, so the key isn't usually in slot A or B.
   const questions: StoredQuestion[] = kept.map((q) => shuffleOptions(q)).map((q) => {
     const options = q.options.map((text) => ({ id: randomUUID(), text }));
-    return { id: randomUUID(), prompt: q.prompt, concept: q.concept, options, correctOptionId: options[q.answerIndex]!.id, explanation: q.explanation, ...(q.hook ? { hook: q.hook } : {}), answers: [] };
+    return { id: randomUUID(), prompt: q.prompt, concept: q.concept, options, correctOptionId: options[q.answerIndex]!.id, explanation: q.explanation, ...(q.hook ? { hook: q.hook } : {}), ...withTerms(cleanTerms(q.terms, q.prompt, q.options[q.answerIndex] ?? "")), answers: [] }; // D-226: checked again against the final key
   });
   if (!questions.length) return null;
   return { mode: input.mode, ...(input.kind ? { kind: input.kind } : {}), expectedCount, questions, sourceStatus: status, invalidItemCount, grade: null };

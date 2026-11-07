@@ -4,7 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { hackTechnique, techniqueMixProblems, walkFormatProblems } from "./walk-format";
 import { AnalyzeMaterialResponse, GenerateExamPlanResponse, GenerateQuizResponse } from "@workspace/api-zod";
 import type { MemoryCardsCase, CourseRouterCase, UploadNotesCase, CourseNotesCase, ReviewSheetCase, CoachCase, ExamGuideCase, FlagCheckCase, FlashcardsCase, MemorySheetCase, QuizCheckCase, Source, SyllabusCase, TutorCase, WebLookupCase } from "./fixtures";
-import { explanationProblem, giveawayKey, parseQuizCheck } from "../src/lib/quiz-check";
+import { cleanTerms, explanationProblem, giveawayKey, parseQuizCheck } from "../src/lib/quiz-check";
 import { parseNotesReply } from "../src/lib/course-notes";
 import { parseUploadNotes } from "../src/lib/upload-notes";
 import { parseRoute, type Section } from "../src/lib/course-sections";
@@ -146,6 +146,17 @@ export async function gradeSessionQuiz(input: { topic: string; sources: Source[]
   // D-202: the key never stands out by length (the app drops such a question: giveawayKey).
   questions.forEach((q, i) => { if (Array.isArray(q.options) && giveawayKey({ options: q.options.map(String), answerIndex: Number((q as { answerIndex?: unknown }).answerIndex) })) notes.push(`q${i}: the key is much longer than every other option (gives the answer away)`); });
   if (input.requireNot && !questions.some((q) => /\b(NOT|EXCEPT)\b/.test(String(q.prompt)))) notes.push('no "which is NOT" / EXCEPT question');
+  // D-226 (session-quiz.v13): a listed term or its definition must never name the answer (the app drops such a term).
+  questions.forEach((q, i) => {
+    const terms = (q as { terms?: unknown }).terms;
+    if (!Array.isArray(terms)) return;
+    const key = String(q.options?.[Number((q as { answerIndex?: unknown }).answerIndex)] ?? "");
+    for (const t of terms as { term?: unknown; definition?: unknown }[]) {
+      const term = String(t?.term ?? ""), definition = String(t?.definition ?? "");
+      const usable = cleanTerms([{ term, definition: "A neutral definition for the check." }], String(q.prompt), "").length === 1;
+      if (usable && definition.length >= 8 && cleanTerms([{ term, definition }], String(q.prompt), key).length === 0) notes.push(`q${i}: the term "${term.slice(0, 40)}" gives the answer away`);
+    }
+  });
   // D-135: no leaked reasoning, no "closest to" answers.
   questions.forEach((q, i) => { const why = explanationProblem(String((q as { explanation?: unknown }).explanation ?? "")); if (why) notes.push(`q${i}: ${why}`); });
   const verdict = await judgeQuestions(input.topic, input.sources, questions);

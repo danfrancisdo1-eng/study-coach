@@ -1,5 +1,19 @@
 # Progress
 
+## Session 24i — 2026-11-07 — press a term for its definition (D-226), branch `feat/term-definitions`
+
+### Done
+- session-quiz.v13 lists each question's specialist terms with definitions; server guard drops any that give the answer away; terms reach the app and the question bank.
+- App: highlighted terms in practice and exam questions; press and hold (or tap) shows the definition box.
+- Verified here: typecheck; `pnpm test` 474 tests, 473 pass, 1 skipped; iOS export (build #114).
+
+### Needs Dan
+- Evals on the Mac: `--task session_quiz` (prompt changed).
+- iPhone (build #114): start a NEW set (older sets have no terms); press and hold a highlighted word, let go; tap once, tap again; VoiceOver "Define" action.
+
+### Next
+- Save looked-up terms for flashcards. "Have a rep code?" in Account (mock first).
+
 ## Session 24h — 2026-11-07 — Class or Certification Exam (D-224), branch `feat/class-or-exam`
 
 ### Done
